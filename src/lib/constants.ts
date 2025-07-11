@@ -72,3 +72,4 @@ export const why_travel_with_us = [
         "We design safaris to suit you without the influence of commercial agreements or cooperations. We work with ethical providers to give you the most authentic African safari possible.",
     },
   ];
+  
