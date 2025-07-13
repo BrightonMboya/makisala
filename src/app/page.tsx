@@ -1,35 +1,29 @@
 import { Star } from "lucide-react";
 import Image from "next/image";
-import Link from "next/link";
-import { safaris, why_travel_with_us } from "@/lib/constants"; // Assuming you have a constants file with safari data
+import { safaris, why_travel_with_us } from "@/lib/constants";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import Nav from "@/components/home/nav";
 import ImageCard from "@/components/home/image-card";
-import Footer from "@/components/home/footer";
 
 export default function SafariFrankClone() {
   const months = [
-    "JANUARY",
-    "FEBRUARY",
-    "MARCH",
-    "APRIL",
+    "JAN",
+    "FEB",
+    "MAR",
+    "APR",
     "MAY",
-    "JUNE",
+    "JUN",
     "JULY",
-    "AUGUST",
-    "SEPTEMBER",
-    "OCTOBER",
-    "NOVEMBER",
-    "DECEMBER",
+    "AUG",
+    "SEPT",
+    "OCT",
+    "NOV",
+    "DEC",
   ];
   
 
   return (
     <div className="min-h-screen bg-white">
-      {/* Navigation */}
-      <Nav />
-
       {/* Hero Section */}
       <section className="relative h-screen flex items-center justify-start overflow-hidden mt-16">
         <div className="absolute inset-0">
@@ -386,7 +380,6 @@ export default function SafariFrankClone() {
           </div>
         </div>
       </section> */}
-      <Footer/>
     </div>
   );
 }

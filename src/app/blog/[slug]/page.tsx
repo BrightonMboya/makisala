@@ -45,8 +45,6 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
 
     return (
       <div className="min-h-screen bg-white">
-        {/* Navigation would go here */}
-
         <article className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
           {page.featured_image && (
             <div className="mb-8">
