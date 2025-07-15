@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import Image from "next/image";
 import type { Metadata } from "next";
 
-import { getPageBySlug } from "@/lib/db";
+import { getPageBySlug } from "@/lib/cms-service";
 import { MarkdownRenderer } from "@/components/markdown-renderer";
 
 interface BlogPostPageProps {
@@ -18,13 +18,13 @@ export async function generateMetadata({
     const page = await getPageBySlug(params.slug);
 
     return {
-      title: page.meta_title || page.title,
-      description: page.meta_description || page.excerpt,
-      keywords: page.meta_keywords,
+      title: page?.meta_title || page?.title,
+      description: page?.meta_description || page.excerpt,
+      keywords: page?.meta_keywords,
       openGraph: {
-        title: page.meta_title || page.title,
-        description: page.meta_description || page.excerpt,
-        images: page.featured_image ? [page.featured_image] : [],
+        title: page?.meta_title || page?.title,
+        description: page?.meta_description || page?.excerpt,
+        images: page?.featured_image ? [page?.featured_image] : [],
       },
     };
   } catch {

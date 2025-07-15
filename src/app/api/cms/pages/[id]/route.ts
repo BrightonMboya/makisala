@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server";
-import { cmsService } from "@/lib/db";
+import { updatePage, deletePage } from "@/lib/cms-service";
 
 export async function PUT(
   request: NextRequest,
@@ -7,7 +7,7 @@ export async function PUT(
 ) {
   try {
     const pageData = await request.json();
-    const updatedPage = await cmsService.updatePage(params.id, pageData);
+    const updatedPage = await updatePage(params.id, pageData);
     return NextResponse.json(updatedPage);
   } catch (error) {
     return NextResponse.json(
@@ -22,7 +22,7 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    await cmsService.deletePage(params.id);
+    await deletePage(params.id);
     return NextResponse.json({ success: true });
   } catch (error) {
     return NextResponse.json(

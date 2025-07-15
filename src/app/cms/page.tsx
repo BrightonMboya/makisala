@@ -5,7 +5,7 @@ import { Save, Eye, FileText, Settings,  Globe } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/lib/hooks/use-toast";
-import { createPage, updatePage, getPages } from "@/lib/db";
+import { createPage, updatePage, getPages } from "@/lib/cms-service";
 import Editor from "./_components/Editor";
 import SEOTab from "./_components/seo";
 import Manage from "./_components/Manage";
@@ -152,7 +152,7 @@ export default function CMSPage() {
     .filter((word) => word.length > 0).length;
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4">
+    <div className="min-h-screen bg-gray-50 p-4 mt-10">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">

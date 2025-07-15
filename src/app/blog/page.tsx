@@ -1,5 +1,5 @@
 "use client";
-import { getPages } from "@/lib/db";
+import { getPages } from "@/lib/cms-service";
 import { useQuery } from "@tanstack/react-query";
 import ImageCard from "@/components/home/image-card";
 import Link from "next/link";
@@ -20,9 +20,9 @@ export default function Page() {
               <Link href={`/blog/${blog.slug}`}>
                 <ImageCard
                   title={blog.title}
-                  img_url={blog.featured_image || "/placeholder.svg"}
+                  img_url={blog.featured_image_url || "/placeholder.svg"}
                   alt="Makisala Blog"
-                  description={blog.excerpt}
+                  description={blog.excerpt!}
                 />
               </Link>
             </div>
