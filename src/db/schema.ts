@@ -1,7 +1,6 @@
 import { pgTable, text, pgEnum, timestamp } from "drizzle-orm/pg-core";
 import {sql} from "drizzle-orm"
 
-
 export const PageType = pgEnum("pageType", [
     'page',
     'blog'
@@ -11,7 +10,7 @@ export const PageStatus = pgEnum("pageStatus", [
     "published",
     "draft",
 ])
-export const pages =pgTable("pages", {
+export const pages = pgTable("pages", {
     id: text().primaryKey().notNull(),
     title: text().notNull(),
     slug: text().notNull(),

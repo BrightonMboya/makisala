@@ -7,7 +7,7 @@ import Link from "next/link";
 export default function Page() {
   const { data: blogs, isLoading } = useQuery({
     queryKey: ["pages"],
-    queryFn: getPages,
+    queryFn: () => getPages("blog"),
   });
 
   return (

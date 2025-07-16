@@ -46,8 +46,11 @@ export async function updatePage(id: string, data: Partial<Page>): Promise<Page>
 /* ------------------------------------------------------------------ */
 /*  GET ALL                                                           */
 /* ------------------------------------------------------------------ */
-export async function getPages(): Promise<Page[]> {
-    return await db.select().from(pages);
+export async function getPages(page_type: "blog" | "page"): Promise<Page[]> {
+    return await db
+        .select()
+        .from(pages)
+        .where(eq(pages.page_type, page_type))
 }
 
 /* ------------------------------------------------------------------ */

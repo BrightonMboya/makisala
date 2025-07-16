@@ -31,7 +31,7 @@ export async function generateMetadata({
       keywords: page.meta_keywords,
       openGraph: {
         title: page.meta_title || page.title,
-        description: page.meta_description || page.excerpt,
+        description: page.meta_description! || page.excerpt!,
         images: page.featured_image_url ? [page.featured_image_url] : [],
       },
     };
@@ -46,7 +46,7 @@ export async function generateMetadata({
 // Page renderer
 export default async function BlogPostPage({ params }: BlogPostPageProps) {
   try {
-    const page = await getPageBySlug(params.slug);
+    const page = await getPageBySlug(await params.slug);
 
     if (!page || page.status !== "published") {
       notFound();

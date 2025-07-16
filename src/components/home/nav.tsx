@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { ChevronDown, Menu, Search } from "lucide-react";
+import { Menu, } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   NavigationMenu,
@@ -36,18 +36,20 @@ export default function Nav() {
       {
         name: "Serengeti",
         description: "Endless plains and incredible wildlife",
+        page_url: "/location/serengeti"
       },
       {
         name: "Ngorongoro Crater",
         description: "Africa's Garden of Eden",
+        page_url: "/location/ngorongoro-crater"
       },
-      { name: "Kilimanjaro", description: "Africa's highest peak" },
-      { name: "Kenya", description: "Masai Mara and beyond" },
+      { name: "Kilimanjaro", description: "Africa's highest peak", page_url: "/location/kilimanjaro" },
+      { name: "Kenya", description: "Masai Mara and beyond", page_url: "/location/kenya" },
     ],
     east_africa: [
-      { name: "Uganda", description: "Gorilla trekking adventures" },
-      { name: "Botswana", description: "Okavango Delta wilderness" },
-      { name: "Zambia", description: "Walking safaris in pristine parks" },
+      { name: "Rwanda", description: "Gorilla trekking adventures", page_url: "/location/rwanda" },
+      { name: "Uganda", description: "Gorilla trekking adventures", page_url: "/location/uganda" },
+      { name: "Zambia", description: "Walking safaris in pristine parks", page_url: "/location/zambia" },
     ],
   };
   const experiences = [
@@ -64,6 +66,24 @@ export default function Nav() {
       description: "Capture Africa's beauty with expert guidance",
     },
   ];
+  const inspirations = [
+    {
+      name: "Safari blog",
+      description: "Stories and tips for an African Safari",
+      page_url: "/blog"
+    },
+    {
+      name: "African Safari Cost",
+      description: "Stunning wildlife photography",
+      page_url: "#"
+    },
+    {
+      name: "When to Travel",
+      description: "",
+      page_url: "#"
+    }
+
+  ]
   return (
     <nav className="fixed top-0 w-full bg-white/95 backdrop-blur-sm border-b border-gray-100 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -158,7 +178,7 @@ export default function Nav() {
                         {destinations.top_destinations.map((dest) => (
                           <NavigationMenuLink asChild key={dest.name}>
                             <Link
-                              href="#"
+                              href={dest.page_url}
                               className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground">
                               <div className="text-sm font-medium leading-none">
                                 {dest.name}
@@ -177,7 +197,7 @@ export default function Nav() {
                         {destinations.east_africa.map((dest) => (
                           <NavigationMenuLink asChild key={dest.name}>
                             <Link
-                              href="#"
+                              href={dest.page_url}
                               className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground">
                               <div className="text-sm font-medium leading-none">
                                 {dest.name}
@@ -226,42 +246,17 @@ export default function Nav() {
                   <NavigationMenuContent>
                     <div className="w-[400px] gap-3 p-6">
                       <div className="space-y-3">
-                        <NavigationMenuLink asChild>
+                        {inspirations.map((inspir) => (
+                        <NavigationMenuLink asChild key={inspir.name}>
                           <Link
-                            href="#"
-                            className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground">
+                            href={inspir.page_url}
+                            className="block select-none rounded-md px-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground">
                             <div className="text-sm font-medium leading-none">
-                              Safari Blog
+                              {inspir.name}
                             </div>
-                            <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
-                              Stories and tips from Africa
-                            </p>
                           </Link>
                         </NavigationMenuLink>
-                        <NavigationMenuLink asChild>
-                          <Link
-                            href="#"
-                            className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground">
-                            <div className="text-sm font-medium leading-none">
-                              Photo Gallery
-                            </div>
-                            <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
-                              Stunning wildlife photography
-                            </p>
-                          </Link>
-                        </NavigationMenuLink>
-                        <NavigationMenuLink asChild>
-                          <Link
-                            href="#"
-                            className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground">
-                            <div className="text-sm font-medium leading-none">
-                              Travel Tips
-                            </div>
-                            <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
-                              Essential safari preparation guide
-                            </p>
-                          </Link>
-                        </NavigationMenuLink>
+                        ))}
                       </div>
                     </div>
                   </NavigationMenuContent>
@@ -385,9 +380,16 @@ export default function Nav() {
                       </div>
                     </div>
 
-                    <Link href="#" className="font-medium">
-                      INSPIRATION
-                    </Link>
+                    <div className="space-y-2">
+                      <h3 className="font-medium">INSPIRATIONS</h3>
+                      <div className="pl-4 space-y-2 text-sm text-gray-600">
+                        {inspirations.map((inspiration) => (
+                            <Link key={inspiration.name} className="block hover:text-gray-900" href={inspiration.page_url}>
+                              {inspiration.name}
+                              </Link>
+                        ))}
+                      </div>
+                    </div>
                     <Link href="#" className="font-medium">
                       ABOUT US
                     </Link>

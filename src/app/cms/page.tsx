@@ -27,6 +27,8 @@ export interface PageData {
   updated_at?: string;
 }
 
+export type HandleInputChange = (field: keyof PageData, value: string) => void;
+
 export default function CMSPage() {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("editor");
@@ -71,7 +73,7 @@ export default function CMSPage() {
   const handleSave = async () => {
     setIsLoading(true);
     try {
-      let savedPage: Page;
+      let savedPage: PageData;
 
       if (pageData.id) {
         // Update existing page
@@ -117,7 +119,7 @@ export default function CMSPage() {
   useEffect(() => {
     const loadPages = async () => {
       try {
-        const pages = await getPages();
+        const pages = await getPages("page");
         setSavedPages(pages);
       } catch (error) {
         console.error("Failed to load pages:", error);

@@ -7,13 +7,14 @@ import { Label } from "@radix-ui/react-label";
 import { Separator } from "@radix-ui/react-separator";
 import { Settings } from "lucide-react";
 import { PageData } from "../page";
+import {type HandleInputChange} from "../page";
 
 export default function SEOTab({
   pageData,
   handleInputChange,
 }: {
   pageData: PageData;
-  handleInputChange: any;
+  handleInputChange: HandleInputChange;
 }) {
   return (
     <TabsContent value="seo" className="space-y-6">
@@ -29,13 +30,13 @@ export default function SEOTab({
             <Label htmlFor="meta-title">Meta Title</Label>
             <Input
               id="meta-title"
-              value={pageData.meta_title}
+              value={pageData.meta_title!}
               onChange={(e) => handleInputChange("meta_title", e.target.value)}
               placeholder="SEO optimized title..."
               maxLength={60}
             />
             <p className="text-sm text-gray-500 mt-1">
-              {pageData.meta_title.length}/60 characters
+              {pageData.meta_title?.length}/60 characters
             </p>
           </div>
 
@@ -43,7 +44,7 @@ export default function SEOTab({
             <Label htmlFor="meta-description">Meta Description</Label>
             <Textarea
               id="meta-description"
-              value={pageData.meta_description}
+              value={pageData.meta_description!}
               onChange={(e) =>
                 handleInputChange("meta_description", e.target.value)
               }
@@ -52,7 +53,7 @@ export default function SEOTab({
               maxLength={160}
             />
             <p className="text-sm text-gray-500 mt-1">
-              {pageData.meta_description.length}/160 characters
+              {pageData.meta_description?.length}/160 characters
             </p>
           </div>
 
@@ -60,7 +61,7 @@ export default function SEOTab({
             <Label htmlFor="meta-keywords">Meta Keywords</Label>
             <Input
               id="meta-keywords"
-              value={pageData.meta_keywords}
+              value={pageData.meta_keywords!}
               onChange={(e) =>
                 handleInputChange("meta_keywords", e.target.value)
               }
@@ -80,7 +81,7 @@ export default function SEOTab({
                 {pageData.meta_title || pageData.title || "Page Title"}
               </div>
               <div className="text-green-700 text-sm">
-                https://safarifrank.com/
+                https://makisala.com/
                 {pageData.page_type === "blog" ? "blog" : "pages"}/
                 {pageData.slug || "page-url"}
               </div>

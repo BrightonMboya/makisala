@@ -1,4 +1,5 @@
 import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 interface MarkdownRendererProps {
   content: string;
@@ -13,6 +14,7 @@ export function MarkdownRenderer({
     <div
       className={`prose prose-sm max-w-none whitespace-pre-wrap ${className}`}>
       <ReactMarkdown
+          remarkPlugins={[remarkGfm]}
         components={{
           img({ src, alt, ...props }) {
             return (
@@ -32,7 +34,24 @@ export function MarkdownRenderer({
               </h3>
             );
           },
-          h2({ children, ...props }) {
+            table({ children, ...props }) {
+                return (
+                    <table
+                        className="w-full border-collapse border border-gray-300 text-sm
+                                [&_th]:bg-gray-100
+                                [&_th]:text-left
+                                [&_th]:px-4 [&_th]:py-2 [&_th]:border [&_th]:border-gray-300
+                                [&_td]:px-4 [&_td]:py-2 [&_td]:border [&_td]:border-gray-300
+                                [&_tr:nth-child(even)]:bg-gray-50
+                                [&_tr:hover]:bg-gray-100 transition-colors"
+                        {...props}
+                    >
+                        {children}
+                    </table>
+
+                );
+            },
+            h2({ children, ...props }) {
             return (
               <h2 className="text-3xl font-bold mt-8 mb-6" {...props}>
                 {children}
@@ -41,7 +60,7 @@ export function MarkdownRenderer({
           },
           ul({ children, ...props }) {
             return (
-              <ul className="list-disc pl-6 mb-4" {...props}>
+              <ul className="flex list-disc flex-col gap-4 pl-6" {...props}>
                 {children}
               </ul>
             );
@@ -53,7 +72,11 @@ export function MarkdownRenderer({
               </ol>
             );
           },
-
+            a({children, ...props}) {
+                return (
+                    <a className="text-primary underline" {...props}>{children}</a>
+                );
+            },
           blockquote({ children, ...props }) {
             return (
               <blockquote
