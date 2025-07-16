@@ -16,11 +16,11 @@ export interface PageData {
   title: string;
   slug: string;
   content: string;
-  excerpt: string;
-  featured_image: string;
-  meta_title: string;
-  meta_description: string;
-  meta_keywords: string;
+  excerpt: string | null;
+  featured_image_url: string | null;
+  meta_title: string | null;
+  meta_description: string | null;
+  meta_keywords: string | null;
   status: "draft" | "published";
   page_type: "page" | "blog";
   created_at?: string;
@@ -38,7 +38,7 @@ export default function CMSPage() {
     slug: "",
     content: "",
     excerpt: "",
-    featured_image: "",
+    featured_image_url: "",
     meta_title: "",
     meta_description: "",
     meta_keywords: "",
@@ -71,7 +71,7 @@ export default function CMSPage() {
   const handleSave = async () => {
     setIsLoading(true);
     try {
-      let savedPage: PageData;
+      let savedPage: Page;
 
       if (pageData.id) {
         // Update existing page
@@ -137,7 +137,7 @@ export default function CMSPage() {
       slug: "",
       content: "",
       excerpt: "",
-      featured_image: "",
+      featured_image_url: "",
       meta_title: "",
       meta_description: "",
       meta_keywords: "",

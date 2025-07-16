@@ -30,6 +30,7 @@ export async function createPage(data: NewPage): Promise<Page> {
 /*  UPDATE                                                            */
 /* ------------------------------------------------------------------ */
 export async function updatePage(id: string, data: Partial<Page>): Promise<Page> {
+    console.log(data, "---------------------------")
     const [updated] = await db
         .update(pages)
         .set({

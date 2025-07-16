@@ -103,7 +103,7 @@ export default function Editor({
               <Label htmlFor="excerpt">Excerpt</Label>
               <Textarea
                 id="excerpt"
-                value={pageData.excerpt}
+                value={pageData.excerpt!}
                 onChange={(e) => handleInputChange("excerpt", e.target.value)}
                 placeholder="Brief description of the content..."
                 rows={3}
@@ -119,9 +119,9 @@ export default function Editor({
               </Label>
               <Input
                 id="featured-image"
-                value={pageData.featured_image}
+                value={pageData.featured_image_url!}
                 onChange={(e) =>
-                  handleInputChange("featured_image", e.target.value)
+                  handleInputChange("featured_image_url", e.target.value)
                 }
                 placeholder="https://example.com/image.jpg"
               />
@@ -151,9 +151,9 @@ export default function Editor({
           </CardHeader>
           <CardContent>
             <div className="prose prose-sm max-w-none">
-              {pageData.featured_image && (
+              {pageData.featured_image_url && (
                 <img
-                  src={pageData.featured_image || "/placeholder.svg"}
+                  src={pageData.featured_image_url || "/placeholder.svg"}
                   alt={pageData.title}
                   className="w-full h-48 object-cover rounded-lg mb-4"
                 />

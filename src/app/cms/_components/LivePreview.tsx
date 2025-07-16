@@ -19,10 +19,10 @@ export default function Preview({pageData, wordCount}: {pageData: PageData, word
         <CardContent>
           <div className="bg-white border rounded-lg p-8 shadow-sm">
             <article className="max-w-4xl mx-auto">
-              {pageData.featured_image && (
+              {pageData.featured_image_url && (
                 <div className="mb-8">
                   <img
-                    src={pageData.featured_image || "/placeholder.svg"}
+                    src={pageData.featured_image_url || "/placeholder.svg"}
                     alt={pageData.title}
                     className="w-full h-64 object-cover rounded-lg"
                   />
