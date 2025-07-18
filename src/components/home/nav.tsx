@@ -36,20 +36,20 @@ export default function Nav() {
       {
         name: "Serengeti",
         description: "Endless plains and incredible wildlife",
-        page_url: "/location/serengeti"
+        page_url: "/location/northern-tanzania"
       },
-      {
-        name: "Ngorongoro Crater",
-        description: "Africa's Garden of Eden",
-        page_url: "/location/ngorongoro-crater"
-      },
+      // {
+      //   name: "Ngorongoro Crater",
+      //   description: "Africa's Garden of Eden",
+      //   page_url: "/location/ngorongoro-crater"
+      // },
       { name: "Kilimanjaro", description: "Africa's highest peak", page_url: "/location/kilimanjaro" },
-      { name: "Kenya", description: "Masai Mara and beyond", page_url: "/location/kenya" },
+      { name: "Zanzibar", description: "Conclude your Tanzania Safari here", page_url: "/location/zanzibar" },
     ],
     east_africa: [
       { name: "Rwanda", description: "Gorilla trekking adventures", page_url: "/location/rwanda" },
-      { name: "Uganda", description: "Gorilla trekking adventures", page_url: "/location/uganda" },
-      { name: "Zambia", description: "Walking safaris in pristine parks", page_url: "/location/zambia" },
+      // { name: "Uganda", description: "Gorilla trekking adventures", page_url: "/location/uganda" },
+      // { name: "Zambia", description: "Walking safaris in pristine parks", page_url: "/location/zambia" },
     ],
   };
   const experiences = [
