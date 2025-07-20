@@ -99,6 +99,7 @@ export interface CreateTourPackageData {
     destination: string;
     overview: string;
     hero_image_url: string;
+    slug: string;
     pricing_starts_from: string
     itineraries: Array<{
         title: string;
@@ -118,6 +119,7 @@ export async function createTourPackage(data: CreateTourPackageData) {
             destination: data.destination,
             overview: data.overview,
             hero_image_url: data.hero_image_url,
+            slug: data.slug,
             pricing_starts_from: data.pricing_starts_from,
             updatedAt: new Date(),
         };

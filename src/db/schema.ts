@@ -33,6 +33,7 @@ export const tourPackages = pgTable('tour_packages', {
     id: uuid('id').primaryKey().defaultRandom(),
     title: varchar('title', { length: 255 }).notNull(),
     numberOfDays: integer('number_of_days').notNull(),
+    slug: text('slug'),
     country: varchar('country', { length: 100 }).notNull(),
     destination: varchar('destination', { length: 255 }).notNull(),
     overview: text('overview').notNull(),
@@ -47,9 +48,9 @@ export const itineraries = pgTable('itineraries', {
     tourPackageId: uuid('tour_package_id').references(() => tourPackages.id, { onDelete: 'cascade' }).notNull(),
     dayNumber: integer('day_number').notNull(),
     title: varchar('title', { length: 255 }).notNull(),
-    estimatedDrivingDistance: varchar('estimated_driving_distance', { length: 50 }),
+    estimatedDrivingDistance: text('estimated_driving_distance'),
     activities: text('activities').notNull(),
-    accommodation: varchar('accommodation', { length: 255 }),
+    accommodation: text('accommodation'),
     createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 

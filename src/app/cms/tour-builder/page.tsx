@@ -27,6 +27,7 @@ const tourPackageSchema = z.object({
     country: z.string().min(1, 'Country is required'),
     destination: z.string().min(1, 'Destination is required'),
     overview: z.string().min(1, 'Overview is required'),
+    slug: z.string().min(1, 'Slug is required'),
     pricing_starts_from: z.string().min(1, 'Pricing starts from is missing'),
     hero_image_url: z.string().min(1, 'Hero image is required'),
     itineraries: z.array(itinerarySchema).min(1, 'At least one day itinerary is required'),
@@ -46,6 +47,7 @@ export default function TourPackageBuilder () {
             country: '',
             destination: '',
             overview: '',
+            slug: '',
             pricing_starts_from: '',
             hero_image_url: '',
             itineraries: [
@@ -181,6 +183,26 @@ export default function TourPackageBuilder () {
                                                 <FormControl>
                                                     <Input
                                                         placeholder="Kenya"
+                                                        className="h-12"
+                                                        {...field}
+                                                    />
+                                                </FormControl>
+                                                <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+
+                                    <FormField
+                                        control={form.control}
+                                        name="slug"
+                                        render={({ field }) => (
+                                            <FormItem className="md:col-span-2">
+                                                <FormLabel className="text-base font-semibold flex items-center gap-2">
+                                                    Slug Url
+                                                </FormLabel>
+                                                <FormControl>
+                                                    <Input
+                                                        placeholder="kilimanjaro-marangu-route"
                                                         className="h-12"
                                                         {...field}
                                                     />
@@ -366,8 +388,9 @@ export default function TourPackageBuilder () {
                                                             <FormItem>
                                                                 <FormLabel>Accommodation</FormLabel>
                                                                 <FormControl>
-                                                                    <Input
+                                                                    <Textarea
                                                                         placeholder="Safari Lodge or Tented Camp"
+                                                                        className="min-h-20 resize-none"
                                                                         {...field}
                                                                     />
                                                                 </FormControl>
@@ -386,7 +409,7 @@ export default function TourPackageBuilder () {
                                         type="submit"
                                         size="lg"
                                         disabled={isSubmitting}
-                                        className="bg-gradient-to-r from-primary to-primary-glow hover:shadow-glow transition-all duration-300 min-w-32"
+                                        className="min-w-32 cursor-poiner"
                                     >
                                         {isSubmitting ? 'Creating...' : 'Create Package'}
                                     </Button>
