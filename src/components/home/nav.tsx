@@ -75,12 +75,12 @@ export default function Nav() {
     {
       name: "African Safari Cost",
       description: "Stunning wildlife photography",
-      page_url: "#"
+      page_url: "/blog/how-much-does-an-african-safari-cost"
     },
     {
       name: "When to Travel",
       description: "",
-      page_url: "#"
+      page_url: "/blog/best-time-to-visit-tanzania"
     }
 
   ]
