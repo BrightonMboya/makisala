@@ -1,11 +1,11 @@
 "use server"
-import { db } from "../index";
-import { pages } from "@/db/schema";
+import {db} from "../index";
+import {pages} from "@/db/schema";
 import {eq, or, sql} from "drizzle-orm";
 import cuid from "cuid";
 import {tourPackages, itineraries, NewTourPackage, NewItinerary} from "../index";
 
-import type { InferInsertModel, InferSelectModel } from "drizzle-orm";
+import type {InferInsertModel, InferSelectModel} from "drizzle-orm";
 
 // Types
 export type Page = InferSelectModel<typeof pages>;
@@ -13,6 +13,7 @@ export type NewPage = Omit<InferInsertModel<typeof pages>, "id" | "createdAt" | 
 
 /* ------------------------------------------------------------------ */
 /*  CREATE                                                            */
+
 /* ------------------------------------------------------------------ */
 export async function createPage(data: NewPage): Promise<Page> {
     const [inserted] = await db
@@ -29,6 +30,7 @@ export async function createPage(data: NewPage): Promise<Page> {
 
 /* ------------------------------------------------------------------ */
 /*  UPDATE                                                            */
+
 /* ------------------------------------------------------------------ */
 export async function updatePage(id: string, data: Partial<Page>): Promise<Page> {
     console.log(data, "---------------------------")
@@ -46,6 +48,7 @@ export async function updatePage(id: string, data: Partial<Page>): Promise<Page>
 
 /* ------------------------------------------------------------------ */
 /*  GET ALL                                                           */
+
 /* ------------------------------------------------------------------ */
 export async function getPages(page_type: "blog" | "page"): Promise<Page[]> {
     return await db
@@ -56,6 +59,7 @@ export async function getPages(page_type: "blog" | "page"): Promise<Page[]> {
 
 /* ------------------------------------------------------------------ */
 /*  GET BY ID                                                         */
+
 /* ------------------------------------------------------------------ */
 export async function getPageById(id: string): Promise<Page | null> {
     const [page] = await db
@@ -69,6 +73,7 @@ export async function getPageById(id: string): Promise<Page | null> {
 
 /* ------------------------------------------------------------------ */
 /*  GET BY SLUG                                                       */
+
 /* ------------------------------------------------------------------ */
 export async function getPageBySlug(slug: string): Promise<Page | null> {
     const [page] = await db
@@ -82,6 +87,7 @@ export async function getPageBySlug(slug: string): Promise<Page | null> {
 
 /* ------------------------------------------------------------------ */
 /*  DELETE                                                            */
+
 /* ------------------------------------------------------------------ */
 export async function deletePage(id: string): Promise<Page | null> {
     const [deleted] = await db
@@ -159,10 +165,10 @@ export async function getTourPackages() {
         return await db.query.tourPackages.findMany({
             with: {
                 itineraries: {
-                    orderBy: (itineraries, { asc }) => [asc(itineraries.dayNumber)],
+                    orderBy: (itineraries, {asc}) => [asc(itineraries.dayNumber)],
                 },
             },
-            orderBy: (tourPackages, { desc }) => [desc(tourPackages.createdAt)],
+            orderBy: (tourPackages, {desc}) => [desc(tourPackages.createdAt)],
         });
     } catch (error) {
         console.error('Error fetching tour packages:', error);
@@ -176,7 +182,7 @@ export async function getTourPackageById(id: string) {
             where: eq(tourPackages.id, id),
             with: {
                 itineraries: {
-                    orderBy: (itineraries, { asc }) => [asc(itineraries.dayNumber)],
+                    orderBy: (itineraries, {asc}) => [asc(itineraries.dayNumber)],
                 },
             },
         });
@@ -191,16 +197,44 @@ export async function getTourPackagesByLocation(locationName: string) {
 
     return await db.query.tourPackages.findMany({
         where: or(
-            sql`LOWER(${tourPackages.slug}) ILIKE ${locationTerm}`,
-            sql`LOWER(${tourPackages.destination}) ILIKE ${locationTerm}`,
-            sql`LOWER(${tourPackages.overview}) ILIKE ${locationTerm}`
+            sql`LOWER(
+            ${tourPackages.slug}
+            )
+            ILIKE
+            ${locationTerm}`,
+            sql`LOWER(
+            ${tourPackages.destination}
+            )
+            ILIKE
+            ${locationTerm}`,
+            sql`LOWER(
+            ${tourPackages.overview}
+            )
+            ILIKE
+            ${locationTerm}`
         ),
         with: {
             itineraries: {
-                orderBy: (itineraries, { asc }) => [asc(itineraries.dayNumber)],
+                orderBy: (itineraries, {asc}) => [asc(itineraries.dayNumber)],
             },
         },
     });
+}
+
+export async function getTourPackageBySlug(slug: string) {
+    try {
+        return await db.query.tourPackages.findFirst({
+            where: eq(tourPackages.slug, slug),
+            with: {
+                itineraries: {
+                    orderBy: (itineraries, {asc}) => [asc(itineraries.dayNumber)],
+                },
+            },
+        });
+    } catch (error) {
+        console.error('Error fetching tour package:', error);
+        throw new Error('Failed to fetch tour package');
+    }
 }
 
 export async function deleteTourPackage(id: string) {
