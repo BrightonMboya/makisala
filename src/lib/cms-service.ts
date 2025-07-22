@@ -1,7 +1,7 @@
 "use server"
 import { db } from "../index";
 import { pages } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import {eq, or, sql} from "drizzle-orm";
 import cuid from "cuid";
 import {tourPackages, itineraries, NewTourPackage, NewItinerary} from "../index";
 
@@ -184,6 +184,23 @@ export async function getTourPackageById(id: string) {
         console.error('Error fetching tour package:', error);
         throw new Error('Failed to fetch tour package');
     }
+}
+
+export async function getTourPackagesByLocation(locationName: string) {
+    const locationTerm = `%${locationName.toLowerCase()}%`;
+
+    return await db.query.tourPackages.findMany({
+        where: or(
+            sql`LOWER(${tourPackages.slug}) ILIKE ${locationTerm}`,
+            sql`LOWER(${tourPackages.destination}) ILIKE ${locationTerm}`,
+            sql`LOWER(${tourPackages.overview}) ILIKE ${locationTerm}`
+        ),
+        with: {
+            itineraries: {
+                orderBy: (itineraries, { asc }) => [asc(itineraries.dayNumber)],
+            },
+        },
+    });
 }
 
 export async function deleteTourPackage(id: string) {

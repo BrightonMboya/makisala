@@ -1,9 +1,11 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 
-import { getPageBySlug } from "@/lib/cms-service";
+import {getPageBySlug, getTourPackagesByLocation} from "@/lib/cms-service";
 import PagePreview from "@/app/PagePreview";
 import {PageData} from "@/app/cms/page";
+import Link from "next/link";
+import ImageCard from "@/components/home/image-card";
 
 interface BlogPostPageProps {
     params: {
@@ -45,17 +47,33 @@ export async function generateMetadata({
 
 // Page renderer
 export default async function BlogPostPage({ params }: BlogPostPageProps) {
-    try {
-        const page = await getPageBySlug(await params.slug);
+        const {slug } = await params
+        const page = await getPageBySlug(slug);
 
         if (!page || page.status !== "published") {
             notFound();
         }
+        const tours = await getTourPackagesByLocation(slug);
 
         return (
+            <>
             <PagePreview page={page as PageData}/>
+                <p className="text-center font-bold text-3xl lg:text-5xl py-5">Safaris itineraries to inspire your journey</p>
+                <div className="mx-auto mb-24 grid max-w-7xl gap-12 justify-center max-sm:flex max-sm:h-full max-sm:flex-col md:grid-cols-2 xl:grid-cols-3">
+                    {tours?.map((tour) => (
+                        <div key={tour.id} className="">
+                            <Link href={`/to_book/${tour.slug}`}>
+                                <ImageCard
+                                    title={tour.title}
+                                    img_url={tour.hero_image_url || "/placeholder.svg"}
+                                    alt="Makisala Blog"
+                                    description={tour.overview!}
+                                />
+                            </Link>
+                        </div>
+                    ))}
+                </div>
+            </>
         );
-    } catch {
-        notFound();
-    }
+
 }

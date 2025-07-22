@@ -46,7 +46,7 @@ export default function ImageCard({img_url, alt, title, description}: ImageCardP
         <CardTitle>{title}</CardTitle>
       </CardHeader>
       <CardContent className="">
-        <CardDescription>{description}</CardDescription>
+        <CardDescription className="truncate">{description}</CardDescription>
       </CardContent>
     </Card>
   );
