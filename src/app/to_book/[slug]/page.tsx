@@ -3,7 +3,6 @@ import {MarkdownRenderer} from "@/components/markdown-renderer";
 import {getTourPackageBySlug} from "@/lib/cms-service";
 import {Badge} from "@/components/ui/badge";
 import {
-    Activity,
     Bed,
     Calendar,
     Car,
@@ -17,11 +16,48 @@ import {Separator} from "@/components/ui/separator";
 import {notFound} from "next/navigation";
 import {MobileNavigation, DesktopNavigation} from "./_components/PageNavigation"
 
+export async function generateMetadata({params}: { params: { slug: string } }): Promise<Metadata> {
+    const {slug} = await params
+    const tourPackageData = await getTourPackageBySlug(slug)
+
+    if (!tourPackageData) {
+        return {
+            title: "Tour not found | Makisala Safaris",
+        };
+    }
+    const country = tourPackageData.country;
+    const days = tourPackageData.numberOfDays;
+    const destination = tourPackageData.destination;
+
+    return {
+        title: `${tourPackageData.title} – Makisala Safaris`,
+        description: `${tourPackageData.title} is a ${days}-day safari adventure in ${destination}, ${country}. Explore highlights, top experiences, and more.`,
+        keywords: [
+            `${tourPackageData.title}`,
+            `${destination} safari`,
+            `${country} tours`,
+            `African safari ${destination}`,
+            `book ${tourPackageData.title}`
+        ],
+        openGraph: {
+            title: `${tourPackageData.title} – Makisala Safaris`,
+            description: `Discover what awaits on this unforgettable ${days}-day journey through ${destination}.`,
+            images: [
+                {
+                    url: tourPackageData.hero_image_url,
+                    width: 1200,
+                    height: 630,
+                    alt: tourPackageData.title,
+                },
+            ],
+        },
+    };
+}
+
 
 export default async function Page({params}: { params: { slug: string } }) {
     const {slug} = await params
     const tourPackageData = await getTourPackageBySlug(slug)
-    console.log(tourPackageData)
 
     const inclusions = [
         'Airport transfers',
@@ -61,17 +97,21 @@ export default async function Page({params}: { params: { slug: string } }) {
                         <div className="container mx-auto px-6 pb-12">
                             <div className="max-w-4xl">
                                 <div className="flex items-center gap-2 mb-4">
+                                    <Badge className="bg-white/20 text-white border-white/30 capitalize">
+                                        {`From $${tourPackageData.pricing_starts_from}`}
+                                    </Badge>
                                     <Badge variant="secondary" className="bg-white/20 text-white border-white/30">
                                         <Calendar className="h-3 w-3 mr-1"/>
                                         {tourPackageData.numberOfDays} Days
                                     </Badge>
-                                    <Badge variant="secondary" className="bg-white/20 text-white border-white/30">
+                                    <Badge variant="secondary"
+                                           className="bg-white/20 text-white border-white/30 capitalize">
                                         <MapPin className="h-3 w-3 mr-1"/>
                                         {tourPackageData.country}
                                     </Badge>
                                 </div>
 
-                                <h1 className="text-5xl md:text-6xl font-bold text-white mb-4 leading-tight">
+                                <h1 className="text-5xl md:text-6xl font-bold text-white leading-tight">
                                     {tourPackageData.title}
                                 </h1>
 
@@ -111,15 +151,11 @@ export default async function Page({params}: { params: { slug: string } }) {
                                     <Card className="mb-12 shadow-elegant border-0 bg-card/50 backdrop-blur-sm">
                                         <CardHeader>
                                             <CardTitle className="text-2xl flex items-center gap-2">
-                                                {/*<ImageIcon className="h-6 w-6 text-primary"/>*/}
                                                 Overview
                                             </CardTitle>
                                         </CardHeader>
                                         <CardContent>
                                             <MarkdownRenderer content={tourPackageData.overview}/>
-                                            {/*<p className="text-lg leading-relaxed text-muted-foreground">*/}
-                                            {/*    {tourPackageData.overview}*/}
-                                            {/*</p>*/}
                                         </CardContent>
                                     </Card>
                                 </section>
@@ -156,8 +192,7 @@ export default async function Page({params}: { params: { slug: string } }) {
                                                         {/* Activities */}
                                                         <div>
                                                             <h4 className="font-semibold mb-3 flex items-center gap-2">
-                                                                <Activity className="h-4 w-4"/>
-                                                                Activities
+                                                                What you will do
                                                             </h4>
                                                             <p className="text-muted-foreground leading-relaxed">
                                                                 {day.activities}

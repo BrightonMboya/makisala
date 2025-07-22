@@ -2,9 +2,8 @@
 
 import {
     Calendar,
-    CheckCircle, DollarSign,
+    CheckCircle,
     Image as ImageIcon,
-    Star,
     XCircle
 } from "lucide-react";
 import {Button} from "@/components/ui/button";
@@ -14,7 +13,6 @@ export const navigationItems = [
     {id: 'itinerary', label: 'Itinerary', icon: Calendar},
     {id: 'inclusions', label: 'Inclusions', icon: CheckCircle},
     {id: 'exclusions', label: 'Exclusions', icon: XCircle},
-    {id: 'pricing', label: 'Pricing', icon: DollarSign},
 ];
 
 const scrollToSection = (sectionId: string) => {

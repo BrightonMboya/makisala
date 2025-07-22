@@ -8,7 +8,7 @@ interface MarkdownRendererProps {
 }
 
 const markdownComponents = {
-    img({ src, alt, ...props }) {
+    img({src, alt, ...props}) {
         return (
             <img
                 src={src || "/placeholder.svg"}
@@ -19,14 +19,14 @@ const markdownComponents = {
             />
         );
     },
-    h3({ children, ...props }) {
+    h3({children, ...props}) {
         return (
             <h3 className="text-2xl font-semibold mt-6 mb-4" {...props}>
                 {children}
             </h3>
         );
     },
-    table({ children, ...props }) {
+    table({children, ...props}) {
         return (
             <table
                 className="w-full border-collapse border border-gray-300 text-sm
@@ -42,33 +42,33 @@ const markdownComponents = {
             </table>
         );
     },
-    h2({ children, ...props }) {
+    h2({children, ...props}) {
         return (
             <h2 className="text-3xl font-bold mt-8 mb-6" {...props}>
                 {children}
             </h2>
         );
     },
-    ul({ children, ...props }) {
+    ul({children, ...props}) {
         return (
             <ul className="flex list-disc flex-col gap-4 pl-6" {...props}>
                 {children}
             </ul>
         );
     },
-    ol({ children, ...props }) {
+    ol({children, ...props}) {
         return (
             <ol className="list-decimal pl-6 mb-4" {...props}>
                 {children}
             </ol>
         );
     },
-    a({ children, ...props }) {
+    a({children, ...props}) {
         return (
             <a className="text-primary underline" {...props}>{children}</a>
         );
     },
-    blockquote({ children, ...props }) {
+    blockquote({children, ...props}) {
         return (
             <blockquote
                 className="border-l-4 border-amber-500 pl-6 italic text-gray-700 bg-amber-50 py-4 rounded-r-lg"
@@ -96,8 +96,9 @@ function ImageContent({
                           content
                       }: ImageContentProps) {
     return (
-        <div className={`flex gap-6 pt-6 my-6 ${position === 'right' ? 'flex-row-reverse' : 'flex-row'} items-start`}>
-            <div className={`${imageWidth} flex-shrink-0`}>
+        <div
+            className={`flex flex-col lg:flex-row gap-6 pt-6 my-6 ${position === 'right' ? 'flex-col-reverse lg:flex-row-reverse' : 'flex-col lg:flex-row'} items-start`}>
+            <div className={`w-full lg:w-1/2 flex-shrink-0`}>
                 <img
                     src={src}
                     alt={alt}
