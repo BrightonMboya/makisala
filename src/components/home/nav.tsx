@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/navigation-menu";
 import Link from "next/link";
 import {Sheet, SheetContent, SheetTrigger} from "@/components/ui/sheet";
-import {safaris_nav as safaris, experiences, destinations, inspirations} from "@/lib/constants";
+import {safaris_nav as safaris, experiences, destinations, inspirations, about_us_nav} from "@/lib/constants";
 
 export default function Nav() {
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -207,42 +207,20 @@ export default function Nav() {
                                     <NavigationMenuContent>
                                         <div className="w-[400px] gap-3 p-6">
                                             <div className="space-y-3">
-                                                <NavigationMenuLink asChild>
-                                                    <Link
-                                                        href="#"
-                                                        className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground">
-                                                        <div className="text-sm font-medium leading-none">
-                                                            Our Story
-                                                        </div>
-                                                        <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
-                                                            Learn about our journey and mission
-                                                        </p>
-                                                    </Link>
-                                                </NavigationMenuLink>
-                                                <NavigationMenuLink asChild>
-                                                    <Link
-                                                        href="#"
-                                                        className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground">
-                                                        <div className="text-sm font-medium leading-none">
-                                                            Our Team
-                                                        </div>
-                                                        <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
-                                                            Meet our safari experts
-                                                        </p>
-                                                    </Link>
-                                                </NavigationMenuLink>
-                                                <NavigationMenuLink asChild>
-                                                    <Link
-                                                        href="#"
-                                                        className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground">
-                                                        <div className="text-sm font-medium leading-none">
-                                                            Contact Us
-                                                        </div>
-                                                        <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
-                                                            Get in touch with our team
-                                                        </p>
-                                                    </Link>
-                                                </NavigationMenuLink>
+                                                {about_us_nav.map((item) => (
+                                                    <NavigationMenuLink asChild key={item.name}>
+                                                        <Link
+                                                            href={item.page_url}
+                                                            className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground">
+                                                            <div className="text-sm font-medium leading-none">
+                                                                {item.name}
+                                                            </div>
+                                                            <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
+                                                                {item.description}
+                                                            </p>
+                                                        </Link>
+                                                    </NavigationMenuLink>
+                                                ))}
                                             </div>
                                         </div>
                                     </NavigationMenuContent>

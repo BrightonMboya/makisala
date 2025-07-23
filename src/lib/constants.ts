@@ -141,4 +141,17 @@ export const inspirations = [
         page_url: "/blog/best-time-to-visit-tanzania"
     }
 
+];
+
+export const about_us_nav = [
+    {
+        name: "Our Story",
+        description: "Learn more about our journey and mission",
+        page_url: "/about",
+    },
+    {
+        name: "Contact Us",
+        description: "Get in touch with our team",
+        page_url: "/contact",
+    }
 ]
