@@ -1,10 +1,27 @@
 import {Button} from "@/components/ui/button";
 import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/components/ui/card";
 import {Badge} from "@/components/ui/badge";
-import {Heart, Users, MapPin, ArrowRight} from "lucide-react";
-// import honeymoonHero from "@/assets/honeymoon-hero.jpg";
-// import luxuryTent from "@/assets/luxury-tent.jpg";
-// import romanticDinner from "@/assets/romantic-dinner.jpg";
+import {Users, MapPin, ArrowRight} from "lucide-react";
+import type {Metadata} from "next";
+
+export async function generateMetadata(): Promise<Metadata> {
+    return {
+        title: `Romantic African Honeymoon Safaris | Makisala Safaris`,
+        description: "Celebrate your love on a private African safari. Luxury camps, candlelit dinners, and once-in-a-lifetime experiences made for two.",
+        openGraph: {
+            title: `Romantic African Honeymoon Safaris | Makisala Safaris`,
+            description: `Celebrate your love on a private African safari. Luxury camps, candlelit dinners, and once-in-a-lifetime experiences made for two.`,
+            images: [
+                {
+                    url: "https://res.cloudinary.com/dr2tdyz2w/image/upload/v1753366416/Joys-Camp-1_nbu2ps.jpg",
+                    width: 1200,
+                    height: 630,
+                    alt: "Makisala Safaris",
+                },
+            ],
+        },
+    };
+}
 
 const packages = [
     {
@@ -63,7 +80,7 @@ const HoneymoonSafaris = () => {
                         Safaris for Couples & Honeymooners
                     </h1>
                     <p className="text-xl md:text-2xl text-white/90 mb-8 font-light">
-                        Rekindle, reconnect, and re-discover with each other.
+                        Rekindle, reconnect, and re-discover each other.
                     </p>
                     <Button size="lg"
                             className="bg-transparent border-2 border-white text-white hover:bg-white hover:text-black px-8 py-3 text-lg font-medium">

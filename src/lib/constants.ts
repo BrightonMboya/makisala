@@ -77,16 +77,19 @@ export const safaris_nav = [
     {
         name: "Great Migration",
         description: "Witness the world's greatest wildlife spectacle",
+        page_url: "/to_book/migration-tracker-safari-tz-ke"
     },
-    {name: "Big 5 Safari", description: "Track Africa's most iconic animals"},
+    {name: "Big 5 Safari", description: "Track Africa's most iconic animals", page_url: "#"},
     {
         name: "Luxury Safari",
         description: "Premium accommodations and exclusive experiences",
+        page_url: "#"
     },
-    {name: "Family Safari", description: "Perfect adventures for all ages"},
+    {name: "Family Safari", description: "Perfect adventures for all ages", page_url: "#"},
     {
         name: "Honeymoon Safari",
         description: "Romantic getaways in the African wilderness",
+        page_url: "/who-is-travelling/couples-and-honeymooners"
     },
 ];
 export const destinations = {

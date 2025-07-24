@@ -44,7 +44,7 @@ export default function Nav() {
                                                 {safaris.map((safari) => (
                                                     <NavigationMenuLink asChild key={safari.name}>
                                                         <Link
-                                                            href="#"
+                                                            href={safari.page_url}
                                                             className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground">
                                                             <div className="text-sm font-medium leading-none">
                                                                 {safari.name}
@@ -231,7 +231,7 @@ export default function Nav() {
 
                     {/* Right side items */}
                     <div className="flex items-center space-x-4">
-                        <Button className="bg-black text-white px-6 py-2 text-sm font-medium hidden md:block">
+                        <Button className="bg-primary text-white px-6 py-2 text-sm font-medium hidden md:block">
                             START PLANNING
                         </Button>
 
