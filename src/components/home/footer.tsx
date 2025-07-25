@@ -5,7 +5,7 @@ export default function Footer() {
     return (
         <footer className="bg-white py-16 border-t border-gray-200">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div className="grid md:grid-cols-5 gap-8">
+                <div className="grid md:grid-cols-4 gap-8">
                     <div>
                         <div className="flex items-center space-x-2 mb-6">
                             <div className="w-8 h-8 bg-black rounded-sm flex items-center justify-center">
@@ -40,7 +40,7 @@ export default function Footer() {
                         </h4>
                         <ul className="space-y-2 text-sm text-gray-600">
                             <li>
-                                <Link href="#" className="hover:text-gray-900">
+                                <Link href="/blog/what-to-pack-african-safari" className="hover:text-gray-900">
                                     First Time to Africa
                                 </Link>
                             </li>
@@ -62,36 +62,36 @@ export default function Footer() {
                         </ul>
                     </div>
 
-                    <div>
-                        <h4 className="font-medium text-gray-900 mb-4">About Us:</h4>
-                        <ul className="space-y-2 text-sm text-gray-600">
-                            <li>
-                                <Link href="/about" className="hover:text-gray-900">
-                                    Why book with us?
-                                </Link>
-                            </li>
-                            <li>
-                                <Link href="#" className="hover:text-gray-900">
-                                    Our team
-                                </Link>
-                            </li>
-                            <li>
-                                <Link href="#" className="hover:text-gray-900">
-                                    Guest Reviews
-                                </Link>
-                            </li>
-                            <li>
-                                <Link href="#" className="hover:text-gray-900">
-                                    Guest Loyalty Programme
-                                </Link>
-                            </li>
-                            <li>
-                                <Link href="/contact" className="hover:text-gray-900">
-                                    Contact
-                                </Link>
-                            </li>
-                        </ul>
-                    </div>
+                    {/*<div>*/}
+                    {/*    <h4 className="font-medium text-gray-900 mb-4">About Us:</h4>*/}
+                    {/*    <ul className="space-y-2 text-sm text-gray-600">*/}
+                    {/*        <li>*/}
+                    {/*            <Link href="/about" className="hover:text-gray-900">*/}
+                    {/*                Why book with us?*/}
+                    {/*            </Link>*/}
+                    {/*        </li>*/}
+                    {/*        <li>*/}
+                    {/*            <Link href="#" className="hover:text-gray-900">*/}
+                    {/*                Our team*/}
+                    {/*            </Link>*/}
+                    {/*        </li>*/}
+                    {/*        <li>*/}
+                    {/*            <Link href="#" className="hover:text-gray-900">*/}
+                    {/*                Guest Reviews*/}
+                    {/*            </Link>*/}
+                    {/*        </li>*/}
+                    {/*        <li>*/}
+                    {/*            <Link href="#" className="hover:text-gray-900">*/}
+                    {/*                Guest Loyalty Programme*/}
+                    {/*            </Link>*/}
+                    {/*        </li>*/}
+                    {/*        <li>*/}
+                    {/*            <Link href="/contact" className="hover:text-gray-900">*/}
+                    {/*                Contact*/}
+                    {/*            </Link>*/}
+                    {/*        </li>*/}
+                    {/*    </ul>*/}
+                    {/*</div>*/}
 
                     <div>
                         <h4 className="font-medium text-gray-900 mb-4">

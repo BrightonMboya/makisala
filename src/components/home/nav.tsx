@@ -38,7 +38,7 @@ export default function Nav() {
                                         SAFARIS
                                     </NavigationMenuTrigger>
                                     <NavigationMenuContent>
-                                        <div className="grid w-[600px] gap-3 p-6 md:grid-cols-2">
+                                        <div className="w-[500px] gap-3 p-6">
                                             <div className="space-y-3">
                                                 <h4 className="text-sm font-medium">Popular Safaris</h4>
                                                 {safaris.map((safari) => (
@@ -55,45 +55,6 @@ export default function Nav() {
                                                         </Link>
                                                     </NavigationMenuLink>
                                                 ))}
-                                            </div>
-                                            <div className="space-y-3">
-                                                <h4 className="text-sm font-medium">Safari Types</h4>
-                                                <NavigationMenuLink asChild>
-                                                    <Link
-                                                        href="#"
-                                                        className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground">
-                                                        <div className="text-sm font-medium leading-none">
-                                                            Family Safari
-                                                        </div>
-                                                        <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
-                                                            Perfect adventures for all ages
-                                                        </p>
-                                                    </Link>
-                                                </NavigationMenuLink>
-                                                <NavigationMenuLink asChild>
-                                                    <Link
-                                                        href="#"
-                                                        className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground">
-                                                        <div className="text-sm font-medium leading-none">
-                                                            Walking Safari
-                                                        </div>
-                                                        <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
-                                                            Experience Africa on foot with expert guides
-                                                        </p>
-                                                    </Link>
-                                                </NavigationMenuLink>
-                                                <NavigationMenuLink asChild>
-                                                    <Link
-                                                        href="#"
-                                                        className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground">
-                                                        <div className="text-sm font-medium leading-none">
-                                                            Honeymoon Safari
-                                                        </div>
-                                                        <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
-                                                            Romantic getaways in the African wilderness
-                                                        </p>
-                                                    </Link>
-                                                </NavigationMenuLink>
                                             </div>
                                         </div>
                                     </NavigationMenuContent>

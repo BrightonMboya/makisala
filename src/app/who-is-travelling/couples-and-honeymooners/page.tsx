@@ -23,42 +23,6 @@ export async function generateMetadata(): Promise<Metadata> {
     };
 }
 
-const packages = [
-    {
-        id: 1,
-        title: "Classic African Honeymoon",
-        description: "Explore Cape Town's Winelands followed by seeing the BIG 5 in South Africa's Sabi Sands and Victoria Falls in Zambia",
-        duration: "13 nights",
-        price: "High-End",
-        type: "Lodge",
-        location: "South Africa",
-        // image: luxuryTent,
-        highlights: ["Winelands tour", "BIG 5 safari", "Victoria Falls", "Romantic dinners"]
-    },
-    {
-        id: 2,
-        title: "Romantic Tanzania Honeymoon Safari",
-        description: "Handpicked luxurious safari lodges and mobile camps with front seat viewing of the wildebeest migration",
-        duration: "10 nights",
-        price: "High-End",
-        type: "Lodge and Canvas",
-        location: "Tanzania",
-        // image: romanticDinner,
-        highlights: ["Wildebeest migration", "Luxury lodges", "Private island", "Sunset cocktails"]
-    },
-    {
-        id: 3,
-        title: "Luxury Kenyan Bush and Beach Honeymoon",
-        description: "Private plane, hot air balloon ride, sky bed under the night sky - the ultimate fairy tale adventure",
-        duration: "14 nights",
-        price: "High-End",
-        type: "Lodge",
-        location: "Kenya",
-        // image: honeymoonHero,
-        highlights: ["Private plane", "Hot air balloon", "Sky bed experience", "Private villa"]
-    }
-];
-
 const HoneymoonSafaris = () => {
     const honeymoonHero = "https://res.cloudinary.com/dr2tdyz2w/image/upload/v1753366509/honeymoon-safaris-8_mtemjt.jpg"
     const luxuryTent = "https://res.cloudinary.com/dr2tdyz2w/image/upload/v1753366416/Joys-Camp-1_nbu2ps.jpg"
@@ -174,7 +138,7 @@ const HoneymoonSafaris = () => {
             </section>
 
             {/* Safaris for Honeymooners */}
-            <section className="py-20">
+            <section className="pb-20">
                 <div className="max-w-4xl mx-auto px-6">
                     <h2 className="text-4xl font-bold mb-8">Not on a Honeymoon? No Problem.</h2>
                     <div className="prose prose-lg max-w-none">
@@ -196,64 +160,6 @@ const HoneymoonSafaris = () => {
                         <p className="text-lg font-medium pt-3">
                             This is your journey. We're just here to help you shape it.
                         </p>
-                    </div>
-                </div>
-            </section>
-
-            {/* Our Favourite Honeymoon & Romantic Safaris */}
-            <section className="py-20">
-                <div className="max-w-6xl mx-auto px-6">
-                    <div className="text-center mb-16">
-                        <h2 className="text-4xl font-bold mb-4">Our Favourite Honeymoon & Romantic Safaris!</h2>
-                    </div>
-
-                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-                        {packages.map((pkg) => (
-                            <Card key={pkg.id} className="overflow-hidden hover:shadow-lg transition-shadow group">
-                                <div className="relative overflow-hidden">
-                                    <img
-                                        src={pkg.image}
-                                        alt={pkg.title}
-                                        className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
-                                    />
-                                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"/>
-                                    <div className="absolute bottom-4 left-4 text-white">
-                                        <Badge className="bg-white/20 text-white border-white/30 mb-2">
-                                            {pkg.type}
-                                        </Badge>
-                                        <div className="text-sm">{pkg.duration} • {pkg.location}</div>
-                                        <div className="text-xs mt-1">Budget level: {pkg.price}</div>
-                                    </div>
-                                </div>
-                                <CardHeader>
-                                    <CardTitle className="text-xl hover:text-primary transition-colors cursor-pointer">
-                                        {pkg.title}
-                                    </CardTitle>
-                                    <CardDescription>{pkg.description}</CardDescription>
-                                </CardHeader>
-                                <CardContent>
-                                    <div className="space-y-4">
-                                        <div className="space-y-2">
-                                            <h4 className="font-medium text-sm">Highlights:</h4>
-                                            <ul className="text-sm text-muted-foreground space-y-1">
-                                                {pkg.highlights.map((highlight, index) => (
-                                                    <li key={index} className="flex items-center">
-                                                        <div className="h-1.5 w-1.5 bg-primary rounded-full mr-2"/>
-                                                        {highlight}
-                                                    </li>
-                                                ))}
-                                            </ul>
-                                        </div>
-
-                                        <Button className="w-full group">
-                                            View Details
-                                            <ArrowRight
-                                                className="h-4 w-4 ml-2 group-hover:translate-x-1 transition-transform"/>
-                                        </Button>
-                                    </div>
-                                </CardContent>
-                            </Card>
-                        ))}
                     </div>
                 </div>
             </section>
