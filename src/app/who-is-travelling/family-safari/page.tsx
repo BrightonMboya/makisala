@@ -45,7 +45,7 @@ export default function Page() {
                     </p>
                     <InquiryDialog>
                         <Button size="lg"
-                                className="bg-transparent border-2 border-white text-white hover:bg-white hover:text-black px-8 py-3 text-lg font-medium">
+                                className="bg-transparent border-2 border-white text-white  hover:bg-white hover:text-black px-8 py-3 text-lg font-medium">
                             Enquire Now
                         </Button>
                     </InquiryDialog>

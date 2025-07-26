@@ -1,9 +1,9 @@
 "use server"
-import {db} from "../index";
+import {db, inquiries} from "../index";
 import {pages} from "@/db/schema";
 import {eq, or, sql} from "drizzle-orm";
 import cuid from "cuid";
-import {tourPackages, itineraries, NewTourPackage, NewItinerary} from "../index";
+import {tourPackages, itineraries, NewTourPackage, NewItinerary, NewInquiries} from "../index";
 
 import type {InferInsertModel, InferSelectModel} from "drizzle-orm";
 
@@ -244,4 +244,13 @@ export async function deleteTourPackage(id: string) {
         console.error('Error deleting tour package:', error);
         throw new Error('Failed to delete tour package');
     }
+}
+
+export async function createInquiry(data: NewInquiries) {
+    const [newInquiry] = await db
+        .insert(inquiries)
+        .values(data);
+
+    return newInquiry;
+
 }

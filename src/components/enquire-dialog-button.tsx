@@ -43,6 +43,7 @@ import {
 } from "@/components/ui/popover";
 import {cn} from "@/lib/utils";
 import {useToast} from "@/lib/hooks/use-toast";
+import {createInquiry} from "@/lib/cms-service";
 
 const formSchema = z.object({
     firstName: z.string().min(1, "First name is required"),
@@ -60,8 +61,6 @@ const formSchema = z.object({
     experienceType: z.enum(["mid-range", "high-end", "top-end"]),
     comments: z.string().min(1, "Comments are required"),
     contactMethod: z.string().min(1, "Contact method is required"),
-    hearAboutUs: z.string().min(1, "How did you hear about us is required"),
-    newsletter: z.enum(["yes", "no"]),
     consent: z.boolean().refine((val) => val === true, {
         message: "You must agree to the privacy policy",
     }),
@@ -86,6 +85,7 @@ interface InquiryDialogProps {
 
 export function InquiryDialog({children}: InquiryDialogProps) {
     const [open, setOpen] = React.useState(false);
+    const [openCalendar, setOpenCalendar] = React.useState<boolean>(false);
     const {toast} = useToast()
 
     const form = useForm<FormData>({
@@ -103,20 +103,27 @@ export function InquiryDialog({children}: InquiryDialogProps) {
             experienceType: "mid-range",
             comments: "",
             contactMethod: "",
-            hearAboutUs: "",
-            newsletter: "no",
-            consent: false,
+            consent: true,
         },
     });
 
-    const onSubmit = (data: FormData) => {
-        console.log(data);
-        toast({
-            title: "Inquiry Submitted",
-            description: "We'll get back to you within 24 hours!",
-        });
-        setOpen(false);
-        form.reset();
+    const onSubmit = async (data: FormData) => {
+        try {
+            await createInquiry(data);
+            toast({
+                title: "Inquiry Submitted",
+                description: "We'll get back to you within 24 hours!",
+            });
+            setOpen(false);
+            form.reset();
+        } catch (error) {
+            toast({
+                title: 'Error',
+                description: 'Failed to submit inquiry. Please try again.',
+                variant: 'destructive',
+            });
+            console.log(error)
+        }
     };
 
     return (
@@ -229,7 +236,7 @@ export function InquiryDialog({children}: InquiryDialogProps) {
                                 render={({field}) => (
                                     <FormItem className="flex flex-col">
                                         <FormLabel>What is your start date?*</FormLabel>
-                                        <Popover>
+                                        <Popover open={openCalendar} onOpenChange={setOpenCalendar}>
                                             <PopoverTrigger asChild>
                                                 <FormControl>
                                                     <Button
@@ -248,11 +255,14 @@ export function InquiryDialog({children}: InquiryDialogProps) {
                                                     </Button>
                                                 </FormControl>
                                             </PopoverTrigger>
-                                            <PopoverContent className="w-auto p-0" align="start">
+                                            <PopoverContent className="p-0 w-auto" align="start">
                                                 <Calendar
                                                     mode="single"
                                                     selected={field.value}
-                                                    onSelect={field.onChange}
+                                                    onSelect={(e) => {
+                                                        setOpenCalendar(false)
+                                                        field.onChange(e)
+                                                    }}
                                                     disabled={(date) => date < new Date()}
                                                     initialFocus
                                                     className={cn("p-3 pointer-events-auto")}
@@ -446,47 +456,6 @@ export function InquiryDialog({children}: InquiryDialogProps) {
                                         <FormLabel>How would you prefer to discuss your adventure further?*</FormLabel>
                                         <FormControl>
                                             <Input placeholder="Call me" {...field} />
-                                        </FormControl>
-                                        <FormMessage/>
-                                    </FormItem>
-                                )}
-                            />
-
-                            <FormField
-                                control={form.control}
-                                name="hearAboutUs"
-                                render={({field}) => (
-                                    <FormItem>
-                                        <FormLabel>How did you hear about us?*</FormLabel>
-                                        <FormControl>
-                                            <Input placeholder="How did you hear about us?" {...field} />
-                                        </FormControl>
-                                        <FormMessage/>
-                                    </FormItem>
-                                )}
-                            />
-
-                            <FormField
-                                control={form.control}
-                                name="newsletter"
-                                render={({field}) => (
-                                    <FormItem className="space-y-3">
-                                        <FormLabel>Newsletter Signup*</FormLabel>
-                                        <FormControl>
-                                            <RadioGroup
-                                                onValueChange={field.onChange}
-                                                defaultValue={field.value}
-                                                className="flex flex-row space-x-6"
-                                            >
-                                                <div className="flex items-center space-x-2">
-                                                    <RadioGroupItem value="yes" id="newsletter-yes"/>
-                                                    <label htmlFor="newsletter-yes">Yes</label>
-                                                </div>
-                                                <div className="flex items-center space-x-2">
-                                                    <RadioGroupItem value="no" id="newsletter-no"/>
-                                                    <label htmlFor="newsletter-no">No</label>
-                                                </div>
-                                            </RadioGroup>
                                         </FormControl>
                                         <FormMessage/>
                                     </FormItem>
