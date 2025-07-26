@@ -92,7 +92,7 @@ export const safaris_nav = [
     {
         name: "Family Safari",
         description: "Perfect adventures for all ages",
-        page_url: "who-is-travelling/family-safari"
+        page_url: "/who-is-travelling/family-safari"
     },
     {
         name: "Honeymoon Safari",

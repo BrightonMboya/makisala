@@ -8,8 +8,8 @@ export default function Footer() {
                 <div className="grid md:grid-cols-4 gap-8">
                     <div>
                         <div className="flex items-center space-x-2 mb-6">
-                            <div className="w-8 h-8 bg-black rounded-sm flex items-center justify-center">
-                                <span className="text-white font-bold text-xs">MS</span>
+                            <div className="w-8 h-8 rounded-sm flex items-center justify-center">
+                                <img src="/makisala_icon.png" className="object-cover"/>
                             </div>
                             <div className="text-sm font-medium tracking-wider">
                                 <div>MAKISALA</div>

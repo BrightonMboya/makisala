@@ -7,6 +7,7 @@ import {
     XCircle
 } from "lucide-react";
 import {Button} from "@/components/ui/button";
+import {InquiryDialog} from "@/components/enquire-dialog-button";
 
 export const navigationItems = [
     {id: 'overview', label: 'Overview', icon: ImageIcon},
@@ -40,6 +41,12 @@ export function MobileNavigation() {
                     </button>
                 );
             })}
+            <InquiryDialog>
+                <Button
+                    className="w-full">
+                    BOOK NOW
+                </Button>
+            </InquiryDialog>
         </>
     )
 }
@@ -67,10 +74,12 @@ export function DesktopNavigation() {
                 </nav>
 
                 <div className="mt-8">
-                    <Button
-                        className="w-full">
-                        BOOK NOW
-                    </Button>
+                    <InquiryDialog>
+                        <Button
+                            className="w-full">
+                            BOOK NOW
+                        </Button>
+                    </InquiryDialog>
                 </div>
             </div>
         </div>

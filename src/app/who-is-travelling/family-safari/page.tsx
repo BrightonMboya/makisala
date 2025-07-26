@@ -122,15 +122,13 @@ export default function Page() {
                     <p className="text-xl mb-8 text-muted-foreground">
                         Let us help you plan a safari that’s all about connection, adventure, and time well spent.
                     </p>
-                    <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                        <Button size="lg" className="bg-primary hover:bg-primary/90">
-                            <Users className="h-5 w-5 mr-2"/>
-                            Speak with Our Experts
-                        </Button>
-                        <Button size="lg" variant="outline">
-                            <MapPin className="h-5 w-5 mr-2"/>
-                            View All Destinations
-                        </Button>
+                    <div className="justify-center">
+                        <InquiryDialog>
+                            <Button size="lg" className="bg-primary hover:bg-primary/90">
+                                <Users className="h-5 w-5 mr-2"/>
+                                Speak with Our Experts
+                            </Button>
+                        </InquiryDialog>
                     </div>
                 </div>
             </section>

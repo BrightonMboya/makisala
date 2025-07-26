@@ -1,8 +1,7 @@
 import {Button} from "@/components/ui/button";
-import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/components/ui/card";
-import {Badge} from "@/components/ui/badge";
 import {Users, MapPin, ArrowRight} from "lucide-react";
 import type {Metadata} from "next";
+import {InquiryDialog} from "@/components/enquire-dialog-button";
 
 export async function generateMetadata(): Promise<Metadata> {
     return {
@@ -46,10 +45,12 @@ const HoneymoonSafaris = () => {
                     <p className="text-xl md:text-2xl text-white/90 mb-8 font-light">
                         Rekindle, reconnect, and re-discover each other.
                     </p>
-                    <Button size="lg"
-                            className="bg-transparent border-2 border-white text-white hover:bg-white hover:text-black px-8 py-3 text-lg font-medium">
-                        Enquire Now
-                    </Button>
+                    <InquiryDialog>
+                        <Button size="lg"
+                                className="bg-transparent border-2 border-white text-white  hover:bg-white hover:text-black px-8 py-3 text-lg font-medium">
+                            Enquire Now
+                        </Button>
+                    </InquiryDialog>
                 </div>
             </section>
 
@@ -171,15 +172,13 @@ const HoneymoonSafaris = () => {
                     <p className="text-xl mb-8 text-muted-foreground">
                         Let us create the perfect honeymoon safari that you'll treasure forever
                     </p>
-                    <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                        <Button size="lg" className="bg-primary hover:bg-primary/90">
-                            <Users className="h-5 w-5 mr-2"/>
-                            Speak with Our Experts
-                        </Button>
-                        <Button size="lg" variant="outline">
-                            <MapPin className="h-5 w-5 mr-2"/>
-                            View All Destinations
-                        </Button>
+                    <div className="justify-center">
+                        <InquiryDialog>
+                            <Button size="lg" className="bg-primary hover:bg-primary/90">
+                                <Users className="h-5 w-5 mr-2"/>
+                                Speak with Our Experts
+                            </Button>
+                        </InquiryDialog>
                     </div>
                 </div>
             </section>

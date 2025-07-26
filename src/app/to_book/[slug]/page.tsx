@@ -8,13 +8,15 @@ import {
     Car,
     CheckCircle,
     Globe,
-    MapPin,
+    MapPin, Users,
     XCircle
 } from "lucide-react";
 import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
 import {Separator} from "@/components/ui/separator";
 import {notFound} from "next/navigation";
 import {MobileNavigation, DesktopNavigation} from "./_components/PageNavigation"
+import {InquiryDialog} from "@/components/enquire-dialog-button";
+import {Button} from "@/components/ui/button";
 
 export async function generateMetadata({params}: { params: { slug: string } }): Promise<Metadata> {
     const {slug} = await params
@@ -283,6 +285,20 @@ export default async function Page({params}: { params: { slug: string } }) {
                     </div>
                 </div>
             </div>
+            <section className="py-20 bg-gradient-to-r from-primary/10 to-secondary/10">
+                <div className="max-w-4xl mx-auto text-center px-6">
+                    <h2 className="text-4xl font-bold mb-6">What you’re looking for isn’t just out there, it’s waiting
+                        for you.</h2>
+                    <div className="justify-center">
+                        <InquiryDialog>
+                            <Button size="lg" className="bg-primary hover:bg-primary/90">
+                                <Users className="h-5 w-5 mr-2"/>
+                                Speak with Our Experts
+                            </Button>
+                        </InquiryDialog>
+                    </div>
+                </div>
+            </section>
         </>
     )
 }
