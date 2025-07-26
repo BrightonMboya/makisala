@@ -1,6 +1,5 @@
 import {Button} from "@/components/ui/button";
-import {Card, CardContent, CardDescription, CardHeader, CardTitle} from "@/components/ui/card";
-import {Badge} from "@/components/ui/badge";
+import {InquiryDialog} from "@/components/enquire-dialog-button";
 import {Users, MapPin, ArrowRight} from "lucide-react";
 import type {Metadata} from "next";
 
@@ -44,10 +43,13 @@ export default function Page() {
                     <p className="text-xl md:text-2xl text-white/90 mb-8 font-light">
                         A journey worth sharing. A bond worth strengthening.
                     </p>
-                    <Button size="lg"
-                            className="bg-transparent border-2 border-white text-white hover:bg-white hover:text-black px-8 py-3 text-lg font-medium">
-                        Enquire Now
-                    </Button>
+                    <InquiryDialog>
+                        <Button size="lg"
+                                className="bg-transparent border-2 border-white text-white hover:bg-white hover:text-black px-8 py-3 text-lg font-medium">
+                            Enquire Now
+                        </Button>
+                    </InquiryDialog>
+
                 </div>
             </section>
 
