@@ -44,6 +44,7 @@ import {
 import {cn} from "@/lib/utils";
 import {useToast} from "@/lib/hooks/use-toast";
 import {createInquiry} from "@/lib/cms-service";
+import {ScrollArea} from "@/components/ui/scroll-area"
 
 const formSchema = z.object({
     firstName: z.string().min(1, "First name is required"),
@@ -131,7 +132,9 @@ export function InquiryDialog({children}: InquiryDialogProps) {
             <DialogTrigger asChild>
                 {children}
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+            <DialogContent
+                className="sm:max-w-[600px] max-h-screen overflow-y-scroll border border-red-500">
+                {/*<ScrollArea className="overflow-y-auto max-h-[calc(90dvh-4rem)]">*/}
                 <DialogHeader>
                     <DialogTitle>Safari Inquiry</DialogTitle>
                     <DialogDescription>
@@ -392,7 +395,8 @@ export function InquiryDialog({children}: InquiryDialogProps) {
                                                 className="space-y-3"
                                             >
                                                 <div className="flex items-start space-x-2">
-                                                    <RadioGroupItem value="mid-range" id="mid-range" className="mt-1"/>
+                                                    <RadioGroupItem value="mid-range" id="mid-range"
+                                                                    className="mt-1"/>
                                                     <div>
                                                         <label htmlFor="mid-range"
                                                                className="font-medium">Mid-range</label>
@@ -403,12 +407,14 @@ export function InquiryDialog({children}: InquiryDialogProps) {
                                                     </div>
                                                 </div>
                                                 <div className="flex items-start space-x-2">
-                                                    <RadioGroupItem value="high-end" id="high-end" className="mt-1"/>
+                                                    <RadioGroupItem value="high-end" id="high-end"
+                                                                    className="mt-1"/>
                                                     <div>
                                                         <label htmlFor="high-end"
                                                                className="font-medium">High-end</label>
                                                         <p className="text-sm text-muted-foreground">
-                                                            I want a luxury experience, great food & wine, good service
+                                                            I want a luxury experience, great food & wine, good
+                                                            service
                                                             and luxury facilities.
                                                         </p>
                                                     </div>
@@ -416,7 +422,8 @@ export function InquiryDialog({children}: InquiryDialogProps) {
                                                 <div className="flex items-start space-x-2">
                                                     <RadioGroupItem value="top-end" id="top-end" className="mt-1"/>
                                                     <div>
-                                                        <label htmlFor="top-end" className="font-medium">Top-end</label>
+                                                        <label htmlFor="top-end"
+                                                               className="font-medium">Top-end</label>
                                                         <p className="text-sm text-muted-foreground">
                                                             I simply want the best available, cost should not be a
                                                             consideration.
@@ -453,7 +460,8 @@ export function InquiryDialog({children}: InquiryDialogProps) {
                                 name="contactMethod"
                                 render={({field}) => (
                                     <FormItem>
-                                        <FormLabel>How would you prefer to discuss your adventure further?*</FormLabel>
+                                        <FormLabel>How would you prefer to discuss your adventure
+                                            further?*</FormLabel>
                                         <FormControl>
                                             <Input placeholder="Call me" {...field} />
                                         </FormControl>
@@ -492,6 +500,7 @@ export function InquiryDialog({children}: InquiryDialogProps) {
                         </Button>
                     </form>
                 </Form>
+                {/*</ScrollArea>*/}
             </DialogContent>
         </Dialog>
     );

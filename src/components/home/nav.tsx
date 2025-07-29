@@ -13,6 +13,7 @@ import {
 import Link from "next/link";
 import {Sheet, SheetContent, SheetTrigger} from "@/components/ui/sheet";
 import {safaris_nav as safaris, experiences, destinations, inspirations, about_us_nav} from "@/lib/constants";
+import {InquiryDialog} from "@/components/enquire-dialog-button";
 
 export default function Nav() {
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -115,32 +116,32 @@ export default function Nav() {
                                     </NavigationMenuContent>
                                 </NavigationMenuItem>
 
-                                <NavigationMenuItem>
-                                    <NavigationMenuTrigger
-                                        className="text-sm font-medium bg-transparent hover:bg-transparent data-[active]:bg-transparent data-[state=open]:bg-transparent">
-                                        EXPERIENCES
-                                    </NavigationMenuTrigger>
-                                    <NavigationMenuContent>
-                                        <div className="w-[400px] gap-3 p-6">
-                                            <div className="space-y-3">
-                                                {experiences.map((experience) => (
-                                                    <NavigationMenuLink asChild key={experience.name}>
-                                                        <Link
-                                                            href="#"
-                                                            className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground">
-                                                            <div className="text-sm font-medium leading-none">
-                                                                {experience.name}
-                                                            </div>
-                                                            <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
-                                                                {experience.description}
-                                                            </p>
-                                                        </Link>
-                                                    </NavigationMenuLink>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    </NavigationMenuContent>
-                                </NavigationMenuItem>
+                                {/*<NavigationMenuItem>*/}
+                                {/*    <NavigationMenuTrigger*/}
+                                {/*        className="text-sm font-medium bg-transparent hover:bg-transparent data-[active]:bg-transparent data-[state=open]:bg-transparent">*/}
+                                {/*        EXPERIENCES*/}
+                                {/*    </NavigationMenuTrigger>*/}
+                                {/*    <NavigationMenuContent>*/}
+                                {/*        <div className="w-[400px] gap-3 p-6">*/}
+                                {/*            <div className="space-y-3">*/}
+                                {/*                {experiences.map((experience) => (*/}
+                                {/*                    <NavigationMenuLink asChild key={experience.name}>*/}
+                                {/*                        <Link*/}
+                                {/*                            href="#"*/}
+                                {/*                            className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground">*/}
+                                {/*                            <div className="text-sm font-medium leading-none">*/}
+                                {/*                                {experience.name}*/}
+                                {/*                            </div>*/}
+                                {/*                            <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">*/}
+                                {/*                                {experience.description}*/}
+                                {/*                            </p>*/}
+                                {/*                        </Link>*/}
+                                {/*                    </NavigationMenuLink>*/}
+                                {/*                ))}*/}
+                                {/*            </div>*/}
+                                {/*        </div>*/}
+                                {/*    </NavigationMenuContent>*/}
+                                {/*</NavigationMenuItem>*/}
 
                                 <NavigationMenuItem>
                                     <NavigationMenuTrigger
@@ -226,8 +227,9 @@ export default function Nav() {
                                             <div className="pl-4 space-y-2 text-sm text-gray-600">
                                                 {safaris.map((safari) => (
                                                     <Link
-                                                        href="#"
+                                                        href={safari.page_url}
                                                         key={safari.name}
+                                                        onClick={() => setMobileMenuOpen(false)}
                                                         className="block hover:text-gray-900">
                                                         {safari.name}
                                                     </Link>
@@ -240,8 +242,9 @@ export default function Nav() {
                                             <div className="pl-4 space-y-2 text-sm text-gray-600">
                                                 {destinations.top_destinations.map((dest) => (
                                                     <Link
-                                                        href="#"
+                                                        href={dest.page_url}
                                                         key={dest.name}
+                                                        onClick={() => setMobileMenuOpen(false)}
                                                         className="block hover:text-gray-900">
                                                         {dest.name}
                                                     </Link>
@@ -249,40 +252,44 @@ export default function Nav() {
                                             </div>
                                         </div>
 
-                                        <div className="space-y-2">
-                                            <h3 className="font-medium">EXPERIENCES</h3>
-                                            <div className="pl-4 space-y-2 text-sm text-gray-600">
-                                                {experiences.map((experience) => (
-                                                    <Link
-                                                        href="#"
-                                                        key={experience.name}
-                                                        className="block hover:text-gray-900">
-                                                        {experience.name}
-                                                    </Link>
-                                                ))}
-                                            </div>
-                                        </div>
+                                        {/*<div className="space-y-2">*/}
+                                        {/*    <h3 className="font-medium">EXPERIENCES</h3>*/}
+                                        {/*    <div className="pl-4 space-y-2 text-sm text-gray-600">*/}
+                                        {/*        {experiences.map((experience) => (*/}
+                                        {/*            <Link*/}
+                                        {/*                href="#"*/}
+                                        {/*                key={experience.name}*/}
+                                        {/*                className="block hover:text-gray-900">*/}
+                                        {/*                {experience.name}*/}
+                                        {/*            </Link>*/}
+                                        {/*        ))}*/}
+                                        {/*    </div>*/}
+                                        {/*</div>*/}
 
                                         <div className="space-y-2">
                                             <h3 className="font-medium">INSPIRATIONS</h3>
                                             <div className="pl-4 space-y-2 text-sm text-gray-600">
                                                 {inspirations.map((inspiration) => (
                                                     <Link key={inspiration.name} className="block hover:text-gray-900"
-                                                          href={inspiration.page_url}>
+                                                          href={inspiration.page_url}
+                                                          onClick={() => setMobileMenuOpen(false)}
+                                                    >
                                                         {inspiration.name}
                                                     </Link>
                                                 ))}
                                             </div>
                                         </div>
-                                        <Link href="#" className="font-medium">
+                                        <Link href="/about" className="font-medium">
                                             ABOUT US
                                         </Link>
                                     </div>
 
                                     <div className="pt-6 border-t">
-                                        <Button className="w-full bg-black text-white">
-                                            START PLANNING
-                                        </Button>
+                                        <InquiryDialog>
+                                            <Button className="w-full bg-black text-white">
+                                                START PLANNING
+                                            </Button>
+                                        </InquiryDialog>
                                     </div>
                                 </div>
                             </SheetContent>

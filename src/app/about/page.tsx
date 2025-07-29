@@ -26,20 +26,20 @@ export async function generateMetadata(): Promise<Metadata> {
 export default function Page() {
     const values = [
         {
-            title: "Passion for Travel",
-            description: "We believe travel transforms lives and creates lasting memories that connect people across cultures."
+            title: "Genuine Hospitality",
+            description: "From your first enquiry to your final farewell, we treat you like family with warmth, respect, and care."
         },
         {
-            title: "Excellence in Service",
-            description: "Our commitment to quality ensures every journey exceeds expectations with personalized attention."
+            title: "Unmatched Expertise",
+            description: "Our team combines local insight with global standards to deliver safaris that are safe, seamless, and special."
         },
         {
-            title: "Expert Team",
-            description: "Our experienced travel specialists bring local knowledge and global expertise to every adventure."
+            title: "Personalised Journeys",
+            description: "No two travelers are the same. Every itinerary we design is crafted around your unique interests and pace."
         },
         {
-            title: "Sustainable Tourism",
-            description: "We promote responsible travel that benefits local communities and preserves natural beauty."
+            title: "Respect for Nature",
+            description: "We champion ethical travel that supports wildlife conservation and uplifts the communities we work with."
         }
     ];
 
@@ -69,31 +69,27 @@ export default function Page() {
                     <div className="grid md:grid-cols-2 gap-12 items-center">
                         <div>
                             <Badge variant="secondary" className="mb-4">Our Story</Badge>
-                            <h2 className="text-3xl md:text-4xl font-bold mb-6">Turning Dreams into Journeys</h2>
+                            <h2 className="text-3xl md:text-4xl font-bold mb-6">Rooted in Africa, Built on Passion</h2>
                             <div className="space-y-4 text-muted-foreground">
                                 <p>
-                                    Founded in 2009, WanderLust began as a small passion project by travel enthusiasts
-                                    who believed that everyone deserves to experience the world's wonders. What started
-                                    as organizing trips for friends and family has grown into a trusted travel company
-                                    serving thousands of adventurers worldwide.
+                                    Makisala was born from a deep love for travel and a desire to share the raw beauty
+                                    of East Africa with the world. What began as a local initiative has grown into a
+                                    trusted safari company, helping travelers from all corners of the globe experience
+                                    Africa with depth and authenticity.
+
                                 </p>
                                 <p>
-                                    Our journey has taken us across continents, through bustling cities and remote
-                                    villages, mountain peaks and ocean depths. Each experience has shaped our
-                                    understanding of what makes travel truly meaningful - it's not just about the
-                                    destinations, but the connections we make and the perspectives we gain.
-                                </p>
-                                <p>
-                                    Today, we continue to craft personalized travel experiences that go beyond typical
-                                    tourism, creating opportunities for authentic cultural exchange and sustainable
-                                    exploration.
+                                    We don’t just plan trips, we craft meaningful journeys that immerse you in the
+                                    land, people, and wildlife that make Africa unlike anywhere else. Over the years,
+                                    our purpose has stayed the same: create experiences that feel personal, impactful,
+                                    and unforgettable.
                                 </p>
                             </div>
                         </div>
                         <div className="relative">
                             <img
                                 src="https://images.unsplash.com/photo-1469474968028-56623f02e42e?auto=format&fit=crop&w=800&q=80"
-                                alt="Mountain landscape representing our journey"
+                                alt="Makisala Safaris"
                                 className="rounded-lg shadow-lg w-full"
                             />
                         </div>
@@ -130,25 +126,26 @@ export default function Page() {
                     <div className="grid md:grid-cols-2 gap-12 items-center">
                         <div className="relative order-2 md:order-1">
                             <img
-                                src="https://images.unsplash.com/photo-1469474968028-56623f02e42e?auto=format&fit=crop&w=800&q=80"
-                                alt="Ocean wave representing our mission"
+                                src="https://res.cloudinary.com/dr2tdyz2w/image/upload/v1753794966/voluntourism-in-africa_h0mw7h.jpg"
+                                alt="voluntourism in Tanzania"
                                 className="rounded-lg shadow-lg w-full"
                             />
                         </div>
                         <div className="order-1 md:order-2">
                             <Badge variant="secondary" className="mb-4">Our Mission</Badge>
-                            <h2 className="text-3xl md:text-4xl font-bold mb-6">Connecting Cultures, Creating
-                                Memories</h2>
+                            <h2 className="text-3xl md:text-4xl font-bold mb-6">Travel with Purpose, Return with
+                                Perspective</h2>
                             <div className="space-y-4 text-muted-foreground">
                                 <p>
-                                    Our mission is to make the world more accessible and connected through meaningful
-                                    travel experiences. We believe that travel is one of the most powerful tools for
-                                    building understanding, empathy, and appreciation for our diverse planet.
+                                    At Makisala, we believe travel should go beyond sightseeing. It should change how
+                                    you see the world.
+                                    Our mission is to connect cultures, spark curiosity, and foster respect for nature
+                                    and people.
                                 </p>
                                 <p>
-                                    Every package we design, every partnership we forge, and every service we provide is
-                                    guided by our commitment to responsible tourism that benefits travelers, local
-                                    communities, and the environment alike.
+                                    Every safari we plan supports local guides, responsible tourism, and
+                                    conservation efforts ensuring that the Africa you fall in love with today will
+                                    still be here tomorrow.
                                 </p>
                             </div>
                         </div>
