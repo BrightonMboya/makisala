@@ -2,6 +2,7 @@ import {Badge} from "@/components/ui/badge";
 import {Card, CardContent} from "@/components/ui/card";
 import Link from "next/link";
 import type {Metadata} from "next";
+import C2A from "@/components/home/call-to-action";
 
 export async function generateMetadata(): Promise<Metadata> {
     return {
@@ -154,29 +155,7 @@ export default function Page() {
                     </div>
                 </div>
             </section>
-
-            {/* CTA Section */}
-            <section className="py-16 bg-primary text-primary-foreground">
-                <div className="container mx-auto px-4 text-center">
-                    <h2 className="text-3xl md:text-4xl font-bold mb-6">Ready to Start Your Journey?</h2>
-                    <p className="text-xl mb-8 opacity-90 max-w-2xl mx-auto">
-                        Let us help you create memories that will last a lifetime. Explore our destinations and find
-                        your next adventure.
-                    </p>
-                    <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                        <button
-                            className="bg-background text-foreground px-8 py-3 rounded-md font-semibold hover:bg-background/90 transition-colors">
-                            View Tour Packages
-                        </button>
-                        <Link href="/contact">
-                            <button
-                                className="border border-background text-background px-8 py-3 rounded-md font-semibold hover:bg-background/10 transition-colors">
-                                Contact Us
-                            </button>
-                        </Link>
-                    </div>
-                </div>
-            </section>
+            <C2A/>
         </div>
     );
 };
