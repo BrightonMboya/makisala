@@ -16,7 +16,7 @@ export default function Footer() {
                             </div>
                         </div>
                         <div className="space-y-2 text-sm text-gray-600">
-                            <p>info@makisala.com</p>
+                            <Link href="mailto:info@makisala.com">info@makisala.com</Link>
                             <p>+255788323254</p>
                         </div>
                         <div className="mt-6">
@@ -44,11 +44,11 @@ export default function Footer() {
                                     First Time to Africa
                                 </Link>
                             </li>
-                            <li>
-                                <Link href="#" className="hover:text-gray-900">
-                                    Sustainability
-                                </Link>
-                            </li>
+                            {/*<li>*/}
+                            {/*    <Link href="#" className="hover:text-gray-900">*/}
+                            {/*        Sustainability*/}
+                            {/*    </Link>*/}
+                            {/*</li>*/}
                             <li>
                                 <Link href="/to_book/migration-tracker-safari-tz-ke" className="hover:text-gray-900">
                                     The Wildebeest Migration
@@ -109,16 +109,16 @@ export default function Footer() {
                                     Family Safari
                                 </Link>
                             </li>
-                            <li>
-                                <Link href="#" className="hover:text-gray-900">
-                                    Group of Friends
-                                </Link>
-                            </li>
-                            <li>
-                                <Link href="#" className="hover:text-gray-900">
-                                    Solo Travellers
-                                </Link>
-                            </li>
+                            {/*<li>*/}
+                            {/*    <Link href="#" className="hover:text-gray-900">*/}
+                            {/*        Group of Friends*/}
+                            {/*    </Link>*/}
+                            {/*</li>*/}
+                            {/*<li>*/}
+                            {/*    <Link href="#" className="hover:text-gray-900">*/}
+                            {/*        Solo Travellers*/}
+                            {/*    </Link>*/}
+                            {/*</li>*/}
                         </ul>
                     </div>
 
@@ -126,24 +126,24 @@ export default function Footer() {
                         <h4 className="font-medium text-gray-900 mb-4">Safaris:</h4>
                         <ul className="space-y-2 text-sm text-gray-600">
                             <li>
-                                <Link href="#" className="hover:text-gray-900">
-                                    All Safaris
+                                <Link href="/location/kilimanjaro" className="hover:text-gray-900">
+                                    Trekking Safaris
                                 </Link>
                             </li>
                             <li>
-                                <Link href="#" className="hover:text-gray-900">
-                                    Sample Safaris
+                                <Link href="/to_book/northern-tanzania-safari" className="hover:text-gray-900">
+                                    Classic Safaris
                                 </Link>
                             </li>
 
                             <li>
-                                <Link href="#" className="hover:text-gray-900">
-                                    Set Departure Safaris
+                                <Link href="/location/rwanda" className="hover:text-gray-900">
+                                    Gorilla Trekking
                                 </Link>
                             </li>
                             <li>
-                                <Link href="#" className="hover:text-gray-900">
-                                    Walking Safaris
+                                <Link href="/location/zanzibar" className="hover:text-gray-900">
+                                    Beach Safaris
                                 </Link>
                             </li>
                         </ul>

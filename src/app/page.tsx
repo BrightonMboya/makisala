@@ -8,26 +8,11 @@ import Link from "next/link";
 import C2A from "@/components/home/call-to-action";
 
 export default function SafariFrankClone() {
-    const months = [
-        "JAN",
-        "FEB",
-        "MAR",
-        "APR",
-        "MAY",
-        "JUN",
-        "JULY",
-        "AUG",
-        "SEPT",
-        "OCT",
-        "NOV",
-        "DEC",
-    ];
-
-
     return (
         <div className="min-h-screen bg-white">
             {/* Hero Section */}
-            <section className="relative h-screen flex items-center justify-start overflow-hidden mt-16">
+            <section
+                className="relative h-screen flex items-center justify-start overflow-hidden mt-16">
                 <div className="absolute inset-0">
                     <Image
                         src="https://res.cloudinary.com/dr2tdyz2w/image/upload/v1753373725/6-Days-Best-Family-Safaris-and-Culture-Tour-in-Tanzania_l9fgum.jpg"
@@ -36,11 +21,11 @@ export default function SafariFrankClone() {
                         className="object-cover"
                         priority
                     />
-                    <div className="absolute inset-0 bg-black/60"/>
+                    <div className="absolute inset-0 bg-black/70 lg:bg-black/60"/>
                 </div>
                 <div className="relative z-10 text-white max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
                     <div className="max-w-2xl">
-                        <div className="text-lg font-medium tracking-wider mb-1">
+                        <div className="text-md lg:text-lg font-light tracking-wider mb-1">
                             Discover Africa, Effortlessly
                         </div>
                         <h1 className="text-xl md:text-5xl font-medium mb-8 leading-tight">
