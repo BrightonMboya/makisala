@@ -57,6 +57,13 @@ export async function getPages(page_type: "blog" | "page"): Promise<Page[]> {
         .where(eq(pages.page_type, page_type))
 }
 
+export async function getPageSlugs(page_type: "blog" | "page") {
+    return await db
+        .select({slug: pages.slug})
+        .from(pages)
+        .where(eq(pages.page_type, page_type))
+}
+
 /* ------------------------------------------------------------------ */
 /*  GET BY ID                                                         */
 
