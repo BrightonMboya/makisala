@@ -1,6 +1,6 @@
 import type {Metadata} from "next";
 import {MarkdownRenderer} from "@/components/markdown-renderer";
-import {getTourPackageBySlug} from "@/lib/cms-service";
+import {getTourPackageBySlug, getTourPackagesSlugs} from "@/lib/cms-service";
 import {Badge} from "@/components/ui/badge";
 import {
     Bed,
@@ -18,7 +18,7 @@ import {MobileNavigation, DesktopNavigation} from "./_components/PageNavigation"
 import {InquiryDialog} from "@/components/enquire-dialog-button";
 import {Button} from "@/components/ui/button";
 
-export async function generateMetadata({params}: { params: { slug: string } }): Promise<Metadata> {
+export async function generateMetadata({params,}: { params: Promise<{ slug: string }> }): Promise<Metadata> {
     const {slug} = await params
     const tourPackageData = await getTourPackageBySlug(slug)
 
@@ -56,8 +56,15 @@ export async function generateMetadata({params}: { params: { slug: string } }): 
     };
 }
 
+export async function generateStaticParams() {
+    const pages = await getTourPackagesSlugs()
+    return pages.map((page) => ({
+        slug: page.slug,
+    }))
+}
 
-export default async function Page({params}: { params: { slug: string } }) {
+
+export default async function Page({params,}: { params: Promise<{ slug: string }> }) {
     const {slug} = await params
     const tourPackageData = await getTourPackageBySlug(slug)
 

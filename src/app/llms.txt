@@ -1,0 +1,31 @@
+# Makisala
+
+> Bespoke African safari experiences across East Africa — handcrafted by experts, designed for every type of traveller. From romantic escapes to family-friendly adventures, Makisala makes your dream safari simple to plan and unforgettable to experience.
+
+Key terms: Serengeti, Gorilla Trekking, Safari Itinerary, Luxury Lodges, Tailor-made Travel, Maasai Mara, Sustainable Safaris.
+
+## Safari Types
+- [Family Safari](https://makisala.com/who-is-travelling/family-safari): Kid-friendly safaris, multi-generational travel, malaria-free destinations.
+- [Couples & Honeymooners](https://makisala.com/who-is-travelling/couples-and-honemooners): Romantic lodges, private game drives, island escapes.
+- [Group of Friends Safari](https://makisala.com/who-is-travelling/group-of-friends): Shared adventure planning, group deals, flexible itineraries.
+
+## Locations
+- [Tanzania](https://makisala.com/location/tanzania.md): Serengeti, Ngorongoro, Zanzibar — wildlife, beaches, culture.
+- [Rwanda](https://makisala.com/location/rwanda.md): Gorilla trekking, volcano hikes, Kigali city stays.
+- [Kenya](https://makisala.com/location/kenya.md): Big Five safaris, Maasai Mara, Great Migration.
+
+## Booking & Planning
+- [How It Works](https://makisala.com/about): 5-step safari journey from dream to experience.
+- [Contact](https://makisala.com/contact): Speak with a safari specialist, online enquiry form.
+- [To Book](https://makisala.com/to_book): Custom safari builder and enquiry details.
+
+## Blog
+- [Travel Stories](https://makisala.com/blog): Safari tips, destination highlights, packing guides.
+- [Trip Planning Advice](https://makisala.com/blog/planning.md): Best times to visit, what to expect on safari.
+
+## Customer Support
+- [Contact](https://makisala.com/contact): Get in touch directly with the Makisala team.
+- [FAQs](https://makisala.com/about#faq): Common questions about booking, safety, and travel.
+
+## Optional
+- [Sustainability at Makisala](https://makisala.com/about#sustainability): Our responsible tourism practices and local partnerships.

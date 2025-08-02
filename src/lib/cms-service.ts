@@ -244,6 +244,13 @@ export async function getTourPackageBySlug(slug: string) {
     }
 }
 
+export async function getTourPackagesSlugs() {
+    return db.select({
+        slug: tourPackages.slug
+    })
+        .from(tourPackages)
+}
+
 export async function deleteTourPackage(id: string) {
     try {
         await db.delete(tourPackages).where(eq(tourPackages.id, id));

@@ -1,25 +1,18 @@
 import {notFound} from "next/navigation";
 import type {Metadata} from "next";
 
-import {getPageBySlug, getTourPackagesByLocation} from "@/lib/cms-service";
+import {getPageBySlug, getPageSlugs, getTourPackagesByLocation} from "@/lib/cms-service";
 import PagePreview from "@/app/PagePreview";
 import {PageData} from "@/app/cms/page";
 import Link from "next/link";
 import ImageCard from "@/components/home/image-card";
 import C2A from "@/components/home/call-to-action";
 
-interface BlogPostPageProps {
-    params: {
-        slug: string;
-    };
-}
-
 // Metadata for SEO
-export async function generateMetadata({
-                                           params,
-                                       }: BlogPostPageProps): Promise<Metadata> {
+export async function generateMetadata({params,}: { params: Promise<{ slug: string }> }): Promise<Metadata> {
     try {
-        const page = await getPageBySlug(params.slug);
+        const {slug} = await params
+        const page = await getPageBySlug(slug);
 
         if (!page || page.status !== "published" || page.page_type !== "page") {
             return {
@@ -46,8 +39,16 @@ export async function generateMetadata({
     }
 }
 
+// generating static params
+export async function generateStaticParams() {
+    const pages = await getPageSlugs("page")
+    return pages.map((page) => ({
+        slug: page.slug,
+    }))
+}
+
 // Page renderer
-export default async function BlogPostPage({params}: BlogPostPageProps) {
+export default async function BlogPostPage({params,}: { params: Promise<{ slug: string }> }) {
     const {slug} = await params
     const page = await getPageBySlug(slug);
 

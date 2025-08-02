@@ -1,0 +1,17 @@
+User-Agent: *
+Allow: /
+Disallow: /cms/*
+
+User-agent: ChatGPT-User
+Disallow: /cms/*
+
+User-agent: GPTBot
+Disallow: /cms/*
+
+User-agent: OAI-SearchBot
+Disallow: /cms/*
+
+User-agent: OAI-Operator
+Disallow:  /cms/*
+
+Sitemap: https://makisala.com/sitemap.xml
