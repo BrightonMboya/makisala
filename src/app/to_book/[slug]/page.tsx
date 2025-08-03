@@ -142,7 +142,7 @@ export default async function Page({params,}: { params: Promise<{ slug: string }
                                     </Badge>
                                 </div>
 
-                                <h1 className="text-5xl md:text-6xl font-bold text-white leading-tight">
+                                <h1 className="text-3xl md:text-6xl font-bold text-white leading-tight">
                                     {tourPackageData.title}
                                 </h1>
 

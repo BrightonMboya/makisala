@@ -4,6 +4,7 @@ export const OrganizationSchema = () => {
         "@type": "Organization",
         "url": "https://www.makisala.com",
         "logo": "https://www.makisala.com/makisala_icon.png",
+        "image": "https://www.makisala.com/makisala_icon.png",
         "name": "Makisala Safaris",
         "description": "Makisala Safaris offers unforgettable African safari experiences including walking safaris, canoe safaris, and 4x4 game drives across Tanzania and East Africa.",
         "email": "info@makisala.com",
@@ -14,6 +15,7 @@ export const OrganizationSchema = () => {
             "addressLocality": "Arusha",
             "addressCountry": "TZ",
             "addressRegion": "Arusha",
+            "postalCode": "1865",
         },
         "ContactPoint": {
             "@type": "ContactPoint",
