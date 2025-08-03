@@ -1,5 +1,5 @@
 import type {MetadataRoute} from 'next'
-import {db, tourPackages} from "@/index"
+import {db, tourPackages} from "@/db"
 
 
 export default async function generateSitemaps({id}: { id: number }): Promise<MetadataRoute.Sitemap> {

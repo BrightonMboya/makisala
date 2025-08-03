@@ -1,18 +1,17 @@
 "use client"
-import { useState } from 'react';
-import { useForm, useFieldArray } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import { Plus, Trash2, MapPin, Calendar, Globe } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Separator } from '@/components/ui/separator';
+import {useState} from 'react';
+import {useForm, useFieldArray} from 'react-hook-form';
+import {zodResolver} from '@hookform/resolvers/zod';
+import {z} from 'zod';
+import {Plus, Trash2, MapPin, Calendar, Globe} from 'lucide-react';
+import {Button} from '@/components/ui/button';
+import {Card, CardContent, CardHeader, CardTitle} from '@/components/ui/card';
+import {Input} from '@/components/ui/input';
+import {Textarea} from '@/components/ui/textarea';
+import {Form, FormControl, FormField, FormItem, FormLabel, FormMessage} from '@/components/ui/form';
+import {Separator} from '@/components/ui/separator';
 import {useToast} from "@/lib/hooks/use-toast";
 import {CreateTourPackageData} from "@/lib/cms-service";
-// import type { CreateTourPackageData } from '@/lib/api/tour-packages';
 
 const itinerarySchema = z.object({
     title: z.string().min(1, 'Day title is required'),
@@ -35,9 +34,9 @@ const tourPackageSchema = z.object({
 
 type TourPackageForm = z.infer<typeof tourPackageSchema>;
 
-export default function TourPackageBuilder () {
+export default function TourPackageBuilder() {
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const { toast } = useToast();
+    const {toast} = useToast();
 
     const form = useForm<TourPackageForm>({
         resolver: zodResolver(tourPackageSchema),
@@ -61,7 +60,7 @@ export default function TourPackageBuilder () {
         },
     });
 
-    const { fields, append, remove } = useFieldArray({
+    const {fields, append, remove} = useFieldArray({
         control: form.control,
         name: 'itineraries',
     });
@@ -87,7 +86,7 @@ export default function TourPackageBuilder () {
         try {
             console.log(data)
             // Import the API function dynamically to avoid build issues
-            const { createTourPackage } = await import('@/lib/cms-service');
+            const {createTourPackage} = await import('@/lib/cms-service');
 
             // Form validation ensures all required fields are present
             await createTourPackage(data as CreateTourPackageData);
@@ -124,7 +123,7 @@ export default function TourPackageBuilder () {
                 <Card className="shadow-elegant border-0 bg-card/50 backdrop-blur-sm">
                     <CardHeader className="pb-6">
                         <CardTitle className="flex items-center gap-2 text-2xl">
-                            <Globe className="h-6 w-6 text-primary" />
+                            <Globe className="h-6 w-6 text-primary"/>
                             Package Details
                         </CardTitle>
                     </CardHeader>
@@ -136,7 +135,7 @@ export default function TourPackageBuilder () {
                                     <FormField
                                         control={form.control}
                                         name="title"
-                                        render={({ field }) => (
+                                        render={({field}) => (
                                             <FormItem className="md:col-span-2">
                                                 <FormLabel className="text-base font-semibold">Package Title</FormLabel>
                                                 <FormControl>
@@ -146,7 +145,7 @@ export default function TourPackageBuilder () {
                                                         {...field}
                                                     />
                                                 </FormControl>
-                                                <FormMessage />
+                                                <FormMessage/>
                                             </FormItem>
                                         )}
                                     />
@@ -154,10 +153,10 @@ export default function TourPackageBuilder () {
                                     <FormField
                                         control={form.control}
                                         name="numberOfDays"
-                                        render={({ field }) => (
+                                        render={({field}) => (
                                             <FormItem>
                                                 <FormLabel className="text-base font-semibold flex items-center gap-2">
-                                                    <Calendar className="h-4 w-4" />
+                                                    <Calendar className="h-4 w-4"/>
                                                     Number of Days
                                                 </FormLabel>
                                                 <FormControl>
@@ -169,7 +168,7 @@ export default function TourPackageBuilder () {
                                                         onChange={(e) => field.onChange(parseInt(e.target.value) || 1)}
                                                     />
                                                 </FormControl>
-                                                <FormMessage />
+                                                <FormMessage/>
                                             </FormItem>
                                         )}
                                     />
@@ -177,7 +176,7 @@ export default function TourPackageBuilder () {
                                     <FormField
                                         control={form.control}
                                         name="country"
-                                        render={({ field }) => (
+                                        render={({field}) => (
                                             <FormItem>
                                                 <FormLabel className="text-base font-semibold">Country</FormLabel>
                                                 <FormControl>
@@ -187,7 +186,7 @@ export default function TourPackageBuilder () {
                                                         {...field}
                                                     />
                                                 </FormControl>
-                                                <FormMessage />
+                                                <FormMessage/>
                                             </FormItem>
                                         )}
                                     />
@@ -195,7 +194,7 @@ export default function TourPackageBuilder () {
                                     <FormField
                                         control={form.control}
                                         name="slug"
-                                        render={({ field }) => (
+                                        render={({field}) => (
                                             <FormItem className="md:col-span-2">
                                                 <FormLabel className="text-base font-semibold flex items-center gap-2">
                                                     Slug Url
@@ -207,7 +206,7 @@ export default function TourPackageBuilder () {
                                                         {...field}
                                                     />
                                                 </FormControl>
-                                                <FormMessage />
+                                                <FormMessage/>
                                             </FormItem>
                                         )}
                                     />
@@ -215,10 +214,10 @@ export default function TourPackageBuilder () {
                                     <FormField
                                         control={form.control}
                                         name="destination"
-                                        render={({ field }) => (
+                                        render={({field}) => (
                                             <FormItem className="md:col-span-2">
                                                 <FormLabel className="text-base font-semibold flex items-center gap-2">
-                                                    <MapPin className="h-4 w-4" />
+                                                    <MapPin className="h-4 w-4"/>
                                                     Destination
                                                 </FormLabel>
                                                 <FormControl>
@@ -228,17 +227,17 @@ export default function TourPackageBuilder () {
                                                         {...field}
                                                     />
                                                 </FormControl>
-                                                <FormMessage />
+                                                <FormMessage/>
                                             </FormItem>
                                         )}
                                     />
                                     <FormField
                                         control={form.control}
                                         name="hero_image_url"
-                                        render={({ field }) => (
+                                        render={({field}) => (
                                             <FormItem className="md:col-span-2">
                                                 <FormLabel className="text-base font-semibold">
-                                                   Hero Image Url
+                                                    Hero Image Url
                                                 </FormLabel>
                                                 <FormControl>
                                                     <Input
@@ -247,14 +246,14 @@ export default function TourPackageBuilder () {
                                                         {...field}
                                                     />
                                                 </FormControl>
-                                                <FormMessage />
+                                                <FormMessage/>
                                             </FormItem>
                                         )}
                                     />
                                     <FormField
                                         control={form.control}
                                         name="pricing_starts_from"
-                                        render={({ field }) => (
+                                        render={({field}) => (
                                             <FormItem className="md:col-span-2">
                                                 <FormLabel className="text-base font-semibold">
                                                     Price Starts From
@@ -266,7 +265,7 @@ export default function TourPackageBuilder () {
                                                         {...field}
                                                     />
                                                 </FormControl>
-                                                <FormMessage />
+                                                <FormMessage/>
                                             </FormItem>
                                         )}
                                     />
@@ -274,7 +273,7 @@ export default function TourPackageBuilder () {
                                     <FormField
                                         control={form.control}
                                         name="overview"
-                                        render={({ field }) => (
+                                        render={({field}) => (
                                             <FormItem className="md:col-span-2">
                                                 <FormLabel className="text-base font-semibold">Overview</FormLabel>
                                                 <FormControl>
@@ -284,13 +283,13 @@ export default function TourPackageBuilder () {
                                                         {...field}
                                                     />
                                                 </FormControl>
-                                                <FormMessage />
+                                                <FormMessage/>
                                             </FormItem>
                                         )}
                                     />
                                 </div>
 
-                                <Separator className="my-8" />
+                                <Separator className="my-8"/>
 
                                 {/* Itinerary Section */}
                                 <div>
@@ -302,7 +301,7 @@ export default function TourPackageBuilder () {
                                             variant="outline"
                                             className="hover:bg-primary hover:text-primary-foreground transition-colors"
                                         >
-                                            <Plus className="h-4 w-4 mr-2" />
+                                            <Plus className="h-4 w-4 mr-2"/>
                                             Add Day
                                         </Button>
                                     </div>
@@ -323,7 +322,7 @@ export default function TourPackageBuilder () {
                                                                 onClick={() => removeItineraryDay(index)}
                                                                 className="text-destructive hover:text-destructive hover:bg-destructive/10"
                                                             >
-                                                                <Trash2 className="h-4 w-4" />
+                                                                <Trash2 className="h-4 w-4"/>
                                                             </Button>
                                                         )}
                                                     </div>
@@ -332,7 +331,7 @@ export default function TourPackageBuilder () {
                                                     <FormField
                                                         control={form.control}
                                                         name={`itineraries.${index}.title`}
-                                                        render={({ field }) => (
+                                                        render={({field}) => (
                                                             <FormItem>
                                                                 <FormLabel>Day Title</FormLabel>
                                                                 <FormControl>
@@ -341,7 +340,7 @@ export default function TourPackageBuilder () {
                                                                         {...field}
                                                                     />
                                                                 </FormControl>
-                                                                <FormMessage />
+                                                                <FormMessage/>
                                                             </FormItem>
                                                         )}
                                                     />
@@ -349,7 +348,7 @@ export default function TourPackageBuilder () {
                                                     <FormField
                                                         control={form.control}
                                                         name={`itineraries.${index}.estimatedDrivingDistance`}
-                                                        render={({ field }) => (
+                                                        render={({field}) => (
                                                             <FormItem>
                                                                 <FormLabel>Estimated Driving Distance (km)</FormLabel>
                                                                 <FormControl>
@@ -358,7 +357,7 @@ export default function TourPackageBuilder () {
                                                                         {...field}
                                                                     />
                                                                 </FormControl>
-                                                                <FormMessage />
+                                                                <FormMessage/>
                                                             </FormItem>
                                                         )}
                                                     />
@@ -366,7 +365,7 @@ export default function TourPackageBuilder () {
                                                     <FormField
                                                         control={form.control}
                                                         name={`itineraries.${index}.activities`}
-                                                        render={({ field }) => (
+                                                        render={({field}) => (
                                                             <FormItem>
                                                                 <FormLabel>Activities</FormLabel>
                                                                 <FormControl>
@@ -376,7 +375,7 @@ export default function TourPackageBuilder () {
                                                                         {...field}
                                                                     />
                                                                 </FormControl>
-                                                                <FormMessage />
+                                                                <FormMessage/>
                                                             </FormItem>
                                                         )}
                                                     />
@@ -384,7 +383,7 @@ export default function TourPackageBuilder () {
                                                     <FormField
                                                         control={form.control}
                                                         name={`itineraries.${index}.accommodation`}
-                                                        render={({ field }) => (
+                                                        render={({field}) => (
                                                             <FormItem>
                                                                 <FormLabel>Accommodation</FormLabel>
                                                                 <FormControl>
@@ -394,7 +393,7 @@ export default function TourPackageBuilder () {
                                                                         {...field}
                                                                     />
                                                                 </FormControl>
-                                                                <FormMessage />
+                                                                <FormMessage/>
                                                             </FormItem>
                                                         )}
                                                     />

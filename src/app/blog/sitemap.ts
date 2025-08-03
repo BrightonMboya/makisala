@@ -1,5 +1,5 @@
 import type {MetadataRoute} from 'next'
-import {db, pages} from "@/index"
+import {db, pages} from "@/db"
 import {eq} from "drizzle-orm";
 
 

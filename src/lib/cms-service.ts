@@ -1,9 +1,9 @@
 "use server"
-import {db, inquiries} from "../index";
+import {db, inquiries} from "../db";
 import {pages} from "@/db/schema";
 import {eq, or, sql} from "drizzle-orm";
 import cuid from "cuid";
-import {tourPackages, itineraries, NewTourPackage, NewItinerary, NewInquiries} from "../index";
+import {tourPackages, itineraries, NewTourPackage, NewItinerary, NewInquiries} from "../db";
 
 import type {InferInsertModel, InferSelectModel} from "drizzle-orm";
 
