@@ -6,6 +6,7 @@ import Link from "next/link";
 import C2A from "@/components/home/call-to-action";
 import {BreadcrumbSchema} from "@/components/schema";
 import Script from "next/script";
+import {InquiryDialog} from "@/components/enquire-dialog-button";
 
 export default function SafariFrankClone() {
     return (
@@ -42,14 +43,17 @@ export default function SafariFrankClone() {
                                 Luxury safaris made simple for couples, families, and first-time explorers.
                             </h1>
                             <div className="flex space-x-4">
-                                <Button
-                                    variant="outline"
-                                    className="border-white text-white hover:bg-white hover:text-black px-8 py-3 text-sm font-medium bg-transparent">
-                                    EXPERIENCES
-                                </Button>
-                                <Button className="bg-white text-black hover:bg-gray-100 px-8 py-3 text-sm font-medium">
-                                    START PLANNING
-                                </Button>
+                                {/*<Button*/}
+                                {/*    variant="outline"*/}
+                                {/*    className="border-white text-white hover:bg-white hover:text-black px-8 py-3 text-sm font-medium bg-transparent">*/}
+                                {/*    EXPERIENCES*/}
+                                {/*</Button>*/}
+                                <InquiryDialog>
+                                    <Button
+                                        className="bg-white text-black hover:bg-gray-100 px-8 py-3 text-sm font-medium">
+                                        START PLANNING
+                                    </Button>
+                                </InquiryDialog>
                             </div>
                         </div>
                     </div>
