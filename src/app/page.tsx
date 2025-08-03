@@ -23,7 +23,7 @@ export default function SafariFrankClone() {
             <div className="min-h-screen bg-white">
                 {/* Hero Section */}
                 <section
-                    className="relative h-screen flex items-center justify-start overflow-hidden mt-16">
+                    className="relative h-[80dvh] lg:h-screen flex items-center justify-start overflow-hidden mt-16">
                     <div className="absolute inset-0">
                         <Image
                             src="https://res.cloudinary.com/dr2tdyz2w/image/upload/v1753373725/6-Days-Best-Family-Safaris-and-Culture-Tour-in-Tanzania_l9fgum.jpg"
@@ -127,6 +127,7 @@ export default function SafariFrankClone() {
                                     alt={item.alt}
                                     title={item.title}
                                     description={item.description}
+                                    rounded={false}
                                 />
                             ))}
                         </div>

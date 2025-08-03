@@ -1,5 +1,4 @@
 import Link from 'next/link';
-import {Star} from 'lucide-react';
 
 export default function Footer() {
     return (
@@ -18,19 +17,6 @@ export default function Footer() {
                         <div className="space-y-2 text-sm text-gray-600">
                             <Link href="mailto:info@makisala.com">info@makisala.com</Link>
                             <p>+255788323254</p>
-                        </div>
-                        <div className="mt-6">
-                            <div className="text-xs text-gray-500 mb-2">
-                                TrustScore 5.0 413 reviews
-                            </div>
-                            <div className="flex">
-                                {[...Array(5)].map((_, i) => (
-                                    <Star
-                                        key={i}
-                                        className="h-4 w-4 text-green-500 fill-current"
-                                    />
-                                ))}
-                            </div>
                         </div>
                     </div>
 

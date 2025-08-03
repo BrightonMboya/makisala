@@ -14,17 +14,18 @@ interface ImageCardProps {
     title: string;
     description: string;
     truncate?: boolean;
+    rounded?: boolean;
 }
 
-export default function ImageCard({img_url, alt, title, description, truncate}: ImageCardProps) {
+export default function ImageCard({img_url, alt, title, description, truncate, rounded}: ImageCardProps) {
     return (
-        <Card>
+        <Card className={`${rounded ? '' : 'rounded-none'}`}>
             <Image
                 src={img_url}
                 alt={alt}
                 width={400}
                 height={300}
-                className="w-full object-cover rounded-t-lg lg:h-[220px]"
+                className="w-full object-cover lg:h-[220px]"
             />
             <CardHeader>
                 <CardTitle>{title}</CardTitle>

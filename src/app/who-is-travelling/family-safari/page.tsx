@@ -4,6 +4,7 @@ import {Users, MapPin, ArrowRight} from "lucide-react";
 import type {Metadata} from "next";
 import {BreadcrumbSchema} from "@/components/schema";
 import Script from "next/script";
+import Image from "next/image";
 
 export async function generateMetadata(): Promise<Metadata> {
     return {
@@ -41,14 +42,24 @@ export default function Page() {
             <div className="min-h-screen bg-background">
                 {/* Hero Section */}
                 <section
-                    className="relative h-screen items-center flex justify-start"
-                    style={{
-                        backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)), url(${hero})`,
-                        backgroundSize: 'cover',
-                        backgroundPosition: 'center',
-                        backgroundAttachment: 'fixed'
-                    }}
+                    className="relative h-[80dvh] lg:h-screen items-center flex justify-start"
+                    // style={{
+                    //     backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)), url(${hero})`,
+                    //     backgroundSize: 'cover',
+                    //     backgroundPosition: 'center',
+                    //     backgroundAttachment: 'fixed'
+                    // }}
                 >
+                    <div className="absolute inset-0">
+                        <Image
+                            src="https://res.cloudinary.com/dr2tdyz2w/image/upload/v1753373584/family-safari.jpg_vu3zur.jpg"
+                            alt="Tanzania Family Safaris"
+                            fill
+                            className="object-cover"
+                            priority
+                        />
+                        <div className="absolute inset-0 bg-black/70 lg:bg-black/60"/>
+                    </div>
                     <div className="relative z-10 pl-10 mt-20 absolute">
                         <h1 className="text-5xl md:text-7xl md:max-w-5xl font-bold text-white mb-4">
                             Family Safari
