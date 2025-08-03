@@ -7,6 +7,8 @@ import {PageData} from "@/app/cms/page";
 import Link from "next/link";
 import ImageCard from "@/components/home/image-card";
 import C2A from "@/components/home/call-to-action";
+import {BreadcrumbSchema, TouristDestinationSchema} from "@/components/schema";
+import Script from "next/script";
 
 // Metadata for SEO
 export async function generateMetadata({params,}: { params: Promise<{ slug: string }> }): Promise<Metadata> {
@@ -59,6 +61,23 @@ export default async function BlogPostPage({params,}: { params: Promise<{ slug: 
 
     return (
         <>
+            <Script type={'application/ld+json'} strategy={'lazyOnload'}>
+                {JSON.stringify([
+                    BreadcrumbSchema({
+                        breadcrumbs: [
+                            {name: "Home", url: "https://www.makisala.com"},
+                            {name: `${slug}`, url: `https://www.makisala.com/location/${slug}`,},
+                        ]
+                    }),
+                    TouristDestinationSchema({
+                        description: page.meta_description!,
+                        image: page.featured_image_url!,
+                        name: page.title,
+                        url: `https://www.makisala.com/location/${slug}`,
+                        country: slug === 'rwanda' ? 'Rwanda' : 'Tanzania'
+                    })
+                ])}
+            </Script>
             <PagePreview page={page as PageData}/>
             <p className="text-center font-bold text-3xl lg:text-5xl py-5">Safaris itineraries to inspire your
                 journey</p>

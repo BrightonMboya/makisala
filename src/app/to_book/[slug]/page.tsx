@@ -17,6 +17,8 @@ import {notFound} from "next/navigation";
 import {MobileNavigation, DesktopNavigation} from "./_components/PageNavigation"
 import {InquiryDialog} from "@/components/enquire-dialog-button";
 import {Button} from "@/components/ui/button";
+import {BreadcrumbSchema, TouristTripSchema} from "@/components/schema";
+import Script from "next/script";
 
 export async function generateMetadata({params,}: { params: Promise<{ slug: string }> }): Promise<Metadata> {
     const {slug} = await params
@@ -92,6 +94,26 @@ export default async function Page({params,}: { params: Promise<{ slug: string }
     }
     return (
         <>
+            <Script type={'application/ld+json'} strategy={'lazyOnload'}>
+                {JSON.stringify([
+                    BreadcrumbSchema({
+                        breadcrumbs: [
+                            {name: "Home", url: "https://www.makisala.com"},
+                            {name: `${tourPackageData.title}`, url: `https://www.makisala.com/to_book/${slug}`},
+                        ]
+                    }),
+                    TouristTripSchema({
+                        name: tourPackageData.title,
+                        description: `${tourPackageData.title} is a ${tourPackageData.numberOfDays}-day safari adventure in ${tourPackageData.destination}, ${tourPackageData.country}. Explore highlights, top experiences, and more.`,
+                        url: `https://www.makisala.com/to_book/${slug}`,
+                        pricingStartsFrom: tourPackageData.pricing_starts_from!,
+                        itineraryItems: tourPackageData.itineraries.map((item) => ({
+                            name: `${item.title}`,
+                            description: `${item.activities}`
+                        }))
+                    })
+                ])}
+            </Script>
             <div className="min-h-screen bg-gradient-to-br from-background to-accent/20">
                 {/* Hero Section */}
                 <div className="relative h-[60vh] lg:h-[80vh] overflow-hidden">

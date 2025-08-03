@@ -4,6 +4,8 @@ import type {Metadata} from "next";
 
 import {getPageBySlug, getPageSlugs} from "@/lib/cms-service";
 import {MarkdownRenderer} from "@/components/markdown-renderer";
+import {BlogSchema, BreadcrumbSchema} from "@/components/schema";
+import Script from "next/script";
 
 // Metadata for SEO
 export async function generateMetadata({
@@ -57,45 +59,63 @@ export default async function Page({params,}: { params: Promise<{ slug: string }
         }
 
         return (
-            <div className="min-h-screen bg-white">
-                <article className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-                    {page.featured_image_url && (
-                        <div className="mb-8">
-                            <Image
-                                src={page.featured_image_url}
-                                alt={page.title}
-                                width={800}
-                                height={400}
-                                className="w-full h-64 md:h-96 object-cover rounded-lg shadow-lg"
-                            />
-                        </div>
-                    )}
-
-                    <header className="mb-8">
-                        <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
-                            {page.title}
-                        </h1>
-                        {page.excerpt && (
-                            <p className="text-xl text-gray-600 leading-relaxed">
-                                {page.excerpt}
-                            </p>
+            <main>
+                <Script type={'application/ld+json'} strategy={'lazyOnload'}>
+                    {JSON.stringify([
+                        BreadcrumbSchema({
+                            breadcrumbs: [
+                                {name: "Home", url: "https://www.makisala.com"},
+                                {name: "Blog", url: "https://www.makisala.com/blog"},
+                                {name: `${page.title}`, url: `https://www.makisala.com/blog/${slug}`},
+                            ]
+                        }),
+                        BlogSchema({
+                            headline: `${page.title}`,
+                            image: `${page.featured_image_url}`,
+                            description: `${page.excerpt}`,
+                        })
+                    ])}
+                </Script>
+                <div className="min-h-screen bg-white">
+                    <article className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+                        {page.featured_image_url && (
+                            <div className="mb-8">
+                                <Image
+                                    src={page.featured_image_url}
+                                    alt={page.title}
+                                    width={800}
+                                    height={400}
+                                    className="w-full h-64 md:h-96 object-cover rounded-lg shadow-lg"
+                                />
+                            </div>
                         )}
-                        <div className="flex items-center space-x-4 mt-6 text-sm text-gray-500">
-                            <time dateTime={page.createdAt}>
-                                {new Date(page.createdAt).toLocaleDateString("en-US", {
-                                    year: "numeric",
-                                    month: "long",
-                                    day: "numeric",
-                                })}
-                            </time>
-                            <span>•</span>
-                            <span>{page.page_type === "blog" ? "Blog Post" : "Page"}</span>
-                        </div>
-                    </header>
 
-                    <MarkdownRenderer content={page.content}/>
-                </article>
-            </div>
+                        <header className="mb-8">
+                            <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
+                                {page.title}
+                            </h1>
+                            {page.excerpt && (
+                                <p className="text-xl text-gray-600 leading-relaxed">
+                                    {page.excerpt}
+                                </p>
+                            )}
+                            <div className="flex items-center space-x-4 mt-6 text-sm text-gray-500">
+                                <time dateTime={page.createdAt}>
+                                    {new Date(page.createdAt).toLocaleDateString("en-US", {
+                                        year: "numeric",
+                                        month: "long",
+                                        day: "numeric",
+                                    })}
+                                </time>
+                                <span>•</span>
+                                <span>{page.page_type === "blog" ? "Blog Post" : "Page"}</span>
+                            </div>
+                        </header>
+
+                        <MarkdownRenderer content={page.content}/>
+                    </article>
+                </div>
+            </main>
         );
     } catch {
         notFound();

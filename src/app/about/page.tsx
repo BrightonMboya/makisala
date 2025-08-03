@@ -1,7 +1,8 @@
 import {Badge} from "@/components/ui/badge";
 import {Card, CardContent} from "@/components/ui/card";
-import Link from "next/link";
 import type {Metadata} from "next";
+import {BreadcrumbSchema} from "@/components/schema";
+import Script from "next/script";
 import C2A from "@/components/home/call-to-action";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -44,7 +45,17 @@ export default function Page() {
     ];
 
     return (
-        <div className="min-h-screen bg-background">
+        <main className="min-h-screen bg-background">
+            <Script type={'application/ld+json'} strategy={'lazyOnload'}>
+                {JSON.stringify([
+                    BreadcrumbSchema({
+                        breadcrumbs: [
+                            {name: "Home", url: "https://www.makisala.com"},
+                            {name: "About", url: "https://www.makisala.com/about"},
+                        ]
+                    })
+                ])}
+            </Script>
             {/* Hero Section */}
             <div className="relative h-[60vh] lg:h-[80vh] overflow-hidden">
                 <div
@@ -153,6 +164,6 @@ export default function Page() {
                 </div>
             </section>
             <C2A/>
-        </div>
+        </main>
     );
 };

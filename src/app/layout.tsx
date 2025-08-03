@@ -6,6 +6,8 @@ import {Toaster} from "@/components/ui/toaster";
 import Footer from "@/components/home/footer";
 import Nav from "@/components/home/nav";
 import {Providers} from "./providers";
+import {OrganizationSchema, WebsiteSchema} from "@/components/schema"
+import Script from "next/script";
 
 const geistSans = Geist({
     variable: "--font-geist-sans",
@@ -35,6 +37,14 @@ export default function RootLayout({
     return (
         <html lang="en">
         <Nav/>
+        <Script type={'application/ld+json'} strategy={'lazyOnload'}>
+            {
+                JSON.stringify([
+                    OrganizationSchema(),
+                    WebsiteSchema(),
+                ])
+            }
+        </Script>
         <body
             className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <Providers>
