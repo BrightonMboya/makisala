@@ -12,6 +12,6 @@ export default async function generateSitemaps({id}: { id: number }): Promise<Me
 
     return blogs_slugs.map((pages) => ({
         url: `https://makisala.com/blog/${pages.slug}`,
-        lastModified: pages.updatedAt
+        lastModified: new Date(pages.updatedAt).toISOString()
     }))
 }

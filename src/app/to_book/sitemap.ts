@@ -10,6 +10,6 @@ export default async function generateSitemaps({id}: { id: number }): Promise<Me
 
     return tours_slugs.map((tour) => ({
         url: `https://makisala.com/to_book/${tour.slug}`,
-        lastModified: tour.updatedAt
+        lastModified: new Date(tour.updatedAt).toISOString()
     }))
 }
