@@ -23,15 +23,15 @@ export default function Page() {
 
             // Normalize keys for your backend
             const normalized: TourData = {
-                tour_name: raw.tour_name,
+                tourName: raw.tour_name,
                 overview: raw.overview ?? null,
                 pricing: raw.price ?? null,
                 country: raw.country ?? null,
-                source_url: raw.source_url ?? null,
+                sourceUrl: raw.source_url ?? null,
                 number_of_days: raw.number_of_days,
                 img_url: raw.img_url,
                 activities: raw.activities ?? [],
-                top_features: raw.top_features ?? [],
+                topFeatures: raw.top_features ?? [],
                 itinerary: (raw.itinerary ?? []).map((day: any) => ({
                     ...day,
                     accomodation: {
@@ -50,7 +50,7 @@ export default function Page() {
 
             toast({
                 title: "JSON Parsed Successfully",
-                description: `Found tour: ${normalized.tour_name}`,
+                description: `Found tour: ${normalized.tourName}`,
             });
         } catch (error) {
             toast({
@@ -110,13 +110,9 @@ export default function Page() {
     };
 
     return (
-        <div className="container mx-auto py-8 px-4 max-w-7xl">
+        <div className="container mx-auto py-8 px-4 max-w-7xl mt-10">
             {/* Header */}
             <div className="text-center mb-12">
-                <div className="inline-flex items-center gap-2 bg-gradient-safari bg-clip-text text-transparent mb-4">
-                    <Sparkles className="w-8 h-8 text-safari-bronze"/>
-                    <h1 className="text-4xl font-bold">Tour Data Importer</h1>
-                </div>
                 <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
                     Import luxury safari and travel tour data from JSON format into your database with automatic image
                     processing.
@@ -125,7 +121,7 @@ export default function Page() {
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 {/* JSON Input Section */}
-                <Card className="shadow-safari">
+                <Card>
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2">
                             <FileText className="w-5 h-5 text-primary"/>
@@ -162,7 +158,7 @@ export default function Page() {
                 </Card>
 
                 {/* Import Actions */}
-                <Card className="shadow-safari">
+                <Card>
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2">
                             <Upload className="w-5 h-5 text-success"/>
@@ -177,7 +173,7 @@ export default function Page() {
                             <h3 className="font-semibold mb-2">Ready to Import</h3>
                             <p className="text-sm opacity-90 mb-4">
                                 {parsedData
-                                    ? `Tour "${parsedData.tour_name}" is ready to be imported with ${parsedData.itinerary.length} days.`
+                                    ? `Tour "${parsedData.tourName}" is ready to be imported with ${parsedData.itinerary.length} days.`
                                     : "Parse JSON data first to see import options."
                                 }
                             </p>
@@ -194,7 +190,7 @@ export default function Page() {
                             <div className="space-y-2 text-sm">
                                 <div className="flex justify-between">
                                     <span className="text-muted-foreground">Tour Name:</span>
-                                    <span className="font-medium">{parsedData.tour_name}</span>
+                                    <span className="font-medium">{parsedData.tourName}</span>
                                 </div>
                                 <div className="flex justify-between">
                                     <span className="text-muted-foreground">Duration:</span>

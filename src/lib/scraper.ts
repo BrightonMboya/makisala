@@ -139,13 +139,13 @@ export async function saveTourData(tour: TourData) {
         const [tourRow] = await tx
             .insert(tours)
             .values({
-                tourName: tour.tour_name,
+                tourName: tour.tourName,
                 overview: tour.overview ?? null,
                 pricing: tour.pricing != null ? String(tour.pricing) : null,
                 country: tour.country ?? null,
-                sourceUrl: tour.source_url ?? null,
+                sourceUrl: tour.sourceUrl ?? null,
                 activities: tour.activities?.length ? tour.activities : null,
-                topFeatures: tour.top_features?.length ? tour.top_features : null,
+                topFeatures: tour.topFeatures?.length ? tour.topFeatures : null,
                 img_url: coverUrl,
                 number_of_days: tour.number_of_days
             })

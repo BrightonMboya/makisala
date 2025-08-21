@@ -1,7 +1,7 @@
 "use server"
-import {db, inquiries} from "../db";
+import {db, inquiries, tours} from "../db";
 import {pages} from "@/db/schema";
-import {eq, or, sql} from "drizzle-orm";
+import {and, eq, or, sql} from "drizzle-orm";
 import cuid from "cuid";
 import {tourPackages, itineraries, NewTourPackage, NewItinerary, NewInquiries} from "../db";
 
@@ -268,3 +268,24 @@ export async function createInquiry(data: NewInquiries) {
     return newInquiry;
 
 }
+
+// getTours.ts
+export async function getTours(country: string, modifier: string) {
+    const whereClauses = [eq(tours.country, country)];
+
+    // duration case (e.g. "3-day")
+    const durationMatch = modifier.match(/(\d+)-day/);
+    if (durationMatch) {
+        whereClauses.push(eq(tours.number_of_days, parseInt(durationMatch[1], 10)));
+    }
+
+    // audience/style/etc. case (assuming you have a tags column)
+    // if (modifier === "family") {
+    //     whereClauses.push(eq(tours.audience, "family"));
+    // }
+
+    return db.query.tours.findMany({
+        where: and(...whereClauses),
+    });
+}
+

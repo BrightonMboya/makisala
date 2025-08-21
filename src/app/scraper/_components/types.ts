@@ -1,14 +1,14 @@
 export interface TourData {
     pricing: number;
     overview: string;
-    tour_name: string;
+    tourName: string;
     country: string;
-    source_url: string;
+    sourceUrl: string;
     img_url: string;
     number_of_days: number;
     itinerary: ItineraryDay[];
     activities: Activity[];
-    top_features: TopFeature[];
+    topFeatures: TopFeature[];
 }
 
 export interface ItineraryDay {
