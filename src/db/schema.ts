@@ -7,7 +7,7 @@ import {
     varchar,
     integer,
     boolean,
-    serial,
+    json,
     real,
     numeric
 } from "drizzle-orm/pg-core";
@@ -164,26 +164,28 @@ export const verification = pgTable("verification", {
 
 // ---------- TOURS ----------
 export const tours = pgTable("tours", {
-    id: serial("id").primaryKey(),
-    tourName: text("tour_name").notNull(),              // data.tour_name
-    overview: text("overview"),                         // data.overview
-    pricing: numeric("pricing", {precision: 12, scale: 2}), // data.pricing (7370, etc.)
-    country: text("country"),                           // if you scrape it
-    sourceUrl: text("source_url"),                      // optional: where you scraped from
+    id: uuid("id").defaultRandom().primaryKey(),
+    tourName: text("tour_name").notNull(),                      // data.tour_name
+    overview: text("overview"),                                 // data.overview
+    pricing: numeric("pricing", {precision: 12, scale: 2}),   // data.pricing
+    country: text("country"),                                   // if you scrape it
+    sourceUrl: text("source_url"),                              // optional: where you scraped from
+    activities: json("activities"),                             // [{title: "...", activity_name: "..."}]
+    topFeatures: json("top_features"),                          // [{title: "...", description: "..."}]
+    img_url: text("img_url"),
+    number_of_days: integer("number_of_days"),
     createdAt: timestamp("created_at", {withTimezone: true}).defaultNow(),
     updatedAt: timestamp("updated_at", {withTimezone: true}).defaultNow(),
 });
 
 export const toursRelations = relations(tours, ({many}) => ({
     days: many(itineraryDays),
-    tourActivities: many(tourActivities),
-    topFeatures: many(tourTopFeatures),
 }));
 
 // ---------- ITINERARY DAYS ----------
 export const itineraryDays = pgTable("itinerary_days", {
-    id: serial("id").primaryKey(),
-    tourId: integer("tour_id").notNull().references(() => tours.id, {onDelete: "cascade"}),
+    id: uuid("id").defaultRandom().primaryKey(),
+    tourId: uuid("tour_id").notNull().references(() => tours.id, {onDelete: "cascade"}),
     dayNumber: integer("day_number").notNull(),                 // day.day_number
     dayTitle: text("itinerary_day_title"),                      // day.itinerary_day_title
     overview: text("overview"),                                 // day.overview
@@ -196,9 +198,10 @@ export const itineraryDaysRelations = relations(itineraryDays, ({one, many}) => 
 
 // ---------- DEDUPED ACCOMMODATIONS (MASTER) ----------
 export const accommodations = pgTable("accommodations", {
-    id: serial("id").primaryKey(),
+    id: uuid("id").defaultRandom().primaryKey(),
     name: text("name").notNull(),
-    url: text("url"),                                          // e.g. https://www.melia.com/...
+    url: text("url"),                                           // e.g. https://www.melia.com/...
+    overview: text("overview"),                                 // scraped accommodation overview
 });
 
 export const accommodationsRelations = relations(accommodations, ({many}) => ({
@@ -208,8 +211,8 @@ export const accommodationsRelations = relations(accommodations, ({many}) => ({
 
 // ---------- ACCOMMODATION IMAGES (per master accommodation) ----------
 export const accommodationImages = pgTable("accommodation_images", {
-    id: serial("id").primaryKey(),
-    accommodationId: integer("accommodation_id").notNull().references(() => accommodations.id, {onDelete: "cascade"}),
+    id: uuid("id").defaultRandom().primaryKey(),
+    accommodationId: uuid("accommodation_id").notNull().references(() => accommodations.id, {onDelete: "cascade"}),
     imageUrl: text("image_url").notNull(),                      // img.image_url
 });
 
@@ -222,9 +225,9 @@ export const accommodationImagesRelations = relations(accommodationImages, ({one
 
 // ---------- JOIN: WHICH ACCOMMODATION IS USED ON WHICH DAY ----------
 export const itineraryAccommodations = pgTable("itinerary_accommodations", {
-    id: serial("id").primaryKey(),
-    itineraryDayId: integer("itinerary_day_id").notNull().references(() => itineraryDays.id, {onDelete: "cascade"}),
-    accommodationId: integer("accommodation_id").notNull().references(() => accommodations.id, {onDelete: "cascade"}),
+    id: uuid("id").defaultRandom().primaryKey(),
+    itineraryDayId: uuid("itinerary_day_id").notNull().references(() => itineraryDays.id, {onDelete: "cascade"}),
+    accommodationId: uuid("accommodation_id").notNull().references(() => accommodations.id, {onDelete: "cascade"}),
 });
 
 export const itineraryAccommodationsRelations = relations(itineraryAccommodations, ({one}) => ({
@@ -233,39 +236,6 @@ export const itineraryAccommodationsRelations = relations(itineraryAccommodation
         fields: [itineraryAccommodations.accommodationId],
         references: [accommodations.id]
     }),
-}));
-
-// ---------- NORMALIZED ACTIVITIES + JOIN ----------
-export const activities = pgTable("activities", {
-    id: serial("id").primaryKey(),
-    name: text("name").notNull(),                             // activity.activity_name
-});
-
-export const tourActivities = pgTable("tour_activities", {
-    id: serial("id").primaryKey(),
-    tourId: integer("tour_id").notNull().references(() => tours.id, {onDelete: "cascade"}),
-    activityId: integer("activity_id").notNull().references(() => activities.id, {onDelete: "cascade"}),
-});
-
-export const activitiesRelations = relations(activities, ({many}) => ({
-    tourActivities: many(tourActivities),
-}));
-
-export const tourActivitiesRelations = relations(tourActivities, ({one}) => ({
-    tour: one(tours, {fields: [tourActivities.tourId], references: [tours.id]}),
-    activity: one(activities, {fields: [tourActivities.activityId], references: [activities.id]}),
-}));
-
-// ---------- TOP FEATURES (per tour) ----------
-export const tourTopFeatures = pgTable("tour_top_features", {
-    id: serial("id").primaryKey(),
-    tourId: integer("tour_id").notNull().references(() => tours.id, {onDelete: "cascade"}),
-    title: text("title").notNull(),                           // feature.title
-    description: text("description"),                         // feature.description
-});
-
-export const tourTopFeaturesRelations = relations(tourTopFeatures, ({one}) => ({
-    tour: one(tours, {fields: [tourTopFeatures.tourId], references: [tours.id]}),
 }));
 
 
