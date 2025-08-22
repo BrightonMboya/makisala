@@ -5,6 +5,7 @@ import {capitalize} from "@/lib/utils";
 import {BreadcrumbSchema} from "@/components/schema";
 import Script from "next/script";
 import {BASE_URL} from "@/lib/constants"
+import {notFound} from "next/navigation"
 
 interface Params {
     params: {
@@ -31,6 +32,9 @@ export async function generateStaticParams() {
 
 export default async function SafariPage({params}: Params) {
     const {country, modifier} = await params;
+    if (!countries.includes(country) || !modifiers.includes(modifier)) {
+        return notFound()
+    }
     const tours = await getTours(country, modifier);
 
     return (
@@ -50,14 +54,11 @@ export default async function SafariPage({params}: Params) {
                     }),
                 ])}
             </Script>
-            <main>
-                <h1>{modifier.replace("-", " ")} safaris in {country}</h1>
-                <p>Find the best {modifier.replace("-", " ")} safari options in {country}...</p>
-
+            <main className="mt-[60px]">
                 <div className="min-h-screen bg-background">
                     <div className="bg-gradient-to-r from-safari-gold/10 to-safari-bronze/10 border-b border-border">
                         <div className="container mx-auto px-4 py-8">
-                            <h1 className="text-4xl font-bold text-safari-earth mb-2">{`${modifier} ${capitalize(country)} Safaris`}</h1>
+                            <h1 className="text-4xl font-bold text-safari-earth mb-2">{`${modifier.replace("-", " ")} ${capitalize(country)} Safaris`}</h1>
                             <p className="text-muted-foreground">
                                 {safariDescriptions[`${country}-${modifier}`]}
                             </p>

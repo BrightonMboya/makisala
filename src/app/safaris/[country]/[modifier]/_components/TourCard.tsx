@@ -24,7 +24,11 @@ export const TourCard = ({tour}: TourDataProps) => {
                     </h3>
                     <div className="mb-3 pt-2">
                         <span className="text-lg font-semibold text-primary mt-3">
-                            ${tour.pricing.toLocaleString()}
+                            {new Intl.NumberFormat('en-US', {
+                                style: 'currency',
+                                currency: 'USD',
+                                minimumFractionDigits: 0,
+                            }).format(tour.pricing)}
                        </span>
                         <span className="text-muted-foreground ml-1">pp (USD)</span>
                     </div>

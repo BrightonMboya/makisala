@@ -1,7 +1,7 @@
 "use server"
 import {db, inquiries, tours} from "../db";
 import {pages} from "@/db/schema";
-import {and, eq, or, sql} from "drizzle-orm";
+import {and, desc, eq, or, sql} from "drizzle-orm";
 import cuid from "cuid";
 import {tourPackages, itineraries, NewTourPackage, NewItinerary, NewInquiries} from "../db";
 
@@ -279,13 +279,12 @@ export async function getTours(country: string, modifier: string) {
         whereClauses.push(eq(tours.number_of_days, parseInt(durationMatch[1], 10)));
     }
 
-    // audience/style/etc. case (assuming you have a tags column)
-    // if (modifier === "family") {
-    //     whereClauses.push(eq(tours.audience, "family"));
-    // }
-
     return db.query.tours.findMany({
         where: and(...whereClauses),
     });
 }
 
+export const getToursByCountry = async (country: string) => {
+    return db.select().from(tours).where(eq(tours.country, country))
+        .orderBy(desc(tours.pricing))
+}
