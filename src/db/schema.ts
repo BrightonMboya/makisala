@@ -9,7 +9,7 @@ import {
     boolean,
     json,
     real,
-    numeric
+    numeric, primaryKey
 } from "drizzle-orm/pg-core";
 import {sql} from "drizzle-orm"
 import {relations} from 'drizzle-orm';
@@ -238,6 +238,24 @@ export const itineraryAccommodationsRelations = relations(itineraryAccommodation
     }),
 }));
 
+// these are the modifiers used for the pseo pages
+export const modifiers = pgTable("modifiers", {
+    id: uuid("id").defaultRandom().primaryKey(),
+    key: text().notNull(), // category: comfort, type, accommodation, other
+    value: text().notNull(), //-- e.g. "luxury", "family", "camping"
+    description: text().notNull(), // -- SEO text
+})
+
+// joint table btn the modifiers and the tours table will be querying this table to say
+// get all tours which are family tours or group safari
+export const tour_modifiers = pgTable("tour_modifiers", {
+        tourId: uuid("tour_id").notNull().references(() => tours.id, {onDelete: "cascade"}),
+        modifierId: uuid("modifier_id").notNull().references(() => modifiers.id, {onDelete: "cascade"}),
+    },
+    (t) => ({
+        pk: primaryKey({columns: [t.tourId, t.modifierId]}),
+    })
+)
 
 export type TourPackage = typeof tourPackages.$inferSelect;
 export type NewTourPackage = typeof tourPackages.$inferInsert;

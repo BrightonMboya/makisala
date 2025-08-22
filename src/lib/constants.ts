@@ -1,3 +1,4 @@
+export const BASE_URL = 'https://makisala.com';
 export const safaris = [
     {
         title: "TREKKING SAFARIS",
@@ -176,19 +177,3 @@ export const about_us_nav = [
     }
 ]
 
-// these are used for programatic seo in the safaris/country/modifer route
-export const countries = ['tanzania']
-export const modifiers = [
-    '1-day',
-    '2-day',
-    '3-day',
-    '4-day',
-    '5-day',
-    '6-day',
-    '7-day',
-    '8-day',
-    '9-day',
-    '10-day',
-    '11-day',
-    '12-day',
-]

@@ -2,6 +2,7 @@ export const OrganizationSchema = () => {
     return {
         "@context": "https://schema.org",
         "@type": "Organization",
+        "@id": "https://www.makisala.com/#website",
         "url": "https://www.makisala.com",
         "logo": "https://www.makisala.com/makisala_icon.png",
         "image": "https://www.makisala.com/makisala_icon.png",
@@ -21,7 +22,7 @@ export const OrganizationSchema = () => {
             "@type": "ContactPoint",
             "telephone": "+255788323254",
             "email": "info@makisala.com",
-            "contactType": "Customer Support",
+            "contactType": "Customer Service",
             "areaServed": "TZ",
             "availableLanguage": ["English", "Swahili"]
         },
@@ -37,18 +38,12 @@ export const WebsiteSchema = () => {
     return {
         "@context": "https://schema.org",
         "@type": "WebSite",
+        "@id": "https://www.makisala.com/#website",
+        "publisher": "https://www.makisala.com#organization",
         "name": "Makisala Safaris",
         "url": "https://www.makisala.com",
         "description": "Makisala Safaris is a Tanzania-based safari company offering guided walking safaris, canoe trips, and 4x4 wildlife adventures across East Africa.",
         "inLanguage": "en",
-        "publisher": {
-            "@type": "Organization",
-            "name": "Makisala Safaris",
-            "logo": {
-                "@type": "ImageObject",
-                "url": "https://www.makisala.com/makisala_icon.png"
-            }
-        }
     }
 }
 
