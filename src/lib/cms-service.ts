@@ -4,6 +4,7 @@ import {pages} from "@/db/schema";
 import {and, desc, eq, or, sql} from "drizzle-orm";
 import cuid from "cuid";
 import {tourPackages, itineraries, NewTourPackage, NewItinerary, NewInquiries} from "../db";
+import {modifiers} from "@/lib/p_seo_info";
 
 import type {InferInsertModel, InferSelectModel} from "drizzle-orm";
 
@@ -270,13 +271,39 @@ export async function createInquiry(data: NewInquiries) {
 }
 
 // getTours.ts
-export async function getTours(country: string, modifier: string) {
-    const whereClauses = [eq(tours.country, country)];
+// export async function getTours(country: string, modifier: string) {
+//     const whereClauses = [eq(tours.country, country)];
+//
+//     // duration case (e.g. "3-day")
+//     const durationMatch = modifier.match(/(\d+)-day/);
+//     if (durationMatch) {
+//         whereClauses.push(eq(tours.number_of_days, parseInt(durationMatch[1], 10)));
+//     }
+//
+//     return db.query.tours.findMany({
+//         where: and(...whereClauses),
+//     });
+// }
 
-    // duration case (e.g. "3-day")
-    const durationMatch = modifier.match(/(\d+)-day/);
-    if (durationMatch) {
-        whereClauses.push(eq(tours.number_of_days, parseInt(durationMatch[1], 10)));
+export async function getTours(country: string, modifier: string) {
+    const whereClauses: any[] = [eq(tours.country, country)];
+
+    if (modifiers.includes(modifier)) {
+        const durationMatch = modifier.match(/^(\d+)-day$/);
+        if (durationMatch) {
+            // Filter by number_of_days
+            whereClauses.push(
+                eq(tours.number_of_days, parseInt(durationMatch[1], 10))
+            );
+        } else {
+            // Filter by tags array containing the modifier
+            whereClauses.push(
+                sql`${modifier}
+                = ANY(
+                ${tours.tags}
+                )`
+            );
+        }
     }
 
     return db.query.tours.findMany({
@@ -287,4 +314,25 @@ export async function getTours(country: string, modifier: string) {
 export const getToursByCountry = async (country: string) => {
     return db.select().from(tours).where(eq(tours.country, country))
         .orderBy(desc(tours.pricing))
+}
+
+export const getProgramaticTourById = async (tour_id: string) => {
+    return db.query.tours.findFirst({
+        where: eq(tours.id, tour_id),
+        with: {
+            days: {
+                with: {
+                    itineraryAccommodations: {
+                        with: {
+                            accommodation: {
+                                with: {
+                                    images: true
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    })
 }

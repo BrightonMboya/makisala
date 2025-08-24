@@ -199,9 +199,11 @@ export default function Nav() {
 
                     {/* Right side items */}
                     <div className="flex items-center space-x-4">
-                        <Button className="bg-primary text-white px-6 py-2 text-sm font-medium hidden md:block">
-                            START PLANNING
-                        </Button>
+                        <InquiryDialog>
+                            <Button className="bg-primary text-white px-6 py-2 text-sm font-medium hidden md:block">
+                                START PLANNING
+                            </Button>
+                        </InquiryDialog>
 
                         {/* Mobile menu button */}
                         <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>

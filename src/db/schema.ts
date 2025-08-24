@@ -174,6 +174,7 @@ export const tours = pgTable("tours", {
     topFeatures: json("top_features"),                          // [{title: "...", description: "..."}]
     img_url: text("img_url"),
     number_of_days: integer("number_of_days"),
+    tags: text("tags").array(),  // eg ['family', 'group', 'luxury']
     createdAt: timestamp("created_at", {withTimezone: true}).defaultNow(),
     updatedAt: timestamp("updated_at", {withTimezone: true}).defaultNow(),
 });

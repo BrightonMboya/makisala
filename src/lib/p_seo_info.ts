@@ -28,12 +28,10 @@ export const modifiers = [
     "selfdrive",
     "guided_selfdrive",
     "chimp_tracking",
-    "overland",
     "mountain_bike",
     "canoe",
     "horseback",
     "birding",
-    "golf_wildlife",
 ]
 
 export const safariDescriptions: Record<string, string> = {
