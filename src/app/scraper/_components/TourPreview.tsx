@@ -8,7 +8,6 @@ interface TourPreviewProps {
 }
 
 export const TourPreview = ({data}: TourPreviewProps) => {
-    console.log(data);
     return (
         <div className="space-y-8">
             <div className="text-center">

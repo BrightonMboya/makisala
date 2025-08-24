@@ -177,3 +177,21 @@ export const about_us_nav = [
     }
 ]
 
+export const inclusions = [
+    'Airport transfers',
+    'All accommodation as specified',
+    'All meals during the safari',
+    'Professional English-speaking guide',
+    'Game drives in 4WD vehicle',
+    'Park entrance fees',
+    'Bottled water during game drives'
+];
+export const exclusions = [
+    'International flights',
+    'Visa fees',
+    'Travel insurance',
+    'Personal expenses',
+    'Tips and gratuities',
+    'Optional activities',
+    'Alcoholic beverages'
+];

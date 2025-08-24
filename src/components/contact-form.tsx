@@ -35,6 +35,8 @@ import {useToast} from "@/lib/hooks/use-toast";
 import {useForm} from "react-hook-form";
 import {zodResolver} from "@hookform/resolvers/zod";
 import {createInquiry} from "@/lib/cms-service";
+import {usePathname} from 'next/navigation'
+import {BASE_URL} from "@/lib/constants";
 
 const countries = [
     "United States", "United Kingdom", "Canada", "Australia", "Germany", "France", "Italy", "Spain",
@@ -45,15 +47,16 @@ const nightOptions = Array.from({length: 30}, (_, i) => (i + 1).toString());
 const adultOptions = Array.from({length: 10}, (_, i) => (i + 1).toString());
 const childrenOptions = Array.from({length: 6}, (_, i) => i.toString());
 
-const currencies = ["USD", "EUR", "GBP", "AUD", "CAD", "CHF", "JPY", "ZAR"];
 
-export default function ContactForm() {
+export default function ContactForm({setOpen}: {
+    setOpen: React.Dispatch<React.SetStateAction<boolean>>;
+}) {
     const [openCalendar, setOpenCalendar] = React.useState<boolean>(false);
     const {toast} = useToast()
+    const pathname = usePathname()
 
     const formSchema = z.object({
-        firstName: z.string().min(1, "First name is required"),
-        lastName: z.string().min(1, "Last name is required"),
+        fullName: z.string().min(1, "Full Name is required"),
         countryOfResidence: z.string().min(1, "Country of residence is required"),
         phoneNumber: z.string().min(1, "Phone number is required"),
         email: z.string().email("Valid email is required"),
@@ -66,7 +69,6 @@ export default function ContactForm() {
         flightAssistance: z.enum(["yes", "no"]),
         experienceType: z.enum(["mid-range", "high-end", "top-end"]),
         comments: z.string().min(1, "Comments are required"),
-        contactMethod: z.string().min(1, "Contact method is required"),
         consent: z.boolean().refine((val) => val === true, {
             message: "You must agree to the privacy policy",
         }),
@@ -76,8 +78,7 @@ export default function ContactForm() {
     const form = useForm<FormData>({
         resolver: zodResolver(formSchema),
         defaultValues: {
-            firstName: "",
-            lastName: "",
+            fullName: "",
             countryOfResidence: "",
             phoneNumber: "",
             email: "",
@@ -87,18 +88,20 @@ export default function ContactForm() {
             flightAssistance: "no",
             experienceType: "mid-range",
             comments: "",
-            contactMethod: "",
             consent: true,
         },
     });
     const onSubmit = async (data: FormData) => {
         try {
-            await createInquiry(data);
+            await createInquiry({
+                ...data,
+                url: `${BASE_URL}/${pathname}`
+            });
             toast({
                 title: "Inquiry Submitted",
                 description: "We'll get back to you within 24 hours!",
             });
-            // setOpen(false);
+            setOpen(false);
             form.reset();
         } catch (error) {
             toast({
@@ -130,10 +133,10 @@ export default function ContactForm() {
                             </FormItem>
                         )}
                     />
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="">
                         <FormField
                             control={form.control}
-                            name="firstName"
+                            name="fullName"
                             render={({field}) => (
                                 <FormItem>
                                     <FormLabel>First Name*</FormLabel>
@@ -144,19 +147,7 @@ export default function ContactForm() {
                                 </FormItem>
                             )}
                         />
-                        <FormField
-                            control={form.control}
-                            name="lastName"
-                            render={({field}) => (
-                                <FormItem>
-                                    <FormLabel>Last Name*</FormLabel>
-                                    <FormControl>
-                                        <Input placeholder="Last" {...field} />
-                                    </FormControl>
-                                    <FormMessage/>
-                                </FormItem>
-                            )}
-                        />
+
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
@@ -173,11 +164,11 @@ export default function ContactForm() {
                                             </SelectTrigger>
                                         </FormControl>
                                         <SelectContent>
-                                            {countries.map((country) => (
-                                                <SelectItem key={country} value={country}>
-                                                    {country}
-                                                </SelectItem>
-                                            ))}
+                                               {countries.map((country) => (
+                                                   <SelectItem key={country} value={country}>
+                                                       {country}
+                                                   </SelectItem>
+                                               ))}
                                         </SelectContent>
                                     </Select>
                                     <FormMessage/>
@@ -425,20 +416,6 @@ export default function ContactForm() {
                         )}
                     />
 
-                    <FormField
-                        control={form.control}
-                        name="contactMethod"
-                        render={({field}) => (
-                            <FormItem>
-                                <FormLabel>How would you prefer to discuss your adventure
-                                    further?*</FormLabel>
-                                <FormControl>
-                                    <Input placeholder="Call me" {...field} />
-                                </FormControl>
-                                <FormMessage/>
-                            </FormItem>
-                        )}
-                    />
 
                     <FormField
                         control={form.control}

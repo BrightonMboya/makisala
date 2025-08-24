@@ -5,7 +5,8 @@ import {Bed, Calendar, Camera, Car, CheckCircle, Globe, MapPin, XCircle} from "l
 import {DesktopNavigation, MobileNavigation} from "@/app/to_book/[slug]/_components/PageNavigation";
 import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
 import {MarkdownRenderer} from "@/components/markdown-renderer";
-import {Separator} from "@/components/ui/separator";
+import {inclusions, exclusions} from "@/lib/constants";
+
 
 interface Params {
     params: {
@@ -16,7 +17,7 @@ interface Params {
 export default async function Page({params}: Params) {
     const {tour_id} = await params;
     const tour = await getProgramaticTourById(tour_id);
-    console.log(tour)
+
     if (!tour) {
         return notFound()
     }
@@ -140,7 +141,7 @@ export default async function Page({params}: Params) {
                                                                                     src={img.imageUrl}
                                                                                     alt={`${accommodation.accommodation.name} - Image ${imgIndex + 1}`}
                                                                                     className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
-                                                                                   
+
                                                                                 />
                                                                             </div>
                                                                         ))}
@@ -167,12 +168,12 @@ export default async function Page({params}: Params) {
                                         </CardHeader>
                                         <CardContent>
                                             <div className="grid gap-3">
-                                                {/*{inclusions.map((inclusion, index) => (*/}
-                                                {/*    <div key={index} className="flex items-center gap-3">*/}
-                                                {/*        <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0"/>*/}
-                                                {/*        <span className="text-muted-foreground">{inclusion}</span>*/}
-                                                {/*    </div>*/}
-                                                {/*))}*/}
+                                                {inclusions.map((inclusion, index) => (
+                                                    <div key={index} className="flex items-center gap-3">
+                                                        <CheckCircle className="h-4 w-4 text-green-500 flex-shrink-0"/>
+                                                        <span className="text-muted-foreground">{inclusion}</span>
+                                                    </div>
+                                                ))}
                                             </div>
                                         </CardContent>
                                     </Card>
@@ -188,14 +189,14 @@ export default async function Page({params}: Params) {
                                             </CardTitle>
                                         </CardHeader>
                                         <CardContent>
-                                            {/*<div className="grid gap-3">*/}
-                                            {/*    {exclusions.map((exclusion, index) => (*/}
-                                            {/*        <div key={index} className="flex items-center gap-3">*/}
-                                            {/*            <XCircle className="h-4 w-4 text-red-500 flex-shrink-0"/>*/}
-                                            {/*            <span className="text-muted-foreground">{exclusion}</span>*/}
-                                            {/*        </div>*/}
-                                            {/*    ))}*/}
-                                            {/*</div>*/}
+                                            <div className="grid gap-3">
+                                                {exclusions.map((exclusion, index) => (
+                                                    <div key={index} className="flex items-center gap-3">
+                                                        <XCircle className="h-4 w-4 text-red-500 flex-shrink-0"/>
+                                                        <span className="text-muted-foreground">{exclusion}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
                                         </CardContent>
                                     </Card>
                                 </section>

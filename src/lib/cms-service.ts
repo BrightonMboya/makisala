@@ -34,7 +34,6 @@ export async function createPage(data: NewPage): Promise<Page> {
 
 /* ------------------------------------------------------------------ */
 export async function updatePage(id: string, data: Partial<Page>): Promise<Page> {
-    console.log(data, "---------------------------")
     const [updated] = await db
         .update(pages)
         .set({

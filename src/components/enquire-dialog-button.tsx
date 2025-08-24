@@ -36,7 +36,7 @@ export function InquiryDialog({children}: InquiryDialogProps) {
                         * indicates required fields.
                     </DialogDescription>
                 </DialogHeader>
-                <ContactForm/>
+                <ContactForm setOpen={setOpen}/>
             </DialogContent>
         </Dialog>
     );

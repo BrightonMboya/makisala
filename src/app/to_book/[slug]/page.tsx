@@ -19,6 +19,7 @@ import {InquiryDialog} from "@/components/enquire-dialog-button";
 import {Button} from "@/components/ui/button";
 import {BreadcrumbSchema, TouristTripSchema} from "@/components/schema";
 import Script from "next/script";
+import {inclusions, exclusions} from "@/lib/constants";
 
 export async function generateMetadata({params,}: { params: Promise<{ slug: string }> }): Promise<Metadata> {
     const {slug} = await params
@@ -69,25 +70,6 @@ export async function generateStaticParams() {
 export default async function Page({params,}: { params: Promise<{ slug: string }> }) {
     const {slug} = await params
     const tourPackageData = await getTourPackageBySlug(slug)
-
-    const inclusions = [
-        'Airport transfers',
-        'All accommodation as specified',
-        'All meals during the safari',
-        'Professional English-speaking guide',
-        'Game drives in 4WD vehicle',
-        'Park entrance fees',
-        'Bottled water during game drives'
-    ];
-    const exclusions = [
-        'International flights',
-        'Visa fees',
-        'Travel insurance',
-        'Personal expenses',
-        'Tips and gratuities',
-        'Optional activities',
-        'Alcoholic beverages'
-    ];
 
     if (!tourPackageData) {
         return notFound();

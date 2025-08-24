@@ -46,8 +46,7 @@ export const ExperienceType = pgEnum("experienceType", ["mid-range", "high-end",
 
 export const inquiries = pgTable("inquiries", {
     id: uuid('id').primaryKey().defaultRandom(),
-    firstName: text().notNull(),
-    lastName: text().notNull(),
+    fullName: text().notNull(),
     countryOfResidence: varchar('country_of_residence', {length: 255}).notNull(),
     phoneNumber: varchar('phone_number', {length: 255}).notNull(),
     email: varchar('email', {length: 255}).notNull(),
@@ -57,8 +56,8 @@ export const inquiries = pgTable("inquiries", {
     flightAssistance: FlightAssistance().default("no"),
     experienceType: ExperienceType().default("mid-range"),
     comments: text(),
-    contactMethod: text(),
-    consent: boolean()
+    consent: boolean(),
+    url: text()
 })
 
 export const tourPackages = pgTable('tour_packages', {
