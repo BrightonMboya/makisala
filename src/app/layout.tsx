@@ -9,6 +9,7 @@ import {Providers} from "./providers";
 import {OrganizationSchema, WebsiteSchema} from "@/components/schema"
 import Script from "next/script";
 import {Analytics} from "@vercel/analytics/next"
+import {SpeedInsights} from "@vercel/speed-insights/next"
 
 const geistSans = Geist({
     variable: "--font-geist-sans",
@@ -49,6 +50,7 @@ export default function RootLayout({
         <body
             className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <Analytics/>
+        <SpeedInsights/>
         <Providers>
             <main>{children}</main>
         </Providers>
