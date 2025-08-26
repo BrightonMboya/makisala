@@ -18,7 +18,7 @@ export async function generateMetadata(): Promise<Metadata> {
                     url: "https://res.cloudinary.com/dr2tdyz2w/image/upload/v1753373584/family-safari.jpg_vu3zur.jpg",
                     width: 1200,
                     height: 630,
-                    alt: "Makisala Safaris",
+                    alt: "Family Safaris | Makisala Safaris",
                 },
             ],
         },

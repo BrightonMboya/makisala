@@ -8,7 +8,7 @@ import {BreadcrumbSchema} from "@/components/schema";
 import Script from "next/script";
 import {InquiryDialog} from "@/components/enquire-dialog-button";
 
-export default function SafariFrankClone() {
+export default function Page() {
     return (
         <main>
             <Script type={'application/ld+json'} strategy={'lazyOnload'}>
@@ -153,7 +153,7 @@ export default function SafariFrankClone() {
                         </div>
                         <div className="grid md:grid-cols-3 gap-6">
                             {safaris.map((experience, index) => (
-                                <Link href={experience.page_url}>
+                                <Link href={experience.page_url} key={index}>
                                     <div
                                         key={index}
                                         className="relative group cursor-pointer overflow-hidden rounded-lg">

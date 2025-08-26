@@ -2,6 +2,26 @@ import C2A from "@/components/home/call-to-action";
 import ContactForm from "@/components/contact-form";
 import {BreadcrumbSchema} from "@/components/schema";
 import Script from "next/script";
+import {Metadata} from "next";
+
+export async function generateMetadata(): Promise<Metadata> {
+    return {
+        title: `Contact Makisala Safaris`,
+        description: "Contact Makisala Safaris - info@makisala.com",
+        openGraph: {
+            title: ` Contact Makisala Safaris | Makisala Safaris`,
+            description: `Contact Makisala Safaris - info@makisala.com`,
+            images: [
+                {
+                    url: "https://res.cloudinary.com/dr2tdyz2w/image/upload/v1753373584/family-safari.jpg_vu3zur.jpg",
+                    width: 1200,
+                    height: 630,
+                    alt: "Makisala Safaris",
+                },
+            ],
+        },
+    };
+}
 
 export default function Page() {
     return (

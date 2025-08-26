@@ -101,7 +101,7 @@ export default function ContactForm({setOpen}: {
                 title: "Inquiry Submitted",
                 description: "We'll get back to you within 24 hours!",
             });
-            setOpen(false);
+            setOpen && setOpen(false);
             form.reset();
         } catch (error) {
             toast({
@@ -164,11 +164,11 @@ export default function ContactForm({setOpen}: {
                                             </SelectTrigger>
                                         </FormControl>
                                         <SelectContent>
-                                               {countries.map((country) => (
-                                                   <SelectItem key={country} value={country}>
-                                                       {country}
-                                                   </SelectItem>
-                                               ))}
+                                            {countries.map((country) => (
+                                                <SelectItem key={country} value={country}>
+                                                    {country}
+                                                </SelectItem>
+                                            ))}
                                         </SelectContent>
                                     </Select>
                                     <FormMessage/>
