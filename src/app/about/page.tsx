@@ -68,7 +68,7 @@ export default function Page() {
                 <div className="relative h-full flex items-end">
                     <div className="container mx-auto px-6 pb-12">
                         <h1 className="text-5xl md:text-6xl font-bold text-white leading-tight">
-                            About Us
+                            About Us | Makisala Safaris
                         </h1>
                     </div>
                 </div>
@@ -94,6 +94,13 @@ export default function Page() {
                                     land, people, and wildlife that make Africa unlike anywhere else. Over the years,
                                     our purpose has stayed the same: create experiences that feel personal, impactful,
                                     and unforgettable.
+                                </p>
+
+                                <p>
+                                    You can also find us on <a href="www.safaribookings.com"
+                                                               className="text-primary font-medium">Safari
+                                    Bookings</a> one of the leading safari platforms, where travelers explore and book
+                                    authentic East African experiences.
                                 </p>
                             </div>
                         </div>

@@ -246,17 +246,14 @@ export const modifiers = pgTable("modifiers", {
     description: text().notNull(), // -- SEO text
 })
 
-// joint table btn the modifiers and the tours table will be querying this table to say
-// get all tours which are family tours or group safari
-export const tour_modifiers = pgTable("tour_modifiers", {
-        tourId: uuid("tour_id").notNull().references(() => tours.id, {onDelete: "cascade"}),
-        modifierId: uuid("modifier_id").notNull().references(() => modifiers.id, {onDelete: "cascade"}),
-    },
-    (t) => ({
-        pk: primaryKey({columns: [t.tourId, t.modifierId]}),
-    })
-)
+export const destinations = pgTable("destinations", {
+    id: uuid("id").defaultRandom(),
+    name: text().notNull(),
+    overall_page_url: text().notNull(),
+    best_time_to_visit: text().notNull(),
+    
 
+})
 export type TourPackage = typeof tourPackages.$inferSelect;
 export type NewTourPackage = typeof tourPackages.$inferInsert;
 export type Itinerary = typeof itineraries.$inferSelect;

@@ -7,7 +7,6 @@ import {MarkdownRenderer} from "@/components/markdown-renderer";
 import {BlogSchema, BreadcrumbSchema} from "@/components/schema";
 import Script from "next/script";
 
-// Metadata for SEO
 export async function generateMetadata({
                                            params,
                                        }: { params: Promise<{ slug: string }> }): Promise<Metadata> {

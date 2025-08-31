@@ -3,7 +3,7 @@ import {db, inquiries, tours} from "../db";
 import {pages} from "@/db/schema";
 import {and, desc, eq, or, sql} from "drizzle-orm";
 import cuid from "cuid";
-import {tourPackages, itineraries, NewTourPackage, NewItinerary, NewInquiries} from "../db";
+import {tourPackages, itineraries, NewTourPackage, NewItinerary, NewInquiries, destinations} from "../db";
 import {modifiers} from "@/lib/p_seo_info";
 
 import type {InferInsertModel, InferSelectModel} from "drizzle-orm";
@@ -269,21 +269,6 @@ export async function createInquiry(data: NewInquiries) {
 
 }
 
-// getTours.ts
-// export async function getTours(country: string, modifier: string) {
-//     const whereClauses = [eq(tours.country, country)];
-//
-//     // duration case (e.g. "3-day")
-//     const durationMatch = modifier.match(/(\d+)-day/);
-//     if (durationMatch) {
-//         whereClauses.push(eq(tours.number_of_days, parseInt(durationMatch[1], 10)));
-//     }
-//
-//     return db.query.tours.findMany({
-//         where: and(...whereClauses),
-//     });
-// }
-
 export async function getTours(country: string, modifier: string) {
     const whereClauses: any[] = [eq(tours.country, country)];
 
@@ -333,5 +318,18 @@ export const getProgramaticTourById = async (tour_id: string) => {
                 }
             }
         }
+    })
+}
+
+export const getDestinationOverview = async (destination: string) => {
+    const country = await db.query.destinations.findFirst({
+        where: eq(destinations.name, destination),
+        columns: {
+            overall_page_url: true,
+        }
+    })
+
+    return await db.query.pages.findFirst({
+        where: eq(pages.id, country?.overall_page_url!)
     })
 }
