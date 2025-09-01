@@ -113,9 +113,9 @@ export const safaris_nav = [
 export const destinations = {
     top_destinations: [
         {
-            name: "Serengeti",
+            name: "Tanzania",
             description: "Endless plains and incredible wildlife",
-            page_url: "/location/northern-tanzania"
+            page_url: "/destinations/tanzania"
         },
         // {
         //   name: "Ngorongoro Crater",

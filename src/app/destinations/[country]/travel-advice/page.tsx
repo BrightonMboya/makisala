@@ -1,4 +1,3 @@
-import {getDestinationOverview} from "@/lib/cms-service";
 import {MarkdownRenderer} from "@/components/markdown-renderer";
 import {notFound} from "next/navigation";
 import type {Metadata} from "next";
@@ -7,13 +6,14 @@ import {BreadcrumbSchema} from "@/components/schema";
 import {BASE_URL} from "@/lib/constants";
 import {capitalize} from "@/lib/utils";
 import Script from "next/script";
+import {getTravelAdvice} from "@/lib/cms-service";
 
 export async function generateMetadata({params}: IParams): Promise<Metadata> {
     try {
         const {country} = await params
-        const destinationOverview = await getDestinationOverview(country);
+        const destination = await getTravelAdvice(country);
 
-        if (!destinationOverview) {
+        if (!destination) {
             return {
                 title: "Page Not Found",
                 description: "The requested page could not be found.",
@@ -21,13 +21,13 @@ export async function generateMetadata({params}: IParams): Promise<Metadata> {
         }
 
         return {
-            title: destinationOverview.meta_title || destinationOverview.title,
-            description: destinationOverview.meta_description || destinationOverview.excerpt,
-            keywords: destinationOverview.meta_keywords,
+            title: destination.meta_title || destination.title,
+            description: destination.meta_description || destination.excerpt,
+            keywords: destination.meta_keywords,
             openGraph: {
-                title: destinationOverview.meta_title || destinationOverview.title,
-                description: destinationOverview.meta_description! || destinationOverview.excerpt!,
-                images: destinationOverview.featured_image_url ? [destinationOverview.featured_image_url] : [],
+                title: destination.meta_title || destination.title,
+                description: destination.meta_description! || destination.excerpt!,
+                images: destination.featured_image_url ? [destination.featured_image_url] : [],
             },
         };
     } catch {
@@ -38,29 +38,32 @@ export async function generateMetadata({params}: IParams): Promise<Metadata> {
     }
 }
 
-export default async function HomePage({params}: IParams) {
+
+export default async function Page({params}: IParams) {
     const {country} = await params;
-    const destinationOverview = await getDestinationOverview(country);
+    const destination = await getTravelAdvice(country);
 
-    if (!destinationOverview) {
-        return notFound()
+    if (!destination) {
+        notFound()
     }
-
     return (
-        <main className="">
+        <main>
             <Script type={'application/ld+json'} strategy={'lazyOnload'}>
                 {JSON.stringify([
                     BreadcrumbSchema({
                         breadcrumbs: [
                             {name: "Home", url: BASE_URL},
                             {name: "Tanzania", url: `${BASE_URL}/destinations/${country}`},
-                            {name: `Why Visit ${capitalize(country)}`, url: `${BASE_URL}/destinations/${country}`},
+                            {
+                                name: `${capitalize(country)} Travel Advice`,
+                                url: `${BASE_URL}/destinations/${country}/travel-advice`
+                            },
                         ]
                     }),
                 ])}
             </Script>
-            <h1 className="pb-5 text-4xl font-medium">{destinationOverview.title}</h1>
-            <MarkdownRenderer content={destinationOverview?.content!}/>
+            <h1 className="pb-5 text-4xl font-medium">{destination.title}</h1>
+            <MarkdownRenderer content={destination.content!}/>
         </main>
     )
 }

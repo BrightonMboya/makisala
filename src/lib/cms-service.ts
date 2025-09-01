@@ -321,6 +321,19 @@ export const getProgramaticTourById = async (tour_id: string) => {
     })
 }
 
+export const getBestTimeToVisit = async (destination: string) => {
+    const country = await db.query.destinations.findFirst({
+        where: eq(destinations.name, destination),
+        columns: {
+            best_time_to_visit: true
+        }
+    })
+
+    return await db.query.pages.findFirst({
+        where: eq(pages.id, country?.best_time_to_visit!)
+    })
+}
+
 export const getDestinationOverview = async (destination: string) => {
     const country = await db.query.destinations.findFirst({
         where: eq(destinations.name, destination),
@@ -331,5 +344,18 @@ export const getDestinationOverview = async (destination: string) => {
 
     return await db.query.pages.findFirst({
         where: eq(pages.id, country?.overall_page_url!)
+    })
+}
+
+export const getTravelAdvice = async (destination: string) => {
+    const country = await db.query.destinations.findFirst({
+        where: eq(destinations.name, destination),
+        columns: {
+            travel_advice: true
+        }
+    })
+
+    return await db.query.pages.findFirst({
+        where: eq(pages.id, country?.travel_advice!)
     })
 }

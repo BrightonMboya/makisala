@@ -247,11 +247,13 @@ export const modifiers = pgTable("modifiers", {
 })
 
 export const destinations = pgTable("destinations", {
-    id: uuid("id").defaultRandom(),
+    id: uuid("id").defaultRandom().primaryKey(),
     name: text().notNull(),
     overall_page_url: text().notNull(),
     best_time_to_visit: text().notNull(),
-    
+    travel_advice: text().notNull(),
+    destination_costs: text(),
+    where_to_go: text()
 
 })
 export type TourPackage = typeof tourPackages.$inferSelect;

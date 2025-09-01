@@ -4,7 +4,7 @@ export default function Footer() {
     return (
         <footer className="bg-white py-16 border-t border-gray-200">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div className="grid md:grid-cols-4 gap-8">
+                <div className="grid md:grid-cols-5 gap-8">
                     <div>
                         <div className="flex items-center space-x-2 mb-6">
                             <div className="w-8 h-8 rounded-sm flex items-center justify-center">
@@ -68,6 +68,23 @@ export default function Footer() {
                                     Sitemap
                                 </Link>
                             </li>
+                        </ul>
+                    </div>
+
+                    <div>
+                        <h4 className="font-medium text-gray-900 mb-4">
+                            Safaris by country
+                        </h4>
+                        <ul className="space-y-2 text-sm text-gray-600">
+                            <li>
+                                <Link href="/safaris/tanzania" className="hover:text-gray-900">
+                                    Tanzania Safaris
+                                </Link>
+                                <Link href="/safaris/tanzania" className="hover:text-gray-900">
+                                    Visit Zanzibar
+                                </Link>
+                            </li>
+
                         </ul>
                     </div>
 
