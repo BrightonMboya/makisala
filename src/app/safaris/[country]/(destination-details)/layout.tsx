@@ -51,41 +51,29 @@ export default function Layout({children, params}: {
 
                     {/* Mobile navigation menu */}
                     <div className="md:hidden">
-                        <div className="px-2 pt-2 pb-3 space-y-1  border-t border-gray-200">
-                            <a
-                                href="#why-go"
-                                className="text-gray-900 block px-3 py-2 text-base font-medium border-l-4 border-amber-600 bg-amber-50"
+                        <div className="px-2 flex-col flex pt-2 pb-3 space-y-1  border-t border-gray-200">
+                            <Link
+                                href={`/safaris/${country}/why-go`}
+                                className={`${pathname.includes("why-go") ? 'text-primary bg-primary/20 py-2 font-semibold' : 'text-gray-600 hover:text-gray-900 '} px-3 py-2 text-sm font-medium`}
                             >
                                 Why Go
-                            </a>
-                            <a
-                                href="#where-to-go"
-                                className="text-gray-600 hover:text-gray-900 block px-3 py-2 text-base font-medium"
-                            >
+                            </Link>
+                            <Link href={`/safaris/${country}/where-to-go`}
+                                  className={`${pathname.includes('where-to-go') ? 'text-primary bg-primary/20 py-2 font-semibold' : 'text-gray-600 hover:text-gray-900 '} px-3 py-2 text-sm font-medium`}>
                                 Where To Go
-                            </a>
-                            <a href="#when-to-go"
-                               className="text-gray-600 hover:text-gray-900 block px-3 py-2 text-base font-medium">
+                            </Link>
+                            <Link href={`/safaris/${country}/best-time-to-go`}
+                                  className={`${pathname.includes('best-time-to-go') ? 'text-primary bg-primary/20 py-2 font-semibold' : 'text-gray-600 hover:text-gray-900 '} px-3 py-2 text-sm font-medium`}>
                                 When To Go
-                            </a>
-                            <a
-                                href="#travel-advice"
-                                className="text-gray-600 hover:text-gray-900 block px-3 py-2 text-base font-medium"
-                            >
+                            </Link>
+                            <Link href={`/safaris/${country}/travel-advice`}
+                                  className={`${pathname.includes('travel-advice') ? 'text-primary bg-primary/20 py-2 font-semibold' : 'text-gray-600 hover:text-gray-900 '} px-3 py-2 text-sm font-medium`}>
                                 Travel Advice
-                            </a>
-                            <a
-                                href="#tours-safaris"
-                                className="text-gray-600 hover:text-gray-900 block px-3 py-2 text-base font-medium"
-                            >
+                            </Link>
+                            <Link href={`/safaris/${country}`}
+                                  className={`${pathname.endsWith(country) ? 'text-primary bg-primary/20 py-2 font-semibold' : 'text-gray-600 hover:text-gray-900 '} px-3 py-2 text-sm font-medium`}>
                                 Tours & Safaris
-                            </a>
-                            <a
-                                href="#accommodation"
-                                className="text-gray-600 hover:text-gray-900 block px-3 py-2 text-base font-medium"
-                            >
-                                Accommodation
-                            </a>
+                            </Link>
 
                         </div>
                     </div>

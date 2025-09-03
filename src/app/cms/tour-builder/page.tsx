@@ -84,7 +84,6 @@ export default function TourPackageBuilder() {
     const onSubmit = async (data: TourPackageForm) => {
         setIsSubmitting(true);
         try {
-            console.log(data)
             // Import the API function dynamically to avoid build issues
             const {createTourPackage} = await import('@/lib/cms-service');
 
