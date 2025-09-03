@@ -1,12 +1,13 @@
 import {MarkdownRenderer} from "@/components/markdown-renderer";
 import {notFound} from "next/navigation";
 import type {Metadata} from "next";
-import {IParams} from "@/app/destinations/[country]/types";
+import {IParams} from "@/app/safaris/[country]/types";
 import {getBestTimeToVisit} from "@/lib/cms-service";
 import Script from "next/script";
-import {BreadcrumbSchema} from "@/components/schema";
+import {BreadcrumbSchema, FAQSchema} from "@/components/schema";
 import {BASE_URL} from "@/lib/constants";
 import {capitalize} from "@/lib/utils";
+import {FAQ} from "@/components/faq";
 
 export async function generateMetadata({params}: IParams): Promise<Metadata> {
     try {
@@ -43,6 +44,7 @@ export default async function Page({params}: IParams) {
     const {country} = await params;
     const destination = await getBestTimeToVisit(country);
 
+
     if (!destination) {
         return notFound()
     }
@@ -53,17 +55,24 @@ export default async function Page({params}: IParams) {
                     BreadcrumbSchema({
                         breadcrumbs: [
                             {name: "Home", url: BASE_URL},
-                            {name: "Tanzania", url: `${BASE_URL}/destinations/${country}`},
+                            {name: "Tanzania", url: `${BASE_URL}/safaris/${country}`},
                             {
                                 name: `Best time to go to ${capitalize(country)}`,
-                                url: `${BASE_URL}/destinations/${country}/best-time-to-go`
+                                url: `${BASE_URL}/safaris/${country}/best-time-to-go`
                             },
                         ]
                     }),
+                    destination.faqs && FAQSchema({faqs: destination.faqs})
                 ])}
             </Script>
             <h1 className="pb-10 text-4xl font-semibold">{destination.title}</h1>
             <MarkdownRenderer content={destination.content}/>
+            {destination.faqs &&
+                <FAQ
+                    faqs={destination.faqs}
+                />
+            }
+
         </main>
     )
 }

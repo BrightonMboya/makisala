@@ -1,3 +1,5 @@
+import {FAQItem} from "@/components/faq";
+
 export const OrganizationSchema = () => {
     return {
         "@context": "https://schema.org",
@@ -89,6 +91,24 @@ export const BreadcrumbSchema = ({breadcrumbs}: {
         }))
     };
 };
+
+export const FAQSchema = ({faqs}: {
+    faqs: FAQItem[];
+}) => {
+    return {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        "mainEntity": faqs.map(faq => ({
+            "@type": "Question",
+            "name": faq.question,
+            "acceptedAnswer": {
+                "@type": "Answer",
+                "text": faq.answer,
+            },
+        })),
+    };
+};
+
 
 export const TouristTripSchema = ({
                                       name,

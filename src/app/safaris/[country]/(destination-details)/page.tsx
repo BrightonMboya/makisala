@@ -30,14 +30,13 @@ export async function generateStaticParams() {
 
 export default async function Page({params}: Params) {
     const {country} = await params;
+    const tours = await getToursByCountry(country);
 
-    if (!countries.includes(country)) {
+    if (!tours) {
         return notFound()
     }
-
-    const tours = await getToursByCountry(country);
     return (
-        <>
+        <main>
             <Script type={'application/ld+json'} strategy={'lazyOnload'}>
                 {JSON.stringify([
                     BreadcrumbSchema({
@@ -49,7 +48,7 @@ export default async function Page({params}: Params) {
                     }),
                 ])}
             </Script>
-            <main className="mt-[60px]">
+            <section>
                 <div className="min-h-screen bg-background">
                     <div className="bg-gradient-to-r from-safari-gold/10 to-safari-bronze/10 border-b border-border">
                         <div className="container mx-auto px-4 py-8">
@@ -70,7 +69,7 @@ export default async function Page({params}: Params) {
                         </div>
                     </div>
                 </div>
-            </main>
-        </>
+            </section>
+        </main>
     )
 }

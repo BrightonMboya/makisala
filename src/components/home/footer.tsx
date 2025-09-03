@@ -80,8 +80,16 @@ export default function Footer() {
                                 <Link href="/safaris/tanzania" className="hover:text-gray-900">
                                     Tanzania Safaris
                                 </Link>
-                                <Link href="/safaris/tanzania" className="hover:text-gray-900">
+                            </li>
+
+                            <li>
+                                <Link href="/safaris/zanzibar" className="hover:text-gray-900">
                                     Visit Zanzibar
+                                </Link>
+                            </li>
+                            <li>
+                                <Link href="/safaris/rwanda" className="hover:text-gray-900">
+                                    Rwanda Gorilla Trekking
                                 </Link>
                             </li>
 

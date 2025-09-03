@@ -1,12 +1,13 @@
 import {MarkdownRenderer} from "@/components/markdown-renderer";
 import {notFound} from "next/navigation";
 import type {Metadata} from "next";
-import {IParams} from "@/app/destinations/[country]/types";
-import {BreadcrumbSchema} from "@/components/schema";
+import {IParams} from "@/app/safaris/[country]/types";
+import {BreadcrumbSchema, FAQSchema} from "@/components/schema";
 import {BASE_URL} from "@/lib/constants";
 import {capitalize} from "@/lib/utils";
 import Script from "next/script";
 import {getTravelAdvice} from "@/lib/cms-service";
+import {FAQ} from "@/components/faq";
 
 export async function generateMetadata({params}: IParams): Promise<Metadata> {
     try {
@@ -53,17 +54,24 @@ export default async function Page({params}: IParams) {
                     BreadcrumbSchema({
                         breadcrumbs: [
                             {name: "Home", url: BASE_URL},
-                            {name: "Tanzania", url: `${BASE_URL}/destinations/${country}`},
+                            {name: "Tanzania", url: `${BASE_URL}/safaris/${country}`},
                             {
                                 name: `${capitalize(country)} Travel Advice`,
-                                url: `${BASE_URL}/destinations/${country}/travel-advice`
+                                url: `${BASE_URL}/safaris/${country}/travel-advice`
                             },
                         ]
                     }),
+                    destination.faqs && FAQSchema({faqs: destination.faqs})
                 ])}
             </Script>
             <h1 className="pb-5 text-4xl font-medium">{destination.title}</h1>
             <MarkdownRenderer content={destination.content!}/>
+            {destination.faqs &&
+                <FAQ
+                    faqs={destination.faqs}
+                />
+            }
+
         </main>
     )
 }

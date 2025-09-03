@@ -4,8 +4,9 @@ import type {Metadata} from "next";
 
 import {getPageBySlug, getPageSlugs} from "@/lib/cms-service";
 import {MarkdownRenderer} from "@/components/markdown-renderer";
-import {BlogSchema, BreadcrumbSchema} from "@/components/schema";
+import {BlogSchema, BreadcrumbSchema, FAQSchema} from "@/components/schema";
 import Script from "next/script";
+import {FAQ} from "@/components/faq";
 
 export async function generateMetadata({
                                            params,
@@ -72,7 +73,8 @@ export default async function Page({params,}: { params: Promise<{ slug: string }
                             headline: `${page.title}`,
                             image: `${page.featured_image_url}`,
                             description: `${page.excerpt}`,
-                        })
+                        }),
+                        page.faqs && FAQSchema({faqs: page.faqs}),
                     ])}
                 </Script>
                 <div className="min-h-screen bg-white">
@@ -112,6 +114,11 @@ export default async function Page({params,}: { params: Promise<{ slug: string }
                         </header>
 
                         <MarkdownRenderer content={page.content}/>
+                        {page.faqs &&
+                            <FAQ
+                                faqs={page.faqs}
+                            />
+                        }
                     </article>
                 </div>
             </main>

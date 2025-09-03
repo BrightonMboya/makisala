@@ -8,11 +8,11 @@ import {
     integer,
     boolean,
     json,
-    real,
     numeric, primaryKey
 } from "drizzle-orm/pg-core";
 import {sql} from "drizzle-orm"
 import {relations} from 'drizzle-orm';
+import {FAQItem} from "@/components/faq";
 
 export const PageType = pgEnum("pageType", [
     'page',
@@ -33,6 +33,7 @@ export const pages = pgTable("pages", {
     meta_title: text(),
     meta_description: text(),
     meta_keywords: text(),
+    faqs: json("faqs").$type<FAQItem[]>(),
     page_type: PageType().default("page"),
     status: PageStatus().default("published"),
     createdAt: timestamp({precision: 3, mode: "string"})
