@@ -14,6 +14,14 @@ import Link from "next/link";
 import {Sheet, SheetContent, SheetTrigger} from "@/components/ui/sheet";
 import {safaris_nav as safaris, experiences, destinations, inspirations, about_us_nav} from "@/lib/constants";
 import {InquiryDialog} from "@/components/enquire-dialog-button";
+import {articles_url} from "@/app/where-to-go/[month]/_components/data";
+import {capitalize} from "@/lib/utils";
+import {
+    Accordion,
+    AccordionContent,
+    AccordionItem,
+    AccordionTrigger,
+} from "@/components/ui/accordion"
 
 export default function Nav() {
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -169,6 +177,30 @@ export default function Nav() {
 
                                 <NavigationMenuItem>
                                     <NavigationMenuTrigger
+                                        className="text-sm font-medium uppercase bg-transparent hover:bg-transparent data-[active]:bg-transparent data-[state=open]:bg-transparent">
+                                        Travel by Month
+                                    </NavigationMenuTrigger>
+                                    <NavigationMenuContent>
+                                        <div className="w-[400px] gap-3 p-6">
+                                            <div className="space-y-3">
+                                                {articles_url.map((page, index) => (
+                                                    <NavigationMenuLink asChild key={index}>
+                                                        <Link
+                                                            href={`/where-to-go/${page.month}`}
+                                                            className="block select-none rounded-md px-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground">
+                                                            <div className="text-sm font-medium leading-none">
+                                                                {capitalize(page.month)}
+                                                            </div>
+                                                        </Link>
+                                                    </NavigationMenuLink>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </NavigationMenuContent>
+                                </NavigationMenuItem>
+
+                                <NavigationMenuItem>
+                                    <NavigationMenuTrigger
                                         className="text-sm font-medium bg-transparent hover:bg-transparent data-[active]:bg-transparent data-[state=open]:bg-transparent">
                                         ABOUT US
                                     </NavigationMenuTrigger>
@@ -223,10 +255,16 @@ export default function Nav() {
                                         </div>
                                     </div>
 
-                                    <div className="space-y-4">
-                                        <div className="space-y-2">
-                                            <h3 className="font-medium">SAFARIS</h3>
-                                            <div className="pl-4 space-y-2 text-sm text-gray-600">
+
+                                    <Accordion
+                                        type="single"
+                                        collapsible
+                                        className="w-full"
+                                        // defaultValue="item-1"
+                                    >
+                                        <AccordionItem value="safaris">
+                                            <AccordionTrigger>SAFARIS</AccordionTrigger>
+                                            <AccordionContent className="flex flex-col gap-4 text-balance pl-5">
                                                 {safaris.map((safari) => (
                                                     <Link
                                                         href={safari.page_url}
@@ -236,12 +274,11 @@ export default function Nav() {
                                                         {safari.name}
                                                     </Link>
                                                 ))}
-                                            </div>
-                                        </div>
-
-                                        <div className="space-y-2">
-                                            <h3 className="font-medium">DESTINATIONS</h3>
-                                            <div className="pl-4 space-y-2 text-sm text-gray-600">
+                                            </AccordionContent>
+                                        </AccordionItem>
+                                        <AccordionItem value="Destinations">
+                                            <AccordionTrigger>DESTINATIONS</AccordionTrigger>
+                                            <AccordionContent className="flex flex-col gap-4 text-balance pl-5">
                                                 {destinations.top_destinations.map((dest) => (
                                                     <Link
                                                         href={dest.page_url}
@@ -251,40 +288,64 @@ export default function Nav() {
                                                         {dest.name}
                                                     </Link>
                                                 ))}
-                                            </div>
-                                        </div>
-
-                                        {/*<div className="space-y-2">*/}
-                                        {/*    <h3 className="font-medium">EXPERIENCES</h3>*/}
-                                        {/*    <div className="pl-4 space-y-2 text-sm text-gray-600">*/}
-                                        {/*        {experiences.map((experience) => (*/}
-                                        {/*            <Link*/}
-                                        {/*                href="#"*/}
-                                        {/*                key={experience.name}*/}
-                                        {/*                className="block hover:text-gray-900">*/}
-                                        {/*                {experience.name}*/}
-                                        {/*            </Link>*/}
-                                        {/*        ))}*/}
-                                        {/*    </div>*/}
-                                        {/*</div>*/}
-
-                                        <div className="space-y-2">
-                                            <h3 className="font-medium">INSPIRATIONS</h3>
-                                            <div className="pl-4 space-y-2 text-sm text-gray-600">
+                                            </AccordionContent>
+                                        </AccordionItem>
+                                        <AccordionItem value="Travel by month">
+                                            <AccordionTrigger className="font-medium uppercase">Travel by
+                                                month</AccordionTrigger>
+                                            <AccordionContent className="flex flex-col gap-4 text-balance pl-5">
+                                                {articles_url.map((page, index) => (
+                                                    <Link
+                                                        href={`/where-to-go/${page.month}`}
+                                                        key={index}
+                                                        onClick={() => setMobileMenuOpen(false)}
+                                                    >
+                                                        <p>{capitalize(page.month)}</p>
+                                                    </Link>
+                                                ))}
+                                            </AccordionContent>
+                                        </AccordionItem>
+                                        <AccordionItem value="Inspirations">
+                                            <AccordionTrigger
+                                                className="font-medium uppercase">Inspirations</AccordionTrigger>
+                                            <AccordionContent className="flex flex-col gap-4 text-balance pl-5">
                                                 {inspirations.map((inspiration) => (
-                                                    <Link key={inspiration.name} className="block hover:text-gray-900"
+                                                    <Link key={inspiration.name}
+                                                          className="block hover:text-gray-900"
                                                           href={inspiration.page_url}
                                                           onClick={() => setMobileMenuOpen(false)}
                                                     >
                                                         {inspiration.name}
                                                     </Link>
                                                 ))}
-                                            </div>
-                                        </div>
-                                        <Link href="/about" className="font-medium">
-                                            ABOUT US
-                                        </Link>
-                                    </div>
+                                            </AccordionContent>
+                                        </AccordionItem>
+                                        <AccordionItem value="About us">
+                                            <AccordionTrigger className="font-medium uppercase">About
+                                                us</AccordionTrigger>
+                                            <AccordionContent className="flex flex-col gap-4 text-balance pl-5">
+                                                {about_us_nav.map((item, index) => (
+                                                    <Link href={item.page_url} key={index}>
+                                                        {item.name}
+                                                    </Link>
+                                                ))}
+                                            </AccordionContent>
+                                        </AccordionItem>
+                                    </Accordion>
+
+                                    {/*<div className="space-y-2">*/}
+                                    {/*    <h3 className="font-medium">EXPERIENCES</h3>*/}
+                                    {/*    <div className="pl-4 space-y-2 text-sm text-gray-600">*/}
+                                    {/*        {experiences.map((experience) => (*/}
+                                    {/*            <Link*/}
+                                    {/*                href="#"*/}
+                                    {/*                key={experience.name}*/}
+                                    {/*                className="block hover:text-gray-900">*/}
+                                    {/*                {experience.name}*/}
+                                    {/*            </Link>*/}
+                                    {/*        ))}*/}
+                                    {/*    </div>*/}
+                                    {/*</div>*/}
 
                                     <div className="pt-6 border-t">
                                         <InquiryDialog>
