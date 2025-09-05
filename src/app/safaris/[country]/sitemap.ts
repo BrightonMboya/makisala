@@ -4,7 +4,7 @@ import {BASE_URL} from "@/lib/constants";
 
 
 export default function sitemap(): MetadataRoute.Sitemap {
-    const today = new Date();
+    const today = new Date("2025-09-05");
 
     return countries.map(country => ({
         url: `${BASE_URL}/${country}`,

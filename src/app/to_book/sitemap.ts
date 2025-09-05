@@ -1,5 +1,6 @@
 import type {MetadataRoute} from 'next'
 import {db, tourPackages} from "@/db"
+import {BASE_URL} from "@/lib/constants";
 
 
 export default async function generateSitemaps({id}: { id: number }): Promise<MetadataRoute.Sitemap> {
@@ -9,7 +10,7 @@ export default async function generateSitemaps({id}: { id: number }): Promise<Me
         .from(tourPackages)
 
     return tours_slugs.map((tour) => ({
-        url: `https://makisala.com/to_book/${tour.slug}`,
+        url: `${BASE_URL}/${tour.slug}`,
         lastModified: new Date(tour.updatedAt).toISOString()
     }))
 }

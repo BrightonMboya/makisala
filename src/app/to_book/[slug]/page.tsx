@@ -96,7 +96,7 @@ export default async function Page({params,}: { params: Promise<{ slug: string }
                     })
                 ])}
             </Script>
-            <div className="min-h-screen bg-gradient-to-br from-background to-accent/20">
+            <div className="min-h-screen">
                 {/* Hero Section */}
                 <div className="relative h-[60vh] lg:h-[80vh] overflow-hidden">
                     <div
