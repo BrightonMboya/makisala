@@ -2,10 +2,8 @@
 
 import {useState, useEffect, useCallback} from "react"
 import {useRouter, useSearchParams} from "next/navigation"
-import {TourCard} from "./_components/tour-card"
-import {TourFilters, type FilterState} from "./_components/tour-filter"
-import {Search, MapPin} from "lucide-react"
-import {Input} from "@/components/ui/input"
+import TourCard from "@/app/safaris/[country]/[modifier]/_components/TourCard"
+import {TourFilters, type FilterState} from "@/app/safaris/[country]/(destination-details)/_components/tour-filter";
 import {Button} from "@/components/ui/button"
 
 interface Tour {
@@ -151,43 +149,6 @@ export default function ToursPage() {
 
     return (
         <div className="min-h-screen bg-background">
-            {/* Header */}
-            <header className="bg-card border-b border-border">
-                <div className="container mx-auto px-4 py-6">
-                    <div className="flex items-center justify-between mb-6">
-                        <div>
-                            <h1 className="text-3xl font-bold text-foreground text-balance">
-                                Discover Amazing Tours
-                            </h1>
-                            <p className="text-muted-foreground mt-2 text-pretty">
-                                Explore the world with our carefully curated travel experiences
-                            </p>
-                        </div>
-                        <div className="flex items-center gap-2 text-muted-foreground">
-                            <MapPin className="w-5 h-5"/>
-                            <span className="text-sm">
-                {isLoading
-                    ? "Loading..."
-                    : `${pagination.totalCount} tours available`}
-              </span>
-                        </div>
-                    </div>
-
-                    {/* Search Bar */}
-                    <div className="relative max-w-md">
-                        <Search
-                            className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4"/>
-                        <Input
-                            placeholder="Search tours, destinations, or activities..."
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            className="pl-10 bg-input border-border"
-                        />
-                    </div>
-                </div>
-            </header>
-
-            {/* Main Content */}
             <div className="container mx-auto px-4 py-8">
                 <div className="flex flex-col lg:flex-row gap-8">
                     {/* Filters Sidebar */}

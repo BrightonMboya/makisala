@@ -115,18 +115,18 @@ export const destinations = {
         {
             name: "Tanzania",
             description: "Endless plains and incredible wildlife",
-            page_url: "/destinations/tanzania"
+            page_url: "/safaris/tanzania?country=tanzania"
         },
         // {
         //   name: "Ngorongoro Crater",
         //   description: "Africa's Garden of Eden",
         //   page_url: "/location/ngorongoro-crater"
         // },
-        {name: "Kilimanjaro", description: "Africa's highest peak", page_url: "/location/kilimanjaro"},
-        {name: "Zanzibar", description: "Conclude your Tanzania Safari here", page_url: "/location/zanzibar"},
+        {name: "Kilimanjaro", description: "Africa's highest peak", page_url: "/safaris/kilimanjaro"},
+        {name: "Zanzibar", description: "Conclude your Tanzania Safari here", page_url: "/safaris/zanzibar"},
     ],
     east_africa: [
-        {name: "Rwanda", description: "Gorilla trekking adventures", page_url: "/location/rwanda"},
+        {name: "Rwanda", description: "Gorilla trekking adventures", page_url: "/safaris/rwanda?country=rwanda"},
         // { name: "Uganda", description: "Gorilla trekking adventures", page_url: "/location/uganda" },
         // { name: "Zambia", description: "Walking safaris in pristine parks", page_url: "/location/zambia" },
     ],

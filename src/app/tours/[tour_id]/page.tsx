@@ -6,6 +6,7 @@ import {DesktopNavigation, MobileNavigation} from "@/app/to_book/[slug]/_compone
 import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
 import {MarkdownRenderer} from "@/components/markdown-renderer";
 import {inclusions, exclusions} from "@/lib/constants";
+import {capitalize} from "@/lib/utils";
 
 
 interface Params {
@@ -25,7 +26,7 @@ export default async function Page({params}: Params) {
         <>
             <div className="min-h-screen bg-gradient-to-br from-background to-accent/20">
                 {/* Hero Section */}
-                <div className="relative h-[60vh] lg:h-[80vh] overflow-hidden">
+                <div className="relative h-[60vh] overflow-hidden">
                     <div
                         className="absolute inset-0 bg-cover bg-center bg-no-repeat"
                         style={{backgroundImage: `url(${tour.img_url})`}}
@@ -54,11 +55,6 @@ export default async function Page({params}: Params) {
                                 <h1 className="text-3xl md:text-6xl font-bold text-white leading-tight">
                                     {tour.tourName}
                                 </h1>
-
-                                <p className="text-xl text-white/90 flex items-center gap-2">
-                                    <Globe className="h-5 w-5"/>
-                                    {/*{tourPackageData.destination}*/}
-                                </p>
                             </div>
                         </div>
                     </div>

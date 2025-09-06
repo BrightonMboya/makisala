@@ -5,7 +5,7 @@ import Script from "next/script";
 import {notFound} from "next/navigation"
 import {countries, countryDescriptions} from "@/lib/p_seo_info";
 import {getToursByCountry} from "@/lib/cms-service";
-import {TourCard} from "@/app/safaris/[country]/[modifier]/_components/TourCard";
+import ToursPage from "@/app/safaris/[country]/(destination-details)/_components/tour-page";
 
 interface Params {
     params: {
@@ -58,16 +58,7 @@ export default async function Page({params}: Params) {
                             </p>
                         </div>
                     </div>
-
-                    {/* Tours Grid */}
-                    <div className="container mx-auto px-4 py-8">
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                            {tours.map((tour) => (
-                                // @ts-ignore
-                                <TourCard key={tour.id} tour={tour}/>
-                            ))}
-                        </div>
-                    </div>
+                    <ToursPage/>
                 </div>
             </section>
         </main>
