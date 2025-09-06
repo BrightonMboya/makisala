@@ -1,5 +1,27 @@
 // these are used for programatic seo in the safaris/country/modifer route
 export const countries = ['tanzania']
+export const tour_tags = [
+    'private',
+    'group',
+    'budget',
+    'camping',
+    'non-camping',
+    "fly_in",
+    "family",
+    "beach",
+    "honeymoon",
+    "gorilla_tracking",
+    // "photographic",
+    // "climbing",
+    // "walking",
+    // "selfdrive",
+    // "guided_selfdrive",
+    // "chimp_tracking",
+    // "mountain_bike",
+    // "canoe",
+    // "horseback",
+    // "birding",
+]
 export const modifiers = [
     '1-day',
     '2-day',
@@ -13,25 +35,7 @@ export const modifiers = [
     '10-day',
     '11-day',
     '12-day',
-    'private',
-    'group',
-    'camping',
-    'non-camping',
-    "fly_in",
-    "family",
-    "beach",
-    "honeymoon",
-    "gorilla_tracking",
-    "photographic",
-    "climbing",
-    "walking",
-    "selfdrive",
-    "guided_selfdrive",
-    "chimp_tracking",
-    "mountain_bike",
-    "canoe",
-    "horseback",
-    "birding",
+    ...tour_tags
 ]
 
 export const safariDescriptions: Record<string, string> = {
