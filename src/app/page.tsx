@@ -59,81 +59,6 @@ export default function Page() {
                     </div>
                 </section>
 
-                {/* Founder Quote Section */}
-                <section className="py-20 bg-gray-50">
-                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                        <div className="grid lg:grid-cols-2 gap-16 items-center">
-                            <div>
-                                {/*<div className="text-sm font-medium tracking-wider text-gray-500 mb-6">*/}
-                                {/*    BRIGHTON MBOYA, CO-FOUNDER MAKISALA*/}
-                                {/*</div>*/}
-                                <h2 className="text-4xl font-light mb-8 text-gray-900">
-                                    We’re in the business of making wild dreams come true.
-                                </h2>
-                                <div className="space-y-6 text-gray-700 leading-relaxed">
-                                    <p>
-                                        At Makisala, we plan life-changing safaris with heart, purpose, and deep local
-                                        expertise.
-                                        We know Tanzania and East Africa like home because it is.
-
-                                        We believe a great safari isn’t just about what you see. It’s about <strong>how
-                                        it
-                                        makes
-                                        you feel more connected</strong>, more alive, more in awe of the world.
-
-                                        And yes, we’re proud to give back: every trip supports the people and places
-                                        that
-                                        make Africa magical.
-                                    </p>
-                                    <p className="font-medium">
-                                        Let's make the world a little wilder, one safari at a time.
-                                    </p>
-                                </div>
-                            </div>
-                            <div className="relative w-[400px] lg:w-[600px] h-[300px] lg:h-[400px]">
-                                <Image
-                                    src="https://res.cloudinary.com/dr2tdyz2w/image/upload/v1753373584/family-safari.jpg_vu3zur.jpg"
-                                    alt="Makisala Family Safari"
-                                    fill={true}
-                                    className="rounded-lg lg:w-[500px] object-cover"
-                                />
-                            </div>
-                        </div>
-                    </div>
-                </section>
-
-                {/* Family Passion Section */}
-                <section className="pt-16 bg-white">
-                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-                        <div className="text-sm font-medium tracking-wider text-gray-500 mb-4">
-                            FAMILY PASSION MEETS SAFARI EXPERTISE
-                        </div>
-                    </div>
-                </section>
-
-                {/* Why Travel With Us Section */}
-                <section className="bg-white">
-                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                        <div className="text-center mb-16">
-                            <h2 className="text-4xl font-light text-gray-900 mb-4">
-                                Why travel with MAKISALA
-                            </h2>
-                        </div>
-                        <div className="grid md:grid-cols-3 gap-12">
-                            {why_travel_with_us.map((item, index) => (
-                                <ImageCard
-                                    key={index}
-                                    img_url={item.img_url}
-                                    alt={item.alt}
-                                    title={item.title}
-                                    description={item.description}
-                                    rounded={false}
-                                />
-                            ))}
-                        </div>
-                    </div>
-                </section>
-
                 {/* Destinations and Experiences Section */}
                 <section className="pt-16 mt-16 bg-white">
                     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
@@ -221,6 +146,38 @@ export default function Page() {
                                 />
                             </div>
 
+                        </div>
+                    </div>
+                </section>
+
+                {/* Family Passion Section */}
+                <section className="pt-16 bg-white">
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+                        <div className="text-sm font-medium tracking-wider text-gray-500 mb-4">
+                            FAMILY PASSION MEETS SAFARI EXPERTISE
+                        </div>
+                    </div>
+                </section>
+
+                {/* Why Travel With Us Section */}
+                <section className="bg-white">
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                        <div className="text-center mb-16">
+                            <h2 className="text-4xl font-light text-gray-900 mb-4">
+                                Why travel with MAKISALA
+                            </h2>
+                        </div>
+                        <div className="grid md:grid-cols-3 gap-12">
+                            {why_travel_with_us.map((item, index) => (
+                                <ImageCard
+                                    key={index}
+                                    img_url={item.img_url}
+                                    alt={item.alt}
+                                    title={item.title}
+                                    description={item.description}
+                                    rounded={false}
+                                />
+                            ))}
                         </div>
                     </div>
                 </section>
@@ -357,6 +314,49 @@ export default function Page() {
                 </section>
 
                 <C2A/>
+
+                {/* Founder Quote Section */}
+                <section className="py-20 bg-gray-50">
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                        <div className="grid lg:grid-cols-2 gap-16 items-center">
+                            <div>
+                                {/*<div className="text-sm font-medium tracking-wider text-gray-500 mb-6">*/}
+                                {/*    BRIGHTON MBOYA, CO-FOUNDER MAKISALA*/}
+                                {/*</div>*/}
+                                <h2 className="text-4xl font-light mb-8 text-gray-900">
+                                    We’re in the business of making wild dreams come true.
+                                </h2>
+                                <div className="space-y-6 text-gray-700 leading-relaxed">
+                                    <p>
+                                        At Makisala, we plan life-changing safaris with heart, purpose, and deep local
+                                        expertise.
+                                        We know Tanzania and East Africa like home because it is.
+
+                                        We believe a great safari isn’t just about what you see. It’s about <strong>how
+                                        it
+                                        makes
+                                        you feel more connected</strong>, more alive, more in awe of the world.
+
+                                        And yes, we’re proud to give back: every trip supports the people and places
+                                        that
+                                        make Africa magical.
+                                    </p>
+                                    <p className="font-medium">
+                                        Let's make the world a little wilder, one safari at a time.
+                                    </p>
+                                </div>
+                            </div>
+                            <div className="relative w-[400px] lg:w-[600px] h-[300px] lg:h-[400px]">
+                                <Image
+                                    src="https://res.cloudinary.com/dr2tdyz2w/image/upload/v1753373584/family-safari.jpg_vu3zur.jpg"
+                                    alt="Makisala Family Safari"
+                                    fill={true}
+                                    className="rounded-lg lg:w-[500px] object-cover"
+                                />
+                            </div>
+                        </div>
+                    </div>
+                </section>
 
                 {/* Reviews Section */}
                 {/*<section className="py-20 bg-gray-900 text-white">*/}

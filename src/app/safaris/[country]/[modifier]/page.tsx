@@ -1,5 +1,5 @@
 import {getTours} from "@/lib/cms-service";
-import {TourCard} from "./_components/TourCard";
+import TourCard from "./_components/TourCard";
 import {countries, modifiers, safariDescriptions} from "@/lib/p_seo_info";
 import {capitalize} from "@/lib/utils";
 import {BreadcrumbSchema} from "@/components/schema";

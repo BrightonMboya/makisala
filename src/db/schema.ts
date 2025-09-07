@@ -8,7 +8,7 @@ import {
     integer,
     boolean,
     json,
-    numeric, primaryKey
+    numeric
 } from "drizzle-orm/pg-core";
 import {sql} from "drizzle-orm"
 import {relations} from 'drizzle-orm';
@@ -255,8 +255,35 @@ export const destinations = pgTable("destinations", {
     travel_advice: text().notNull(),
     destination_costs: text(),
     where_to_go: text()
-
 })
+
+interface WildlifeHighlights {
+    name: string;
+    abundance: 'Abundant' | 'common' | 'occasional' | 'rare'
+}
+
+interface ParkOverview {
+    name: string;
+    description: string;
+}
+
+export const nationalParks = pgTable("national_parks", {
+    id: uuid("id").defaultRandom().primaryKey(),
+    name: text().notNull(),
+    country: text().notNull(),
+    overview_page_id: text().references(() => pages.id),
+    wildlife_page_id: text().references(() => pages.id),
+    // birds_page_id: text().references(() => pages.id),
+    weather_page_id: text().references(() => pages.id),
+    malaria_safety_page_id: text().references(() => pages.id),
+    how_to_get_there_page_id: text().references(() => pages.id),
+    wildlife_highlights: json('wildlife_highlights').$type<WildlifeHighlights[]>(),
+    park_overview: json('park_overview').$type<ParkOverview[]>(),
+    createdAt: timestamp({precision: 3, mode: "string"})
+        .default(sql`CURRENT_TIMESTAMP`)
+        .notNull(),
+    updatedAt: timestamp({precision: 3, mode: "string"}).notNull(),
+});
 export type TourPackage = typeof tourPackages.$inferSelect;
 export type NewTourPackage = typeof tourPackages.$inferInsert;
 export type Itinerary = typeof itineraries.$inferSelect;
