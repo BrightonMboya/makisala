@@ -6,6 +6,7 @@ import {notFound} from "next/navigation"
 import {countries, countryDescriptions} from "@/lib/p_seo_info";
 import {getToursByCountry} from "@/lib/cms-service";
 import ToursPage from "@/app/safaris/[country]/(destination-details)/_components/tour-page";
+import {Suspense} from "react";
 
 interface Params {
     params: {
@@ -58,7 +59,9 @@ export default async function Page({params}: Params) {
                             </p>
                         </div>
                     </div>
-                    <ToursPage/>
+                    <Suspense>
+                        <ToursPage/>
+                    </Suspense>
                 </div>
             </section>
         </main>
