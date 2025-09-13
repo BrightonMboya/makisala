@@ -273,6 +273,7 @@ export const nationalParks = pgTable("national_parks", {
     country: text().notNull(),
     overview_page_id: text().references(() => pages.id),
     wildlife_page_id: text().references(() => pages.id),
+    best_time_to_visit_id: text().references(() => pages.id),
     // birds_page_id: text().references(() => pages.id),
     weather_page_id: text().references(() => pages.id),
     malaria_safety_page_id: text().references(() => pages.id),

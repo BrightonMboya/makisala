@@ -1,5 +1,5 @@
 "use server"
-import {db, inquiries, tours} from "../db";
+import {db, inquiries, nationalParks, tours} from "../db";
 import {pages} from "@/db/schema";
 import {and, desc, eq, or, sql} from "drizzle-orm";
 import cuid from "cuid";
@@ -358,4 +358,37 @@ export const getTravelAdvice = async (destination: string) => {
     return await db.query.pages.findFirst({
         where: eq(pages.id, country?.travel_advice!)
     })
+}
+
+export async function getNPInfo(name: string, pageColumn: keyof typeof nationalParks) {
+    // Validate that the pageColumn exists
+    const validPageColumns = [
+        "overview_page_id",
+        "wildlife_page_id",
+        "best_time_to_visit_id",
+        "weather_page_id",
+        "malaria_safety_page_id",
+        "how_to_get_there_page_id",
+    ] as const;
+
+    if (!validPageColumns.includes(pageColumn as any)) {
+        throw new Error("Invalid page column");
+    }
+
+    // Alias for join
+    const pageAlias = pages;
+
+    // Single query with join
+    const rows = await db
+        .select({
+            park: nationalParks,
+            page: pageAlias,
+        })
+        .from(nationalParks)
+        // @ts-expect-error
+        .leftJoin(pageAlias, eq(pageAlias.id, nationalParks[pageColumn]))
+        .where(eq(nationalParks.name, name))
+        .limit(1);
+
+    return rows[0] ?? null;
 }
