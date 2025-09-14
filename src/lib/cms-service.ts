@@ -381,7 +381,12 @@ export async function getNPInfo(name: string, pageColumn: keyof typeof nationalP
     // Single query with join
     const rows = await db
         .select({
-            park: nationalParks,
+            park: {
+                name: nationalParks.name,
+                country: nationalParks.country,
+                wildlife_highlights: nationalParks.wildlife_highlights,
+                park_overview: nationalParks.park_overview
+            },
             page: pageAlias,
         })
         .from(nationalParks)

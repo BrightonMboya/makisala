@@ -55,7 +55,7 @@ export default async function HomePage({params}: IParams) {
                         breadcrumbs: [
                             {name: "Home", url: BASE_URL},
                             {name: "Tanzania", url: `${BASE_URL}/safaris/${country}`},
-                            {name: `Why Visit ${capitalize(country)}`, url: `${BASE_URL}/safaris/${country}`},
+                            {name: `Why Visit ${capitalize(country)}`, url: `${BASE_URL}/safaris/${country}/why-go`},
                         ]
                     }),
                     destinationOverview.faqs && FAQSchema({faqs: destinationOverview.faqs})

@@ -7,6 +7,7 @@ import Script from "next/script";
 import {BreadcrumbSchema} from "@/components/schema";
 import {BASE_URL} from "@/lib/constants";
 import {capitalize} from "@/lib/utils";
+import {NavigationSidebar} from "@/app/national-parks/_components/navigation";
 
 export async function generateMetadata({params}: IParams): Promise<Metadata> {
     const {park} = await params;
@@ -40,24 +41,24 @@ export default async function page({params}: IParams) {
 
     return (
         <main>
-            <Script type={'application/ld+json'} strategy={'lazyOnload'}>
+            <Script type={"application/ld+json"} strategy={"lazyOnload"}>
                 {JSON.stringify([
                     BreadcrumbSchema({
                         breadcrumbs: [
                             {name: "Home", url: BASE_URL},
                             {
                                 name: `${capitalize(np.country)} National Parks`,
-                                url: `${BASE_URL}/safaris/${np.country}/where-to-go`
+                                url: `${BASE_URL}/safaris/${np.country}/where-to-go`,
                             },
                             {
                                 name: `${capitalize(np.name)} National Park`,
-                                url: `${BASE_URL}/safaris/${np.name}/`
+                                url: `${BASE_URL}/safaris/${np.name}/`,
                             },
                             {
                                 name: `Best time to visit ${capitalize(np.name)} National Park`,
-                                url: `${BASE_URL}/national-parks/${np.name}/safety`
+                                url: `${BASE_URL}/national-parks/${np.name}/safety`,
                             },
-                        ]
+                        ],
                     }),
                 ])}
             </Script>
@@ -72,16 +73,22 @@ export default async function page({params}: IParams) {
                 <div className="relative h-full flex items-end">
                     <div className="container mx-auto px-6 pb-12">
                         <div className="max-w-4xl">
-                            <h1 className="text-3xl md:text-6xl font-bold text-white leading-tight">
-                                {page.title}
-                            </h1>
+                            <h1 className="text-3xl md:text-6xl font-bold text-white leading-tight">{page.title}</h1>
                         </div>
                     </div>
                 </div>
             </div>
-            <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-[20px] flex items-center justify-center">
-                <MarkdownRenderer content={page.content}/>
-            </section>
+
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-[20px]">
+                <div className="flex flex-col lg:flex-row gap-8">
+                    <NavigationSidebar park_name={park}/>
+
+                    <section className="flex-1 lg:max-w-4xl">
+                        <MarkdownRenderer content={page.content}/>
+                    </section>
+
+                </div>
+            </div>
         </main>
     )
 }

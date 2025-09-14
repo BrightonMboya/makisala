@@ -7,6 +7,7 @@ import {BreadcrumbSchema} from "@/components/schema";
 import {BASE_URL} from "@/lib/constants";
 import {capitalize} from "@/lib/utils";
 import Script from "next/script";
+import {NavigationSidebar} from "@/app/national-parks/_components/navigation";
 
 export async function generateMetadata({params}: IParams): Promise<Metadata> {
     const {park} = await params;
@@ -78,9 +79,16 @@ export default async function page({params}: IParams) {
                     </div>
                 </div>
             </div>
-            <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-[20px] flex items-center justify-center">
-                <MarkdownRenderer content={page.content}/>
-            </section>
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-[20px]">
+                <div className="flex flex-col lg:flex-row gap-8">
+                    <NavigationSidebar park_name={park}/>
+
+                    <section className="flex-1 lg:max-w-4xl">
+                        <MarkdownRenderer content={page.content}/>
+                    </section>
+
+                </div>
+            </div>
         </main>
     )
 }
