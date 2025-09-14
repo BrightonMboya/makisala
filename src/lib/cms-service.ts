@@ -397,3 +397,9 @@ export async function getNPInfo(name: string, pageColumn: keyof typeof nationalP
 
     return rows[0] ?? null;
 }
+
+export async function fetchAllNps() {
+    return await db.select({
+        name: nationalParks.name
+    }).from(nationalParks)
+}
