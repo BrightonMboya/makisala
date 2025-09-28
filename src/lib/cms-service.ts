@@ -1,9 +1,21 @@
 "use server"
-import {db, inquiries, nationalParks, tours} from "../db";
+import {
+    db,
+    inquiries,
+    nationalParks,
+    tours,
+    wildlife,
+    wildlifeParkOverrides,
+    tourPackages,
+    itineraries,
+    NewTourPackage,
+    NewItinerary,
+    NewInquiries,
+    destinations
+} from "../db";
 import {pages} from "@/db/schema";
 import {and, desc, eq, or, sql} from "drizzle-orm";
 import cuid from "cuid";
-import {tourPackages, itineraries, NewTourPackage, NewItinerary, NewInquiries, destinations} from "../db";
 import {modifiers} from "@/lib/p_seo_info";
 
 import type {InferInsertModel, InferSelectModel} from "drizzle-orm";
@@ -402,4 +414,57 @@ export async function fetchAllNps() {
     return await db.select({
         name: nationalParks.name
     }).from(nationalParks)
+}
+
+
+export async function getWildlifeByNameAndPark(animalName: string, parkName: string) {
+    const parkId = await db.query.nationalParks.findFirst({
+        where: eq(nationalParks.name, parkName),
+        columns: {
+            id: true
+        }
+    })
+
+    const result = await db
+        .select({
+            id: wildlife.id,
+            name: wildlife.name,
+            excerpt: wildlife.excerpt,
+            description: wildlife.description,
+            quick_facts: wildlife.quick_facts,
+            where_to_see_title: sql`COALESCE(
+            ${wildlifeParkOverrides.where_to_see_title},
+            ${wildlife.where_to_see_title}
+            )`,
+            where_to_see_description: sql`COALESCE(
+            ${wildlifeParkOverrides.where_to_see_description},
+            ${wildlife.where_to_see_description}
+            )`,
+            meta_title: sql`${wildlifeParkOverrides.meta_title}
+            ::text`,
+            meta_description: sql`${wildlifeParkOverrides.meta_description}
+            ::text`,
+            faqs: sql`${wildlifeParkOverrides.faqs}
+            ::json`,
+        })
+        .from(wildlife)
+        .leftJoin(wildlifeParkOverrides, eq(wildlife.id, wildlifeParkOverrides.wildlife_id))
+        .where(
+            and(
+                eq(wildlife.name, animalName),
+                eq(wildlifeParkOverrides.national_park_id, parkId?.id)
+            )
+        )
+        .limit(1)
+        .execute();
+
+
+    // fallback if no override exists
+    if (!result.length) {
+        return await db.query.wildlife.findFirst({
+            where: eq(wildlife.name, animalName),
+        });
+    }
+
+    return result[0];
 }

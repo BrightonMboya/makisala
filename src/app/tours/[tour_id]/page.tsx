@@ -1,12 +1,11 @@
 import {getProgramaticTourById} from "@/lib/cms-service";
 import {notFound} from "next/navigation";
 import {Badge} from "@/components/ui/badge";
-import {Bed, Calendar, Camera, Car, CheckCircle, Globe, MapPin, XCircle} from "lucide-react";
+import {Calendar, Camera, CheckCircle, MapPin, XCircle} from "lucide-react";
 import {DesktopNavigation, MobileNavigation} from "@/app/to_book/[slug]/_components/PageNavigation";
 import {Card, CardContent, CardHeader, CardTitle} from "@/components/ui/card";
 import {MarkdownRenderer} from "@/components/markdown-renderer";
 import {inclusions, exclusions} from "@/lib/constants";
-import {capitalize} from "@/lib/utils";
 
 
 interface Params {

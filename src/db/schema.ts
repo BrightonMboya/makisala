@@ -262,7 +262,7 @@ interface WildlifeHighlights {
     abundance: 'Abundant' | 'common' | 'occasional' | 'rare'
 }
 
-interface ParkOverview {
+interface JsonOverview {
     name: string;
     description: string;
 }
@@ -279,12 +279,45 @@ export const nationalParks = pgTable("national_parks", {
     malaria_safety_page_id: text().references(() => pages.id),
     how_to_get_there_page_id: text().references(() => pages.id),
     wildlife_highlights: json('wildlife_highlights').$type<WildlifeHighlights[]>(),
-    park_overview: json('park_overview').$type<ParkOverview[]>(),
+    park_overview: json('park_overview').$type<JsonOverview[]>(),
     createdAt: timestamp({precision: 3, mode: "string"})
         .default(sql`CURRENT_TIMESTAMP`)
         .notNull(),
     updatedAt: timestamp({precision: 3, mode: "string"}).notNull(),
 });
+
+export const wildlife = pgTable("wildlife", {
+    id: uuid("id").defaultRandom().primaryKey(),
+    name: text().notNull(),
+    excerpt: text().notNull(),
+    description: text().notNull(),
+    quick_facts: json('quick_facts').$type<{ fact: string; label: string; }[]>(),
+    where_to_see_description: text().notNull(),
+    where_to_see_title: text()
+})
+
+export const wildlifeParkOverrides = pgTable("wildlife_park_overrides", {
+    id: uuid("id").defaultRandom().primaryKey(),
+    wildlife_id: uuid()
+        .notNull()
+        .references(() => wildlife.id),
+    national_park_id: uuid()
+        .notNull()
+        .references(() => nationalParks.id),
+    where_to_see_title: text().notNull(),
+    where_to_see_description: text().notNull(),
+    meta_title: text(),    // SEO title
+    meta_description: text(), // SEO description
+    faqs: json('faqs').$type<FAQItem[]>(), // optional FAQ schema
+    createdAt: timestamp("created_at", {precision: 3, mode: "string"})
+        .default(sql`CURRENT_TIMESTAMP`)
+        .notNull(),
+    updatedAt: timestamp("updated_at", {precision: 3, mode: "string"})
+        .default(sql`CURRENT_TIMESTAMP`)
+        .notNull(),
+});
+
+
 export type TourPackage = typeof tourPackages.$inferSelect;
 export type NewTourPackage = typeof tourPackages.$inferInsert;
 export type Itinerary = typeof itineraries.$inferSelect;
