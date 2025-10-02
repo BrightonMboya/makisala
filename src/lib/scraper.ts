@@ -10,6 +10,7 @@ import {and, eq} from "drizzle-orm";
 import {v2 as cloudinary} from "cloudinary";
 import type {TourData} from "@/app/scraper/_components/types";
 import crypto from "crypto";
+import {env} from "@/lib/env"
 
 const firecrawl_schema = {
     "type": "object",
@@ -115,9 +116,9 @@ const firecrwal_prompt = `extract the tour information from this url, on the ove
 
 // ---- Cloudinary init ----
 cloudinary.config({
-    cloud_name: process.env.CLOUDINARY_CLOUD_NAME!,
-    api_key: process.env.CLOUDINARY_API_KEY!,
-    api_secret: process.env.CLOUDINARY_API_SECRET!,
+    cloud_name: env.CLOUDINARY_CLOUD_NAME!,
+    api_key: env.CLOUDINARY_API_KEY!,
+    api_secret: env.CLOUDINARY_API_SECRET!,
 });
 
 /**
