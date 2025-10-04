@@ -3,11 +3,12 @@ import {getNPInfo} from "@/lib/cms-service";
 import {MarkdownRenderer} from "@/components/markdown-renderer";
 import {notFound} from "next/navigation";
 import type {Metadata} from "next";
-import {BreadcrumbSchema} from "@/components/schema";
+import {BreadcrumbSchema, FAQSchema} from "@/components/schema";
 import {BASE_URL} from "@/lib/constants";
 import {capitalize} from "@/lib/utils";
 import Script from "next/script";
 import {NavigationSidebar} from "@/app/national-parks/_components/navigation";
+import {FAQ} from "@/components/faq";
 
 export async function generateMetadata({params}: IParams): Promise<Metadata> {
     const {park} = await params;
@@ -60,6 +61,7 @@ export default async function page({params}: IParams) {
                             },
                         ]
                     }),
+                    page.faqs && FAQSchema({faqs: page.faqs})
                 ])}
             </Script>
 
@@ -86,8 +88,12 @@ export default async function page({params}: IParams) {
 
                     <section className="flex-1 lg:max-w-4xl">
                         <MarkdownRenderer content={page.content}/>
+                        {page.faqs &&
+                            <FAQ
+                                faqs={page.faqs}
+                            />
+                        }
                     </section>
-
                 </div>
             </div>
         </main>

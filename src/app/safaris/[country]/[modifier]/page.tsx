@@ -18,7 +18,7 @@ interface Params {
 export async function generateMetadata({params}: Params) {
     const {country, modifier} = await params;
     return {
-        title: `${modifier.replace("-", " ")} safaris in ${country} | Makisala Safaris`,
+        title: `${capitalize(country)} ${modifier.replace("-", " ")} safaris | Makisala Safaris`,
         description: `Discover the best ${modifier.replace("-", " ")} safari tours in ${country}. Tailored itineraries, expert guides, and unforgettable adventures.`,
     };
 }
@@ -58,7 +58,7 @@ export default async function SafariPage({params}: Params) {
                 <div className="min-h-screen bg-background">
                     <div className="bg-gradient-to-r from-safari-gold/10 to-safari-bronze/10 border-b border-border">
                         <div className="container mx-auto px-4 py-8">
-                            <h1 className="text-4xl font-bold text-safari-earth mb-2">{`${capitalize(modifier.replace("-", " "))} ${capitalize(country)} Safaris`}</h1>
+                            <h1 className="text-4xl font-bold text-safari-earth mb-2">{`${capitalize(country)} ${capitalize(modifier.replace("-", " "))} Safaris`}</h1>
                             <p className="text-muted-foreground">
                                 {safariDescriptions[`${country}-${modifier}`]}
                             </p>
