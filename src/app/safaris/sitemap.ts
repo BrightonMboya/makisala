@@ -5,7 +5,7 @@ import {BASE_URL} from "@/lib/constants";
 const subpages = ['best-time-to-go', 'travel-advice', 'where-to-go', 'why-go'];
 
 export default function sitemap(): MetadataRoute.Sitemap {
-    const today = new Date("2025-09-13");
+    const today = new Date("2025-10-08");
 
     const urls: MetadataRoute.Sitemap = [];
 

@@ -40,6 +40,57 @@ export default async function page({params}: IParams) {
         return notFound()
     }
 
+    const animal_icons = [
+        {
+            name: "Lion",
+            image_url: "https://res.cloudinary.com/dr2tdyz2w/image/upload/v1759954131/lion_srbwy0.png"
+        },
+        {
+            name: "Leopard",
+            image_url: "https://res.cloudinary.com/dr2tdyz2w/image/upload/v1759954128/leopard_e1lfum.png"
+        },
+        {
+            name: "Buffalo",
+            image_url: "https://res.cloudinary.com/dr2tdyz2w/image/upload/v1759954799/bufallo_c5fajp.png"
+        },
+        {
+            name: "Black Rhino",
+            image_url: "https://res.cloudinary.com/dr2tdyz2w/image/upload/v1759954659/black_rhino_ici4wa.png"
+        },
+        {
+            name: "Cheetah",
+            image_url: "https://res.cloudinary.com/dr2tdyz2w/image/upload/v1759954128/leopard_e1lfum.png"
+        },
+        {
+            name: "Elephant",
+            image_url: "https://res.cloudinary.com/dr2tdyz2w/image/upload/v1759954131/elephant_gy4fo1.png"
+        },
+        {
+            name: "Hyena",
+            image_url: "https://res.cloudinary.com/dr2tdyz2w/image/upload/v1759954131/hyena_m8lcwf.png"
+        },
+        {
+            name: "Giraffe",
+            image_url: "https://res.cloudinary.com/dr2tdyz2w/image/upload/v1759954128/giraffe_msuwfs.png"
+        },
+        {
+            name: "Zebra",
+            image_url: "https://res.cloudinary.com/dr2tdyz2w/image/upload/v1759954128/zebra_ttawsl.png"
+        },
+        {
+            name: "Wildebeest",
+            image_url: "https://res.cloudinary.com/dr2tdyz2w/image/upload/v1759954128/wildbeest_hyegnx.png"
+        },
+        {
+            name: "Hippo",
+            image_url: "https://res.cloudinary.com/dr2tdyz2w/image/upload/v1759954128/hippo_mfhyef.png"
+        },
+        {
+            name: "Wild Dog",
+            image_url: "https://res.cloudinary.com/dr2tdyz2w/image/upload/v1759954129/wild_dog_lzwpdd.png"
+        },
+    ]
+
     return (
         <main>
             <Script type={'application/ld+json'} strategy={'lazyOnload'}>
@@ -86,6 +137,19 @@ export default async function page({params}: IParams) {
                 <div className="flex flex-col lg:flex-row gap-8">
                     <NavigationSidebar park_name={park}/>
                     <section className="flex-1 lg:max-w-4xl">
+                        <MarkdownRenderer content={page.excerpt!}/>
+                        <div className="grid grid-cols-3 lg:grid-cols-4 gap-3 mt-5">
+                            {animal_icons.map((icon) => {
+                                return (
+                                    <div key={icon.name} className="flex flex-col items-center">
+                                        <img src={icon.image_url} alt={icon.name}
+                                             className="w-16 h-16 lg:w-20 lg:h-20"/>
+                                        {/* @ts-ignore*/}
+                                        <p className="text-sm font-medium">{np.wildlife_highlights[0][`${icon.name}`]}</p>
+                                    </div>
+                                );
+                            })}
+                        </div>
                         <MarkdownRenderer content={page.content}/>
                         {page.faqs &&
                             <FAQ
