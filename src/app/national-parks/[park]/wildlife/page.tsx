@@ -107,7 +107,7 @@ export default async function page({params}: IParams) {
                                 url: `${BASE_URL}/safaris/${np.name}/`
                             },
                             {
-                                name: `Best time to visit ${capitalize(np.name)} National Park`,
+                                name: `Wildlife highlights in ${capitalize(np.name)} National Park`,
                                 url: `${BASE_URL}/national-parks/${np.name}/wildlife`
                             },
                         ]
