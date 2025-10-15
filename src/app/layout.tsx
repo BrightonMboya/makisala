@@ -47,6 +47,22 @@ export default function RootLayout({
                 ])
             }
         </Script>
+        <Script id="apollo-tracker" strategy="afterInteractive">
+            {`
+            function initApollo() {
+              var n = Math.random().toString(36).substring(7),
+                  o = document.createElement("script");
+              o.src = "https://assets.apollo.io/micro/website-tracker/tracker.iife.js?nocache=" + n;
+              o.async = true;
+              o.defer = true;
+              o.onload = function() {
+                window.trackingFunctions.onLoad({ appId: "68efe68f053d06001553e5e7" });
+              };
+              document.head.appendChild(o);
+            }
+            initApollo();
+          `}
+        </Script>
         <body
             className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <Analytics/>
