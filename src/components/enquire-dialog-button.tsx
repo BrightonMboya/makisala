@@ -1,8 +1,6 @@
 "use client";
 
 import React from "react";
-import {useForm} from "react-hook-form";
-import {zodResolver} from "@hookform/resolvers/zod";
 import {
     Dialog,
     DialogContent,
@@ -11,9 +9,8 @@ import {
     DialogTitle,
     DialogTrigger,
 } from "@/components/ui/dialog";
-import {useToast} from "@/lib/hooks/use-toast";
-import {createInquiry} from "@/lib/cms-service";
 import ContactForm from "@/components/contact-form";
+import {usePostHog} from 'posthog-js/react'
 
 
 interface InquiryDialogProps {
@@ -22,10 +19,13 @@ interface InquiryDialogProps {
 
 export function InquiryDialog({children}: InquiryDialogProps) {
     const [open, setOpen] = React.useState(false);
+    const posthog = usePostHog()
 
     return (
         <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger asChild>
+            <DialogTrigger asChild onClick={() => {
+                posthog.capture('Inquiry Dialog Triggered')
+            }}>
                 {children}
             </DialogTrigger>
             <DialogContent

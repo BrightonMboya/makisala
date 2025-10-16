@@ -1,19 +1,11 @@
 "use client"
-import {StaysSummary} from "@duffel/components";
-import {StaysAccommodation, StaysSearchResult} from "@duffel/api/Stays/StaysTypes";
-import Image from "next/image";
-import {Star} from "lucide-react";
-import {Button} from "@/components/ui/button";
+import {StaysAccommodation} from "@duffel/api/Stays/StaysTypes";
 
 interface IProps {
     stay: StaysAccommodation
 }
 
 export default function Stay({stay}: IProps) {
-    // if (!stay || !stay.accomodation.photos) {
-    //     return <div>No photos available for {stay?.name || "this stay"}</div>;
-    // }
-
     const renderStars = (rating?: number) => {
         if (!rating) return null;
 
