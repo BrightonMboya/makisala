@@ -37,11 +37,7 @@ import {zodResolver} from "@hookform/resolvers/zod";
 import {createInquiry} from "@/lib/cms-service";
 import {usePathname} from 'next/navigation'
 import {BASE_URL} from "@/lib/constants";
-
-const countries = [
-    "United States", "United Kingdom", "Canada", "Australia", "Germany", "France", "Italy", "Spain",
-    "Netherlands", "Switzerland", "Japan", "South Korea", "Singapore", "New Zealand", "South Africa"
-];
+import {CountryDropdown} from "@/components/ui/country-dropdown";
 
 const nightOptions = Array.from({length: 30}, (_, i) => (i + 1).toString());
 const adultOptions = Array.from({length: 10}, (_, i) => (i + 1).toString());
@@ -157,20 +153,12 @@ export default function ContactForm({setOpen}: {
                             render={({field}) => (
                                 <FormItem>
                                     <FormLabel>Country of Residence*</FormLabel>
-                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                        <FormControl>
-                                            <SelectTrigger>
-                                                <SelectValue placeholder="Select your country"/>
-                                            </SelectTrigger>
-                                        </FormControl>
-                                        <SelectContent>
-                                            {countries.map((country) => (
-                                                <SelectItem key={country} value={country}>
-                                                    {country}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
+                                    <CountryDropdown
+                                        placeholder="Select countries"
+                                        onChange={(country) => field.onChange(country.name)}
+                                        defaultValue={field.value}
+                                        value={field.value}
+                                    />
                                     <FormMessage/>
                                 </FormItem>
                             )}
