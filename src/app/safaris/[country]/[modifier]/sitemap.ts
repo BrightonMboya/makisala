@@ -8,7 +8,7 @@ const safariUrls = countries.flatMap(country =>
 );
 
 export default function sitemap(): MetadataRoute.Sitemap {
-    const today = new Date();
+    const today = new Date("2025-10-17");
 
     return safariUrls.map(url => ({
         url,

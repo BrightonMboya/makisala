@@ -45,7 +45,7 @@ const childrenOptions = Array.from({length: 6}, (_, i) => i.toString());
 
 
 export default function ContactForm({setOpen}: {
-    setOpen: React.Dispatch<React.SetStateAction<boolean>>;
+    setOpen?: React.Dispatch<React.SetStateAction<boolean>>;
 }) {
     const [openCalendar, setOpenCalendar] = React.useState<boolean>(false);
     const {toast} = useToast()

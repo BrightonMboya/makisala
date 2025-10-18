@@ -166,15 +166,15 @@ export const verification = pgTable("verification", {
 export const tours = pgTable("tours", {
     id: uuid("id").defaultRandom().primaryKey(),
     tourName: text("tour_name").notNull(),                      // data.tour_name
-    overview: text("overview"),                                 // data.overview
-    pricing: numeric("pricing", {precision: 12, scale: 2}),   // data.pricing
-    country: text("country"),                                   // if you scrape it
-    sourceUrl: text("source_url"),                              // optional: where you scraped from
-    activities: json("activities"),                             // [{title: "...", activity_name: "..."}]
-    topFeatures: json("top_features"),                          // [{title: "...", description: "..."}]
-    img_url: text("img_url"),
-    number_of_days: integer("number_of_days"),
-    tags: text("tags").array(),  // eg ['family', 'group', 'luxury']
+    overview: text("overview").notNull(),                                 // data.overview
+    pricing: numeric("pricing", {precision: 12, scale: 2}).notNull(),   // data.pricing
+    country: text("country").notNull(),                                   // if you scrape it
+    sourceUrl: text("source_url").notNull(),                              // optional: where you scraped from
+    activities: json("activities").notNull(),                             // [{title: "...", activity_name: "..."}]
+    topFeatures: json("top_features").notNull(),                          // [{title: "...", description: "..."}]
+    img_url: text("img_url").notNull(),
+    number_of_days: integer("number_of_days").notNull(),
+    tags: text("tags").array().notNull(),  // eg ['family', 'group', 'luxury']
     createdAt: timestamp("created_at", {withTimezone: true}).defaultNow(),
     updatedAt: timestamp("updated_at", {withTimezone: true}).defaultNow(),
 });
@@ -318,7 +318,7 @@ export const wildlifeParkOverrides = pgTable("wildlife_park_overrides", {
 });
 
 
-export type TourPackage = typeof tourPackages.$inferSelect;
+export type Tours = typeof tours.$inferSelect;
 export type NewTourPackage = typeof tourPackages.$inferInsert;
 export type Itinerary = typeof itineraries.$inferSelect;
 export type NewItinerary = typeof itineraries.$inferInsert;

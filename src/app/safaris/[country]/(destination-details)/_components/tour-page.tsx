@@ -5,25 +5,10 @@ import {useRouter, useSearchParams} from "next/navigation"
 import TourCard from "@/app/safaris/[country]/[modifier]/_components/TourCard"
 import {TourFilters, type FilterState} from "@/app/safaris/[country]/(destination-details)/_components/tour-filter";
 import {Button} from "@/components/ui/button"
-
-interface Tour {
-    id: string
-    tourName: string
-    overview: string
-    pricing: number
-    country: string
-    sourceUrl: string
-    activities: Array<{ title: string; activity_name: string }>
-    topFeatures: Array<{ title: string; description: string }>
-    img_url: string
-    number_of_days: number
-    tags: string[]
-    createdAt: Date
-    updatedAt: Date
-}
+import {type Tours} from "@/db";
 
 interface ToursResponse {
-    tours: Tour[]
+    tours: Tours[]
     pagination: {
         currentPage: number
         totalPages: number
@@ -74,7 +59,7 @@ export default function ToursPage() {
             : [],
     })
 
-    const [tours, setTours] = useState<Tour[]>([])
+    const [tours, setTours] = useState<Tours[]>([])
     const [pagination, setPagination] = useState({
         currentPage: Number(searchParams.get("page") || 1),
         totalPages: 1,

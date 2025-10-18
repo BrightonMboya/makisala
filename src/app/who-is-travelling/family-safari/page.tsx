@@ -5,13 +5,15 @@ import type {Metadata} from "next";
 import {BreadcrumbSchema} from "@/components/schema";
 import Script from "next/script";
 import Image from "next/image";
+import {getTours} from "@/lib/cms-service";
+import TourCard from "@/app/safaris/[country]/[modifier]/_components/TourCard";
 
 export async function generateMetadata(): Promise<Metadata> {
     return {
-        title: `Family African Safaris | Makisala Safaris`,
+        title: `African Family Safaris | Makisala Safaris`,
         description: "Reconnect with your loved ones on a tailor-made African safari. Private game drives, family-friendly lodges, and unforgettable shared moments in the wild.",
         openGraph: {
-            title: `Family African Safaris | Makisala Safaris`,
+            title: `African Family Safaris | Makisala Safaris`,
             description: `Reconnect with your loved ones on a tailor-made African safari. Private game drives, family-friendly lodges, and unforgettable shared moments in the wild.`,
             images: [
                 {
@@ -25,8 +27,9 @@ export async function generateMetadata(): Promise<Metadata> {
     };
 }
 
-export default function Page() {
+export default async function Page() {
     const hero = "https://res.cloudinary.com/dr2tdyz2w/image/upload/v1753373584/family-safari.jpg_vu3zur.jpg"
+    const tours = await getTours('tanzania', 'family')
     return (
         <main>
             <Script type={'application/ld+json'} strategy={'lazyOnload'}>
@@ -42,14 +45,7 @@ export default function Page() {
             <div className="min-h-screen bg-background">
                 {/* Hero Section */}
                 <section
-                    className="relative h-[80dvh] lg:h-screen items-center flex justify-start"
-                    // style={{
-                    //     backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)), url(${hero})`,
-                    //     backgroundSize: 'cover',
-                    //     backgroundPosition: 'center',
-                    //     backgroundAttachment: 'fixed'
-                    // }}
-                >
+                    className="relative h-[80dvh] lg:h-screen items-center flex justify-start">
                     <div className="absolute inset-0">
                         <Image
                             src="https://res.cloudinary.com/dr2tdyz2w/image/upload/v1753373584/family-safari.jpg_vu3zur.jpg"
@@ -98,9 +94,9 @@ export default function Page() {
                 <section className=" ">
                     <div className="max-w-4xl mx-auto px-6">
                         <div className="prose prose-lg max-w-none text-lg text-muted-foreground leading-relaxed ">
-                            <h2 className="text-4xl font-bold pt-10 text-black">Real time together. The bonding that
+                            <h3 className="text-4xl font-bold pt-10 text-black">Real time together. The bonding that
                                 your
-                                family needs.</h2>
+                                family needs.</h3>
                             <p className="pt-3">Maybe it’s been a while since you all travelled as a family.
                                 Careers, distance, life, it gets in the way. And now, you're thinking: we need something
                                 different. Not just a beach resort, not another cruise. Something that actually means
@@ -144,6 +140,17 @@ export default function Page() {
                         </div>
                     </div>
                 </section>
+
+                <h2 className="text-4xl font-bold pt-10 text-black text-center">Family Safaris to inspire your
+                    journey.</h2>
+
+                <div className="container mx-auto px-4 py-8">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        {tours.slice(0, 6).map((tour) => (
+                            <TourCard key={tour.id} tour={tour}/>
+                        ))}
+                    </div>
+                </div>
 
                 {/* Call to Action */}
                 <section className="py-20 bg-gradient-to-r from-primary/10 to-secondary/10">

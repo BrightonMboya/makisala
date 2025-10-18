@@ -5,6 +5,8 @@ import {InquiryDialog} from "@/components/enquire-dialog-button";
 import {BreadcrumbSchema} from "@/components/schema";
 import Script from "next/script";
 import Image from "next/image";
+import {getTours} from "@/lib/cms-service";
+import TourCard from "@/app/safaris/[country]/[modifier]/_components/TourCard";
 
 export async function generateMetadata(): Promise<Metadata> {
     return {
@@ -25,10 +27,12 @@ export async function generateMetadata(): Promise<Metadata> {
     };
 }
 
-const HoneymoonSafaris = () => {
+export default async function Page() {
     const honeymoonHero = "https://res.cloudinary.com/dr2tdyz2w/image/upload/v1753366509/honeymoon-safaris-8_mtemjt.jpg"
     const luxuryTent = "https://res.cloudinary.com/dr2tdyz2w/image/upload/v1753366416/Joys-Camp-1_nbu2ps.jpg"
     const romanticDinner = "https://res.cloudinary.com/dr2tdyz2w/image/upload/v1753366308/honeymoon-safaris-tanzania_wsl3ys.jpg"
+
+    const tours = await getTours('tanzania', 'honeymoon')
     return (
         <main>
             <Script type={'application/ld+json'} strategy={'lazyOnload'}>
@@ -46,25 +50,17 @@ const HoneymoonSafaris = () => {
             </Script>
 
             <div className="min-h-screen bg-background">
-                {/* Hero Section */}
                 <section
-                    className="relative h-[80dvh] lg:h-screen items-center flex justify-start"
-                    // style={{
-                    //     backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)), url(${honeymoonHero})`,
-                    //     backgroundSize: 'cover',
-                    //     backgroundPosition: 'center',
-                    //     backgroundAttachment: 'fixed'
-                    // }}
-                >
+                    className="relative h-[80dvh] lg:h-screen items-center flex justify-start">
                     <div className="absolute inset-0">
                         <Image
-                            src={honeymoonHero}
+                            src={romanticDinner}
                             alt="Couples and Honeymoon Safaris"
                             fill
                             className="object-cover"
                             priority
                         />
-                        <div className="absolute inset-0 bg-black/70 lg:bg-black/60"/>
+                        <div className="absolute inset-0 bg-black/50 lg:bg-black/60"/>
                     </div>
                     <div className="relative z-10 pl-10 mt-20 absolute">
                         <h1 className="text-3xl md:text-7xl md:max-w-5xl font-bold text-white mb-4">
@@ -201,6 +197,17 @@ const HoneymoonSafaris = () => {
                     </div>
                 </section>
 
+                <h2 className="text-4xl font-bold pt-10 text-black text-center">Honeymoon Safaris to inspire your
+                    journey.</h2>
+
+                <div className="container mx-auto px-4 py-8">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        {tours.slice(0, 6).map((tour) => (
+                            <TourCard key={tour.id} tour={tour}/>
+                        ))}
+                    </div>
+                </div>
+
                 {/* Call to Action */}
                 <section className="py-20 bg-gradient-to-r from-primary/10 to-secondary/10">
                     <div className="max-w-4xl mx-auto text-center px-6">
@@ -222,5 +229,3 @@ const HoneymoonSafaris = () => {
         </main>
     );
 };
-
-export default HoneymoonSafaris;

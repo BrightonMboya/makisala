@@ -4,20 +4,11 @@ import {Badge} from "@/components/ui/badge"
 import {Calendar, MapPin} from "lucide-react"
 import Link from "next/link";
 import {capitalize} from "@/lib/utils";
+import {type Tours} from "@/db";
 
-interface Tour {
-    id: string
-    tourName: string
-    overview: string
-    pricing: number
-    country: string
-    img_url: string
-    number_of_days: number
-    tags: string[]
-}
 
 interface TourCardProps {
-    tour: Tour
+    tour: Tours
 }
 
 export default function TourCard({tour}: TourCardProps) {
@@ -34,12 +25,11 @@ export default function TourCard({tour}: TourCardProps) {
                         />
                         <div className="absolute top-3 right-3">
                             <Badge variant="secondary" className="bg-secondary font-semibold">
-                                {/*${tour.pricing.toLocaleString()}*/}
                                 {new Intl.NumberFormat('en-US', {
                                     style: 'currency',
                                     currency: 'USD',
                                     minimumFractionDigits: 0,
-                                }).format(tour.pricing)}
+                                }).format(Number(tour.pricing))}
                             </Badge>
                         </div>
                     </div>
