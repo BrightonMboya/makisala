@@ -1,6 +1,8 @@
 import {duffel} from "@/lib/duffel";
 import Stay from "@/app/stays/_components/Stay";
 import {destinationCoordinates} from "@/app/stays/_components/data";
+import {slugify} from "@/lib/utils";
+import Link from "next/link";
 
 interface IParams {
     params: {
@@ -57,7 +59,9 @@ export default async function Page({params}: IParams) {
             <h1 className="font-bold text-xl lg:text-3xl text-center pb-10">{`Best Places to Stay in ${coordinates.name}`}</h1>
             <section className="grid grid-cols-1 container mx-auto px-4 lg:grid-cols-3 gap-10 mb-10">
                 {data.map((stay) => (
-                    <Stay key={stay.id} stay={stay}/>
+                    <Link href={`/stays/${destination}/${slugify(stay.name)}-${stay.id}`} key={stay.id}>
+                        <Stay stay={stay}/>
+                    </Link>
                 ))}
             </section>
         </main>

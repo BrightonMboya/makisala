@@ -8,3 +8,11 @@ export function cn(...inputs: ClassValue[]) {
 export function capitalize(word: string) {
     return word[0].toUpperCase() + word.slice(1);
 }
+
+export function slugify(name: string) {
+    return name
+        .toLowerCase()
+        .replace(/[^a-z0-9\s-]/g, "") // remove special chars
+        .trim()
+        .replace(/\s+/g, "-"); // replace spaces with dashes
+}
