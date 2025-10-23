@@ -13,7 +13,7 @@ interface TourCardProps {
 
 export default function TourCard({tour}: TourCardProps) {
     return (
-        <Link href={`/tours/${tour.id}`}>
+        <Link href={`/tours/${tour.slug}`}>
             <Card
                 className="group hover:shadow-lg transition-all duration-300 hover:scale-[1.02] bg-card border-border">
                 <CardHeader className="p-0">

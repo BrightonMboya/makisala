@@ -333,6 +333,27 @@ export const getProgramaticTourById = async (tour_id: string) => {
     })
 }
 
+export const getProgramaticTourBySlug = async (slug: string) => {
+    return db.query.tours.findFirst({
+        where: eq(tours.slug, slug),
+        with: {
+            days: {
+                with: {
+                    itineraryAccommodations: {
+                        with: {
+                            accommodation: {
+                                with: {
+                                    images: true
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    })
+}
+
 export const getBestTimeToVisit = async (destination: string) => {
     const country = await db.query.destinations.findFirst({
         where: eq(destinations.name, destination),

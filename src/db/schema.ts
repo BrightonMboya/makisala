@@ -165,7 +165,8 @@ export const verification = pgTable("verification", {
 // ---------- TOURS ----------
 export const tours = pgTable("tours", {
     id: uuid("id").defaultRandom().primaryKey(),
-    tourName: text("tour_name").notNull(),                      // data.tour_name
+    tourName: text("tour_name").notNull().unique(),                      // data.tour_name
+    slug: text().unique(),
     overview: text("overview").notNull(),                                 // data.overview
     pricing: numeric("pricing", {precision: 12, scale: 2}).notNull(),   // data.pricing
     country: text("country").notNull(),                                   // if you scrape it

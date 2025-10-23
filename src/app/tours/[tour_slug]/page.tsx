@@ -1,4 +1,4 @@
-import {getProgramaticTourById} from "@/lib/cms-service";
+import {getProgramaticTourBySlug} from "@/lib/cms-service";
 import {notFound} from "next/navigation";
 import {Badge} from "@/components/ui/badge";
 import {Calendar, Camera, CheckCircle, MapPin, XCircle} from "lucide-react";
@@ -10,13 +10,13 @@ import {inclusions, exclusions} from "@/lib/constants";
 
 interface Params {
     params: {
-        tour_id: string;
+        tour_slug: string;
     }
 }
 
 export default async function Page({params}: Params) {
-    const {tour_id} = await params;
-    const tour = await getProgramaticTourById(tour_id);
+    const {tour_slug} = await params;
+    const tour = await getProgramaticTourBySlug(tour_slug);
 
     if (!tour) {
         return notFound()
