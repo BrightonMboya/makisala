@@ -1,32 +1,32 @@
-import {getPageById} from "@/lib/cms-service";
-import {notFound} from "next/navigation";
-import {MarkdownRenderer} from "@/components/markdown-renderer";
-import {FAQ} from "@/components/faq";
-import {BreadcrumbSchema, FAQSchema} from "@/components/schema";
-import Script from "next/script";
-import C2A from "@/components/home/call-to-action"
-import type {Metadata} from "next";
-import MonthNavigator from "../[month]/_components/month_navigator";
-import {articles_url} from "@/app/where-to-go/[month]/_components/data";
+import { getPageById } from '@/lib/cms-service'
+import { notFound } from 'next/navigation'
+import { MarkdownRenderer } from '@/components/markdown-renderer'
+import { FAQ } from '@/components/faq'
+import { BreadcrumbSchema, FAQSchema } from '@/components/schema'
+import Script from 'next/script'
+import C2A from '@/components/home/call-to-action'
+import type { Metadata } from 'next'
+import MonthNavigator from '../[month]/_components/month_navigator'
+import { articles_url } from '@/app/where-to-go/[month]/_components/data'
+import { BASE_URL } from '@/lib/constants'
 
 interface IParams {
     params: {
-        month: string;
+        month: string
     }
 }
 
-export async function generateMetadata({params}: IParams): Promise<Metadata> {
+export async function generateMetadata({ params }: IParams): Promise<Metadata> {
     try {
-        const {month} = await params
+        const { month } = await params
         const article_url = articles_url.find(page => page.month === month)?.page_url
         if (!article_url) {
             return {
-                title: "Page Not Found",
-                description: "The requested page could not be found.",
-            };
+                title: 'Page Not Found',
+                description: 'The requested page could not be found.',
+            }
         }
         const page = await getPageById(article_url)
-
 
         return {
             title: page?.meta_title || page?.title,
@@ -37,18 +37,17 @@ export async function generateMetadata({params}: IParams): Promise<Metadata> {
                 description: page?.meta_description! || page?.excerpt!,
                 images: page?.featured_image_url ? [page?.featured_image_url] : [],
             },
-        };
+        }
     } catch {
         return {
-            title: "Page Not Found",
-            description: "The requested page could not be found.",
-        };
+            title: 'Page Not Found',
+            description: 'The requested page could not be found.',
+        }
     }
 }
 
-
-export default async function Page({params}: IParams) {
-    const {month} = await params;
+export default async function Page({ params }: IParams) {
+    const { month } = await params
     const article_url = articles_url.find(page => page.month === month)?.page_url
 
     if (!article_url) {
@@ -66,22 +65,22 @@ export default async function Page({params}: IParams) {
                 {JSON.stringify([
                     BreadcrumbSchema({
                         breadcrumbs: [
-                            {name: "Home", url: "https://www.makisala.com"},
+                            { name: 'Home', url: BASE_URL },
                             {
-                                name: `Where to travel/${month}`,
-                                url: `https://www.makisala.com/where_to_travel/${month}`
+                                name: `Where to travel in Africa in ${month}`,
+                                url: `${BASE_URL}/where_to_travel/${month}`,
                             },
-                        ]
+                        ],
                     }),
-                    FAQSchema({faqs: page.faqs!})
+                    FAQSchema({ faqs: page.faqs! }),
                 ])}
             </Script>
             <div className="relative h-[60vh] overflow-hidden">
                 <div
                     className="absolute inset-0 bg-cover bg-no-repeat object-cover"
-                    style={{backgroundImage: `url(${page.featured_image_url})`}}
+                    style={{ backgroundImage: `url(${page.featured_image_url})` }}
                 >
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent"/>
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
                 </div>
                 <div className="relative h-full flex items-end">
                     <div className="container mx-auto px-6 pb-12">
@@ -94,14 +93,12 @@ export default async function Page({params}: IParams) {
                 </div>
             </div>
 
-
             <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
-                <MonthNavigator/>
-                <MarkdownRenderer content={page.content}/>
-                <FAQ faqs={page.faqs!}/>
+                <MonthNavigator />
+                <MarkdownRenderer content={page.content} />
+                <FAQ faqs={page.faqs!} />
             </main>
-            <C2A/>
+            <C2A />
         </>
     )
 }
-

@@ -1,4 +1,4 @@
-"use server"
+'use server'
 import {
     db,
     inquiries,
@@ -11,18 +11,18 @@ import {
     NewTourPackage,
     NewItinerary,
     NewInquiries,
-    destinations
-} from "../db";
-import {pages} from "@/db/schema";
-import {and, desc, eq, or, sql} from "drizzle-orm";
-import cuid from "cuid";
-import {modifiers} from "@/lib/p_seo_info";
+    destinations,
+} from '../db'
+import { pages } from '@/db/schema'
+import { and, desc, eq, or, sql } from 'drizzle-orm'
+import cuid from 'cuid'
+import { modifiers } from '@/lib/p_seo_info'
 
-import type {InferInsertModel, InferSelectModel} from "drizzle-orm";
+import type { InferInsertModel, InferSelectModel } from 'drizzle-orm'
 
 // Types
-export type Page = InferSelectModel<typeof pages>;
-export type NewPage = Omit<InferInsertModel<typeof pages>, "id" | "createdAt" | "updatedAt">;
+export type Page = InferSelectModel<typeof pages>
+export type NewPage = Omit<InferInsertModel<typeof pages>, 'id' | 'createdAt' | 'updatedAt'>
 
 /* ------------------------------------------------------------------ */
 /*  CREATE                                                            */
@@ -36,9 +36,9 @@ export async function createPage(data: NewPage): Promise<Page> {
             updatedAt: new Date().toISOString(),
             ...data,
         })
-        .returning();
+        .returning()
 
-    return inserted;
+    return inserted
 }
 
 /* ------------------------------------------------------------------ */
@@ -53,27 +53,21 @@ export async function updatePage(id: string, data: Partial<Page>): Promise<Page>
             updatedAt: new Date().toISOString(), // ✅ keep updatedAt consistent
         })
         .where(eq(pages.id, id))
-        .returning();
+        .returning()
 
-    return updated;
+    return updated
 }
 
 /* ------------------------------------------------------------------ */
 /*  GET ALL                                                           */
 
 /* ------------------------------------------------------------------ */
-export async function getPages(page_type: "blog" | "page"): Promise<Page[]> {
-    return await db
-        .select()
-        .from(pages)
-        .where(eq(pages.page_type, page_type))
+export async function getPages(page_type: 'blog' | 'page'): Promise<Page[]> {
+    return await db.select().from(pages).where(eq(pages.page_type, page_type))
 }
 
-export async function getPageSlugs(page_type: "blog" | "page") {
-    return await db
-        .select({slug: pages.slug})
-        .from(pages)
-        .where(eq(pages.page_type, page_type))
+export async function getPageSlugs(page_type: 'blog' | 'page') {
+    return await db.select({ slug: pages.slug }).from(pages).where(eq(pages.page_type, page_type))
 }
 
 /* ------------------------------------------------------------------ */
@@ -81,13 +75,9 @@ export async function getPageSlugs(page_type: "blog" | "page") {
 
 /* ------------------------------------------------------------------ */
 export async function getPageById(id: string): Promise<Page | null> {
-    const [page] = await db
-        .select()
-        .from(pages)
-        .where(eq(pages.id, id))
-        .limit(1);
+    const [page] = await db.select().from(pages).where(eq(pages.id, id)).limit(1)
 
-    return page ?? null;
+    return page ?? null
 }
 
 /* ------------------------------------------------------------------ */
@@ -95,13 +85,9 @@ export async function getPageById(id: string): Promise<Page | null> {
 
 /* ------------------------------------------------------------------ */
 export async function getPageBySlug(slug: string): Promise<Page | null> {
-    const [page] = await db
-        .select()
-        .from(pages)
-        .where(eq(pages.slug, slug))
-        .limit(1);
+    const [page] = await db.select().from(pages).where(eq(pages.slug, slug)).limit(1)
 
-    return page ?? null;
+    return page ?? null
 }
 
 /* ------------------------------------------------------------------ */
@@ -109,29 +95,26 @@ export async function getPageBySlug(slug: string): Promise<Page | null> {
 
 /* ------------------------------------------------------------------ */
 export async function deletePage(id: string): Promise<Page | null> {
-    const [deleted] = await db
-        .delete(pages)
-        .where(eq(pages.id, id))
-        .returning();
+    const [deleted] = await db.delete(pages).where(eq(pages.id, id)).returning()
 
-    return deleted ?? null;
+    return deleted ?? null
 }
 
 export interface CreateTourPackageData {
-    title: string;
-    numberOfDays: number;
-    country: string;
-    destination: string;
-    overview: string;
-    hero_image_url: string;
-    slug: string;
+    title: string
+    numberOfDays: number
+    country: string
+    destination: string
+    overview: string
+    hero_image_url: string
+    slug: string
     pricing_starts_from: string
     itineraries: Array<{
-        title: string;
-        estimatedDrivingDistance?: string;
-        activities: string;
-        accommodation?: string;
-    }>;
+        title: string
+        estimatedDrivingDistance?: string
+        activities: string
+        accommodation?: string
+    }>
 }
 
 export async function createTourPackage(data: CreateTourPackageData) {
@@ -147,12 +130,9 @@ export async function createTourPackage(data: CreateTourPackageData) {
             slug: data.slug,
             pricing_starts_from: data.pricing_starts_from,
             updatedAt: new Date(),
-        };
+        }
 
-        const [newTourPackage] = await db
-            .insert(tourPackages)
-            .values(tourPackageData)
-            .returning();
+        const [newTourPackage] = await db.insert(tourPackages).values(tourPackageData).returning()
 
         // Insert itineraries
         const itineraryData: NewItinerary[] = data.itineraries.map((itinerary, index) => ({
@@ -162,20 +142,17 @@ export async function createTourPackage(data: CreateTourPackageData) {
             estimatedDrivingDistance: itinerary.estimatedDrivingDistance || null,
             activities: itinerary.activities,
             accommodation: itinerary.accommodation || null,
-        }));
+        }))
 
-        const newItineraries = await db
-            .insert(itineraries)
-            .values(itineraryData)
-            .returning();
+        const newItineraries = await db.insert(itineraries).values(itineraryData).returning()
 
         return {
             tourPackage: newTourPackage,
             itineraries: newItineraries,
-        };
+        }
     } catch (error) {
-        console.error('Error creating tour package:', error);
-        throw new Error('Failed to create tour package');
+        console.error('Error creating tour package:', error)
+        throw new Error('Failed to create tour package')
     }
 }
 
@@ -184,14 +161,14 @@ export async function getTourPackages() {
         return await db.query.tourPackages.findMany({
             with: {
                 itineraries: {
-                    orderBy: (itineraries, {asc}) => [asc(itineraries.dayNumber)],
+                    orderBy: (itineraries, { asc }) => [asc(itineraries.dayNumber)],
                 },
             },
-            orderBy: (tourPackages, {desc}) => [desc(tourPackages.createdAt)],
-        });
+            orderBy: (tourPackages, { desc }) => [desc(tourPackages.createdAt)],
+        })
     } catch (error) {
-        console.error('Error fetching tour packages:', error);
-        throw new Error('Failed to fetch tour packages');
+        console.error('Error fetching tour packages:', error)
+        throw new Error('Failed to fetch tour packages')
     }
 }
 
@@ -201,18 +178,18 @@ export async function getTourPackageById(id: string) {
             where: eq(tourPackages.id, id),
             with: {
                 itineraries: {
-                    orderBy: (itineraries, {asc}) => [asc(itineraries.dayNumber)],
+                    orderBy: (itineraries, { asc }) => [asc(itineraries.dayNumber)],
                 },
             },
-        });
+        })
     } catch (error) {
-        console.error('Error fetching tour package:', error);
-        throw new Error('Failed to fetch tour package');
+        console.error('Error fetching tour package:', error)
+        throw new Error('Failed to fetch tour package')
     }
 }
 
 export async function getTourPackagesByLocation(locationName: string) {
-    const locationTerm = `%${locationName.toLowerCase()}%`;
+    const locationTerm = `%${locationName.toLowerCase()}%`
 
     return await db.query.tourPackages.findMany({
         where: or(
@@ -234,10 +211,10 @@ export async function getTourPackagesByLocation(locationName: string) {
         ),
         with: {
             itineraries: {
-                orderBy: (itineraries, {asc}) => [asc(itineraries.dayNumber)],
+                orderBy: (itineraries, { asc }) => [asc(itineraries.dayNumber)],
             },
         },
-    });
+    })
 }
 
 export async function getTourPackageBySlug(slug: string) {
@@ -246,51 +223,47 @@ export async function getTourPackageBySlug(slug: string) {
             where: eq(tourPackages.slug, slug),
             with: {
                 itineraries: {
-                    orderBy: (itineraries, {asc}) => [asc(itineraries.dayNumber)],
+                    orderBy: (itineraries, { asc }) => [asc(itineraries.dayNumber)],
                 },
             },
-        });
+        })
     } catch (error) {
-        console.error('Error fetching tour package:', error);
-        throw new Error('Failed to fetch tour package');
+        console.error('Error fetching tour package:', error)
+        throw new Error('Failed to fetch tour package')
     }
 }
 
 export async function getTourPackagesSlugs() {
-    return db.select({
-        slug: tourPackages.slug
-    })
+    return db
+        .select({
+            slug: tourPackages.slug,
+        })
         .from(tourPackages)
 }
 
 export async function deleteTourPackage(id: string) {
     try {
-        await db.delete(tourPackages).where(eq(tourPackages.id, id));
+        await db.delete(tourPackages).where(eq(tourPackages.id, id))
     } catch (error) {
-        console.error('Error deleting tour package:', error);
-        throw new Error('Failed to delete tour package');
+        console.error('Error deleting tour package:', error)
+        throw new Error('Failed to delete tour package')
     }
 }
 
 export async function createInquiry(data: NewInquiries) {
-    const [newInquiry] = await db
-        .insert(inquiries)
-        .values(data);
+    const [newInquiry] = await db.insert(inquiries).values(data)
 
-    return newInquiry;
-
+    return newInquiry
 }
 
 export async function getTours(country: string, modifier: string) {
-    const whereClauses: any[] = [eq(tours.country, country)];
+    const whereClauses: any[] = [eq(tours.country, country)]
 
     if (modifiers.includes(modifier)) {
-        const durationMatch = modifier.match(/^(\d+)-day$/);
+        const durationMatch = modifier.match(/^(\d+)-day$/)
         if (durationMatch) {
             // Filter by number_of_days
-            whereClauses.push(
-                eq(tours.number_of_days, parseInt(durationMatch[1], 10))
-            );
+            whereClauses.push(eq(tours.number_of_days, parseInt(durationMatch[1], 10)))
         } else {
             // Filter by tags array containing the modifier
             whereClauses.push(
@@ -298,18 +271,17 @@ export async function getTours(country: string, modifier: string) {
                 = ANY(
                 ${tours.tags}
                 )`
-            );
+            )
         }
     }
 
     return db.query.tours.findMany({
         where: and(...whereClauses),
-    });
+    })
 }
 
 export const getToursByCountry = async (country: string) => {
-    return db.select().from(tours).where(eq(tours.country, country))
-        .orderBy(desc(tours.pricing))
+    return db.select().from(tours).where(eq(tours.country, country)).orderBy(desc(tours.pricing))
 }
 
 export const getProgramaticTourById = async (tour_id: string) => {
@@ -322,14 +294,14 @@ export const getProgramaticTourById = async (tour_id: string) => {
                         with: {
                             accommodation: {
                                 with: {
-                                    images: true
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
+                                    images: true,
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+        },
     })
 }
 
@@ -343,14 +315,14 @@ export const getProgramaticTourBySlug = async (slug: string) => {
                         with: {
                             accommodation: {
                                 with: {
-                                    images: true
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
+                                    images: true,
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+        },
     })
 }
 
@@ -358,12 +330,12 @@ export const getBestTimeToVisit = async (destination: string) => {
     const country = await db.query.destinations.findFirst({
         where: eq(destinations.name, destination),
         columns: {
-            best_time_to_visit: true
-        }
+            best_time_to_visit: true,
+        },
     })
 
     return await db.query.pages.findFirst({
-        where: eq(pages.id, country?.best_time_to_visit!)
+        where: eq(pages.id, country?.best_time_to_visit!),
     })
 }
 
@@ -372,11 +344,11 @@ export const getDestinationOverview = async (destination: string) => {
         where: eq(destinations.name, destination),
         columns: {
             overall_page_url: true,
-        }
+        },
     })
 
     return await db.query.pages.findFirst({
-        where: eq(pages.id, country?.overall_page_url!)
+        where: eq(pages.id, country?.overall_page_url!),
     })
 }
 
@@ -384,32 +356,32 @@ export const getTravelAdvice = async (destination: string) => {
     const country = await db.query.destinations.findFirst({
         where: eq(destinations.name, destination),
         columns: {
-            travel_advice: true
-        }
+            travel_advice: true,
+        },
     })
 
     return await db.query.pages.findFirst({
-        where: eq(pages.id, country?.travel_advice!)
+        where: eq(pages.id, country?.travel_advice!),
     })
 }
 
 export async function getNPInfo(name: string, pageColumn: keyof typeof nationalParks) {
     // Validate that the pageColumn exists
     const validPageColumns = [
-        "overview_page_id",
-        "wildlife_page_id",
-        "best_time_to_visit_id",
-        "weather_page_id",
-        "malaria_safety_page_id",
-        "how_to_get_there_page_id",
-    ] as const;
+        'overview_page_id',
+        'wildlife_page_id',
+        'best_time_to_visit_id',
+        'weather_page_id',
+        'malaria_safety_page_id',
+        'how_to_get_there_page_id',
+    ] as const
 
     if (!validPageColumns.includes(pageColumn as any)) {
-        throw new Error("Invalid page column");
+        throw new Error('Invalid page column')
     }
 
     // Alias for join
-    const pageAlias = pages;
+    const pageAlias = pages
 
     // Single query with join
     const rows = await db
@@ -418,7 +390,7 @@ export async function getNPInfo(name: string, pageColumn: keyof typeof nationalP
                 name: nationalParks.name,
                 country: nationalParks.country,
                 wildlife_highlights: nationalParks.wildlife_highlights,
-                park_overview: nationalParks.park_overview
+                park_overview: nationalParks.park_overview,
             },
             page: pageAlias,
         })
@@ -426,24 +398,25 @@ export async function getNPInfo(name: string, pageColumn: keyof typeof nationalP
         // @ts-expect-error
         .leftJoin(pageAlias, eq(pageAlias.id, nationalParks[pageColumn]))
         .where(eq(nationalParks.name, name))
-        .limit(1);
+        .limit(1)
 
-    return rows[0] ?? null;
+    return rows[0] ?? null
 }
 
 export async function fetchAllNps() {
-    return await db.select({
-        name: nationalParks.name
-    }).from(nationalParks)
+    return await db
+        .select({
+            name: nationalParks.name,
+        })
+        .from(nationalParks)
 }
-
 
 export async function getWildlifeByNameAndPark(animalName: string, parkName: string) {
     const parkId = await db.query.nationalParks.findFirst({
         where: eq(nationalParks.name, parkName),
         columns: {
-            id: true
-        }
+            id: true,
+        },
     })
 
     const result = await db
@@ -477,15 +450,14 @@ export async function getWildlifeByNameAndPark(animalName: string, parkName: str
             )
         )
         .limit(1)
-        .execute();
-
+        .execute()
 
     // fallback if no override exists
     if (!result.length) {
         return await db.query.wildlife.findFirst({
             where: eq(wildlife.name, animalName),
-        });
+        })
     }
 
-    return result[0];
+    return result[0]
 }

@@ -1,4 +1,4 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 /*@plugin "@tailwindcss/typography";*/
 
 @custom-variant dark (&:is(.dark *));
@@ -59,7 +59,6 @@
     --selection: oklch(0.145 0 0);
     --selection-foreground: oklch(1 0 0);
 }
-
 
 @layer base {
     * {

@@ -1,6 +1,6 @@
-import {fetchAllNps} from "@/lib/cms-service";
-import {BASE_URL} from "@/lib/constants";
-import type {MetadataRoute} from "next";
+import { fetchAllNps } from '@/lib/cms-service'
+import { BASE_URL } from '@/lib/constants'
+import type { MetadataRoute } from 'next'
 
 const subpages = ['best-time-to-visit', 'climate', 'getting-there', 'wildlife']
 
@@ -8,15 +8,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const parks = await fetchAllNps()
     const urls: MetadataRoute.Sitemap = []
 
-    const today = new Date("2025-09-14");
+    const today = new Date('2025-09-14')
 
     parks.forEach(park => {
         urls.push({
             url: `${BASE_URL}/national-parks/${park.name}`,
             lastModified: today,
             changeFrequency: 'weekly',
-            priority: 0.9
-        });
+            priority: 0.9,
+        })
 
         subpages.forEach(page => {
             urls.push({
@@ -28,6 +28,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         })
     })
 
-    return urls;
-
+    return urls
 }

@@ -1,226 +1,286 @@
 export const destinationCoordinates = {
     // --- East Africa ---
-    arusha: {name: "Arusha", latitude: -3.3869, longitude: 36.68299, country: "Tanzania", region: "East Africa"},
+    arusha: {
+        name: 'Arusha',
+        latitude: -3.3869,
+        longitude: 36.68299,
+        country: 'Tanzania',
+        region: 'East Africa',
+    },
     serengeti: {
-        name: "Serengeti National Park",
+        name: 'Serengeti National Park',
         latitude: -2.3333,
         longitude: 34.8333,
-        country: "Tanzania",
-        region: "East Africa"
+        country: 'Tanzania',
+        region: 'East Africa',
     },
     ngorongoro: {
-        name: "Ngorongoro Crater",
+        name: 'Ngorongoro Crater',
         latitude: -3.1612,
         longitude: 35.5877,
-        country: "Tanzania",
-        region: "East Africa"
+        country: 'Tanzania',
+        region: 'East Africa',
     },
     tarangire: {
-        name: "Tarangire National Park",
+        name: 'Tarangire National Park',
         latitude: -3.985,
         longitude: 36.1303,
-        country: "Tanzania",
-        region: "East Africa"
+        country: 'Tanzania',
+        region: 'East Africa',
     },
-    lakeManyara: {name: "Lake Manyara", latitude: -3.5167, longitude: 35.8, country: "Tanzania", region: "East Africa"},
-    zanzibar: {name: "Zanzibar", latitude: -6.1659, longitude: 39.2026, country: "Tanzania", region: "East Africa"},
+    lakeManyara: {
+        name: 'Lake Manyara',
+        latitude: -3.5167,
+        longitude: 35.8,
+        country: 'Tanzania',
+        region: 'East Africa',
+    },
+    zanzibar: {
+        name: 'Zanzibar',
+        latitude: -6.1659,
+        longitude: 39.2026,
+        country: 'Tanzania',
+        region: 'East Africa',
+    },
     darEsSalaam: {
-        name: "Dar es Salaam",
+        name: 'Dar es Salaam',
         latitude: -6.7924,
         longitude: 39.2083,
-        country: "Tanzania",
-        region: "East Africa"
+        country: 'Tanzania',
+        region: 'East Africa',
     },
     kilimanjaro: {
-        name: "Mount Kilimanjaro",
+        name: 'Mount Kilimanjaro',
         latitude: -3.0674,
         longitude: 37.3556,
-        country: "Tanzania",
-        region: "East Africa"
+        country: 'Tanzania',
+        region: 'East Africa',
     },
-    ruaha: {name: "Ruaha National Park", latitude: -7.75, longitude: 34.95, country: "Tanzania", region: "East Africa"},
+    ruaha: {
+        name: 'Ruaha National Park',
+        latitude: -7.75,
+        longitude: 34.95,
+        country: 'Tanzania',
+        region: 'East Africa',
+    },
     selous: {
-        name: "Selous Game Reserve (Nyerere NP)",
+        name: 'Selous Game Reserve (Nyerere NP)',
         latitude: -9.05,
         longitude: 37.65,
-        country: "Tanzania",
-        region: "East Africa"
+        country: 'Tanzania',
+        region: 'East Africa',
     },
 
-    nairobi: {name: "Nairobi", latitude: -1.2864, longitude: 36.8172, country: "Kenya", region: "East Africa"},
-    masaiMara: {name: "Masai Mara", latitude: -1.4931, longitude: 35.1436, country: "Kenya", region: "East Africa"},
+    nairobi: {
+        name: 'Nairobi',
+        latitude: -1.2864,
+        longitude: 36.8172,
+        country: 'Kenya',
+        region: 'East Africa',
+    },
+    masaiMara: {
+        name: 'Masai Mara',
+        latitude: -1.4931,
+        longitude: 35.1436,
+        country: 'Kenya',
+        region: 'East Africa',
+    },
     amboseli: {
-        name: "Amboseli National Park",
+        name: 'Amboseli National Park',
         latitude: -2.648,
         longitude: 37.2605,
-        country: "Kenya",
-        region: "East Africa"
+        country: 'Kenya',
+        region: 'East Africa',
     },
     tsavo: {
-        name: "Tsavo National Park",
+        name: 'Tsavo National Park',
         latitude: -3.3333,
         longitude: 38.4833,
-        country: "Kenya",
-        region: "East Africa"
+        country: 'Kenya',
+        region: 'East Africa',
     },
-    lakeNakuru: {name: "Lake Nakuru", latitude: -0.3667, longitude: 36.0833, country: "Kenya", region: "East Africa"},
+    lakeNakuru: {
+        name: 'Lake Nakuru',
+        latitude: -0.3667,
+        longitude: 36.0833,
+        country: 'Kenya',
+        region: 'East Africa',
+    },
     samburu: {
-        name: "Samburu National Reserve",
+        name: 'Samburu National Reserve',
         latitude: 0.6333,
         longitude: 37.5333,
-        country: "Kenya",
-        region: "East Africa"
+        country: 'Kenya',
+        region: 'East Africa',
     },
-    diani: {name: "Diani Beach", latitude: -4.279, longitude: 39.594, country: "Kenya", region: "East Africa"},
+    diani: {
+        name: 'Diani Beach',
+        latitude: -4.279,
+        longitude: 39.594,
+        country: 'Kenya',
+        region: 'East Africa',
+    },
 
-    kampala: {name: "Kampala", latitude: 0.3476, longitude: 32.5825, country: "Uganda", region: "East Africa"},
+    kampala: {
+        name: 'Kampala',
+        latitude: 0.3476,
+        longitude: 32.5825,
+        country: 'Uganda',
+        region: 'East Africa',
+    },
     bwindi: {
-        name: "Bwindi Impenetrable Forest",
+        name: 'Bwindi Impenetrable Forest',
         latitude: -1.05,
         longitude: 29.7167,
-        country: "Uganda",
-        region: "East Africa"
+        country: 'Uganda',
+        region: 'East Africa',
     },
     murchison: {
-        name: "Murchison Falls National Park",
+        name: 'Murchison Falls National Park',
         latitude: 2.3,
         longitude: 31.8,
-        country: "Uganda",
-        region: "East Africa"
+        country: 'Uganda',
+        region: 'East Africa',
     },
     queenElizabeth: {
-        name: "Queen Elizabeth National Park",
+        name: 'Queen Elizabeth National Park',
         latitude: -0.2,
         longitude: 29.8833,
-        country: "Uganda",
-        region: "East Africa"
+        country: 'Uganda',
+        region: 'East Africa',
     },
 
-    kigali: {name: "Kigali", latitude: -1.9499, longitude: 30.0588, country: "Rwanda", region: "East Africa"},
+    kigali: {
+        name: 'Kigali',
+        latitude: -1.9499,
+        longitude: 30.0588,
+        country: 'Rwanda',
+        region: 'East Africa',
+    },
     volcanoes: {
-        name: "Volcanoes National Park",
+        name: 'Volcanoes National Park',
         latitude: -1.481,
         longitude: 29.6,
-        country: "Rwanda",
-        region: "East Africa"
+        country: 'Rwanda',
+        region: 'East Africa',
     },
     nyungwe: {
-        name: "Nyungwe Forest National Park",
+        name: 'Nyungwe Forest National Park',
         latitude: -2.481,
         longitude: 29.23,
-        country: "Rwanda",
-        region: "East Africa"
+        country: 'Rwanda',
+        region: 'East Africa',
     },
 
     victoriaFalls: {
-        name: "Victoria Falls",
+        name: 'Victoria Falls',
         latitude: -17.9244,
         longitude: 25.8567,
-        country: "Zimbabwe",
-        region: "Southern Africa"
+        country: 'Zimbabwe',
+        region: 'Southern Africa',
     },
 
     // --- Southern Africa ---
     okavango: {
-        name: "Okavango Delta",
+        name: 'Okavango Delta',
         latitude: -19.3719,
         longitude: 22.892,
-        country: "Botswana",
-        region: "Southern Africa"
+        country: 'Botswana',
+        region: 'Southern Africa',
     },
     chobe: {
-        name: "Chobe National Park",
+        name: 'Chobe National Park',
         latitude: -18.6667,
         longitude: 24.5,
-        country: "Botswana",
-        region: "Southern Africa"
+        country: 'Botswana',
+        region: 'Southern Africa',
     },
     makgadikgadi: {
-        name: "Makgadikgadi Pans",
+        name: 'Makgadikgadi Pans',
         latitude: -20.5,
         longitude: 25.75,
-        country: "Botswana",
-        region: "Southern Africa"
+        country: 'Botswana',
+        region: 'Southern Africa',
     },
 
     etosha: {
-        name: "Etosha National Park",
+        name: 'Etosha National Park',
         latitude: -18.7833,
         longitude: 16.2833,
-        country: "Namibia",
-        region: "Southern Africa"
+        country: 'Namibia',
+        region: 'Southern Africa',
     },
     swakopmund: {
-        name: "Swakopmund",
+        name: 'Swakopmund',
         latitude: -22.6833,
         longitude: 14.5333,
-        country: "Namibia",
-        region: "Southern Africa"
+        country: 'Namibia',
+        region: 'Southern Africa',
     },
     sossusvlei: {
-        name: "Sossusvlei",
+        name: 'Sossusvlei',
         latitude: -24.727,
-        longitude: 15.290,
-        country: "Namibia",
-        region: "Southern Africa"
+        longitude: 15.29,
+        country: 'Namibia',
+        region: 'Southern Africa',
     },
 
     kruger: {
-        name: "Kruger National Park",
+        name: 'Kruger National Park',
         latitude: -23.9884,
         longitude: 31.5547,
-        country: "South Africa",
-        region: "Southern Africa"
+        country: 'South Africa',
+        region: 'Southern Africa',
     },
     capeTown: {
-        name: "Cape Town",
+        name: 'Cape Town',
         latitude: -33.9249,
         longitude: 18.4241,
-        country: "South Africa",
-        region: "Southern Africa"
+        country: 'South Africa',
+        region: 'Southern Africa',
     },
     johannesburg: {
-        name: "Johannesburg",
+        name: 'Johannesburg',
         latitude: -26.2041,
         longitude: 28.0473,
-        country: "South Africa",
-        region: "Southern Africa"
+        country: 'South Africa',
+        region: 'Southern Africa',
     },
     gardenRoute: {
-        name: "Garden Route",
+        name: 'Garden Route',
         latitude: -34.05,
         longitude: 23.3667,
-        country: "South Africa",
-        region: "Southern Africa"
+        country: 'South Africa',
+        region: 'Southern Africa',
     },
     drakensberg: {
-        name: "Drakensberg Mountains",
+        name: 'Drakensberg Mountains',
         latitude: -29.5,
         longitude: 29.5,
-        country: "South Africa",
-        region: "Southern Africa"
+        country: 'South Africa',
+        region: 'Southern Africa',
     },
 
     // --- Indian Ocean Islands ---
     mauritius: {
-        name: "Mauritius",
+        name: 'Mauritius',
         latitude: -20.3484,
         longitude: 57.5522,
-        country: "Mauritius",
-        region: "Indian Ocean"
+        country: 'Mauritius',
+        region: 'Indian Ocean',
     },
     seychelles: {
-        name: "Seychelles",
+        name: 'Seychelles',
         latitude: -4.6796,
         longitude: 55.4919,
-        country: "Seychelles",
-        region: "Indian Ocean"
+        country: 'Seychelles',
+        region: 'Indian Ocean',
     },
     madagascar: {
-        name: "Madagascar",
+        name: 'Madagascar',
         latitude: -18.7669,
         longitude: 46.8691,
-        country: "Madagascar",
-        region: "Indian Ocean"
-    }
-} as const;
+        country: 'Madagascar',
+        region: 'Indian Ocean',
+    },
+} as const

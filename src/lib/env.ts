@@ -1,5 +1,5 @@
-import {createEnv} from "@t3-oss/env-nextjs";
-import {z} from "zod";
+import { createEnv } from '@t3-oss/env-nextjs'
+import { z } from 'zod'
 
 export const env = createEnv({
     server: {
@@ -7,7 +7,7 @@ export const env = createEnv({
         CLOUDINARY_CLOUD_NAME: z.string(),
         CLOUDINARY_API_KEY: z.string(),
         CLOUDINARY_API_SECRET: z.string(),
-        BETTER_AUTH_URL: z.string()
+        BETTER_AUTH_URL: z.string(),
     },
 
     client: {
@@ -24,7 +24,7 @@ export const env = createEnv({
         BETTER_AUTH_URL: process.env.BETTER_AUTH_URL,
         NEXT_PUBLIC_POSTHOG_KEY: process.env.NEXT_PUBLIC_POSTHOG_KEY,
         NEXT_PUBLIC_POSTHOG_HOST: process.env.NEXT_PUBLIC_POSTHOG_HOST,
-        NEXT_PUBLIC_DUFFEL_KEY: process.env.NEXT_PUBLIC_DUFFEL_KEY
+        NEXT_PUBLIC_DUFFEL_KEY: process.env.NEXT_PUBLIC_DUFFEL_KEY,
     },
 
     /**
@@ -41,4 +41,4 @@ export const env = createEnv({
      * explicitly specify this option as true.
      */
     emptyStringAsUndefined: true,
-});
+})

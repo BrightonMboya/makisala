@@ -1,21 +1,21 @@
-import {BreadcrumbSchema} from "@/components/schema";
-import {BASE_URL} from "@/lib/constants";
-import {capitalize} from "@/lib/utils";
-import Script from "next/script";
-import {notFound} from "next/navigation"
-import {countries, countryDescriptions} from "@/lib/p_seo_info";
-import {getToursByCountry} from "@/lib/cms-service";
-import ToursPage from "@/app/safaris/[country]/(destination-details)/_components/tour-page";
-import {Suspense} from "react";
+import { BreadcrumbSchema } from '@/components/schema'
+import { BASE_URL } from '@/lib/constants'
+import { capitalize } from '@/lib/utils'
+import Script from 'next/script'
+import { notFound } from 'next/navigation'
+import { countries, countryDescriptions } from '@/lib/p_seo_info'
+import { getToursByCountry } from '@/lib/cms-service'
+import ToursPage from '@/app/safaris/[country]/(destination-details)/_components/tour-page'
+import { Suspense } from 'react'
 
 interface Params {
     params: {
-        country: string;
+        country: string
     }
 }
 
-export async function generateMetadata({params}: Params) {
-    const {country} = await params;
+export async function generateMetadata({ params }: Params) {
+    const { country } = await params
     return {
         title: `${capitalize(country)} Safaris | Makisala Safaris`,
         description: `Discover the best safaris in ${capitalize(country)} offered by Makisala Safaris`,
@@ -23,15 +23,14 @@ export async function generateMetadata({params}: Params) {
 }
 
 export async function generateStaticParams() {
-    return countries.map((country) => ({
+    return countries.map(country => ({
         country,
-    }));
+    }))
 }
 
-
-export default async function Page({params}: Params) {
-    const {country} = await params;
-    const tours = await getToursByCountry(country);
+export default async function Page({ params }: Params) {
+    const { country } = await params
+    const tours = await getToursByCountry(country)
 
     if (!tours) {
         return notFound()
@@ -42,10 +41,13 @@ export default async function Page({params}: Params) {
                 {JSON.stringify([
                     BreadcrumbSchema({
                         breadcrumbs: [
-                            {name: "Home", url: BASE_URL},
-                            {name: "All Safaris", url: `${BASE_URL}/safaris`},
-                            {name: `All ${capitalize(country)} Safaris`, url: `${BASE_URL}/safaris/${country}`},
-                        ]
+                            { name: 'Home', url: BASE_URL },
+                            { name: 'All Safaris', url: `${BASE_URL}/safaris` },
+                            {
+                                name: `All ${capitalize(country)} Safaris`,
+                                url: `${BASE_URL}/safaris/${country}`,
+                            },
+                        ],
                     }),
                 ])}
             </Script>
@@ -60,7 +62,7 @@ export default async function Page({params}: Params) {
                         </div>
                     </div>
                     <Suspense>
-                        <ToursPage/>
+                        <ToursPage />
                     </Suspense>
                 </div>
             </section>

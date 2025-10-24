@@ -1,13 +1,13 @@
-import {TourData} from "@/app/scraper/_components/types";
-import {Card, CardContent, CardDescription, CardHeader, CardTitle} from '@/components/ui/card';
-import {Badge} from '@/components/ui/badge';
-import {MapPin, Calendar, Star, DollarSign, Camera} from 'lucide-react';
+import { TourData } from '@/app/scraper/_components/types'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { MapPin, Calendar, Star, DollarSign, Camera } from 'lucide-react'
 
 interface TourPreviewProps {
-    data: TourData;
+    data: TourData
 }
 
-export const TourPreview = ({data}: TourPreviewProps) => {
+export const TourPreview = ({ data }: TourPreviewProps) => {
     return (
         <div className="space-y-8">
             <div className="text-center">
@@ -21,18 +21,17 @@ export const TourPreview = ({data}: TourPreviewProps) => {
             <Card className="shadow-luxury">
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2 text-2xl">
-                        <Star className="w-6 h-6 text-safari-gold"/>
+                        <Star className="w-6 h-6 text-safari-gold" />
                         {data.tour_name}
                     </CardTitle>
                     <CardDescription className="flex items-center gap-4 text-lg">
-            <span className="flex items-center gap-1">
-              <DollarSign className="w-4 h-4"/>
-              ${data.pricing?.toLocaleString()}
-            </span>
                         <span className="flex items-center gap-1">
-              <Calendar className="w-4 h-4"/>
+                            <DollarSign className="w-4 h-4" />${data.pricing?.toLocaleString()}
+                        </span>
+                        <span className="flex items-center gap-1">
+                            <Calendar className="w-4 h-4" />
                             {data.itinerary.length} days
-            </span>
+                        </span>
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -63,7 +62,11 @@ export const TourPreview = ({data}: TourPreviewProps) => {
                 <CardContent>
                     <div className="flex flex-wrap gap-2">
                         {data.activities.map((activity, index) => (
-                            <Badge key={index} variant="secondary" className="bg-safari-sand text-safari-earth">
+                            <Badge
+                                key={index}
+                                variant="secondary"
+                                className="bg-safari-sand text-safari-earth"
+                            >
                                 {activity.activity_name}
                             </Badge>
                         ))}
@@ -79,44 +82,55 @@ export const TourPreview = ({data}: TourPreviewProps) => {
                         <Card key={index} className="overflow-hidden">
                             <CardHeader className="">
                                 <CardTitle className="flex items-center gap-2">
-                                    <Calendar className="w-5 h-5"/>
+                                    <Calendar className="w-5 h-5" />
                                     Day {day.day_number}: {day.itinerary_day_title}
                                 </CardTitle>
                             </CardHeader>
                             <CardContent className="pt-6">
-                                <p className="text-foreground mb-4 leading-relaxed">{day.overview}</p>
+                                <p className="text-foreground mb-4 leading-relaxed">
+                                    {day.overview}
+                                </p>
 
                                 {/* Accommodation */}
-                                {day.accomodation.accomodation_name !== "No accommodation (End of tour)" && (
+                                {day.accomodation.accomodation_name !==
+                                    'No accommodation (End of tour)' && (
                                     <div className="bg-muted rounded-lg p-4">
                                         <div className="flex items-center gap-2 mb-2">
-                                            <MapPin className="w-4 h-4 text-primary"/>
-                                            <span className="font-semibold">{day.accomodation.accomodation_name}</span>
+                                            <MapPin className="w-4 h-4 text-primary" />
+                                            <span className="font-semibold">
+                                                {day.accomodation.accomodation_name}
+                                            </span>
                                         </div>
 
                                         {/* Accommodation Images */}
                                         {day.accomodation.img_urls.length > 0 && (
                                             <div className="mt-3">
                                                 <div className="flex items-center gap-2 mb-2">
-                                                    <Camera className="w-4 h-4"/>
+                                                    <Camera className="w-4 h-4" />
                                                     <span className="text-sm">
-                            {day.accomodation.img_urls.length} accommodation images
-                          </span>
+                                                        {day.accomodation.img_urls.length}{' '}
+                                                        accommodation images
+                                                    </span>
                                                 </div>
                                                 <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                                                    {day.accomodation.img_urls.slice(0, 4).map((img, imgIndex) => (
-                                                        <div key={imgIndex}
-                                                             className="aspect-video bg-safari-sand rounded overflow-hidden">
-                                                            <img
-                                                                src={img.image_url}
-                                                                alt={`${day.accomodation.accomodation_name} - Image ${imgIndex + 1}`}
-                                                                className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
-                                                                onError={(e) => {
-                                                                    e.currentTarget.style.display = 'none';
-                                                                }}
-                                                            />
-                                                        </div>
-                                                    ))}
+                                                    {day.accomodation.img_urls
+                                                        .slice(0, 4)
+                                                        .map((img, imgIndex) => (
+                                                            <div
+                                                                key={imgIndex}
+                                                                className="aspect-video bg-safari-sand rounded overflow-hidden"
+                                                            >
+                                                                <img
+                                                                    src={img.image_url}
+                                                                    alt={`${day.accomodation.accomodation_name} - Image ${imgIndex + 1}`}
+                                                                    className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                                                                    onError={e => {
+                                                                        e.currentTarget.style.display =
+                                                                            'none'
+                                                                    }}
+                                                                />
+                                                            </div>
+                                                        ))}
                                                 </div>
                                             </div>
                                         )}
@@ -128,5 +142,5 @@ export const TourPreview = ({data}: TourPreviewProps) => {
                 </div>
             </div>
         </div>
-    );
-};
+    )
+}

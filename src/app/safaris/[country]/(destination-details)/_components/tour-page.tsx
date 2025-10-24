@@ -1,11 +1,14 @@
-"use client"
+'use client'
 
-import {useState, useEffect, useCallback} from "react"
-import {useRouter, useSearchParams} from "next/navigation"
-import TourCard from "@/app/safaris/[country]/[modifier]/_components/TourCard"
-import {TourFilters, type FilterState} from "@/app/safaris/[country]/(destination-details)/_components/tour-filter";
-import {Button} from "@/components/ui/button"
-import {type Tours} from "@/db";
+import { useState, useEffect, useCallback } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
+import TourCard from '@/app/safaris/[country]/[modifier]/_components/TourCard'
+import {
+    TourFilters,
+    type FilterState,
+} from '@/app/safaris/[country]/(destination-details)/_components/tour-filter'
+import { Button } from '@/components/ui/button'
+import { type Tours } from '@/db'
 
 interface ToursResponse {
     tours: Tours[]
@@ -31,37 +34,35 @@ export default function ToursPage() {
             if (!value || (Array.isArray(value) && value.length === 0)) {
                 newParams.delete(key)
             } else if (Array.isArray(value)) {
-                newParams.set(key, value.join(","))
+                newParams.set(key, value.join(','))
             } else {
                 newParams.set(key, value)
             }
         }
 
-        router.push(`?${newParams.toString()}`, {scroll: false})
+        router.push(`?${newParams.toString()}`, { scroll: false })
     }
 
     // 🔹 Hydrate state from URL on first load
-    const [searchQuery, setSearchQuery] = useState(searchParams.get("search") || "")
+    const [searchQuery, setSearchQuery] = useState(searchParams.get('search') || '')
     const [filters, setFilters] = useState<FilterState>({
         priceRange: [
-            Number(searchParams.get("minPrice") || 0),
-            Number(searchParams.get("maxPrice") || 5000),
+            Number(searchParams.get('minPrice') || 0),
+            Number(searchParams.get('maxPrice') || 5000),
         ],
         daysRange: [
-            Number(searchParams.get("minDays") || 1),
-            Number(searchParams.get("maxDays") || 15),
+            Number(searchParams.get('minDays') || 1),
+            Number(searchParams.get('maxDays') || 15),
         ],
-        selectedCountries: searchParams.get("country")
-            ? searchParams.get("country")!.split(",")
+        selectedCountries: searchParams.get('country')
+            ? searchParams.get('country')!.split(',')
             : [],
-        selectedTags: searchParams.get("tags")
-            ? searchParams.get("tags")!.split(",")
-            : [],
+        selectedTags: searchParams.get('tags') ? searchParams.get('tags')!.split(',') : [],
     })
 
     const [tours, setTours] = useState<Tours[]>([])
     const [pagination, setPagination] = useState({
-        currentPage: Number(searchParams.get("page") || 1),
+        currentPage: Number(searchParams.get('page') || 1),
         totalPages: 1,
         totalCount: 0,
         hasNextPage: false,
@@ -74,21 +75,16 @@ export default function ToursPage() {
             setIsLoading(true)
 
             const params = {
-                search: searchQuery || "",
+                search: searchQuery || '',
                 minPrice: filters.priceRange[0].toString(),
                 maxPrice: filters.priceRange[1].toString(),
                 minDays: filters.daysRange[0].toString(),
                 maxDays: filters.daysRange[1].toString(),
                 page: page.toString(),
-                limit: "12",
+                limit: '12',
                 country:
-                    filters.selectedCountries.length > 0
-                        ? filters.selectedCountries.join(",")
-                        : "",
-                tags:
-                    filters.selectedTags.length > 0
-                        ? filters.selectedTags.join(",")
-                        : "",
+                    filters.selectedCountries.length > 0 ? filters.selectedCountries.join(',') : '',
+                tags: filters.selectedTags.length > 0 ? filters.selectedTags.join(',') : '',
             }
 
             // 🔑 Update URL so link is sharable
@@ -101,13 +97,13 @@ export default function ToursPage() {
                 setTours(data.tours)
                 setPagination(data.pagination)
             } catch (error) {
-                console.error("Failed to fetch tours:", error)
+                console.error('Failed to fetch tours:', error)
                 setTours([])
             } finally {
                 setIsLoading(false)
             }
         },
-        [searchQuery, filters],
+        [searchQuery, filters]
     )
 
     useEffect(() => {
@@ -122,10 +118,10 @@ export default function ToursPage() {
             selectedCountries: [],
             selectedTags: [],
         })
-        setSearchQuery("")
-        setPagination((prev) => ({...prev, currentPage: 1}))
+        setSearchQuery('')
+        setPagination(prev => ({ ...prev, currentPage: 1 }))
 
-        router.push("?", {scroll: false}) // reset URL completely
+        router.push('?', { scroll: false }) // reset URL completely
     }
 
     const handlePageChange = (page: number) => {
@@ -144,7 +140,11 @@ export default function ToursPage() {
                                 onFiltersChange={setFilters}
                                 onClearFilters={clearFilters}
                             />
-                            <Button onClick={clearFilters} variant="outline" className="mt-4 w-full">
+                            <Button
+                                onClick={clearFilters}
+                                variant="outline"
+                                className="mt-4 w-full"
+                            >
                                 Reset All Filters
                             </Button>
                         </div>
@@ -154,8 +154,7 @@ export default function ToursPage() {
                     <main className="flex-1">
                         {isLoading ? (
                             <div className="text-center py-12">
-                                <div
-                                    className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+                                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
                                 <p className="text-muted-foreground">Loading tours...</p>
                             </div>
                         ) : tours.length === 0 ? (
@@ -180,8 +179,8 @@ export default function ToursPage() {
                                 </div>
 
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                                    {tours.map((tour) => (
-                                        <TourCard key={tour.id} tour={tour}/>
+                                    {tours.map(tour => (
+                                        <TourCard key={tour.id} tour={tour} />
                                     ))}
                                 </div>
 
@@ -189,7 +188,9 @@ export default function ToursPage() {
                                     <div className="flex items-center justify-center gap-2">
                                         <Button
                                             variant="outline"
-                                            onClick={() => handlePageChange(pagination.currentPage - 1)}
+                                            onClick={() =>
+                                                handlePageChange(pagination.currentPage - 1)
+                                            }
                                             disabled={!pagination.hasPreviousPage}
                                         >
                                             Previous
@@ -197,13 +198,15 @@ export default function ToursPage() {
 
                                         <div className="flex items-center gap-1">
                                             {Array.from(
-                                                {length: pagination.totalPages},
-                                                (_, i) => i + 1,
-                                            ).map((page) => (
+                                                { length: pagination.totalPages },
+                                                (_, i) => i + 1
+                                            ).map(page => (
                                                 <Button
                                                     key={page}
                                                     variant={
-                                                        page === pagination.currentPage ? "default" : "outline"
+                                                        page === pagination.currentPage
+                                                            ? 'default'
+                                                            : 'outline'
                                                     }
                                                     size="sm"
                                                     onClick={() => handlePageChange(page)}
@@ -216,7 +219,9 @@ export default function ToursPage() {
 
                                         <Button
                                             variant="outline"
-                                            onClick={() => handlePageChange(pagination.currentPage + 1)}
+                                            onClick={() =>
+                                                handlePageChange(pagination.currentPage + 1)
+                                            }
                                             disabled={!pagination.hasNextPage}
                                         >
                                             Next

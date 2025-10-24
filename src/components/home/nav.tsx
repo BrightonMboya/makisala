@@ -1,7 +1,7 @@
-"use client";
-import {useState} from "react";
-import {Menu,} from "lucide-react";
-import {Button} from "@/components/ui/button";
+'use client'
+import { useState } from 'react'
+import { Menu } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import {
     NavigationMenu,
     NavigationMenuContent,
@@ -9,22 +9,28 @@ import {
     NavigationMenuLink,
     NavigationMenuList,
     NavigationMenuTrigger,
-} from "@/components/ui/navigation-menu";
-import Link from "next/link";
-import {Sheet, SheetContent, SheetTrigger} from "@/components/ui/sheet";
-import {safaris_nav as safaris, experiences, destinations, inspirations, about_us_nav} from "@/lib/constants";
-import {InquiryDialog} from "@/components/enquire-dialog-button";
-import {articles_url} from "@/app/where-to-go/[month]/_components/data";
-import {capitalize} from "@/lib/utils";
+} from '@/components/ui/navigation-menu'
+import Link from 'next/link'
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
+import {
+    safaris_nav as safaris,
+    experiences,
+    destinations,
+    inspirations,
+    about_us_nav,
+} from '@/lib/constants'
+import { InquiryDialog } from '@/components/enquire-dialog-button'
+import { articles_url } from '@/app/where-to-go/[month]/_components/data'
+import { capitalize } from '@/lib/utils'
 import {
     Accordion,
     AccordionContent,
     AccordionItem,
     AccordionTrigger,
-} from "@/components/ui/accordion"
+} from '@/components/ui/accordion'
 
 export default function Nav() {
-    const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+    const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
     return (
         <nav className="fixed top-0 w-full bg-white/95 backdrop-blur-sm border-b border-gray-100 z-50">
@@ -35,7 +41,7 @@ export default function Nav() {
                         <div className="flex items-center space-x-2 pl-10">
                             <div className="w-8 h-8 rounded-sm flex items-center justify-center gap-3">
                                 {/*<span className="text-white font-bold text-xs">MS</span>*/}
-                                <img src="/makisala_icon.png" className="object-cover"/>
+                                <img src="/makisala_icon.png" className="object-cover" />
                                 <div className="text-sm font-medium tracking-wider">
                                     <div>MAKISALA</div>
                                 </div>
@@ -48,19 +54,21 @@ export default function Nav() {
                         <NavigationMenu viewport={false}>
                             <NavigationMenuList className="space-x-6">
                                 <NavigationMenuItem>
-                                    <NavigationMenuTrigger
-                                        className="text-sm font-medium bg-transparent hover:bg-transparent data-[active]:bg-transparent data-[state=open]:bg-transparent">
+                                    <NavigationMenuTrigger className="text-sm font-medium bg-transparent hover:bg-transparent data-[active]:bg-transparent data-[state=open]:bg-transparent">
                                         SAFARIS
                                     </NavigationMenuTrigger>
                                     <NavigationMenuContent>
                                         <div className="w-[500px] gap-3 p-6">
                                             <div className="space-y-3">
-                                                <h4 className="text-sm font-medium">Popular Safaris</h4>
-                                                {safaris.map((safari) => (
+                                                <h4 className="text-sm font-medium">
+                                                    Popular Safaris
+                                                </h4>
+                                                {safaris.map(safari => (
                                                     <NavigationMenuLink asChild key={safari.name}>
                                                         <Link
                                                             href={safari.page_url}
-                                                            className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground">
+                                                            className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
+                                                        >
                                                             <div className="text-sm font-medium leading-none">
                                                                 {safari.name}
                                                             </div>
@@ -76,8 +84,7 @@ export default function Nav() {
                                 </NavigationMenuItem>
 
                                 <NavigationMenuItem>
-                                    <NavigationMenuTrigger
-                                        className="text-sm font-medium bg-transparent hover:bg-transparent data-[active]:bg-transparent data-[state=open]:bg-transparent">
+                                    <NavigationMenuTrigger className="text-sm font-medium bg-transparent hover:bg-transparent data-[active]:bg-transparent data-[state=open]:bg-transparent">
                                         DESTINATIONS
                                     </NavigationMenuTrigger>
                                     <NavigationMenuContent>
@@ -86,11 +93,12 @@ export default function Nav() {
                                                 <h4 className="text-sm font-medium">
                                                     Top Destinations
                                                 </h4>
-                                                {destinations.top_destinations.map((dest) => (
+                                                {destinations.top_destinations.map(dest => (
                                                     <NavigationMenuLink asChild key={dest.name}>
                                                         <Link
                                                             href={dest.page_url}
-                                                            className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground">
+                                                            className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
+                                                        >
                                                             <div className="text-sm font-medium leading-none">
                                                                 {dest.name}
                                                             </div>
@@ -105,11 +113,12 @@ export default function Nav() {
                                                 <h4 className="text-sm font-medium">
                                                     Other Destinations
                                                 </h4>
-                                                {destinations.east_africa.map((dest) => (
+                                                {destinations.east_africa.map(dest => (
                                                     <NavigationMenuLink asChild key={dest.name}>
                                                         <Link
                                                             href={dest.page_url}
-                                                            className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground">
+                                                            className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
+                                                        >
                                                             <div className="text-sm font-medium leading-none">
                                                                 {dest.name}
                                                             </div>
@@ -152,18 +161,18 @@ export default function Nav() {
                                 {/*</NavigationMenuItem>*/}
 
                                 <NavigationMenuItem>
-                                    <NavigationMenuTrigger
-                                        className="text-sm font-medium bg-transparent hover:bg-transparent data-[active]:bg-transparent data-[state=open]:bg-transparent">
+                                    <NavigationMenuTrigger className="text-sm font-medium bg-transparent hover:bg-transparent data-[active]:bg-transparent data-[state=open]:bg-transparent">
                                         INSPIRATION
                                     </NavigationMenuTrigger>
                                     <NavigationMenuContent>
                                         <div className="w-[400px] gap-3 p-6">
                                             <div className="space-y-3">
-                                                {inspirations.map((inspir) => (
+                                                {inspirations.map(inspir => (
                                                     <NavigationMenuLink asChild key={inspir.name}>
                                                         <Link
                                                             href={inspir.page_url}
-                                                            className="block select-none rounded-md px-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground">
+                                                            className="block select-none rounded-md px-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
+                                                        >
                                                             <div className="text-sm font-medium leading-none">
                                                                 {inspir.name}
                                                             </div>
@@ -176,8 +185,7 @@ export default function Nav() {
                                 </NavigationMenuItem>
 
                                 <NavigationMenuItem>
-                                    <NavigationMenuTrigger
-                                        className="text-sm font-medium uppercase bg-transparent hover:bg-transparent data-[active]:bg-transparent data-[state=open]:bg-transparent">
+                                    <NavigationMenuTrigger className="text-sm font-medium uppercase bg-transparent hover:bg-transparent data-[active]:bg-transparent data-[state=open]:bg-transparent">
                                         Travel by Month
                                     </NavigationMenuTrigger>
                                     <NavigationMenuContent>
@@ -187,7 +195,8 @@ export default function Nav() {
                                                     <NavigationMenuLink asChild key={index}>
                                                         <Link
                                                             href={`/where-to-go/${page.month}`}
-                                                            className="block select-none rounded-md px-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground">
+                                                            className="block select-none rounded-md px-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
+                                                        >
                                                             <div className="text-sm font-medium leading-none">
                                                                 {capitalize(page.month)}
                                                             </div>
@@ -200,18 +209,18 @@ export default function Nav() {
                                 </NavigationMenuItem>
 
                                 <NavigationMenuItem>
-                                    <NavigationMenuTrigger
-                                        className="text-sm font-medium bg-transparent hover:bg-transparent data-[active]:bg-transparent data-[state=open]:bg-transparent">
+                                    <NavigationMenuTrigger className="text-sm font-medium bg-transparent hover:bg-transparent data-[active]:bg-transparent data-[state=open]:bg-transparent">
                                         ABOUT US
                                     </NavigationMenuTrigger>
                                     <NavigationMenuContent>
                                         <div className="w-[400px] gap-3 p-6">
                                             <div className="space-y-3">
-                                                {about_us_nav.map((item) => (
+                                                {about_us_nav.map(item => (
                                                     <NavigationMenuLink asChild key={item.name}>
                                                         <Link
                                                             href={item.page_url}
-                                                            className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground">
+                                                            className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground"
+                                                        >
                                                             <div className="text-sm font-medium leading-none">
                                                                 {item.name}
                                                             </div>
@@ -241,7 +250,7 @@ export default function Nav() {
                         <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
                             <SheetTrigger asChild>
                                 <Button variant="ghost" size="icon" className="lg:hidden">
-                                    <Menu className="h-6 w-6"/>
+                                    <Menu className="h-6 w-6" />
                                 </Button>
                             </SheetTrigger>
                             <SheetContent side="right" className="w-[300px] sm:w-[400px]">
@@ -255,7 +264,6 @@ export default function Nav() {
                                         </div>
                                     </div>
 
-
                                     <Accordion
                                         type="single"
                                         collapsible
@@ -265,12 +273,13 @@ export default function Nav() {
                                         <AccordionItem value="safaris">
                                             <AccordionTrigger>SAFARIS</AccordionTrigger>
                                             <AccordionContent className="flex flex-col gap-4 text-balance pl-5">
-                                                {safaris.map((safari) => (
+                                                {safaris.map(safari => (
                                                     <Link
                                                         href={safari.page_url}
                                                         key={safari.name}
                                                         onClick={() => setMobileMenuOpen(false)}
-                                                        className="block hover:text-gray-900">
+                                                        className="block hover:text-gray-900"
+                                                    >
                                                         {safari.name}
                                                     </Link>
                                                 ))}
@@ -279,20 +288,22 @@ export default function Nav() {
                                         <AccordionItem value="Destinations">
                                             <AccordionTrigger>DESTINATIONS</AccordionTrigger>
                                             <AccordionContent className="flex flex-col gap-4 text-balance pl-5">
-                                                {destinations.top_destinations.map((dest) => (
+                                                {destinations.top_destinations.map(dest => (
                                                     <Link
                                                         href={dest.page_url}
                                                         key={dest.name}
                                                         onClick={() => setMobileMenuOpen(false)}
-                                                        className="block hover:text-gray-900">
+                                                        className="block hover:text-gray-900"
+                                                    >
                                                         {dest.name}
                                                     </Link>
                                                 ))}
                                             </AccordionContent>
                                         </AccordionItem>
                                         <AccordionItem value="Travel by month">
-                                            <AccordionTrigger className="font-medium uppercase">Travel by
-                                                month</AccordionTrigger>
+                                            <AccordionTrigger className="font-medium uppercase">
+                                                Travel by month
+                                            </AccordionTrigger>
                                             <AccordionContent className="flex flex-col gap-4 text-balance pl-5">
                                                 {articles_url.map((page, index) => (
                                                     <Link
@@ -306,14 +317,16 @@ export default function Nav() {
                                             </AccordionContent>
                                         </AccordionItem>
                                         <AccordionItem value="Inspirations">
-                                            <AccordionTrigger
-                                                className="font-medium uppercase">Inspirations</AccordionTrigger>
+                                            <AccordionTrigger className="font-medium uppercase">
+                                                Inspirations
+                                            </AccordionTrigger>
                                             <AccordionContent className="flex flex-col gap-4 text-balance pl-5">
-                                                {inspirations.map((inspiration) => (
-                                                    <Link key={inspiration.name}
-                                                          className="block hover:text-gray-900"
-                                                          href={inspiration.page_url}
-                                                          onClick={() => setMobileMenuOpen(false)}
+                                                {inspirations.map(inspiration => (
+                                                    <Link
+                                                        key={inspiration.name}
+                                                        className="block hover:text-gray-900"
+                                                        href={inspiration.page_url}
+                                                        onClick={() => setMobileMenuOpen(false)}
                                                     >
                                                         {inspiration.name}
                                                     </Link>
@@ -321,8 +334,9 @@ export default function Nav() {
                                             </AccordionContent>
                                         </AccordionItem>
                                         <AccordionItem value="About us">
-                                            <AccordionTrigger className="font-medium uppercase">About
-                                                us</AccordionTrigger>
+                                            <AccordionTrigger className="font-medium uppercase">
+                                                About us
+                                            </AccordionTrigger>
                                             <AccordionContent className="flex flex-col gap-4 text-balance pl-5">
                                                 {about_us_nav.map((item, index) => (
                                                     <Link href={item.page_url} key={index}>
@@ -361,5 +375,5 @@ export default function Nav() {
                 </div>
             </div>
         </nav>
-    );
+    )
 }

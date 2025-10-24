@@ -1,5 +1,5 @@
 export interface IParams {
     params: {
-        park: string;
+        park: string
     }
 }

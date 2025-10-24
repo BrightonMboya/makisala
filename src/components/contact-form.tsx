@@ -1,4 +1,4 @@
-"use client";
+'use client'
 import {
     Form,
     FormControl,
@@ -6,109 +6,105 @@ import {
     FormItem,
     FormLabel,
     FormMessage,
-} from "@/components/ui/form";
-import {Input} from "@/components/ui/input";
-import {Textarea} from "@/components/ui/textarea";
+} from '@/components/ui/form'
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
 import {
     Select,
     SelectContent,
     SelectItem,
     SelectTrigger,
     SelectValue,
-} from "@/components/ui/select";
-import {RadioGroup, RadioGroupItem} from "@/components/ui/radio-group";
-import {Checkbox} from "@/components/ui/checkbox";
-import {Calendar} from "@/components/ui/calendar";
-import {
-    Popover,
-    PopoverContent,
-    PopoverTrigger,
-} from "@/components/ui/popover";
-import {cn} from "@/lib/utils";
-import {format} from "date-fns";
-import {CalendarIcon} from "lucide-react";
+} from '@/components/ui/select'
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Calendar } from '@/components/ui/calendar'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { cn } from '@/lib/utils'
+import { format } from 'date-fns'
+import { CalendarIcon } from 'lucide-react'
 
-import {Button} from "@/components/ui/button";
-import React from "react";
-import {z} from "zod";
-import {useToast} from "@/lib/hooks/use-toast";
-import {useForm} from "react-hook-form";
-import {zodResolver} from "@hookform/resolvers/zod";
-import {createInquiry} from "@/lib/cms-service";
-import {usePathname} from 'next/navigation'
-import {BASE_URL} from "@/lib/constants";
-import {CountryDropdown} from "@/components/ui/country-dropdown";
+import { Button } from '@/components/ui/button'
+import React from 'react'
+import { z } from 'zod'
+import { useToast } from '@/lib/hooks/use-toast'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { createInquiry } from '@/lib/cms-service'
+import { usePathname } from 'next/navigation'
+import { BASE_URL } from '@/lib/constants'
+import { CountryDropdown } from '@/components/ui/country-dropdown'
 
-const nightOptions = Array.from({length: 30}, (_, i) => (i + 1).toString());
-const adultOptions = Array.from({length: 10}, (_, i) => (i + 1).toString());
-const childrenOptions = Array.from({length: 6}, (_, i) => i.toString());
+const nightOptions = Array.from({ length: 30 }, (_, i) => (i + 1).toString())
+const adultOptions = Array.from({ length: 10 }, (_, i) => (i + 1).toString())
+const childrenOptions = Array.from({ length: 6 }, (_, i) => i.toString())
 
-
-export default function ContactForm({setOpen}: {
-    setOpen?: React.Dispatch<React.SetStateAction<boolean>>;
+export default function ContactForm({
+    setOpen,
+}: {
+    setOpen?: React.Dispatch<React.SetStateAction<boolean>>
 }) {
-    const [openCalendar, setOpenCalendar] = React.useState<boolean>(false);
-    const {toast} = useToast()
+    const [openCalendar, setOpenCalendar] = React.useState<boolean>(false)
+    const { toast } = useToast()
     const pathname = usePathname()
 
     const formSchema = z.object({
-        fullName: z.string().min(1, "Full Name is required"),
-        countryOfResidence: z.string().min(1, "Country of residence is required"),
-        phoneNumber: z.string().min(1, "Phone number is required"),
-        email: z.string().email("Valid email is required"),
+        fullName: z.string().min(1, 'Full Name is required'),
+        countryOfResidence: z.string().min(1, 'Country of residence is required'),
+        phoneNumber: z.string().min(1, 'Phone number is required'),
+        email: z.string().email('Valid email is required'),
         startDate: z.date({
-            message: "Start date is required",
+            message: 'Start date is required',
         }),
-        numberOfNights: z.string().min(1, "Number of nights is required"),
-        numberOfAdults: z.string().min(1, "Number of adults is required"),
+        numberOfNights: z.string().min(1, 'Number of nights is required'),
+        numberOfAdults: z.string().min(1, 'Number of adults is required'),
         numberOfChildren: z.string(),
-        flightAssistance: z.enum(["yes", "no"]),
-        experienceType: z.enum(["mid-range", "high-end", "top-end"]),
-        comments: z.string().min(1, "Comments are required"),
-        consent: z.boolean().refine((val) => val === true, {
-            message: "You must agree to the privacy policy",
+        flightAssistance: z.enum(['yes', 'no']),
+        experienceType: z.enum(['mid-range', 'high-end', 'top-end']),
+        comments: z.string().min(1, 'Comments are required'),
+        consent: z.boolean().refine(val => val === true, {
+            message: 'You must agree to the privacy policy',
         }),
-    });
+    })
 
-    type FormData = z.infer<typeof formSchema>;
+    type FormData = z.infer<typeof formSchema>
     const form = useForm<FormData>({
         resolver: zodResolver(formSchema),
         defaultValues: {
-            fullName: "",
-            countryOfResidence: "",
-            phoneNumber: "",
-            email: "",
-            numberOfNights: "",
-            numberOfAdults: "",
-            numberOfChildren: "0",
-            flightAssistance: "no",
-            experienceType: "mid-range",
-            comments: "",
+            fullName: '',
+            countryOfResidence: '',
+            phoneNumber: '',
+            email: '',
+            numberOfNights: '',
+            numberOfAdults: '',
+            numberOfChildren: '0',
+            flightAssistance: 'no',
+            experienceType: 'mid-range',
+            comments: '',
             consent: true,
         },
-    });
+    })
     const onSubmit = async (data: FormData) => {
         try {
             await createInquiry({
                 ...data,
-                url: `${BASE_URL}/${pathname}`
-            });
+                url: `${BASE_URL}/${pathname}`,
+            })
             toast({
-                title: "Inquiry Submitted",
+                title: 'Inquiry Submitted',
                 description: "We'll get back to you within 24 hours!",
-            });
-            setOpen && setOpen(false);
-            form.reset();
+            })
+            setOpen && setOpen(false)
+            form.reset()
         } catch (error) {
             toast({
                 title: 'Error',
                 description: 'Failed to submit inquiry. Please try again.',
                 variant: 'destructive',
-            });
+            })
             console.log(error)
         }
-    };
-
+    }
 
     return (
         <Form {...form}>
@@ -119,13 +115,13 @@ export default function ContactForm({setOpen}: {
                     <FormField
                         control={form.control}
                         name="email"
-                        render={({field}) => (
+                        render={({ field }) => (
                             <FormItem>
                                 <FormLabel>Email*</FormLabel>
                                 <FormControl>
                                     <Input placeholder="Enter Email" type="email" {...field} />
                                 </FormControl>
-                                <FormMessage/>
+                                <FormMessage />
                             </FormItem>
                         )}
                     />
@@ -133,46 +129,45 @@ export default function ContactForm({setOpen}: {
                         <FormField
                             control={form.control}
                             name="fullName"
-                            render={({field}) => (
+                            render={({ field }) => (
                                 <FormItem>
                                     <FormLabel>First Name*</FormLabel>
                                     <FormControl>
                                         <Input placeholder="First" {...field} />
                                     </FormControl>
-                                    <FormMessage/>
+                                    <FormMessage />
                                 </FormItem>
                             )}
                         />
-
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
                         <FormField
                             control={form.control}
                             name="countryOfResidence"
-                            render={({field}) => (
+                            render={({ field }) => (
                                 <FormItem>
                                     <FormLabel>Country of Residence*</FormLabel>
                                     <CountryDropdown
                                         placeholder="Select countries"
-                                        onChange={(country) => field.onChange(country.name)}
+                                        onChange={country => field.onChange(country.name)}
                                         defaultValue={field.value}
                                         value={field.value}
                                     />
-                                    <FormMessage/>
+                                    <FormMessage />
                                 </FormItem>
                             )}
                         />
                         <FormField
                             control={form.control}
                             name="phoneNumber"
-                            render={({field}) => (
+                            render={({ field }) => (
                                 <FormItem>
                                     <FormLabel>Phone Number*</FormLabel>
                                     <FormControl>
                                         <Input placeholder="Phone number" {...field} />
                                     </FormControl>
-                                    <FormMessage/>
+                                    <FormMessage />
                                 </FormItem>
                             )}
                         />
@@ -185,25 +180,25 @@ export default function ContactForm({setOpen}: {
                     <FormField
                         control={form.control}
                         name="startDate"
-                        render={({field}) => (
+                        render={({ field }) => (
                             <FormItem className="flex flex-col">
                                 <FormLabel>What is your start date?*</FormLabel>
                                 <Popover open={openCalendar} onOpenChange={setOpenCalendar}>
                                     <PopoverTrigger asChild>
                                         <FormControl>
                                             <Button
-                                                variant={"outline"}
+                                                variant={'outline'}
                                                 className={cn(
-                                                    "w-full pl-3 text-left font-normal",
-                                                    !field.value && "text-muted-foreground"
+                                                    'w-full pl-3 text-left font-normal',
+                                                    !field.value && 'text-muted-foreground'
                                                 )}
                                             >
                                                 {field.value ? (
-                                                    format(field.value, "PPP")
+                                                    format(field.value, 'PPP')
                                                 ) : (
                                                     <span>Pick a date</span>
                                                 )}
-                                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50"/>
+                                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
                                             </Button>
                                         </FormControl>
                                     </PopoverTrigger>
@@ -211,17 +206,17 @@ export default function ContactForm({setOpen}: {
                                         <Calendar
                                             mode="single"
                                             selected={field.value}
-                                            onSelect={(e) => {
+                                            onSelect={e => {
                                                 setOpenCalendar(false)
                                                 field.onChange(e)
                                             }}
-                                            disabled={(date) => date < new Date()}
+                                            disabled={date => date < new Date()}
                                             initialFocus
-                                            className={cn("p-3 pointer-events-auto")}
+                                            className={cn('p-3 pointer-events-auto')}
                                         />
                                     </PopoverContent>
                                 </Popover>
-                                <FormMessage/>
+                                <FormMessage />
                             </FormItem>
                         )}
                     />
@@ -230,24 +225,27 @@ export default function ContactForm({setOpen}: {
                         <FormField
                             control={form.control}
                             name="numberOfNights"
-                            render={({field}) => (
+                            render={({ field }) => (
                                 <FormItem>
                                     <FormLabel>Number of Nights?*</FormLabel>
-                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                    <Select
+                                        onValueChange={field.onChange}
+                                        defaultValue={field.value}
+                                    >
                                         <FormControl>
                                             <SelectTrigger>
-                                                <SelectValue placeholder="Number of nights"/>
+                                                <SelectValue placeholder="Number of nights" />
                                             </SelectTrigger>
                                         </FormControl>
                                         <SelectContent>
-                                            {nightOptions.map((night) => (
+                                            {nightOptions.map(night => (
                                                 <SelectItem key={night} value={night}>
-                                                    {night} night{night !== "1" ? "s" : ""}
+                                                    {night} night{night !== '1' ? 's' : ''}
                                                 </SelectItem>
                                             ))}
                                         </SelectContent>
                                     </Select>
-                                    <FormMessage/>
+                                    <FormMessage />
                                 </FormItem>
                             )}
                         />
@@ -255,24 +253,27 @@ export default function ContactForm({setOpen}: {
                         <FormField
                             control={form.control}
                             name="numberOfAdults"
-                            render={({field}) => (
+                            render={({ field }) => (
                                 <FormItem>
                                     <FormLabel>Number of Adults (over 18)*</FormLabel>
-                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                    <Select
+                                        onValueChange={field.onChange}
+                                        defaultValue={field.value}
+                                    >
                                         <FormControl>
                                             <SelectTrigger>
-                                                <SelectValue placeholder="Number of adults"/>
+                                                <SelectValue placeholder="Number of adults" />
                                             </SelectTrigger>
                                         </FormControl>
                                         <SelectContent>
-                                            {adultOptions.map((adult) => (
+                                            {adultOptions.map(adult => (
                                                 <SelectItem key={adult} value={adult}>
-                                                    {adult} adult{adult !== "1" ? "s" : ""}
+                                                    {adult} adult{adult !== '1' ? 's' : ''}
                                                 </SelectItem>
                                             ))}
                                         </SelectContent>
                                     </Select>
-                                    <FormMessage/>
+                                    <FormMessage />
                                 </FormItem>
                             )}
                         />
@@ -280,24 +281,27 @@ export default function ContactForm({setOpen}: {
                         <FormField
                             control={form.control}
                             name="numberOfChildren"
-                            render={({field}) => (
+                            render={({ field }) => (
                                 <FormItem>
                                     <FormLabel>Number of Children (under 18)</FormLabel>
-                                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                    <Select
+                                        onValueChange={field.onChange}
+                                        defaultValue={field.value}
+                                    >
                                         <FormControl>
                                             <SelectTrigger>
-                                                <SelectValue/>
+                                                <SelectValue />
                                             </SelectTrigger>
                                         </FormControl>
                                         <SelectContent>
-                                            {childrenOptions.map((child) => (
+                                            {childrenOptions.map(child => (
                                                 <SelectItem key={child} value={child}>
-                                                    {child} {child !== "1" ? "children" : "child"}
+                                                    {child} {child !== '1' ? 'children' : 'child'}
                                                 </SelectItem>
                                             ))}
                                         </SelectContent>
                                     </Select>
-                                    <FormMessage/>
+                                    <FormMessage />
                                 </FormItem>
                             )}
                         />
@@ -306,10 +310,11 @@ export default function ContactForm({setOpen}: {
                     <FormField
                         control={form.control}
                         name="flightAssistance"
-                        render={({field}) => (
+                        render={({ field }) => (
                             <FormItem className="space-y-3">
-                                <FormLabel>Do you need assistance booking your international
-                                    flights?*</FormLabel>
+                                <FormLabel>
+                                    Do you need assistance booking your international flights?*
+                                </FormLabel>
                                 <FormControl>
                                     <RadioGroup
                                         onValueChange={field.onChange}
@@ -317,16 +322,16 @@ export default function ContactForm({setOpen}: {
                                         className="flex flex-row space-x-6"
                                     >
                                         <div className="flex items-center space-x-2">
-                                            <RadioGroupItem value="yes" id="flights-yes"/>
+                                            <RadioGroupItem value="yes" id="flights-yes" />
                                             <label htmlFor="flights-yes">Yes</label>
                                         </div>
                                         <div className="flex items-center space-x-2">
-                                            <RadioGroupItem value="no" id="flights-no"/>
+                                            <RadioGroupItem value="no" id="flights-no" />
                                             <label htmlFor="flights-no">No</label>
                                         </div>
                                     </RadioGroup>
                                 </FormControl>
-                                <FormMessage/>
+                                <FormMessage />
                             </FormItem>
                         )}
                     />
@@ -334,7 +339,7 @@ export default function ContactForm({setOpen}: {
                     <FormField
                         control={form.control}
                         name="experienceType"
-                        render={({field}) => (
+                        render={({ field }) => (
                             <FormItem className="space-y-3">
                                 <FormLabel>What kind of experience are you after?*</FormLabel>
                                 <FormControl>
@@ -344,44 +349,56 @@ export default function ContactForm({setOpen}: {
                                         className="space-y-3"
                                     >
                                         <div className="flex items-start space-x-2">
-                                            <RadioGroupItem value="mid-range" id="mid-range"
-                                                            className="mt-1"/>
+                                            <RadioGroupItem
+                                                value="mid-range"
+                                                id="mid-range"
+                                                className="mt-1"
+                                            />
                                             <div>
-                                                <label htmlFor="mid-range"
-                                                       className="font-medium">Mid-range</label>
+                                                <label htmlFor="mid-range" className="font-medium">
+                                                    Mid-range
+                                                </label>
                                                 <p className="text-sm text-muted-foreground">
-                                                    I want a quality experience but don't need luxury, think
-                                                    authentic tented camps.
+                                                    I want a quality experience but don't need
+                                                    luxury, think authentic tented camps.
                                                 </p>
                                             </div>
                                         </div>
                                         <div className="flex items-start space-x-2">
-                                            <RadioGroupItem value="high-end" id="high-end"
-                                                            className="mt-1"/>
+                                            <RadioGroupItem
+                                                value="high-end"
+                                                id="high-end"
+                                                className="mt-1"
+                                            />
                                             <div>
-                                                <label htmlFor="high-end"
-                                                       className="font-medium">High-end</label>
+                                                <label htmlFor="high-end" className="font-medium">
+                                                    High-end
+                                                </label>
                                                 <p className="text-sm text-muted-foreground">
-                                                    I want a luxury experience, great food & wine, good
-                                                    service
-                                                    and luxury facilities.
+                                                    I want a luxury experience, great food & wine,
+                                                    good service and luxury facilities.
                                                 </p>
                                             </div>
                                         </div>
                                         <div className="flex items-start space-x-2">
-                                            <RadioGroupItem value="top-end" id="top-end" className="mt-1"/>
+                                            <RadioGroupItem
+                                                value="top-end"
+                                                id="top-end"
+                                                className="mt-1"
+                                            />
                                             <div>
-                                                <label htmlFor="top-end"
-                                                       className="font-medium">Top-end</label>
+                                                <label htmlFor="top-end" className="font-medium">
+                                                    Top-end
+                                                </label>
                                                 <p className="text-sm text-muted-foreground">
-                                                    I simply want the best available, cost should not be a
-                                                    consideration.
+                                                    I simply want the best available, cost should
+                                                    not be a consideration.
                                                 </p>
                                             </div>
                                         </div>
                                     </RadioGroup>
                                 </FormControl>
-                                <FormMessage/>
+                                <FormMessage />
                             </FormItem>
                         )}
                     />
@@ -389,7 +406,7 @@ export default function ContactForm({setOpen}: {
                     <FormField
                         control={form.control}
                         name="comments"
-                        render={({field}) => (
+                        render={({ field }) => (
                             <FormItem>
                                 <FormLabel>Any other comments or requests?*</FormLabel>
                                 <FormControl>
@@ -399,16 +416,15 @@ export default function ContactForm({setOpen}: {
                                         {...field}
                                     />
                                 </FormControl>
-                                <FormMessage/>
+                                <FormMessage />
                             </FormItem>
                         )}
                     />
 
-
                     <FormField
                         control={form.control}
                         name="consent"
-                        render={({field}) => (
+                        render={({ field }) => (
                             <FormItem className="flex flex-row items-start space-x-3 space-y-0">
                                 <FormControl>
                                     <Checkbox
@@ -417,14 +433,12 @@ export default function ContactForm({setOpen}: {
                                     />
                                 </FormControl>
                                 <div className="space-y-1 leading-none">
-                                    <FormLabel>
-                                        Consent*
-                                    </FormLabel>
+                                    <FormLabel>Consent*</FormLabel>
                                     <p className="text-sm text-muted-foreground">
                                         I agree to the privacy policy.
                                     </p>
                                 </div>
-                                <FormMessage/>
+                                <FormMessage />
                             </FormItem>
                         )}
                     />

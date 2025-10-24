@@ -1,4 +1,4 @@
-import Image from "next/image";
+import Image from 'next/image'
 import {
     Card,
     CardContent,
@@ -6,18 +6,25 @@ import {
     CardFooter,
     CardHeader,
     CardTitle,
-} from "@/components/ui/card";
+} from '@/components/ui/card'
 
 interface ImageCardProps {
-    img_url: string;
-    alt: string;
-    title: string;
-    description: string;
-    truncate?: boolean;
-    rounded?: boolean;
+    img_url: string
+    alt: string
+    title: string
+    description: string
+    truncate?: boolean
+    rounded?: boolean
 }
 
-export default function ImageCard({img_url, alt, title, description, truncate, rounded}: ImageCardProps) {
+export default function ImageCard({
+    img_url,
+    alt,
+    title,
+    description,
+    truncate,
+    rounded,
+}: ImageCardProps) {
     return (
         <Card className={`${rounded ? '' : 'rounded-none'}`}>
             <Image
@@ -31,8 +38,10 @@ export default function ImageCard({img_url, alt, title, description, truncate, r
                 <CardTitle>{title}</CardTitle>
             </CardHeader>
             <CardContent className="">
-                <CardDescription className={truncate ? 'truncate' : ''}>{description}</CardDescription>
+                <CardDescription className={truncate ? 'truncate' : ''}>
+                    {description}
+                </CardDescription>
             </CardContent>
         </Card>
-    );
+    )
 }

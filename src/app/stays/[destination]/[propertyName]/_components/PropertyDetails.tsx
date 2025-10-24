@@ -1,6 +1,6 @@
-"use client"
-import {useState} from 'react'
-import {Badge} from "@/components/ui/badge";
+'use client'
+import { useState } from 'react'
+import { Badge } from '@/components/ui/badge'
 import {
     Award,
     Clock,
@@ -11,27 +11,32 @@ import {
     ChevronLeft,
     ChevronRight,
     X,
-    User
-} from "lucide-react";
-import {Separator} from "@/components/ui/separator";
-import {Card, CardContent} from "@/components/ui/card";
-import {type StaysAccommodation, type StaysAccommodationReview} from "@duffel/api/Stays/StaysTypes";
-import {Button} from "@/components/ui/button";
-import {Dialog, DialogContent} from "@/components/ui/dialog";
-import {StaysAmenities} from "@duffel/components"
+    User,
+} from 'lucide-react'
+import { Separator } from '@/components/ui/separator'
+import { Card, CardContent } from '@/components/ui/card'
+import {
+    type StaysAccommodation,
+    type StaysAccommodationReview,
+} from '@duffel/api/Stays/StaysTypes'
+import { Button } from '@/components/ui/button'
+import { Dialog, DialogContent } from '@/components/ui/dialog'
+import { StaysAmenities } from '@duffel/components'
 
 const formatTime = (time: string) => {
-    if (time === "00:00") return "Midnight"
-    const [hours, minutes] = time.split(":")
+    if (time === '00:00') return 'Midnight'
+    const [hours, minutes] = time.split(':')
     const hour = Number.parseInt(hours)
-    const ampm = hour >= 12 ? "PM" : "AM"
+    const ampm = hour >= 12 ? 'PM' : 'AM'
     const displayHour = hour % 12 || 12
     return `${displayHour}:${minutes} ${ampm}`
 }
 
-
-export default function PropertyDetails({propertyData, reviews}: {
-    propertyData: StaysAccommodation,
+export default function PropertyDetails({
+    propertyData,
+    reviews,
+}: {
+    propertyData: StaysAccommodation
     reviews: StaysAccommodationReview[]
 }) {
     const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null)
@@ -52,7 +57,7 @@ export default function PropertyDetails({propertyData, reviews}: {
         check_in_information,
         review_count,
         email,
-    } = propertyData;
+    } = propertyData
     const handlePrevImage = () => {
         if (selectedImageIndex !== null) {
             setSelectedImageIndex((selectedImageIndex - 1 + photos.length) % photos.length)
@@ -77,15 +82,15 @@ export default function PropertyDetails({propertyData, reviews}: {
                     {photos && photos.length > 0 && (
                         <>
                             <img
-                                src={photos[0].url || "/placeholder.svg"}
+                                src={photos[0].url || '/placeholder.svg'}
                                 alt={name}
                                 className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-300"
                             />
-                            <div
-                                className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
-                                <div
-                                    className="opacity-0 group-hover:opacity-100 transition-opacity bg-white/90 px-4 py-2 rounded-lg">
-                                    <p className="text-sm font-medium">Click to view all {photos.length} photos</p>
+                            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
+                                <div className="opacity-0 group-hover:opacity-100 transition-opacity bg-white/90 px-4 py-2 rounded-lg">
+                                    <p className="text-sm font-medium">
+                                        Click to view all {photos.length} photos
+                                    </p>
                                 </div>
                             </div>
                         </>
@@ -103,7 +108,7 @@ export default function PropertyDetails({propertyData, reviews}: {
                                     onClick={() => setSelectedImageIndex(index + 1)}
                                 >
                                     <img
-                                        src={photo.url || "/placeholder.svg"}
+                                        src={photo.url || '/placeholder.svg'}
                                         alt={`${name} - Image ${index + 2}`}
                                         className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-300"
                                     />
@@ -122,7 +127,10 @@ export default function PropertyDetails({propertyData, reviews}: {
                 )}
             </div>
 
-            <Dialog open={selectedImageIndex !== null} onOpenChange={() => setSelectedImageIndex(null)}>
+            <Dialog
+                open={selectedImageIndex !== null}
+                onOpenChange={() => setSelectedImageIndex(null)}
+            >
                 <DialogContent className="max-w-7xl w-full h-[90vh] p-0 bg-black/95">
                     <div className="relative w-full h-full flex items-center justify-center">
                         {/* Close button */}
@@ -132,13 +140,13 @@ export default function PropertyDetails({propertyData, reviews}: {
                             className="absolute top-4 right-4 z-50 text-white hover:bg-white/20"
                             onClick={() => setSelectedImageIndex(null)}
                         >
-                            <X className="h-6 w-6"/>
+                            <X className="h-6 w-6" />
                         </Button>
 
                         {/* Image counter */}
-                        <div
-                            className="absolute top-4 left-4 z-50 bg-black/60 text-white px-4 py-2 rounded-lg text-sm font-medium">
-                            {selectedImageIndex !== null && `${selectedImageIndex + 1} / ${photos.length}`}
+                        <div className="absolute top-4 left-4 z-50 bg-black/60 text-white px-4 py-2 rounded-lg text-sm font-medium">
+                            {selectedImageIndex !== null &&
+                                `${selectedImageIndex + 1} / ${photos.length}`}
                         </div>
 
                         {/* Previous button */}
@@ -148,13 +156,13 @@ export default function PropertyDetails({propertyData, reviews}: {
                             className="absolute left-4 z-50 text-white hover:bg-white/20 h-12 w-12"
                             onClick={handlePrevImage}
                         >
-                            <ChevronLeft className="h-8 w-8"/>
+                            <ChevronLeft className="h-8 w-8" />
                         </Button>
 
                         {/* Current image */}
                         {selectedImageIndex !== null && (
                             <img
-                                src={photos[selectedImageIndex].url || "/placeholder.svg"}
+                                src={photos[selectedImageIndex].url || '/placeholder.svg'}
                                 alt={`${name} - Image ${selectedImageIndex + 1}`}
                                 className="max-h-full max-w-full object-contain"
                             />
@@ -167,7 +175,7 @@ export default function PropertyDetails({propertyData, reviews}: {
                             className="absolute right-4 z-50 text-white hover:bg-white/20 h-12 w-12"
                             onClick={handleNextImage}
                         >
-                            <ChevronRight className="h-8 w-8"/>
+                            <ChevronRight className="h-8 w-8" />
                         </Button>
                     </div>
                 </DialogContent>
@@ -192,21 +200,29 @@ export default function PropertyDetails({propertyData, reviews}: {
                                     </Badge>
                                 )}
                             </div>
-                            <h1 className="text-4xl font-bold tracking-tight text-balance mb-3">{name}</h1>
+                            <h1 className="text-4xl font-bold tracking-tight text-balance mb-3">
+                                {name}
+                            </h1>
                             <div className="flex items-center gap-4 flex-wrap">
                                 <div className="flex items-center gap-1">
-                                    {Array.from({length: rating!}).map((_, i) => (
-                                        <Star key={i} className="h-4 w-4 fill-primary text-primary"/>
+                                    {Array.from({ length: rating! }).map((_, i) => (
+                                        <Star
+                                            key={i}
+                                            className="h-4 w-4 fill-primary text-primary"
+                                        />
                                     ))}
-                                    <span className="ml-1 text-sm text-muted-foreground">{rating} Star Hotel</span>
+                                    <span className="ml-1 text-sm text-muted-foreground">
+                                        {rating} Star Hotel
+                                    </span>
                                 </div>
-                                <Separator orientation="vertical" className="h-4"/>
+                                <Separator orientation="vertical" className="h-4" />
                                 <div className="flex items-center gap-2">
-                                    <div
-                                        className="flex items-center gap-1 bg-primary text-primary-foreground px-2 py-1 rounded-md font-semibold text-sm">
+                                    <div className="flex items-center gap-1 bg-primary text-primary-foreground px-2 py-1 rounded-md font-semibold text-sm">
                                         {review_score}
                                     </div>
-                                    <span className="text-sm text-muted-foreground">{review_count} reviews</span>
+                                    <span className="text-sm text-muted-foreground">
+                                        {review_count} reviews
+                                    </span>
                                 </div>
                             </div>
                         </div>
@@ -217,17 +233,19 @@ export default function PropertyDetails({propertyData, reviews}: {
 
                         <p className="text-xl font-semibold pt-5">Amenities</p>
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mt-5">
-                            <StaysAmenities amenities={amenities}/>
+                            <StaysAmenities amenities={amenities} />
                         </div>
 
                         <p className="text-xl font-semibold pt-5">Location</p>
                         <div className="space-y-3 pt-5">
                             <div className="flex items-start gap-3">
-                                <MapPin className="h-5 w-5 text-primary mt-0.5 flex-shrink-0"/>
+                                <MapPin className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
                                 <div>
                                     <p className="font-medium">{location.address.line_one}</p>
                                     <p className="text-muted-foreground">
-                                        {location.address.city_name}, {location.address.region} {location.address.postal_code}, {location.address.country_code}
+                                        {location.address.city_name}, {location.address.region}{' '}
+                                        {location.address.postal_code},{' '}
+                                        {location.address.country_code}
                                     </p>
                                 </div>
                             </div>
@@ -240,24 +258,31 @@ export default function PropertyDetails({propertyData, reviews}: {
                                     <h2 className="text-xl font-semibold mb-4">Guest Reviews</h2>
                                     <div className="space-y-4">
                                         {reviews.slice(0, 100).map((review, index) => (
-                                            <div key={index} className="border-b last:border-b-0 pb-4 last:pb-0">
+                                            <div
+                                                key={index}
+                                                className="border-b last:border-b-0 pb-4 last:pb-0"
+                                            >
                                                 <div className="flex items-start justify-between gap-4 mb-2">
                                                     <div className="flex items-center gap-3">
-                                                        <div
-                                                            className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                                                            <User className="h-5 w-5 text-primary"/>
+                                                        <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                                                            <User className="h-5 w-5 text-primary" />
                                                         </div>
                                                         <div>
-                                                            <p className="font-semibold">{review.reviewer_name}</p>
-                                                            <p className="text-xs text-muted-foreground">{review.created_at}</p>
+                                                            <p className="font-semibold">
+                                                                {review.reviewer_name}
+                                                            </p>
+                                                            <p className="text-xs text-muted-foreground">
+                                                                {review.created_at}
+                                                            </p>
                                                         </div>
                                                     </div>
-                                                    <div
-                                                        className="flex items-center gap-1 bg-primary text-primary-foreground px-2 py-1 rounded-md font-semibold text-sm">
+                                                    <div className="flex items-center gap-1 bg-primary text-primary-foreground px-2 py-1 rounded-md font-semibold text-sm">
                                                         {`${review.score} / 10`}
                                                     </div>
                                                 </div>
-                                                <p className="text-muted-foreground leading-relaxed ml-13">{review.text}</p>
+                                                <p className="text-muted-foreground leading-relaxed ml-13">
+                                                    {review.text}
+                                                </p>
                                             </div>
                                         ))}
                                     </div>
@@ -272,46 +297,59 @@ export default function PropertyDetails({propertyData, reviews}: {
                         <Card className="sticky top-4">
                             <CardContent className="pt-6 space-y-6">
                                 <div>
-                                    <h3 className="text-lg font-semibold mb-4">Check-in & Check-out</h3>
+                                    <h3 className="text-lg font-semibold mb-4">
+                                        Check-in & Check-out
+                                    </h3>
                                     <div className="space-y-4">
                                         <div className="flex items-start gap-3">
-                                            <Clock className="h-5 w-5 text-primary mt-0.5"/>
+                                            <Clock className="h-5 w-5 text-primary mt-0.5" />
                                             <div className="flex-1">
                                                 <p className="font-medium text-sm">Check-in</p>
                                                 {check_in_information && (
                                                     <p className="text-muted-foreground text-sm">
-                                                        From {formatTime(check_in_information.check_in_after_time)}
-                                                        {check_in_information?.check_in_after_time !== "00:00" &&
+                                                        From{' '}
+                                                        {formatTime(
+                                                            check_in_information.check_in_after_time
+                                                        )}
+                                                        {check_in_information?.check_in_after_time !==
+                                                            '00:00' &&
                                                             ` to ${formatTime(check_in_information?.check_out_before_time)}`}
                                                     </p>
                                                 )}
                                             </div>
                                         </div>
                                         <div className="flex items-start gap-3">
-                                            <Clock className="h-5 w-5 text-primary mt-0.5"/>
+                                            <Clock className="h-5 w-5 text-primary mt-0.5" />
                                             <div className="flex-1">
                                                 <p className="font-medium text-sm">Check-out</p>
                                                 <p className="text-muted-foreground text-sm">
-                                                    Before {formatTime(check_in_information.check_out_before_time)}
+                                                    Before{' '}
+                                                    {formatTime(
+                                                        check_in_information.check_out_before_time
+                                                    )}
                                                 </p>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
 
-                                <Separator/>
+                                <Separator />
 
                                 {/* Key Collection */}
                                 {key_collection && (
                                     <>
                                         <div className="flex items-start gap-3">
-                                            <Key className="h-5 w-5 text-primary mt-0.5"/>
+                                            <Key className="h-5 w-5 text-primary mt-0.5" />
                                             <div>
-                                                <p className="font-medium text-sm mb-1">Key Collection</p>
-                                                <p className="text-muted-foreground text-sm">{key_collection.instructions}</p>
+                                                <p className="font-medium text-sm mb-1">
+                                                    Key Collection
+                                                </p>
+                                                <p className="text-muted-foreground text-sm">
+                                                    {key_collection.instructions}
+                                                </p>
                                             </div>
                                         </div>
-                                        <Separator/>
+                                        <Separator />
                                     </>
                                 )}
 
@@ -323,7 +361,7 @@ export default function PropertyDetails({propertyData, reviews}: {
                                             href={`tel:${phone_number}`}
                                             className="flex items-center gap-3 p-3 rounded-lg hover:bg-secondary/50 transition-colors"
                                         >
-                                            <Phone className="h-5 w-5 text-primary"/>
+                                            <Phone className="h-5 w-5 text-primary" />
                                             <span className="text-sm">{phone_number}</span>
                                         </a>
                                     </div>
@@ -332,13 +370,15 @@ export default function PropertyDetails({propertyData, reviews}: {
                                 {/* Loyalty Program */}
                                 {supported_loyalty_programme && (
                                     <>
-                                        <Separator/>
+                                        <Separator />
                                         <div className="flex items-start gap-3">
-                                            <Award className="h-5 w-5 text-primary mt-0.5"/>
+                                            <Award className="h-5 w-5 text-primary mt-0.5" />
                                             <div>
-                                                <p className="font-medium text-sm mb-1">Loyalty Program</p>
+                                                <p className="font-medium text-sm mb-1">
+                                                    Loyalty Program
+                                                </p>
                                                 <p className="text-muted-foreground text-sm">
-                                                    {supported_loyalty_programme.replace(/_/g, " ")}
+                                                    {supported_loyalty_programme.replace(/_/g, ' ')}
                                                 </p>
                                             </div>
                                         </div>

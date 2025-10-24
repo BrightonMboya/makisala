@@ -1,28 +1,36 @@
-"use client"
-import {StaysAccommodation} from "@duffel/api/Stays/StaysTypes";
+'use client'
+import { StaysAccommodation } from '@duffel/api/Stays/StaysTypes'
 
 interface IProps {
     stay: StaysAccommodation
 }
 
-export default function Stay({stay}: IProps) {
+export default function Stay({ stay }: IProps) {
     const renderStars = (rating?: number) => {
-        if (!rating) return null;
+        if (!rating) return null
 
-        const stars = [];
-        const fullStars = Math.floor(rating);
-        const hasHalfStar = rating % 1 !== 0;
+        const stars = []
+        const fullStars = Math.floor(rating)
+        const hasHalfStar = rating % 1 !== 0
 
         for (let i = 0; i < fullStars; i++) {
-            stars.push(<span key={i} className="text-yellow-400">★</span>);
+            stars.push(
+                <span key={i} className="text-yellow-400">
+                    ★
+                </span>
+            )
         }
 
         if (hasHalfStar) {
-            stars.push(<span key="half" className="text-yellow-400">☆</span>);
+            stars.push(
+                <span key="half" className="text-yellow-400">
+                    ☆
+                </span>
+            )
         }
 
-        return <div className="flex items-center">{stars}</div>;
-    };
+        return <div className="flex items-center">{stars}</div>
+    }
 
     return (
         <>
@@ -46,7 +54,7 @@ export default function Stay({stay}: IProps) {
                             <div className="flex items-center ml-2">
                                 {renderStars(stay.rating)}
                                 <span className="text-sm text-gray-600 ml-1">
-                                  ({stay.review_count || 0})
+                                    ({stay.review_count || 0})
                                 </span>
                             </div>
                         )}
@@ -72,13 +80,13 @@ export default function Stay({stay}: IProps) {
                                         key={index}
                                         className="inline-block bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded"
                                     >
-                                     {amenity.type}
+                                        {amenity.type}
                                     </span>
                                 ))}
                                 {stay.amenities.length > 3 && (
                                     <span className="text-xs text-gray-500">
-                    +{stay.amenities.length - 3} more
-                  </span>
+                                        +{stay.amenities.length - 3} more
+                                    </span>
                                 )}
                             </div>
                         </div>
@@ -111,5 +119,4 @@ export default function Stay({stay}: IProps) {
             {/*)}*/}
         </>
     )
-
 }

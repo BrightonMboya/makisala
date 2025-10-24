@@ -1,24 +1,24 @@
-import {MarkdownRenderer} from "@/components/markdown-renderer";
-import {notFound} from "next/navigation";
-import type {Metadata} from "next";
-import {IParams} from "@/app/safaris/[country]/types";
-import {BreadcrumbSchema, FAQSchema} from "@/components/schema";
-import {BASE_URL} from "@/lib/constants";
-import {capitalize} from "@/lib/utils";
-import Script from "next/script";
-import {getTravelAdvice} from "@/lib/cms-service";
-import {FAQ} from "@/components/faq";
+import { MarkdownRenderer } from '@/components/markdown-renderer'
+import { notFound } from 'next/navigation'
+import type { Metadata } from 'next'
+import { IParams } from '@/app/safaris/[country]/types'
+import { BreadcrumbSchema, FAQSchema } from '@/components/schema'
+import { BASE_URL } from '@/lib/constants'
+import { capitalize } from '@/lib/utils'
+import Script from 'next/script'
+import { getTravelAdvice } from '@/lib/cms-service'
+import { FAQ } from '@/components/faq'
 
-export async function generateMetadata({params}: IParams): Promise<Metadata> {
+export async function generateMetadata({ params }: IParams): Promise<Metadata> {
     try {
-        const {country} = await params
-        const destination = await getTravelAdvice(country);
+        const { country } = await params
+        const destination = await getTravelAdvice(country)
 
         if (!destination) {
             return {
-                title: "Page Not Found",
-                description: "The requested page could not be found.",
-            };
+                title: 'Page Not Found',
+                description: 'The requested page could not be found.',
+            }
         }
 
         return {
@@ -30,19 +30,18 @@ export async function generateMetadata({params}: IParams): Promise<Metadata> {
                 description: destination.meta_description! || destination.excerpt!,
                 images: destination.featured_image_url ? [destination.featured_image_url] : [],
             },
-        };
+        }
     } catch {
         return {
-            title: "Page Not Found",
-            description: "The requested page could not be found.",
-        };
+            title: 'Page Not Found',
+            description: 'The requested page could not be found.',
+        }
     }
 }
 
-
-export default async function Page({params}: IParams) {
-    const {country} = await params;
-    const destination = await getTravelAdvice(country);
+export default async function Page({ params }: IParams) {
+    const { country } = await params
+    const destination = await getTravelAdvice(country)
 
     if (!destination) {
         notFound()
@@ -53,25 +52,20 @@ export default async function Page({params}: IParams) {
                 {JSON.stringify([
                     BreadcrumbSchema({
                         breadcrumbs: [
-                            {name: "Home", url: BASE_URL},
-                            {name: "Tanzania", url: `${BASE_URL}/safaris/${country}`},
+                            { name: 'Home', url: BASE_URL },
+                            { name: 'Tanzania', url: `${BASE_URL}/safaris/${country}` },
                             {
                                 name: `${capitalize(country)} Travel Advice`,
-                                url: `${BASE_URL}/safaris/${country}/travel-advice`
+                                url: `${BASE_URL}/safaris/${country}/travel-advice`,
                             },
-                        ]
+                        ],
                     }),
-                    destination.faqs && FAQSchema({faqs: destination.faqs})
+                    destination.faqs && FAQSchema({ faqs: destination.faqs }),
                 ])}
             </Script>
             <h1 className="pb-5 text-4xl font-medium">{destination.title}</h1>
-            <MarkdownRenderer content={destination.content!}/>
-            {destination.faqs &&
-                <FAQ
-                    faqs={destination.faqs}
-                />
-            }
-
+            <MarkdownRenderer content={destination.content!} />
+            {destination.faqs && <FAQ faqs={destination.faqs} />}
         </main>
     )
 }

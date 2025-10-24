@@ -1,12 +1,12 @@
-import Image from "next/image";
-import {safaris, why_travel_with_us} from "@/lib/constants";
-import {Button} from "@/components/ui/button";
-import ImageCard from "@/components/home/image-card";
-import Link from "next/link";
-import C2A from "@/components/home/call-to-action";
-import {BreadcrumbSchema} from "@/components/schema";
-import Script from "next/script";
-import {InquiryDialog} from "@/components/enquire-dialog-button";
+import Image from 'next/image'
+import { safaris, why_travel_with_us } from '@/lib/constants'
+import { Button } from '@/components/ui/button'
+import ImageCard from '@/components/home/image-card'
+import Link from 'next/link'
+import C2A from '@/components/home/call-to-action'
+import { BreadcrumbSchema } from '@/components/schema'
+import Script from 'next/script'
+import { InquiryDialog } from '@/components/enquire-dialog-button'
 
 export default function Page() {
     return (
@@ -14,16 +14,13 @@ export default function Page() {
             <Script type={'application/ld+json'} strategy={'lazyOnload'}>
                 {JSON.stringify([
                     BreadcrumbSchema({
-                        breadcrumbs: [
-                            {name: "Home", url: "https://www.makisala.com"}
-                        ]
-                    })
+                        breadcrumbs: [{ name: 'Home', url: 'https://www.makisala.com' }],
+                    }),
                 ])}
             </Script>
             <div className="min-h-screen bg-white">
                 {/* Hero Section */}
-                <section
-                    className="relative h-[80dvh] lg:h-screen flex items-center justify-start overflow-hidden mt-16">
+                <section className="relative h-[80dvh] lg:h-screen flex items-center justify-start overflow-hidden mt-16">
                     <div className="absolute inset-0">
                         <Image
                             src="https://res.cloudinary.com/dr2tdyz2w/image/upload/v1753373725/6-Days-Best-Family-Safaris-and-Culture-Tour-in-Tanzania_l9fgum.jpg"
@@ -32,7 +29,7 @@ export default function Page() {
                             className="object-cover"
                             priority
                         />
-                        <div className="absolute inset-0 bg-black/70 lg:bg-black/60"/>
+                        <div className="absolute inset-0 bg-black/70 lg:bg-black/60" />
                     </div>
                     <div className="relative z-10 text-white max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
                         <div className="max-w-2xl">
@@ -40,7 +37,8 @@ export default function Page() {
                                 Discover Africa, Effortlessly
                             </div>
                             <h1 className="text-xl md:text-5xl font-medium mb-8 leading-tight">
-                                Luxury safaris made simple for couples, families, and first-time explorers.
+                                Luxury safaris made simple for couples, families, and first-time
+                                explorers.
                             </h1>
                             <div className="flex space-x-4">
                                 {/*<Button*/}
@@ -49,8 +47,7 @@ export default function Page() {
                                 {/*    EXPERIENCES*/}
                                 {/*</Button>*/}
                                 <InquiryDialog>
-                                    <Button
-                                        className="bg-white text-black hover:bg-gray-100 px-8 py-3 text-sm font-medium">
+                                    <Button className="bg-white text-black hover:bg-gray-100 px-8 py-3 text-sm font-medium">
                                         START PLANNING
                                     </Button>
                                 </InquiryDialog>
@@ -81,16 +78,16 @@ export default function Page() {
                                 <Link href={experience.page_url} key={index}>
                                     <div
                                         key={index}
-                                        className="relative group cursor-pointer overflow-hidden rounded-lg">
+                                        className="relative group cursor-pointer overflow-hidden rounded-lg"
+                                    >
                                         <div className="aspect-[4/3] relative">
                                             <Image
-                                                src={experience.image || "/placeholder.svg"}
+                                                src={experience.image || '/placeholder.svg'}
                                                 alt={experience.title}
                                                 fill
                                                 className="object-cover group-hover:scale-105 transition-transform duration-300"
                                             />
-                                            <div
-                                                className="absolute inset-0 bg-black/40 group-hover:bg-black/50 transition-colors"/>
+                                            <div className="absolute inset-0 bg-black/40 group-hover:bg-black/50 transition-colors" />
                                             <div className="absolute inset-0 flex items-center justify-center">
                                                 <h3 className="text-white text-lg font-medium absolute bottom-3 px-4">
                                                     {experience.title}
@@ -113,23 +110,23 @@ export default function Page() {
                                 </h2>
                                 <div className="space-y-6 text-gray-700 leading-relaxed">
                                     <p>
-                                        A family safari isn't just a vacation, it's a story your kids will tell for the
-                                        rest of their lives.
-                                        Imagine their faces the first time they see a lion in the wild, or hear Maasai
-                                        legends by firelight.
+                                        A family safari isn't just a vacation, it's a story your
+                                        kids will tell for the rest of their lives. Imagine their
+                                        faces the first time they see a lion in the wild, or hear
+                                        Maasai legends by firelight.
                                     </p>
 
                                     <p>
-                                        We plan your trip with every generation in mind. From kid-friendly lodges and
-                                        private guides to downtime by the pool,
-                                        your itinerary balances adventure with comfort, so no one feels rushed or
-                                        overwhelmed.
+                                        We plan your trip with every generation in mind. From
+                                        kid-friendly lodges and private guides to downtime by the
+                                        pool, your itinerary balances adventure with comfort, so no
+                                        one feels rushed or overwhelmed.
                                     </p>
 
                                     <p>
-                                        Whether you're traveling with little ones, teens, or grown kids, we make it easy
-                                        to
-                                        connect, unplug, and create memories that matter.
+                                        Whether you're traveling with little ones, teens, or grown
+                                        kids, we make it easy to connect, unplug, and create
+                                        memories that matter.
                                     </p>
 
                                     <p className="font-medium text-gray-900">
@@ -145,7 +142,6 @@ export default function Page() {
                                     className="rounded-lg lg:w-[500px] object-cover"
                                 />
                             </div>
-
                         </div>
                     </div>
                 </section>
@@ -249,54 +245,48 @@ export default function Page() {
                 {/*    </div>*/}
                 {/*</section>*/}
 
-
                 {/* How It Works Section */}
                 <section className="py-20 bg-white">
                     <div className="max-w-lg mx-auto px-4 sm:px-6 lg:max-w-none">
                         <div className="text-center mb-16">
-                            <h2 className="text-4xl font-light text-gray-900 mb-4">
-                                How It Works
-                            </h2>
+                            <h2 className="text-4xl font-light text-gray-900 mb-4">How It Works</h2>
                             <div className="w-16 h-px bg-gray-300 mx-auto"></div>
                         </div>
 
                         <div className="grid md:grid-cols-5 gap-5">
                             {[
                                 {
-                                    step: "STEP 1",
-                                    title: "Get Inspired",
+                                    step: 'STEP 1',
+                                    title: 'Get Inspired',
                                     description:
                                         "Browse our handpicked safari ideas from the Serengeti to hidden corners of Africa. Whether you're dreaming of big cats or quiet luxury, you'll find something that sparks your imagination.",
                                 },
                                 {
-                                    step: "STEP 2",
-                                    title: "Reach Out",
+                                    step: 'STEP 2',
+                                    title: 'Reach Out',
                                     description:
                                         "When you're ready, just say hi. Fill out our quick enquiry form or book a call, and we’ll match you with a Makisala safari expert who understands your style and vision.",
                                 },
                                 {
-                                    step: "STEP 3",
-                                    title: "Tailor Your Journey",
+                                    step: 'STEP 3',
+                                    title: 'Tailor Your Journey',
                                     description:
-                                        "We build your trip around you your pace, your priorities, your people. From choosing the perfect camps to planning downtime, we handle the details so you can focus on the adventure.",
+                                        'We build your trip around you your pace, your priorities, your people. From choosing the perfect camps to planning downtime, we handle the details so you can focus on the adventure.',
                                 },
                                 {
-                                    step: "STEP 4",
-                                    title: "Refine and Confirm",
+                                    step: 'STEP 4',
+                                    title: 'Refine and Confirm',
                                     description:
-                                        "We’ll walk you through every part of your itinerary, answer all your questions, and fine-tune the plan until it feels just right. No pressure. No guessing.",
+                                        'We’ll walk you through every part of your itinerary, answer all your questions, and fine-tune the plan until it feels just right. No pressure. No guessing.',
                                 },
                                 {
-                                    step: "STEP 5",
-                                    title: "Experience Africa",
+                                    step: 'STEP 5',
+                                    title: 'Experience Africa',
                                     description:
-                                        "From the moment you land, we’re right there with you. Our team and trusted partners are on hand throughout your journey so you can relax, explore, and enjoy every moment.",
-                                }
-
+                                        'From the moment you land, we’re right there with you. Our team and trusted partners are on hand throughout your journey so you can relax, explore, and enjoy every moment.',
+                                },
                             ].map((item, index) => (
-                                <div
-                                    key={index}
-                                    className="bg-gray-50 p-8 rounded-lg text-center">
+                                <div key={index} className="bg-gray-50 p-8 rounded-lg text-center">
                                     <div className="text-xs font-medium tracking-wider text-gray-500 mb-2">
                                         {item.step}
                                     </div>
@@ -313,7 +303,7 @@ export default function Page() {
                     </div>
                 </section>
 
-                <C2A/>
+                <C2A />
 
                 {/* Founder Quote Section */}
                 <section className="py-20 bg-gray-50">
@@ -328,17 +318,13 @@ export default function Page() {
                                 </h2>
                                 <div className="space-y-6 text-gray-700 leading-relaxed">
                                     <p>
-                                        At Makisala, we plan life-changing safaris with heart, purpose, and deep local
-                                        expertise.
-                                        We know Tanzania and East Africa like home because it is.
-
-                                        We believe a great safari isn’t just about what you see. It’s about <strong>how
-                                        it
-                                        makes
-                                        you feel more connected</strong>, more alive, more in awe of the world.
-
-                                        And yes, we’re proud to give back: every trip supports the people and places
-                                        that
+                                        At Makisala, we plan life-changing safaris with heart,
+                                        purpose, and deep local expertise. We know Tanzania and East
+                                        Africa like home because it is. We believe a great safari
+                                        isn’t just about what you see. It’s about{' '}
+                                        <strong>how it makes you feel more connected</strong>, more
+                                        alive, more in awe of the world. And yes, we’re proud to
+                                        give back: every trip supports the people and places that
                                         make Africa magical.
                                     </p>
                                     <p className="font-medium">
@@ -416,5 +402,5 @@ export default function Page() {
       </section> */}
             </div>
         </main>
-    );
+    )
 }

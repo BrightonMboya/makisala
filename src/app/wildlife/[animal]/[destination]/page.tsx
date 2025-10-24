@@ -1,25 +1,24 @@
-import {MarkdownRenderer} from "@/components/markdown-renderer";
-import {notFound} from "next/navigation";
-import {getImagesInFolder} from "@/lib/cloudinary";
-import Image from "next/image";
-import {capitalize} from "@/lib/utils";
-import {getWildlifeByNameAndPark} from "@/lib/cms-service";
-import {FAQ} from "@/components/faq";
-import type {Metadata} from "next";
-import Script from "next/script";
-import {BreadcrumbSchema, FAQSchema} from "@/components/schema";
-import {BASE_URL} from "@/lib/constants";
+import { MarkdownRenderer } from '@/components/markdown-renderer'
+import { notFound } from 'next/navigation'
+import { getImagesInFolder } from '@/lib/cloudinary'
+import Image from 'next/image'
+import { capitalize } from '@/lib/utils'
+import { getWildlifeByNameAndPark } from '@/lib/cms-service'
+import { FAQ } from '@/components/faq'
+import type { Metadata } from 'next'
+import Script from 'next/script'
+import { BreadcrumbSchema, FAQSchema } from '@/components/schema'
+import { BASE_URL } from '@/lib/constants'
 
 interface IParams {
     params: {
-        animal: string;
-        destination: string;
+        animal: string
+        destination: string
     }
 }
 
-
-export default async function Page({params}: IParams) {
-    const {animal, destination} = await params;
+export default async function Page({ params }: IParams) {
+    const { animal, destination } = await params
     const data = await getWildlifeByNameAndPark(animal, destination)
     const images = await getImagesInFolder(`wildlife/${animal}`)
 
@@ -33,26 +32,34 @@ export default async function Page({params}: IParams) {
                 {JSON.stringify([
                     BreadcrumbSchema({
                         breadcrumbs: [
-                            {name: "Home", url: "https://www.makisala.com"},
+                            { name: 'Home', url: 'https://www.makisala.com' },
                             {
                                 name: `National Parks/${destination}`,
-                                url: `${BASE_URL}/national-parks/${destination}/`
+                                url: `${BASE_URL}/national-parks/${destination}/`,
                             },
                             {
                                 name: `National Parks/${destination} Wildlife`,
-                                url: `${BASE_URL}/wildlife/${animal}/${destination}/`
+                                url: `${BASE_URL}/wildlife/${animal}/${destination}/`,
                             },
-                        ]
+                        ],
                     }),
-                    FAQSchema({faqs: data.faqs!})
+                    FAQSchema({ faqs: data.faqs! }),
                 ])}
             </Script>
             <section className="relative h-[80vh] flex items-center justify-center">
-                <Image src={images[0].url} alt={`${animal} in ${destination}`} fill className="object-cover" priority/>
-                <div className="absolute inset-0 bg-black/20"/>
+                <Image
+                    src={images[0].url}
+                    alt={`${animal} in ${destination}`}
+                    fill
+                    className="object-cover"
+                    priority
+                />
+                <div className="absolute inset-0 bg-black/20" />
 
                 <div className="relative z-10 text-center text-white">
-                    <h1 className="text-8xl font-serif font-light tracking-wide">{capitalize(animal)}</h1>
+                    <h1 className="text-8xl font-serif font-light tracking-wide">
+                        {capitalize(animal)}
+                    </h1>
                 </div>
             </section>
             <section className="py-20">
@@ -60,7 +67,7 @@ export default async function Page({params}: IParams) {
                     <div className="text-center mb-16">
                         <h1 className="text-4xl mb-6 text-balance">{`Where to see ${capitalize(animal)} in ${capitalize(destination)}`}</h1>
                         <p className="text-lg  max-w-4xl mx-auto text-pretty">
-                            <MarkdownRenderer content={data.excerpt}/>
+                            <MarkdownRenderer content={data.excerpt} />
                         </p>
                     </div>
 
@@ -83,7 +90,7 @@ export default async function Page({params}: IParams) {
                             </div>
 
                             <div className="space-y-4 leading-relaxed">
-                                <MarkdownRenderer content={data.description}/>
+                                <MarkdownRenderer content={data.description} />
                             </div>
                         </div>
                     </div>
@@ -96,7 +103,7 @@ export default async function Page({params}: IParams) {
                         {data.quick_facts?.map((fact, index) => (
                             <div key={index} className="text-center">
                                 <div className="text-4xl lg:text-3xl mb-2">
-                                    <MarkdownRenderer content={fact.fact}/>
+                                    <MarkdownRenderer content={fact.fact} />
                                 </div>
                                 <div className="text-sm tracking-wider">{fact.label}</div>
                             </div>
@@ -119,7 +126,9 @@ export default async function Page({params}: IParams) {
                             <h2 className="text-2xl">{`Top tips for viewing ${capitalize(animal)}`}</h2>
 
                             <div className="space-y-4 leading-relaxed">
-                                <MarkdownRenderer content={data.where_to_see_description as string}/>
+                                <MarkdownRenderer
+                                    content={data.where_to_see_description as string}
+                                />
                             </div>
                         </div>
 
@@ -136,25 +145,23 @@ export default async function Page({params}: IParams) {
                 </div>
             </section>
             {/*// @ts-ignore*/}
-            <FAQ faqs={data.faqs}/>
-
+            <FAQ faqs={data.faqs} />
         </main>
     )
 }
 
-export async function generateMetadata({params}: IParams): Promise<Metadata> {
+export async function generateMetadata({ params }: IParams): Promise<Metadata> {
     try {
-        const {animal, destination} = await params;
+        const { animal, destination } = await params
         const page = await getWildlifeByNameAndPark(animal, destination)
         const images = await getImagesInFolder(`wildlife/${animal}`)
 
         if (!page) {
             return {
-                title: "Page Not Found",
-                description: "The requested page could not be found.",
-            };
+                title: 'Page Not Found',
+                description: 'The requested page could not be found.',
+            }
         }
-
 
         return {
             title: page.meta_title,
@@ -162,13 +169,13 @@ export async function generateMetadata({params}: IParams): Promise<Metadata> {
             openGraph: {
                 title: page?.meta_title,
                 description: page?.meta_description,
-                images: images[0].url
+                images: images[0].url,
             },
-        };
+        }
     } catch {
         return {
-            title: "Page Not Found",
-            description: "The requested page could not be found.",
-        };
+            title: 'Page Not Found',
+            description: 'The requested page could not be found.',
+        }
     }
 }
