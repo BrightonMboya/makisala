@@ -1,5 +1,6 @@
 import { FAQItem } from '@/components/faq'
 import { BASE_URL } from '@/lib/constants'
+import { addYears } from 'date-fns'
 
 export const OrganizationSchema = () => {
     return {
@@ -229,17 +230,19 @@ export const ProductSchema = ({
         '@type': 'Product',
         name: name,
         image: [imgUrl],
-        '@description': description,
+        description: description,
         brand: OrganizationSchema,
         aggregateRating: {
             '@type': 'AggregateRating',
-            ratingValue: '4.5',
+            ratingValue: '4.9',
             reviewCount: '100',
         },
         offers: {
             '@type': 'Offer',
             price: price,
             priceCurrency: 'USD',
+            priceValidUntil: addYears(new Date(), 1),
+            availability: 'https://schema.org/InStock',
             url: `${BASE_URL}/tours/${tour_slug}`,
         },
     }

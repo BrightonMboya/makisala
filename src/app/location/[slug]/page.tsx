@@ -1,7 +1,11 @@
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 
-import { getPageBySlug, getPageSlugs, getTourPackagesByLocation } from '@/lib/cms-service'
+import {
+    getPageBySlug,
+    getPageSlugs,
+    getTourPackagesByLocation,
+} from '@/lib/cms-service'
 import Link from 'next/link'
 import ImageCard from '@/components/home/image-card'
 import C2A from '@/components/home/call-to-action'
@@ -36,7 +40,9 @@ export async function generateMetadata({
             openGraph: {
                 title: page.meta_title || page.title,
                 description: page.meta_description! || page.excerpt!,
-                images: page.featured_image_url ? [page.featured_image_url] : [],
+                images: page.featured_image_url
+                    ? [page.featured_image_url]
+                    : [],
             },
         }
     } catch {
@@ -50,13 +56,17 @@ export async function generateMetadata({
 // generating static params
 export async function generateStaticParams() {
     const pages = await getPageSlugs('page')
-    return pages.map(page => ({
+    return pages.map((page) => ({
         slug: page.slug,
     }))
 }
 
 // Page renderer
-export default async function BlogPostPage({ params }: { params: Promise<{ slug: string }> }) {
+export default async function BlogPostPage({
+    params,
+}: {
+    params: Promise<{ slug: string }>
+}) {
     const { slug } = await params
     const page = await getPageBySlug(slug)
 
@@ -87,9 +97,9 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
                     }),
                 ])}
             </Script>
-            <div className="min-h-screen bg-white relative">
+            <div className="relative min-h-screen bg-white">
                 {page.featured_image_url && (
-                    <section className="relative h-screen flex items-center justify-start overflow-hidden mt-16">
+                    <section className="relative mt-16 flex h-screen items-center justify-start overflow-hidden">
                         <div className="absolute inset-0">
                             <Image
                                 src={page.featured_image_url}
@@ -100,20 +110,22 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
                             />
                             <div className="absolute inset-0 bg-black/70" />
                         </div>
-                        <div className="relative z-10 text-white max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
+                        <div className="relative z-10 mx-auto w-full max-w-7xl px-4 text-white sm:px-6 lg:px-8">
                             <div className="max-w-2xl">
-                                <div className="text-sm font-medium tracking-wider mb-4">
+                                <div className="mb-4 text-sm font-medium tracking-wider">
                                     DESTINATION
                                 </div>
-                                <h1 className="text-5xl md:text-6xl font-bold leading-tight">
+                                <h1 className="text-5xl leading-tight font-bold md:text-6xl">
                                     {page.title}
                                 </h1>
-                                <p className="text-white text-lg md:text-xl mb-8">{page.excerpt}</p>
+                                <p className="mb-8 text-lg text-white md:text-xl">
+                                    {page.excerpt}
+                                </p>
                                 <div className="flex space-x-4">
                                     <InquiryDialog>
                                         <Button
                                             size="lg"
-                                            className="bg-transparent border-2 border-white text-white  hover:bg-white hover:text-black px-8 py-3 text-lg font-medium"
+                                            className="border-2 border-white bg-transparent px-8 py-3 text-lg font-medium text-white hover:bg-white hover:text-black"
                                         >
                                             Start Planning
                                         </Button>
@@ -123,20 +135,22 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
                         </div>
                     </section>
                 )}
-                <article className="max-w-4xl mx-auto px-4 sm:px-6 lg:max-w-7xl py-16">
+                <article className="mx-auto max-w-4xl px-4 py-16 sm:px-6 lg:max-w-7xl">
                     <MarkdownRenderer content={page.content} />
                 </article>
             </div>
-            <p className="text-center font-bold text-3xl lg:text-5xl py-5">
+            <p className="py-5 text-center text-3xl font-bold lg:text-5xl">
                 Safaris itineraries to inspire your journey
             </p>
-            <div className="mx-auto mb-24 grid max-w-7xl gap-12 justify-center max-sm:flex max-sm:h-full max-sm:flex-col md:grid-cols-2 xl:grid-cols-3">
-                {tours?.map(tour => (
+            <div className="mx-auto mb-24 grid max-w-7xl justify-center gap-12 max-sm:flex max-sm:h-full max-sm:flex-col md:grid-cols-2 xl:grid-cols-3">
+                {tours?.map((tour) => (
                     <div key={tour.id} className="">
                         <Link href={`/to_book/${tour.slug}`}>
                             <ImageCard
                                 title={tour.title}
-                                img_url={tour.hero_image_url || '/placeholder.svg'}
+                                img_url={
+                                    tour.hero_image_url || '/placeholder.svg'
+                                }
                                 alt="Makisala Blog"
                                 description={tour.overview!}
                                 truncate={true}
