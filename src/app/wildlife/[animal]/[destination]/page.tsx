@@ -28,7 +28,11 @@ export default async function Page({ params }: IParams) {
 
     return (
         <main className="mt-[50px]">
-            <Script type={'application/ld+json'} strategy={'lazyOnload'}>
+            <Script
+                type={'application/ld+json'}
+                strategy={'lazyOnload'}
+                id="wildlife-schema"
+            >
                 {JSON.stringify([
                     BreadcrumbSchema({
                         breadcrumbs: [
@@ -46,7 +50,7 @@ export default async function Page({ params }: IParams) {
                     FAQSchema({ faqs: data.faqs! }),
                 ])}
             </Script>
-            <section className="relative h-[80vh] flex items-center justify-center">
+            <section className="relative flex h-[80vh] items-center justify-center">
                 <Image
                     src={images[0].url}
                     alt={`${animal} in ${destination}`}
@@ -57,34 +61,34 @@ export default async function Page({ params }: IParams) {
                 <div className="absolute inset-0 bg-black/20" />
 
                 <div className="relative z-10 text-center text-white">
-                    <h1 className="text-8xl font-serif font-light tracking-wide">
+                    <h1 className="font-serif text-8xl font-light tracking-wide">
                         {capitalize(animal)}
                     </h1>
                 </div>
             </section>
             <section className="py-20">
                 <div className="container mx-auto px-6">
-                    <div className="text-center mb-16">
-                        <h1 className="text-4xl mb-6 text-balance">{`Where to see ${capitalize(animal)} in ${capitalize(destination)}`}</h1>
-                        <p className="text-lg  max-w-4xl mx-auto text-pretty">
+                    <div className="mb-16 text-center">
+                        <h1 className="mb-6 text-4xl text-balance">{`Where to see ${capitalize(animal)} in ${capitalize(destination)}`}</h1>
+                        <p className="mx-auto max-w-4xl text-lg text-pretty">
                             <MarkdownRenderer content={data.excerpt} />
                         </p>
                     </div>
 
-                    <div className="grid lg:grid-cols-2 gap-12 items-start">
+                    <div className="grid items-start gap-12 lg:grid-cols-2">
                         <div className="relative">
                             <Image
                                 src={images[1].url}
                                 alt="Lions in their natural habitat"
                                 width={600}
                                 height={400}
-                                className="rounded-lg object-cover w-full"
+                                className="w-full rounded-lg object-cover"
                             />
                         </div>
 
                         <div className="space-y-8">
                             <div>
-                                <h2 className="text-lg font-semibold tracking-wider mb-6">
+                                <h2 className="mb-6 text-lg font-semibold tracking-wider">
                                     {`Quick Facts about ${capitalize(animal)}`}
                                 </h2>
                             </div>
@@ -97,15 +101,17 @@ export default async function Page({ params }: IParams) {
                 </div>
             </section>
 
-            <section className="py-16 ">
+            <section className="py-16">
                 <div className="container mx-auto px-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                    <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-4">
                         {data.quick_facts?.map((fact, index) => (
                             <div key={index} className="text-center">
-                                <div className="text-4xl lg:text-3xl mb-2">
+                                <div className="mb-2 text-4xl lg:text-3xl">
                                     <MarkdownRenderer content={fact.fact} />
                                 </div>
-                                <div className="text-sm tracking-wider">{fact.label}</div>
+                                <div className="text-sm tracking-wider">
+                                    {fact.label}
+                                </div>
                             </div>
                         ))}
                     </div>
@@ -114,20 +120,22 @@ export default async function Page({ params }: IParams) {
 
             <section className="py-20">
                 <div className="container mx-auto px-6">
-                    <div className="text-center mb-16">
-                        <h2 className="text-4xl  mb-6 text-balance">{`Where to see ${capitalize(animal)} in ${capitalize(destination)}`}</h2>
-                        <p className="text-lg max-w-4xl mx-auto text-pretty">
+                    <div className="mb-16 text-center">
+                        <h2 className="mb-6 text-4xl text-balance">{`Where to see ${capitalize(animal)} in ${capitalize(destination)}`}</h2>
+                        <p className="mx-auto max-w-4xl text-lg text-pretty">
                             {data.where_to_see_title as string}
                         </p>
                     </div>
 
-                    <div className="grid lg:grid-cols-2 gap-12 items-start">
+                    <div className="grid items-start gap-12 lg:grid-cols-2">
                         <div className="space-y-6">
                             <h2 className="text-2xl">{`Top tips for viewing ${capitalize(animal)}`}</h2>
 
                             <div className="space-y-4 leading-relaxed">
                                 <MarkdownRenderer
-                                    content={data.where_to_see_description as string}
+                                    content={
+                                        data.where_to_see_description as string
+                                    }
                                 />
                             </div>
                         </div>
@@ -138,13 +146,31 @@ export default async function Page({ params }: IParams) {
                                 alt="Lions with safari vehicle in background"
                                 width={600}
                                 height={400}
-                                className="rounded-lg object-cover w-full"
+                                className="w-full rounded-lg object-cover"
                             />
                         </div>
                     </div>
                 </div>
+                <div className="relative mx-auto mt-20 flex w-full max-w-5xl items-center justify-center overflow-hidden lg:max-w-7xl">
+                    <div className="columns-1 gap-3 space-y-8 [column-fill:_balance] sm:columns-2 sm:gap-4 lg:columns-3 lg:gap-6">
+                        {images &&
+                            images.map((img) => (
+                                <Image
+                                    alt="Makisala photos"
+                                    className="h-full w-full rounded-xl object-cover"
+                                    style={{
+                                        transform: 'translate3d(0, 0, 0)',
+                                        imageRendering: 'crisp-edges',
+                                    }}
+                                    key={img.url}
+                                    src={img.url}
+                                    width={Number(img.width)}
+                                    height={Number(img.height)}
+                                />
+                            ))}
+                    </div>
+                </div>
             </section>
-            {/*// @ts-ignore*/}
             <FAQ faqs={data.faqs} />
         </main>
     )

@@ -7,6 +7,7 @@ import { countries, countryDescriptions } from '@/lib/p_seo_info'
 import { getToursByCountry } from '@/lib/cms-service'
 import ToursPage from '@/app/safaris/[country]/(destination-details)/_components/tour-page'
 import { Suspense } from 'react'
+import Nav from './_components/Nav'
 
 interface Params {
     params: {
@@ -23,7 +24,7 @@ export async function generateMetadata({ params }: Params) {
 }
 
 export async function generateStaticParams() {
-    return countries.map(country => ({
+    return countries.map((country) => ({
         country,
     }))
 }
@@ -37,7 +38,11 @@ export default async function Page({ params }: Params) {
     }
     return (
         <main>
-            <Script type={'application/ld+json'} strategy={'lazyOnload'}>
+            <Script
+                type={'application/ld+json'}
+                strategy={'lazyOnload'}
+                id="schema-tours"
+            >
                 {JSON.stringify([
                     BreadcrumbSchema({
                         breadcrumbs: [
@@ -51,11 +56,12 @@ export default async function Page({ params }: Params) {
                     }),
                 ])}
             </Script>
-            <section>
-                <div className="min-h-screen bg-background">
-                    <div className="bg-gradient-to-r from-safari-gold/10 to-safari-bronze/10 border-b border-border">
+            <section className="lg:mt-[60px]">
+                <Nav country={country} />
+                <div className="min-h-screen">
+                    <div className="from-safari-gold/10 to-safari-bronze/10 border-border border-b bg-gradient-to-r">
                         <div className="container mx-auto px-4 py-8">
-                            <h1 className="text-4xl font-bold text-safari-earth mb-2">{`${capitalize(country)} Safaris`}</h1>
+                            <h1 className="text-safari-earth mb-2 text-4xl font-bold">{`${capitalize(country)} Safaris`}</h1>
                             <p className="text-muted-foreground">
                                 {countryDescriptions[`${country}`]}
                             </p>
