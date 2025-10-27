@@ -81,6 +81,7 @@ export default async function Page({ params }: Params) {
                         description: tour.overview,
                         price: tour.pricing,
                         tour_slug: tour.slug!,
+                        tour_id: tour.id,
                     }),
                 ])}
             </Script>

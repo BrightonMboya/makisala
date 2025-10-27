@@ -23,7 +23,7 @@ export const OrganizationSchema = () => {
             addressRegion: 'Arusha',
             postalCode: '1865',
         },
-        ContactPoint: {
+        contactPoint: {
             '@type': 'ContactPoint',
             telephone: '+255788323254',
             email: 'info@makisala.com',
@@ -218,12 +218,14 @@ export const ProductSchema = ({
     imgUrl,
     price,
     tour_slug,
+    tour_id,
 }: {
     name: string
     description: string
     imgUrl: string
     price: string
     tour_slug: string
+    tour_id: string
 }) => {
     return {
         '@context': 'https://schema.org',
@@ -231,17 +233,20 @@ export const ProductSchema = ({
         name: name,
         image: [imgUrl],
         description: description,
-        brand: OrganizationSchema,
-        aggregateRating: {
-            '@type': 'AggregateRating',
-            ratingValue: '4.9',
-            reviewCount: '100',
-        },
+        brand: OrganizationSchema(),
+        sku: tour_id,
+        // aggregateRating: {
+        //     '@type': 'AggregateRating',
+        //     ratingValue: '4.9',
+        //     reviewCount: '100',
+        // },
         offers: {
             '@type': 'Offer',
             price: price,
             priceCurrency: 'USD',
-            priceValidUntil: addYears(new Date(), 1),
+            priceValidUntil: addYears(new Date(), 1)
+                .toISOString()
+                .split('T')[0],
             availability: 'https://schema.org/InStock',
             url: `${BASE_URL}/tours/${tour_slug}`,
         },
