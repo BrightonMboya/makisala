@@ -47,7 +47,7 @@ export default async function Page({ params }: IParams) {
                             },
                         ],
                     }),
-                    FAQSchema({ faqs: data.faqs! }),
+                    data.faqs && FAQSchema({ faqs: data.faqs }),
                 ])}
             </Script>
             <section className="relative flex h-[80vh] items-center justify-center">
@@ -171,7 +171,7 @@ export default async function Page({ params }: IParams) {
                     </div>
                 </div>
             </section>
-            <FAQ faqs={data.faqs} />
+            {data.faqs && <FAQ faqs={data.faqs} />}
         </main>
     )
 }
@@ -193,8 +193,8 @@ export async function generateMetadata({ params }: IParams): Promise<Metadata> {
             title: page.meta_title,
             description: page.meta_description,
             openGraph: {
-                title: page?.meta_title,
-                description: page?.meta_description,
+                title: page.meta_title!,
+                description: page.meta_description!,
                 images: images[0].url,
             },
         }

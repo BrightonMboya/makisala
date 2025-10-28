@@ -1,17 +1,16 @@
 import {
+    boolean,
+    integer,
+    json,
+    numeric,
+    pgEnum,
     pgTable,
     text,
-    pgEnum,
     timestamp,
     uuid,
     varchar,
-    integer,
-    boolean,
-    json,
-    numeric,
 } from 'drizzle-orm/pg-core'
-import { sql } from 'drizzle-orm'
-import { relations } from 'drizzle-orm'
+import { relations, sql } from 'drizzle-orm'
 import { FAQItem } from '@/components/faq'
 
 export const PageType = pgEnum('pageType', ['page', 'blog'])
@@ -37,7 +36,11 @@ export const pages = pgTable('pages', {
 })
 
 export const FlightAssistance = pgEnum('flightAssistance', ['yes', 'no'])
-export const ExperienceType = pgEnum('experienceType', ['mid-range', 'high-end', 'top-end'])
+export const ExperienceType = pgEnum('experienceType', [
+    'mid-range',
+    'high-end',
+    'top-end',
+])
 
 export const inquiries = pgTable('inquiries', {
     id: uuid('id').primaryKey().defaultRandom(),
@@ -149,8 +152,12 @@ export const verification = pgTable('verification', {
     identifier: text('identifier').notNull(),
     value: text('value').notNull(),
     expiresAt: timestamp('expires_at').notNull(),
-    createdAt: timestamp('created_at').$defaultFn(() => /* @__PURE__ */ new Date()),
-    updatedAt: timestamp('updated_at').$defaultFn(() => /* @__PURE__ */ new Date()),
+    createdAt: timestamp('created_at').$defaultFn(
+        () => /* @__PURE__ */ new Date(),
+    ),
+    updatedAt: timestamp('updated_at').$defaultFn(
+        () => /* @__PURE__ */ new Date(),
+    ),
 })
 
 // the following tables are for p_seo, some tables looks duplicated
@@ -189,13 +196,16 @@ export const itineraryDays = pgTable('itinerary_days', {
     overview: text('overview'), // day.overview
 })
 
-export const itineraryDaysRelations = relations(itineraryDays, ({ one, many }) => ({
-    tour: one(tours, {
-        fields: [itineraryDays.tourId],
-        references: [tours.id],
+export const itineraryDaysRelations = relations(
+    itineraryDays,
+    ({ one, many }) => ({
+        tour: one(tours, {
+            fields: [itineraryDays.tourId],
+            references: [tours.id],
+        }),
+        itineraryAccommodations: many(itineraryAccommodations),
     }),
-    itineraryAccommodations: many(itineraryAccommodations),
-}))
+)
 
 // ---------- DEDUPED ACCOMMODATIONS (MASTER) ----------
 export const accommodations = pgTable('accommodations', {
@@ -205,10 +215,13 @@ export const accommodations = pgTable('accommodations', {
     overview: text('overview'), // scraped accommodation overview
 })
 
-export const accommodationsRelations = relations(accommodations, ({ many }) => ({
-    images: many(accommodationImages),
-    itineraryAccommodations: many(itineraryAccommodations),
-}))
+export const accommodationsRelations = relations(
+    accommodations,
+    ({ many }) => ({
+        images: many(accommodationImages),
+        itineraryAccommodations: many(itineraryAccommodations),
+    }),
+)
 
 // ---------- ACCOMMODATION IMAGES (per master accommodation) ----------
 export const accommodationImages = pgTable('accommodation_images', {
@@ -219,12 +232,15 @@ export const accommodationImages = pgTable('accommodation_images', {
     imageUrl: text('image_url').notNull(), // img.image_url
 })
 
-export const accommodationImagesRelations = relations(accommodationImages, ({ one }) => ({
-    accommodation: one(accommodations, {
-        fields: [accommodationImages.accommodationId],
-        references: [accommodations.id],
+export const accommodationImagesRelations = relations(
+    accommodationImages,
+    ({ one }) => ({
+        accommodation: one(accommodations, {
+            fields: [accommodationImages.accommodationId],
+            references: [accommodations.id],
+        }),
     }),
-}))
+)
 
 // ---------- JOIN: WHICH ACCOMMODATION IS USED ON WHICH DAY ----------
 export const itineraryAccommodations = pgTable('itinerary_accommodations', {
@@ -237,16 +253,19 @@ export const itineraryAccommodations = pgTable('itinerary_accommodations', {
         .references(() => accommodations.id, { onDelete: 'cascade' }),
 })
 
-export const itineraryAccommodationsRelations = relations(itineraryAccommodations, ({ one }) => ({
-    day: one(itineraryDays, {
-        fields: [itineraryAccommodations.itineraryDayId],
-        references: [itineraryDays.id],
+export const itineraryAccommodationsRelations = relations(
+    itineraryAccommodations,
+    ({ one }) => ({
+        day: one(itineraryDays, {
+            fields: [itineraryAccommodations.itineraryDayId],
+            references: [itineraryDays.id],
+        }),
+        accommodation: one(accommodations, {
+            fields: [itineraryAccommodations.accommodationId],
+            references: [accommodations.id],
+        }),
     }),
-    accommodation: one(accommodations, {
-        fields: [itineraryAccommodations.accommodationId],
-        references: [accommodations.id],
-    }),
-}))
+)
 
 // these are the modifiers used for the pseo pages
 export const modifiers = pgTable('modifiers', {
@@ -287,7 +306,9 @@ export const nationalParks = pgTable('national_parks', {
     weather_page_id: text().references(() => pages.id),
     malaria_safety_page_id: text().references(() => pages.id),
     how_to_get_there_page_id: text().references(() => pages.id),
-    wildlife_highlights: json('wildlife_highlights').$type<WildlifeHighlights[]>(),
+    wildlife_highlights: json('wildlife_highlights').$type<
+        WildlifeHighlights[]
+    >(),
     park_overview: json('park_overview').$type<JsonOverview[]>(),
     createdAt: timestamp({ precision: 3, mode: 'string' })
         .default(sql`CURRENT_TIMESTAMP`)
@@ -332,3 +353,5 @@ export type Itinerary = typeof itineraries.$inferSelect
 export type NewItinerary = typeof itineraries.$inferInsert
 export type NewInquiries = typeof inquiries.$inferInsert
 export type Inquiries = typeof inquiries.$inferSelect
+export type IWildlife = typeof wildlife.$inferSelect
+export type IWildlifeParkOverrides = typeof wildlifeParkOverrides.$inferSelect

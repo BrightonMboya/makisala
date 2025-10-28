@@ -4,6 +4,8 @@ import {
     destinations,
     inquiries,
     itineraries,
+    IWildlife,
+    IWildlifeParkOverrides,
     nationalParks,
     NewInquiries,
     NewItinerary,
@@ -462,16 +464,22 @@ export async function fetchAllNps() {
         .from(nationalParks)
 }
 
+type WildlifeByNameAndPark = IWildlife & IWildlifeParkOverrides
+
 export async function getWildlifeByNameAndPark(
     animalName: string,
     parkName: string,
-) {
+): Promise<WildlifeByNameAndPark | null> {
     const parkId = await db.query.nationalParks.findFirst({
         where: eq(nationalParks.name, parkName),
         columns: {
             id: true,
         },
     })
+
+    if (!parkId) {
+        return null
+    }
 
     const result = await db
         .select({
@@ -480,17 +488,19 @@ export async function getWildlifeByNameAndPark(
             excerpt: wildlife.excerpt,
             description: wildlife.description,
             quick_facts: wildlife.quick_facts,
-            where_to_see_title: sql`COALESCE(
+            where_to_see_title: sql<string>`COALESCE(
             ${wildlifeParkOverrides.where_to_see_title},
             ${wildlife.where_to_see_title}
             )`,
-            where_to_see_description: sql`COALESCE(
+            where_to_see_description: sql<string>`COALESCE(
             ${wildlifeParkOverrides.where_to_see_description},
             ${wildlife.where_to_see_description}
             )`,
-            meta_title: sql`${wildlifeParkOverrides.meta_title}
+            meta_title: sql<string | null>`${wildlifeParkOverrides.meta_title}
             ::text`,
-            meta_description: sql`${wildlifeParkOverrides.meta_description}
+            meta_description: sql<
+                string | null
+            >`${wildlifeParkOverrides.meta_description}
             ::text`,
             faqs: sql`${wildlifeParkOverrides.faqs}
             ::json`,
@@ -508,13 +518,6 @@ export async function getWildlifeByNameAndPark(
         )
         .limit(1)
         .execute()
-
-    // fallback if no override exists
-    if (!result.length) {
-        return await db.query.wildlife.findFirst({
-            where: eq(wildlife.name, animalName),
-        })
-    }
 
     return result[0]
 }
