@@ -47,7 +47,11 @@ export default async function page({ params }: IParams) {
 
     return (
         <main>
-            <Script type={'application/ld+json'} strategy={'lazyOnload'}>
+            <Script
+                type={'application/ld+json'}
+                strategy={'lazyOnload'}
+                id="schema-script"
+            >
                 {JSON.stringify([
                     BreadcrumbSchema({
                         breadcrumbs: [

@@ -9,11 +9,11 @@ export default function MonthNavigator() {
 
     return (
         <div className="pb-10">
-            <div className="grid grid-cols-3 gap-5 lg:flex lg:items-center lg:justify-center lg:space-x-5 ">
+            <div className="grid grid-cols-3 gap-5 lg:flex lg:items-center lg:justify-center lg:space-x-5">
                 {articles_url.map((article, index) => (
                     <Link href={`/where-to-go/${article.month}`} key={index}>
                         <p
-                            className={`${current_month === article.month ? 'text-primary border-b border-primary' : ''} uppercase font-medium`}
+                            className={`${current_month === article.month ? 'text-primary border-primary border-b' : ''} font-medium uppercase`}
                         >
                             {article.month.substring(0, 3)}
                         </p>

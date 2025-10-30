@@ -371,6 +371,7 @@ export const getProgramaticTourBySlug = async (slug: string) => {
         where: eq(tours.slug, slug),
         with: {
             days: {
+                orderBy: (days, { asc }) => [asc(days.dayNumber)],
                 with: {
                     itineraryAccommodations: {
                         with: {

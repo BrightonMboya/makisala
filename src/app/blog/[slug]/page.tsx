@@ -68,7 +68,11 @@ export default async function Page({
 
         return (
             <main>
-                <Script type={'application/ld+json'} strategy={'lazyOnload'}>
+                <Script
+                    type={'application/ld+json'}
+                    strategy={'lazyOnload'}
+                    id="schema"
+                >
                     {JSON.stringify([
                         BreadcrumbSchema({
                             breadcrumbs: [

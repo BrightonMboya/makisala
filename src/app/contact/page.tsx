@@ -26,18 +26,25 @@ export async function generateMetadata(): Promise<Metadata> {
 export default function Page() {
     return (
         <>
-            <Script type={'application/ld+json'} strategy={'lazyOnload'}>
+            <Script
+                type={'application/ld+json'}
+                strategy={'lazyOnload'}
+                id="schema-script"
+            >
                 {JSON.stringify([
                     BreadcrumbSchema({
                         breadcrumbs: [
                             { name: 'Home', url: 'https://www.makisala.com' },
-                            { name: 'Contact Us', url: 'https://www.makisala.com/contact' },
+                            {
+                                name: 'Contact Us',
+                                url: 'https://www.makisala.com/contact',
+                            },
                         ],
                     }),
                 ])}
             </Script>
-            <section className="w-[350px] lg:w-[600px] mt-[100px] mx-auto mb-10">
-                <h2 className="text-center text-3xl mb-5">Get in touch:</h2>
+            <section className="mx-auto mt-[100px] mb-10 w-[350px] lg:w-[600px]">
+                <h2 className="mb-5 text-center text-3xl">Get in touch:</h2>
                 <ContactForm />
             </section>
             <C2A />

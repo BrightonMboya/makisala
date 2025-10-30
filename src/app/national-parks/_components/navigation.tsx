@@ -45,9 +45,9 @@ export function NavigationSidebar({ park_name }: { park_name: string }) {
     ]
 
     return (
-        <aside className="lg:w-80 lg:flex-shrink-0 lg:sticky lg:top-10 lg:self-start lg:h-fit">
+        <aside className="lg:sticky lg:top-10 lg:h-fit lg:w-80 lg:flex-shrink-0 lg:self-start">
             {/* Mobile navigation toggle */}
-            <div className="lg:hidden mb-6">
+            <div className="mb-6 lg:hidden">
                 <Button
                     variant="outline"
                     onClick={() => setIsOpen(!isOpen)}
@@ -76,10 +76,10 @@ export function NavigationSidebar({ park_name }: { park_name: string }) {
                                 key={index}
                                 href={item.href}
                                 className={cn(
-                                    'block px-3 py-2 text-sm rounded-md transition-colors hover:bg-accent hover:text-accent-foreground',
+                                    'hover:bg-accent hover:text-accent-foreground block rounded-md px-3 py-2 text-sm transition-colors',
                                     item.active
                                         ? 'bg-primary text-primary-foreground font-medium'
-                                        : 'text-muted-foreground'
+                                        : 'text-muted-foreground',
                                 )}
                                 onClick={() => setIsOpen(false)}
                             >

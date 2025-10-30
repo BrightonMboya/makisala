@@ -19,7 +19,9 @@ interface IParams {
 export async function generateMetadata({ params }: IParams): Promise<Metadata> {
     try {
         const { month } = await params
-        const article_url = articles_url.find(page => page.month === month)?.page_url
+        const article_url = articles_url.find(
+            (page) => page.month === month,
+        )?.page_url
         if (!article_url) {
             return {
                 title: 'Page Not Found',
@@ -35,7 +37,9 @@ export async function generateMetadata({ params }: IParams): Promise<Metadata> {
             openGraph: {
                 title: page?.meta_title || page?.title,
                 description: page?.meta_description! || page?.excerpt!,
-                images: page?.featured_image_url ? [page?.featured_image_url] : [],
+                images: page?.featured_image_url
+                    ? [page?.featured_image_url]
+                    : [],
             },
         }
     } catch {
@@ -48,7 +52,9 @@ export async function generateMetadata({ params }: IParams): Promise<Metadata> {
 
 export default async function Page({ params }: IParams) {
     const { month } = await params
-    const article_url = articles_url.find(page => page.month === month)?.page_url
+    const article_url = articles_url.find(
+        (page) => page.month === month,
+    )?.page_url
 
     if (!article_url) {
         return notFound()
@@ -61,7 +67,11 @@ export default async function Page({ params }: IParams) {
 
     return (
         <>
-            <Script type={'application/ld+json'} strategy={'lazyOnload'}>
+            <Script
+                type={'application/ld+json'}
+                strategy={'lazyOnload'}
+                id="schema-script"
+            >
                 {JSON.stringify([
                     BreadcrumbSchema({
                         breadcrumbs: [
@@ -78,14 +88,16 @@ export default async function Page({ params }: IParams) {
             <div className="relative h-[60vh] overflow-hidden">
                 <div
                     className="absolute inset-0 bg-cover bg-no-repeat object-cover"
-                    style={{ backgroundImage: `url(${page.featured_image_url})` }}
+                    style={{
+                        backgroundImage: `url(${page.featured_image_url})`,
+                    }}
                 >
                     <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
                 </div>
-                <div className="relative h-full flex items-end">
+                <div className="relative flex h-full items-end">
                     <div className="container mx-auto px-6 pb-12">
                         <div className="max-w-4xl">
-                            <h1 className="text-3xl md:text-6xl font-bold text-white leading-tight">
+                            <h1 className="text-3xl leading-tight font-bold text-white md:text-6xl">
                                 {page.title}
                             </h1>
                         </div>
@@ -93,7 +105,7 @@ export default async function Page({ params }: IParams) {
                 </div>
             </div>
 
-            <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
+            <main className="mx-auto max-w-4xl px-4 pb-16 sm:px-6 lg:px-8">
                 <MonthNavigator />
                 <MarkdownRenderer content={page.content} />
                 <FAQ faqs={page.faqs!} />

@@ -3,13 +3,18 @@
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+} from '@/components/ui/card'
 
 import { useToast } from '@/lib/hooks/use-toast'
 import { TourData } from '@/app/scraper/_components/types'
 import { TourPreview } from '@/app/scraper/_components/TourPreview'
-import { Upload, FileText, Sparkles } from 'lucide-react'
-import { saveTourData } from '@/lib/scraper'
+import { FileText, Upload } from 'lucide-react'
 
 export default function Page() {
     const { toast } = useToast()
@@ -36,12 +41,17 @@ export default function Page() {
                     ...day,
                     accomodation: {
                         ...day.accomodation,
-                        overview: day.accomodation?.accomodation_overview ?? null,
-                        img_urls: (day.accomodation?.img_urls ?? []).map((img: any) => ({
-                            image_url: img.img_url, // normalize key for our upload function
-                        })),
-                        accomodation_name: day.accomodation?.accomodation_name ?? null,
-                        accomodation_url: day.accomodation?.accomodation_url ?? null,
+                        overview:
+                            day.accomodation?.accomodation_overview ?? null,
+                        img_urls: (day.accomodation?.img_urls ?? []).map(
+                            (img: any) => ({
+                                image_url: img.img_url, // normalize key for our upload function
+                            }),
+                        ),
+                        accomodation_name:
+                            day.accomodation?.accomodation_name ?? null,
+                        accomodation_url:
+                            day.accomodation?.accomodation_url ?? null,
                     },
                 })),
             }
@@ -109,33 +119,34 @@ export default function Page() {
     }
 
     return (
-        <div className="container mx-auto py-8 px-4 max-w-7xl mt-10">
+        <div className="container mx-auto mt-10 max-w-7xl px-4 py-8">
             {/* Header */}
-            <div className="text-center mb-12">
-                <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-                    Import luxury safari and travel tour data from JSON format into your database
-                    with automatic image processing.
+            <div className="mb-12 text-center">
+                <p className="text-muted-foreground mx-auto max-w-2xl text-lg">
+                    Import luxury safari and travel tour data from JSON format
+                    into your database with automatic image processing.
                 </p>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
                 {/* JSON Input Section */}
                 <Card>
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2">
-                            <FileText className="w-5 h-5 text-primary" />
+                            <FileText className="text-primary h-5 w-5" />
                             JSON Data Input
                         </CardTitle>
                         <CardDescription>
-                            Paste your tour JSON data below to parse and preview before importing.
+                            Paste your tour JSON data below to parse and preview
+                            before importing.
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
                         <Textarea
                             placeholder="Paste your tour JSON data here..."
                             value={jsonInput}
-                            onChange={e => setJsonInput(e.target.value)}
-                            className="min-h-[300px] font-mono text-sm resize-none"
+                            onChange={(e) => setJsonInput(e.target.value)}
+                            className="min-h-[300px] resize-none font-mono text-sm"
                         />
                         <div className="flex gap-2">
                             <Button
@@ -160,18 +171,20 @@ export default function Page() {
                 <Card>
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2">
-                            <Upload className="w-5 h-5 text-success" />
+                            <Upload className="text-success h-5 w-5" />
                             Import to Database
                         </CardTitle>
                         <CardDescription>
-                            Upload images to Cloudinary and save tour data to your Supabase
-                            database.
+                            Upload images to Cloudinary and save tour data to
+                            your Supabase database.
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                        <div className="p-6 bg-gradient-sunset rounded-lg text-white">
-                            <h3 className="font-semibold mb-2">Ready to Import</h3>
-                            <p className="text-sm opacity-90 mb-4">
+                        <div className="bg-gradient-sunset rounded-lg p-6 text-white">
+                            <h3 className="mb-2 font-semibold">
+                                Ready to Import
+                            </h3>
+                            <p className="mb-4 text-sm opacity-90">
                                 {parsedData
                                     ? `Tour "${parsedData.tourName}" is ready to be imported with ${parsedData.itinerary.length} days.`
                                     : 'Parse JSON data first to see import options.'}
@@ -181,30 +194,42 @@ export default function Page() {
                                 disabled={!parsedData || isLoading}
                                 className="w-full"
                             >
-                                {isLoading ? 'Importing...' : 'Import Tour Data'}
+                                {isLoading
+                                    ? 'Importing...'
+                                    : 'Import Tour Data'}
                             </Button>
                         </div>
 
                         {parsedData && (
                             <div className="space-y-2 text-sm">
                                 <div className="flex justify-between">
-                                    <span className="text-muted-foreground">Tour Name:</span>
-                                    <span className="font-medium">{parsedData.tourName}</span>
+                                    <span className="text-muted-foreground">
+                                        Tour Name:
+                                    </span>
+                                    <span className="font-medium">
+                                        {parsedData.tourName}
+                                    </span>
                                 </div>
                                 <div className="flex justify-between">
-                                    <span className="text-muted-foreground">Duration:</span>
+                                    <span className="text-muted-foreground">
+                                        Duration:
+                                    </span>
                                     <span className="font-medium">
                                         {parsedData.itinerary.length} days
                                     </span>
                                 </div>
                                 <div className="flex justify-between">
-                                    <span className="text-muted-foreground">Activities:</span>
+                                    <span className="text-muted-foreground">
+                                        Activities:
+                                    </span>
                                     <span className="font-medium">
                                         {parsedData.activities.length}
                                     </span>
                                 </div>
                                 <div className="flex justify-between">
-                                    <span className="text-muted-foreground">Pricing:</span>
+                                    <span className="text-muted-foreground">
+                                        Pricing:
+                                    </span>
                                     <span className="font-medium">
                                         ${parsedData.pricing?.toLocaleString()}
                                     </span>

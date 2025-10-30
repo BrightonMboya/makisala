@@ -2,23 +2,28 @@ import Link from 'next/link'
 
 export default function Footer() {
     return (
-        <footer className="bg-white py-16 border-t border-gray-200">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div className="grid md:grid-cols-5 gap-8">
+        <footer className="border-t border-gray-200 bg-white py-16">
+            <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                <div className="grid gap-8 md:grid-cols-5">
                     <div>
-                        <div className="flex items-center space-x-2 mb-6">
-                            <div className="w-8 h-8 rounded-sm flex items-center justify-center">
-                                <img src="/makisala_icon.png" className="object-cover" />
+                        <div className="mb-6 flex items-center space-x-2">
+                            <div className="flex h-8 w-8 items-center justify-center rounded-sm">
+                                <img
+                                    src="/makisala_icon.png"
+                                    className="object-cover"
+                                />
                             </div>
                             <div className="text-sm font-medium tracking-wider">
                                 <div>MAKISALA</div>
                             </div>
                         </div>
-                        <div className="text-sm text-gray-600 mt-2">
-                            <Link href="mailto:info@makisala.com">info@makisala.com</Link>
+                        <div className="mt-2 text-sm text-gray-600">
+                            <Link href="mailto:info@makisala.com">
+                                info@makisala.com
+                            </Link>
                             <p>+255788323254</p>
                         </div>
-                        <div className="flex space-x-3 mt-2 text-gray-600">
+                        <div className="mt-2 flex space-x-3 text-gray-600">
                             <Link href="https://www.instagram.com/makisala_?igsh=d3J5eTBwdjZqN3h1&utm_source=qr">
                                 <svg
                                     xmlns="http://www.w3.org/2000/svg"
@@ -59,7 +64,9 @@ export default function Footer() {
                     </div>
 
                     <div>
-                        <h4 className="font-medium text-gray-900 mb-4">Travel Information</h4>
+                        <h4 className="mb-4 font-medium text-gray-900">
+                            Travel Information
+                        </h4>
                         <ul className="space-y-2 text-sm text-gray-600">
                             <li>
                                 <Link
@@ -83,7 +90,10 @@ export default function Footer() {
                                 </Link>
                             </li>
                             <li>
-                                <Link href="/sitemap.xml" className="hover:text-gray-900">
+                                <Link
+                                    href="/sitemap.xml"
+                                    className="hover:text-gray-900"
+                                >
                                     Sitemap
                                 </Link>
                             </li>
@@ -91,21 +101,32 @@ export default function Footer() {
                     </div>
 
                     <div>
-                        <h4 className="font-medium text-gray-900 mb-4">Safaris by country</h4>
+                        <h4 className="mb-4 font-medium text-gray-900">
+                            Safaris by country
+                        </h4>
                         <ul className="space-y-2 text-sm text-gray-600">
                             <li>
-                                <Link href="/safaris/tanzania" className="hover:text-gray-900">
+                                <Link
+                                    href="/safaris/tanzania"
+                                    className="hover:text-gray-900"
+                                >
                                     Tanzania Safaris
                                 </Link>
                             </li>
 
                             <li>
-                                <Link href="/safaris/zanzibar" className="hover:text-gray-900">
+                                <Link
+                                    href="/safaris/zanzibar"
+                                    className="hover:text-gray-900"
+                                >
                                     Visit Zanzibar
                                 </Link>
                             </li>
                             <li>
-                                <Link href="/safaris/rwanda" className="hover:text-gray-900">
+                                <Link
+                                    href="/safaris/rwanda"
+                                    className="hover:text-gray-900"
+                                >
                                     Rwanda Gorilla Trekking
                                 </Link>
                             </li>
@@ -144,7 +165,9 @@ export default function Footer() {
                     {/*</div>*/}
 
                     <div>
-                        <h4 className="font-medium text-gray-900 mb-4">Who is Travelling?</h4>
+                        <h4 className="mb-4 font-medium text-gray-900">
+                            Who is Travelling?
+                        </h4>
                         <ul className="space-y-2 text-sm text-gray-600">
                             <li>
                                 <Link
@@ -176,10 +199,15 @@ export default function Footer() {
                     </div>
 
                     <div>
-                        <h4 className="font-medium text-gray-900 mb-4">Safaris:</h4>
+                        <h4 className="mb-4 font-medium text-gray-900">
+                            Safaris:
+                        </h4>
                         <ul className="space-y-2 text-sm text-gray-600">
                             <li>
-                                <Link href="/location/kilimanjaro" className="hover:text-gray-900">
+                                <Link
+                                    href="/location/kilimanjaro"
+                                    className="hover:text-gray-900"
+                                >
                                     Trekking Safaris
                                 </Link>
                             </li>
@@ -193,12 +221,18 @@ export default function Footer() {
                             </li>
 
                             <li>
-                                <Link href="/location/rwanda" className="hover:text-gray-900">
+                                <Link
+                                    href="/location/rwanda"
+                                    className="hover:text-gray-900"
+                                >
                                     Gorilla Trekking
                                 </Link>
                             </li>
                             <li>
-                                <Link href="/location/zanzibar" className="hover:text-gray-900">
+                                <Link
+                                    href="/location/zanzibar"
+                                    className="hover:text-gray-900"
+                                >
                                     Beach Safaris
                                 </Link>
                             </li>

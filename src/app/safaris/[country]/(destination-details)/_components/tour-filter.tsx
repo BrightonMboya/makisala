@@ -1,13 +1,13 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
 import { Slider } from '@/components/ui/slider'
 import { Badge } from '@/components/ui/badge'
-import { X, Filter } from 'lucide-react'
+import { Filter, X } from 'lucide-react'
 import { countries, tour_tags as tags } from '@/lib/p_seo_info'
 import { capitalize } from '@/lib/utils'
 
@@ -24,7 +24,11 @@ interface TourFiltersProps {
     onClearFilters: () => void
 }
 
-export function TourFilters({ filters, onFiltersChange, onClearFilters }: TourFiltersProps) {
+export function TourFilters({
+    filters,
+    onFiltersChange,
+    onClearFilters,
+}: TourFiltersProps) {
     const [isCollapsed, setIsCollapsed] = useState(false)
     const [debouncedFilters, setDebouncedFilters] = useState(filters)
 
@@ -48,14 +52,14 @@ export function TourFilters({ filters, onFiltersChange, onClearFilters }: TourFi
     const handleCountryChange = (country: string, checked: boolean) => {
         const newCountries = checked
             ? [...filters.selectedCountries, country]
-            : filters.selectedCountries.filter(c => c !== country)
+            : filters.selectedCountries.filter((c) => c !== country)
         updateFilters({ selectedCountries: newCountries })
     }
 
     const handleTagChange = (tag: string, checked: boolean) => {
         const newTags = checked
             ? [...filters.selectedTags, tag]
-            : filters.selectedTags.filter(t => t !== tag)
+            : filters.selectedTags.filter((t) => t !== tag)
         updateFilters({ selectedTags: newTags })
     }
 
@@ -69,8 +73,8 @@ export function TourFilters({ filters, onFiltersChange, onClearFilters }: TourFi
         <Card className="bg-card border-border">
             <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
-                    <CardTitle className="text-lg font-bold text-card-foreground flex items-center gap-2">
-                        <Filter className="w-5 h-5" />
+                    <CardTitle className="text-card-foreground flex items-center gap-2 text-lg font-bold">
+                        <Filter className="h-5 w-5" />
                         Filters
                         {activeFiltersCount > 0 && (
                             <Badge variant="secondary" className="ml-2">
@@ -101,16 +105,21 @@ export function TourFilters({ filters, onFiltersChange, onClearFilters }: TourFi
                 </div>
             </CardHeader>
 
-            <CardContent className={`space-y-6 ${isCollapsed ? 'hidden lg:block' : ''}`}>
+            <CardContent
+                className={`space-y-6 ${isCollapsed ? 'hidden lg:block' : ''}`}
+            >
                 {/* Price Range */}
                 <div className="space-y-3">
-                    <Label className="text-sm font-semibold text-card-foreground">
-                        Price Range: ${filters.priceRange[0]} - ${filters.priceRange[1]}
+                    <Label className="text-card-foreground text-sm font-semibold">
+                        Price Range: ${filters.priceRange[0]} - $
+                        {filters.priceRange[1]}
                     </Label>
                     <Slider
                         value={filters.priceRange}
-                        onValueChange={value =>
-                            updateFilters({ priceRange: value as [number, number] })
+                        onValueChange={(value) =>
+                            updateFilters({
+                                priceRange: value as [number, number],
+                            })
                         }
                         max={5000}
                         min={0}
@@ -121,13 +130,16 @@ export function TourFilters({ filters, onFiltersChange, onClearFilters }: TourFi
 
                 {/* Days Range */}
                 <div className="space-y-3">
-                    <Label className="text-sm font-semibold text-card-foreground">
-                        Duration: {filters.daysRange[0]} - {filters.daysRange[1]} days
+                    <Label className="text-card-foreground text-sm font-semibold">
+                        Duration: {filters.daysRange[0]} -{' '}
+                        {filters.daysRange[1]} days
                     </Label>
                     <Slider
                         value={filters.daysRange}
-                        onValueChange={value =>
-                            updateFilters({ daysRange: value as [number, number] })
+                        onValueChange={(value) =>
+                            updateFilters({
+                                daysRange: value as [number, number],
+                            })
                         }
                         max={15}
                         min={1}
@@ -138,22 +150,30 @@ export function TourFilters({ filters, onFiltersChange, onClearFilters }: TourFi
 
                 {/* Countries */}
                 <div className="space-y-3">
-                    <Label className="text-sm font-semibold text-card-foreground">
+                    <Label className="text-card-foreground text-sm font-semibold">
                         Destinations
                     </Label>
-                    <div className="space-y-2 max-h-40 overflow-y-auto">
-                        {countries.map(country => (
-                            <div key={country} className="flex items-center space-x-2">
+                    <div className="max-h-40 space-y-2 overflow-y-auto">
+                        {countries.map((country) => (
+                            <div
+                                key={country}
+                                className="flex items-center space-x-2"
+                            >
                                 <Checkbox
                                     id={`country-${country}`}
-                                    checked={filters.selectedCountries.includes(country)}
-                                    onCheckedChange={checked =>
-                                        handleCountryChange(country, checked as boolean)
+                                    checked={filters.selectedCountries.includes(
+                                        country,
+                                    )}
+                                    onCheckedChange={(checked) =>
+                                        handleCountryChange(
+                                            country,
+                                            checked as boolean,
+                                        )
                                     }
                                 />
                                 <Label
                                     htmlFor={`country-${country}`}
-                                    className="text-sm text-muted-foreground cursor-pointer"
+                                    className="text-muted-foreground cursor-pointer text-sm"
                                 >
                                     {capitalize(country)}
                                 </Label>
@@ -164,20 +184,25 @@ export function TourFilters({ filters, onFiltersChange, onClearFilters }: TourFi
 
                 {/* Tags */}
                 <div className="space-y-3">
-                    <Label className="text-sm font-semibold text-card-foreground">Categories</Label>
-                    <div className="space-y-2 max-h-40 overflow-y-auto">
-                        {tags.map(tag => (
-                            <div key={tag} className="flex items-center space-x-2">
+                    <Label className="text-card-foreground text-sm font-semibold">
+                        Categories
+                    </Label>
+                    <div className="max-h-40 space-y-2 overflow-y-auto">
+                        {tags.map((tag) => (
+                            <div
+                                key={tag}
+                                className="flex items-center space-x-2"
+                            >
                                 <Checkbox
                                     id={`tag-${tag}`}
                                     checked={filters.selectedTags.includes(tag)}
-                                    onCheckedChange={checked =>
+                                    onCheckedChange={(checked) =>
                                         handleTagChange(tag, checked as boolean)
                                     }
                                 />
                                 <Label
                                     htmlFor={`tag-${tag}`}
-                                    className="text-sm text-muted-foreground cursor-pointer capitalize"
+                                    className="text-muted-foreground cursor-pointer text-sm capitalize"
                                 >
                                     {capitalize(tag)}
                                 </Label>
@@ -188,12 +213,12 @@ export function TourFilters({ filters, onFiltersChange, onClearFilters }: TourFi
 
                 {/* Active Filters */}
                 {activeFiltersCount > 0 && (
-                    <div className="space-y-3 pt-3 border-t border-border">
-                        <Label className="text-sm font-semibold text-card-foreground">
+                    <div className="border-border space-y-3 border-t pt-3">
+                        <Label className="text-card-foreground text-sm font-semibold">
                             Active Filters
                         </Label>
                         <div className="flex flex-wrap gap-2">
-                            {filters.selectedCountries.map(country => (
+                            {filters.selectedCountries.map((country) => (
                                 <Badge
                                     key={country}
                                     variant="secondary"
@@ -201,12 +226,14 @@ export function TourFilters({ filters, onFiltersChange, onClearFilters }: TourFi
                                 >
                                     {country}
                                     <X
-                                        className="w-3 h-3 cursor-pointer"
-                                        onClick={() => handleCountryChange(country, false)}
+                                        className="h-3 w-3 cursor-pointer"
+                                        onClick={() =>
+                                            handleCountryChange(country, false)
+                                        }
                                     />
                                 </Badge>
                             ))}
-                            {filters.selectedTags.map(tag => (
+                            {filters.selectedTags.map((tag) => (
                                 <Badge
                                     key={tag}
                                     variant="secondary"
@@ -214,8 +241,10 @@ export function TourFilters({ filters, onFiltersChange, onClearFilters }: TourFi
                                 >
                                     {tag}
                                     <X
-                                        className="w-3 h-3 cursor-pointer"
-                                        onClick={() => handleTagChange(tag, false)}
+                                        className="h-3 w-3 cursor-pointer"
+                                        onClick={() =>
+                                            handleTagChange(tag, false)
+                                        }
                                     />
                                 </Badge>
                             ))}

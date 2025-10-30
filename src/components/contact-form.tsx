@@ -19,7 +19,11 @@ import {
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Calendar } from '@/components/ui/calendar'
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from '@/components/ui/popover'
 import { cn } from '@/lib/utils'
 import { format } from 'date-fns'
 import { CalendarIcon } from 'lucide-react'
@@ -50,7 +54,9 @@ export default function ContactForm({
 
     const formSchema = z.object({
         fullName: z.string().min(1, 'Full Name is required'),
-        countryOfResidence: z.string().min(1, 'Country of residence is required'),
+        countryOfResidence: z
+            .string()
+            .min(1, 'Country of residence is required'),
         phoneNumber: z.string().min(1, 'Phone number is required'),
         email: z.string().email('Valid email is required'),
         startDate: z.date({
@@ -62,7 +68,7 @@ export default function ContactForm({
         flightAssistance: z.enum(['yes', 'no']),
         experienceType: z.enum(['mid-range', 'high-end', 'top-end']),
         comments: z.string().min(1, 'Comments are required'),
-        consent: z.boolean().refine(val => val === true, {
+        consent: z.boolean().refine((val) => val === true, {
             message: 'You must agree to the privacy policy',
         }),
     })
@@ -111,7 +117,9 @@ export default function ContactForm({
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                 {/* Personal Information */}
                 <div className="space-y-4">
-                    <h3 className="text-lg font-semibold">Personal Information</h3>
+                    <h3 className="text-lg font-semibold">
+                        Personal Information
+                    </h3>
                     <FormField
                         control={form.control}
                         name="email"
@@ -119,7 +127,11 @@ export default function ContactForm({
                             <FormItem>
                                 <FormLabel>Email*</FormLabel>
                                 <FormControl>
-                                    <Input placeholder="Enter Email" type="email" {...field} />
+                                    <Input
+                                        placeholder="Enter Email"
+                                        type="email"
+                                        {...field}
+                                    />
                                 </FormControl>
                                 <FormMessage />
                             </FormItem>
@@ -150,7 +162,9 @@ export default function ContactForm({
                                     <FormLabel>Country of Residence*</FormLabel>
                                     <CountryDropdown
                                         placeholder="Select countries"
-                                        onChange={country => field.onChange(country.name)}
+                                        onChange={(country) =>
+                                            field.onChange(country.name)
+                                        }
                                         defaultValue={field.value}
                                         value={field.value}
                                     />
@@ -165,7 +179,10 @@ export default function ContactForm({
                                 <FormItem>
                                     <FormLabel>Phone Number*</FormLabel>
                                     <FormControl>
-                                        <Input placeholder="Phone number" {...field} />
+                                        <Input
+                                            placeholder="Phone number"
+                                            {...field}
+                                        />
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>
@@ -176,21 +193,27 @@ export default function ContactForm({
 
                 {/* Travel Information */}
                 <div className="space-y-4">
-                    <h3 className="text-lg font-semibold">Travel Information</h3>
+                    <h3 className="text-lg font-semibold">
+                        Travel Information
+                    </h3>
                     <FormField
                         control={form.control}
                         name="startDate"
                         render={({ field }) => (
                             <FormItem className="flex flex-col">
                                 <FormLabel>What is your start date?*</FormLabel>
-                                <Popover open={openCalendar} onOpenChange={setOpenCalendar}>
+                                <Popover
+                                    open={openCalendar}
+                                    onOpenChange={setOpenCalendar}
+                                >
                                     <PopoverTrigger asChild>
                                         <FormControl>
                                             <Button
                                                 variant={'outline'}
                                                 className={cn(
                                                     'w-full pl-3 text-left font-normal',
-                                                    !field.value && 'text-muted-foreground'
+                                                    !field.value &&
+                                                        'text-muted-foreground',
                                                 )}
                                             >
                                                 {field.value ? (
@@ -202,17 +225,24 @@ export default function ContactForm({
                                             </Button>
                                         </FormControl>
                                     </PopoverTrigger>
-                                    <PopoverContent className="p-0 w-auto" align="start">
+                                    <PopoverContent
+                                        className="w-auto p-0"
+                                        align="start"
+                                    >
                                         <Calendar
                                             mode="single"
                                             selected={field.value}
-                                            onSelect={e => {
+                                            onSelect={(e) => {
                                                 setOpenCalendar(false)
                                                 field.onChange(e)
                                             }}
-                                            disabled={date => date < new Date()}
+                                            disabled={(date) =>
+                                                date < new Date()
+                                            }
                                             initialFocus
-                                            className={cn('p-3 pointer-events-auto')}
+                                            className={cn(
+                                                'pointer-events-auto p-3',
+                                            )}
                                         />
                                     </PopoverContent>
                                 </Popover>
@@ -221,7 +251,7 @@ export default function ContactForm({
                         )}
                     />
 
-                    <div className="flex flex-col md:grid md:grid-cols-3 gap-4">
+                    <div className="flex flex-col gap-4 md:grid md:grid-cols-3">
                         <FormField
                             control={form.control}
                             name="numberOfNights"
@@ -238,9 +268,13 @@ export default function ContactForm({
                                             </SelectTrigger>
                                         </FormControl>
                                         <SelectContent>
-                                            {nightOptions.map(night => (
-                                                <SelectItem key={night} value={night}>
-                                                    {night} night{night !== '1' ? 's' : ''}
+                                            {nightOptions.map((night) => (
+                                                <SelectItem
+                                                    key={night}
+                                                    value={night}
+                                                >
+                                                    {night} night
+                                                    {night !== '1' ? 's' : ''}
                                                 </SelectItem>
                                             ))}
                                         </SelectContent>
@@ -255,7 +289,9 @@ export default function ContactForm({
                             name="numberOfAdults"
                             render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel>Number of Adults (over 18)*</FormLabel>
+                                    <FormLabel>
+                                        Number of Adults (over 18)*
+                                    </FormLabel>
                                     <Select
                                         onValueChange={field.onChange}
                                         defaultValue={field.value}
@@ -266,9 +302,13 @@ export default function ContactForm({
                                             </SelectTrigger>
                                         </FormControl>
                                         <SelectContent>
-                                            {adultOptions.map(adult => (
-                                                <SelectItem key={adult} value={adult}>
-                                                    {adult} adult{adult !== '1' ? 's' : ''}
+                                            {adultOptions.map((adult) => (
+                                                <SelectItem
+                                                    key={adult}
+                                                    value={adult}
+                                                >
+                                                    {adult} adult
+                                                    {adult !== '1' ? 's' : ''}
                                                 </SelectItem>
                                             ))}
                                         </SelectContent>
@@ -283,7 +323,9 @@ export default function ContactForm({
                             name="numberOfChildren"
                             render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel>Number of Children (under 18)</FormLabel>
+                                    <FormLabel>
+                                        Number of Children (under 18)
+                                    </FormLabel>
                                     <Select
                                         onValueChange={field.onChange}
                                         defaultValue={field.value}
@@ -294,9 +336,15 @@ export default function ContactForm({
                                             </SelectTrigger>
                                         </FormControl>
                                         <SelectContent>
-                                            {childrenOptions.map(child => (
-                                                <SelectItem key={child} value={child}>
-                                                    {child} {child !== '1' ? 'children' : 'child'}
+                                            {childrenOptions.map((child) => (
+                                                <SelectItem
+                                                    key={child}
+                                                    value={child}
+                                                >
+                                                    {child}{' '}
+                                                    {child !== '1'
+                                                        ? 'children'
+                                                        : 'child'}
                                                 </SelectItem>
                                             ))}
                                         </SelectContent>
@@ -313,7 +361,8 @@ export default function ContactForm({
                         render={({ field }) => (
                             <FormItem className="space-y-3">
                                 <FormLabel>
-                                    Do you need assistance booking your international flights?*
+                                    Do you need assistance booking your
+                                    international flights?*
                                 </FormLabel>
                                 <FormControl>
                                     <RadioGroup
@@ -322,12 +371,22 @@ export default function ContactForm({
                                         className="flex flex-row space-x-6"
                                     >
                                         <div className="flex items-center space-x-2">
-                                            <RadioGroupItem value="yes" id="flights-yes" />
-                                            <label htmlFor="flights-yes">Yes</label>
+                                            <RadioGroupItem
+                                                value="yes"
+                                                id="flights-yes"
+                                            />
+                                            <label htmlFor="flights-yes">
+                                                Yes
+                                            </label>
                                         </div>
                                         <div className="flex items-center space-x-2">
-                                            <RadioGroupItem value="no" id="flights-no" />
-                                            <label htmlFor="flights-no">No</label>
+                                            <RadioGroupItem
+                                                value="no"
+                                                id="flights-no"
+                                            />
+                                            <label htmlFor="flights-no">
+                                                No
+                                            </label>
                                         </div>
                                     </RadioGroup>
                                 </FormControl>
@@ -341,7 +400,9 @@ export default function ContactForm({
                         name="experienceType"
                         render={({ field }) => (
                             <FormItem className="space-y-3">
-                                <FormLabel>What kind of experience are you after?*</FormLabel>
+                                <FormLabel>
+                                    What kind of experience are you after?*
+                                </FormLabel>
                                 <FormControl>
                                     <RadioGroup
                                         onValueChange={field.onChange}
@@ -355,12 +416,16 @@ export default function ContactForm({
                                                 className="mt-1"
                                             />
                                             <div>
-                                                <label htmlFor="mid-range" className="font-medium">
+                                                <label
+                                                    htmlFor="mid-range"
+                                                    className="font-medium"
+                                                >
                                                     Mid-range
                                                 </label>
-                                                <p className="text-sm text-muted-foreground">
-                                                    I want a quality experience but don't need
-                                                    luxury, think authentic tented camps.
+                                                <p className="text-muted-foreground text-sm">
+                                                    I want a quality experience
+                                                    but don't need luxury, think
+                                                    authentic tented camps.
                                                 </p>
                                             </div>
                                         </div>
@@ -371,12 +436,17 @@ export default function ContactForm({
                                                 className="mt-1"
                                             />
                                             <div>
-                                                <label htmlFor="high-end" className="font-medium">
+                                                <label
+                                                    htmlFor="high-end"
+                                                    className="font-medium"
+                                                >
                                                     High-end
                                                 </label>
-                                                <p className="text-sm text-muted-foreground">
-                                                    I want a luxury experience, great food & wine,
-                                                    good service and luxury facilities.
+                                                <p className="text-muted-foreground text-sm">
+                                                    I want a luxury experience,
+                                                    great food & wine, good
+                                                    service and luxury
+                                                    facilities.
                                                 </p>
                                             </div>
                                         </div>
@@ -387,12 +457,16 @@ export default function ContactForm({
                                                 className="mt-1"
                                             />
                                             <div>
-                                                <label htmlFor="top-end" className="font-medium">
+                                                <label
+                                                    htmlFor="top-end"
+                                                    className="font-medium"
+                                                >
                                                     Top-end
                                                 </label>
-                                                <p className="text-sm text-muted-foreground">
-                                                    I simply want the best available, cost should
-                                                    not be a consideration.
+                                                <p className="text-muted-foreground text-sm">
+                                                    I simply want the best
+                                                    available, cost should not
+                                                    be a consideration.
                                                 </p>
                                             </div>
                                         </div>
@@ -408,7 +482,9 @@ export default function ContactForm({
                         name="comments"
                         render={({ field }) => (
                             <FormItem>
-                                <FormLabel>Any other comments or requests?*</FormLabel>
+                                <FormLabel>
+                                    Any other comments or requests?*
+                                </FormLabel>
                                 <FormControl>
                                     <Textarea
                                         placeholder="We are two families travelling together and would love to see gorillas and chimps, do a 7-day safari to experience the wildebeest migration and then spend 5 days on the beach with great snorkelling and diving. We are an adventurous bunch and would also love to include some walking safaris with the BIG5!"
@@ -425,7 +501,7 @@ export default function ContactForm({
                         control={form.control}
                         name="consent"
                         render={({ field }) => (
-                            <FormItem className="flex flex-row items-start space-x-3 space-y-0">
+                            <FormItem className="flex flex-row items-start space-y-0 space-x-3">
                                 <FormControl>
                                     <Checkbox
                                         checked={field.value}
@@ -434,7 +510,7 @@ export default function ContactForm({
                                 </FormControl>
                                 <div className="space-y-1 leading-none">
                                     <FormLabel>Consent*</FormLabel>
-                                    <p className="text-sm text-muted-foreground">
+                                    <p className="text-muted-foreground text-sm">
                                         I agree to the privacy policy.
                                     </p>
                                 </div>

@@ -9,6 +9,9 @@ export async function POST(req: Request) {
         return NextResponse.json({ success: true, result })
     } catch (err: any) {
         console.error('Import error:', err)
-        return NextResponse.json({ success: false, error: err.message }, { status: 500 })
+        return NextResponse.json(
+            { success: false, error: err.message },
+            { status: 500 },
+        )
     }
 }

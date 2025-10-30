@@ -30,10 +30,12 @@ export function InquiryDialog({ children }: InquiryDialogProps) {
             >
                 {children}
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[600px] max-h-[90dvh] overflow-y-scroll">
+            <DialogContent className="max-h-[90dvh] overflow-y-scroll sm:max-w-[600px]">
                 <DialogHeader>
                     <DialogTitle>Safari Inquiry</DialogTitle>
-                    <DialogDescription>* indicates required fields.</DialogDescription>
+                    <DialogDescription>
+                        * indicates required fields.
+                    </DialogDescription>
                 </DialogHeader>
                 <ContactForm setOpen={setOpen} />
             </DialogContent>

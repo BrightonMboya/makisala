@@ -1,18 +1,17 @@
 import { getProgramaticTourBySlug } from '@/lib/cms-service'
 import { notFound } from 'next/navigation'
 import { Badge } from '@/components/ui/badge'
-import { Calendar, Camera, CheckCircle, MapPin, XCircle } from 'lucide-react'
+import { Calendar, Check, Cross, MapPin } from 'lucide-react'
 import {
     DesktopNavigation,
     MobileNavigation,
 } from '@/app/to_book/[slug]/_components/PageNavigation'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { MarkdownRenderer } from '@/components/markdown-renderer'
 import { BASE_URL, exclusions, inclusions } from '@/lib/constants'
 import { type Metadata } from 'next'
 import Script from 'next/script'
 import { BreadcrumbSchema, ProductSchema } from '@/components/schema'
 import { capitalize } from '@/lib/utils'
+import ItineraryAccordion from '@/app/tours/[tour_slug]/_components/ItineraryAccordion'
 
 interface Params {
     params: {
@@ -142,191 +141,63 @@ export default async function Page({ params }: Params) {
                         {/* Desktop sidebar navigation */}
                         <DesktopNavigation />
                     </div>
+                    <div>
+                        {tour.days.map((day, index) => (
+                            <ItineraryAccordion
+                                key={day.id}
+                                dayNumber={day.dayNumber}
+                                dayTitle={day.dayTitle!}
+                                overview={day.overview!}
+                                itineraryAccommodations={
+                                    day.itineraryAccommodations
+                                }
+                                mealPlan={
+                                    day.dayNumber === 1
+                                        ? ['Breakfast', 'Lunch', 'Dinner']
+                                        : undefined
+                                }
+                            />
+                        ))}
 
-                    {/* Main content */}
-                    <div className="flex-1">
-                        <div className="container mx-auto px-6 py-12">
-                            <div className="mx-auto max-w-4xl">
-                                {/* Overview */}
-                                <section id="overview" className="scroll-mt-8">
-                                    <Card className="shadow-elegant bg-card/50 mb-12 border-0 backdrop-blur-sm">
-                                        <CardHeader>
-                                            <CardTitle className="flex items-center gap-2 text-2xl">
-                                                Overview
-                                            </CardTitle>
-                                        </CardHeader>
-                                        <CardContent>
-                                            <MarkdownRenderer
-                                                content={tour.overview!}
-                                            />
-                                        </CardContent>
-                                    </Card>
-                                </section>
-
-                                {/* Daily Itinerary */}
-                                <div className="grid gap-6">
-                                    {tour.days.map((day, index) => (
-                                        <Card
-                                            key={index}
-                                            className="overflow-hidden"
-                                        >
-                                            <CardHeader className="">
-                                                <CardTitle className="flex items-center gap-2">
-                                                    <Calendar className="h-5 w-5" />
-                                                    Day {day.dayNumber}:{' '}
-                                                    {day.dayTitle}
-                                                </CardTitle>
-                                            </CardHeader>
-                                            <CardContent className="pt-6">
-                                                <p className="text-foreground mb-4 leading-relaxed">
-                                                    {day.overview}
-                                                </p>
-
-                                                {/* Accommodation */}
-                                                {day.itineraryAccommodations
-                                                    .length != 0 &&
-                                                    day.itineraryAccommodations.map(
-                                                        (accommodation) => (
-                                                            <div
-                                                                className="bg-muted rounded-lg p-4"
-                                                                key={
-                                                                    accommodation.id
-                                                                }
-                                                            >
-                                                                <div className="mb-2 flex items-center gap-2">
-                                                                    <MapPin className="text-primary h-4 w-4" />
-                                                                    <span className="font-semibold">
-                                                                        {
-                                                                            accommodation
-                                                                                .accommodation
-                                                                                .name
-                                                                        }
-                                                                    </span>
-                                                                </div>
-
-                                                                {/* Accommodation Images */}
-                                                                {accommodation
-                                                                    .accommodation
-                                                                    .images
-                                                                    .length >
-                                                                    0 && (
-                                                                    <div className="mt-3">
-                                                                        <div className="mb-2 flex items-center gap-2">
-                                                                            <Camera className="h-4 w-4" />
-                                                                            <span className="text-sm">
-                                                                                {
-                                                                                    accommodation
-                                                                                        .accommodation
-                                                                                        .images
-                                                                                        .length
-                                                                                }{' '}
-                                                                                accommodation
-                                                                                images
-                                                                            </span>
-                                                                        </div>
-                                                                        <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
-                                                                            {accommodation.accommodation.images
-                                                                                .slice(
-                                                                                    0,
-                                                                                    4,
-                                                                                )
-                                                                                .map(
-                                                                                    (
-                                                                                        img,
-                                                                                        imgIndex,
-                                                                                    ) => (
-                                                                                        <div
-                                                                                            key={
-                                                                                                img.id
-                                                                                            }
-                                                                                            className="bg-safari-sand aspect-video overflow-hidden rounded"
-                                                                                        >
-                                                                                            <img
-                                                                                                src={
-                                                                                                    img.imageUrl
-                                                                                                }
-                                                                                                alt={`${accommodation.accommodation.name} - Image ${imgIndex + 1}`}
-                                                                                                className="h-full w-full object-cover transition-transform duration-300 hover:scale-105"
-                                                                                            />
-                                                                                        </div>
-                                                                                    ),
-                                                                                )}
-                                                                        </div>
-                                                                    </div>
-                                                                )}
-                                                            </div>
-                                                        ),
-                                                    )}
-                                            </CardContent>
-                                        </Card>
-                                    ))}
+                        <section className="mx-auto mt-20 grid max-w-4xl grid-cols-1 gap-12 px-4 md:grid-cols-2">
+                            <div>
+                                <div className="mb-4 flex items-center gap-4">
+                                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-green-500">
+                                        <Check className="text-white" />
+                                    </div>
+                                    <h5 className="text-3xl">Cost Includes</h5>
                                 </div>
-
-                                {/* Inclusions */}
-                                <section
-                                    id="inclusions"
-                                    className="scroll-mt-8"
-                                >
-                                    <Card className="shadow-elegant bg-card/50 mb-12 border-0 backdrop-blur-sm">
-                                        <CardHeader>
-                                            <CardTitle className="flex items-center gap-2 text-2xl">
-                                                <CheckCircle className="text-primary h-6 w-6" />
-                                                Inclusions
-                                            </CardTitle>
-                                        </CardHeader>
-                                        <CardContent>
-                                            <div className="grid gap-3">
-                                                {inclusions.map(
-                                                    (inclusion, index) => (
-                                                        <div
-                                                            key={index}
-                                                            className="flex items-center gap-3"
-                                                        >
-                                                            <CheckCircle className="h-4 w-4 flex-shrink-0 text-green-500" />
-                                                            <span className="text-muted-foreground">
-                                                                {inclusion}
-                                                            </span>
-                                                        </div>
-                                                    ),
-                                                )}
-                                            </div>
-                                        </CardContent>
-                                    </Card>
-                                </section>
-
-                                {/* Exclusions */}
-                                <section
-                                    id="exclusions"
-                                    className="scroll-mt-8"
-                                >
-                                    <Card className="shadow-elegant bg-card/50 mb-12 border-0 backdrop-blur-sm">
-                                        <CardHeader>
-                                            <CardTitle className="flex items-center gap-2 text-2xl">
-                                                <XCircle className="text-primary h-6 w-6" />
-                                                Exclusions
-                                            </CardTitle>
-                                        </CardHeader>
-                                        <CardContent>
-                                            <div className="grid gap-3">
-                                                {exclusions.map(
-                                                    (exclusion, index) => (
-                                                        <div
-                                                            key={index}
-                                                            className="flex items-center gap-3"
-                                                        >
-                                                            <XCircle className="h-4 w-4 flex-shrink-0 text-red-500" />
-                                                            <span className="text-muted-foreground">
-                                                                {exclusion}
-                                                            </span>
-                                                        </div>
-                                                    ),
-                                                )}
-                                            </div>
-                                        </CardContent>
-                                    </Card>
-                                </section>
+                                <ul className="flex list-inside list-disc flex-col gap-3">
+                                    {inclusions.map((item: string) => (
+                                        <li
+                                            key={item}
+                                            className="ml-4 list-item"
+                                        >
+                                            {item}
+                                        </li>
+                                    ))}
+                                </ul>
                             </div>
-                        </div>
+
+                            <div>
+                                <div className="mb-4 flex items-center gap-4">
+                                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-red-600">
+                                        <Cross className="text-white" />
+                                    </div>
+                                    <h5 className="text-3xl">Cost Excludes</h5>
+                                </div>
+                                <ul className="flex list-inside list-disc flex-col gap-3">
+                                    {exclusions.map((item: string) => (
+                                        <li
+                                            key={item}
+                                            className="ml-4 list-item"
+                                        >
+                                            {item}
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                        </section>
                     </div>
                 </div>
             </div>

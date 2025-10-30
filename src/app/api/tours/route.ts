@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from 'next/server'
-import { db, schema } from '@/db'
+import { db } from '@/db'
 import { tours } from '@/db/schema'
-import { and, or, gte, lte, eq, ilike, sql, inArray } from 'drizzle-orm'
+import { and, eq, gte, ilike, lte, or, sql } from 'drizzle-orm'
 
 export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
@@ -21,7 +21,10 @@ export async function GET(request: NextRequest) {
     // Build where conditions
     const conditions = and(
         search
-            ? or(ilike(tours.tourName, `%${search}%`), ilike(tours.overview, `%${search}%`))
+            ? or(
+                  ilike(tours.tourName, `%${search}%`),
+                  ilike(tours.overview, `%${search}%`),
+              )
             : undefined,
         country ? eq(tours.country, country) : undefined,
         gte(tours.pricing, String(minPrice)),
@@ -30,9 +33,9 @@ export async function GET(request: NextRequest) {
         lte(tours.number_of_days, maxDays),
         tags && tags.length > 0
             ? sql`${tours.tags}
-                &&
-                ${sql.raw(`ARRAY[${tags.map(t => `'${t}'`).join(', ')}]::text[]`)}`
-            : undefined
+            &&
+            ${sql.raw(`ARRAY[${tags.map((t) => `'${t}'`).join(', ')}]::text[]`)}`
+            : undefined,
     )
 
     // Query paginated tours

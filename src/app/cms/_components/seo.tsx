@@ -6,8 +6,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@radix-ui/react-label'
 import { Separator } from '@radix-ui/react-separator'
 import { Settings } from 'lucide-react'
-import { PageData } from '../page'
-import { type HandleInputChange } from '../page'
+import { type HandleInputChange, PageData } from '../page'
 
 export default function SEOTab({
     pageData,
@@ -31,26 +30,35 @@ export default function SEOTab({
                         <Input
                             id="meta-title"
                             value={pageData.meta_title!}
-                            onChange={e => handleInputChange('meta_title', e.target.value)}
+                            onChange={(e) =>
+                                handleInputChange('meta_title', e.target.value)
+                            }
                             placeholder="SEO optimized title..."
                             maxLength={60}
                         />
-                        <p className="text-sm text-gray-500 mt-1">
+                        <p className="mt-1 text-sm text-gray-500">
                             {pageData.meta_title?.length}/60 characters
                         </p>
                     </div>
 
                     <div>
-                        <Label htmlFor="meta-description">Meta Description</Label>
+                        <Label htmlFor="meta-description">
+                            Meta Description
+                        </Label>
                         <Textarea
                             id="meta-description"
                             value={pageData.meta_description!}
-                            onChange={e => handleInputChange('meta_description', e.target.value)}
+                            onChange={(e) =>
+                                handleInputChange(
+                                    'meta_description',
+                                    e.target.value,
+                                )
+                            }
                             placeholder="Brief description for search engines..."
                             rows={3}
                             maxLength={160}
                         />
-                        <p className="text-sm text-gray-500 mt-1">
+                        <p className="mt-1 text-sm text-gray-500">
                             {pageData.meta_description?.length}/160 characters
                         </p>
                     </div>
@@ -60,26 +68,39 @@ export default function SEOTab({
                         <Input
                             id="meta-keywords"
                             value={pageData.meta_keywords!}
-                            onChange={e => handleInputChange('meta_keywords', e.target.value)}
+                            onChange={(e) =>
+                                handleInputChange(
+                                    'meta_keywords',
+                                    e.target.value,
+                                )
+                            }
                             placeholder="safari, tanzania, wildlife, luxury travel"
                         />
-                        <p className="text-sm text-gray-500 mt-1">Separate keywords with commas</p>
+                        <p className="mt-1 text-sm text-gray-500">
+                            Separate keywords with commas
+                        </p>
                     </div>
 
                     <Separator />
 
-                    <div className="bg-gray-50 p-4 rounded-lg">
-                        <h3 className="font-medium mb-3">Search Engine Preview</h3>
+                    <div className="rounded-lg bg-gray-50 p-4">
+                        <h3 className="mb-3 font-medium">
+                            Search Engine Preview
+                        </h3>
                         <div className="space-y-2">
-                            <div className="text-blue-600 text-lg hover:underline cursor-pointer">
-                                {pageData.meta_title || pageData.title || 'Page Title'}
+                            <div className="cursor-pointer text-lg text-blue-600 hover:underline">
+                                {pageData.meta_title ||
+                                    pageData.title ||
+                                    'Page Title'}
                             </div>
-                            <div className="text-green-700 text-sm">
+                            <div className="text-sm text-green-700">
                                 https://makisala.com/
-                                {pageData.page_type === 'blog' ? 'blog' : 'pages'}/
-                                {pageData.slug || 'page-url'}
+                                {pageData.page_type === 'blog'
+                                    ? 'blog'
+                                    : 'pages'}
+                                /{pageData.slug || 'page-url'}
                             </div>
-                            <div className="text-gray-600 text-sm">
+                            <div className="text-sm text-gray-600">
                                 {pageData.meta_description ||
                                     pageData.excerpt ||
                                     'Page description will appear here...'}

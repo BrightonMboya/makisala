@@ -68,7 +68,8 @@ export const why_travel_with_us = [
             'We’re Tanzanian, we’re passionate, and we’re with you every step from first call to final sunset.',
     },
     {
-        img_url: 'https://res.cloudinary.com/dr2tdyz2w/image/upload/v1753789925/17_hcqlpn.webp',
+        img_url:
+            'https://res.cloudinary.com/dr2tdyz2w/image/upload/v1753789925/17_hcqlpn.webp',
         alt: 'Safaris For Good',
         title: 'Travel That Gives Back',
         description:
@@ -189,6 +190,7 @@ export const inclusions = [
     'Game drives in 4WD vehicle',
     'Park entrance fees',
     'Bottled water during game drives',
+    'A seamless, stress-free experience from start to finish.',
 ]
 export const exclusions = [
     'International flights',

@@ -14,25 +14,35 @@ export default function Page() {
 
     return (
         <main className="mt-10">
-            <Script type={'application/ld+json'} strategy={'lazyOnload'}>
+            <Script
+                type={'application/ld+json'}
+                strategy={'lazyOnload'}
+                id="schema"
+            >
                 {JSON.stringify([
                     BreadcrumbSchema({
                         breadcrumbs: [
                             { name: 'Home', url: 'https://www.makisala.com' },
-                            { name: 'Blog', url: 'https://www.makisala.com/blog' },
+                            {
+                                name: 'Blog',
+                                url: 'https://www.makisala.com/blog',
+                            },
                         ],
                     }),
                 ])}
             </Script>
             <h3>All Blogs</h3>
             <section className="">
-                <div className="mx-auto mb-24 grid max-w-7xl gap-12 justify-center max-sm:flex max-sm:h-full max-sm:flex-col md:grid-cols-2 xl:grid-cols-3">
-                    {blogs?.map(blog => (
+                <div className="mx-auto mb-24 grid max-w-7xl justify-center gap-12 max-sm:flex max-sm:h-full max-sm:flex-col md:grid-cols-2 xl:grid-cols-3">
+                    {blogs?.map((blog) => (
                         <div key={blog.id} className="">
                             <Link href={`/blog/${blog.slug}`}>
                                 <ImageCard
                                     title={blog.title}
-                                    img_url={blog.featured_image_url || '/placeholder.svg'}
+                                    img_url={
+                                        blog.featured_image_url ||
+                                        '/placeholder.svg'
+                                    }
                                     alt="Makisala Blog"
                                     description={blog.excerpt!}
                                 />

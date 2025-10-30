@@ -1,9 +1,9 @@
 'use client'
 import { useState } from 'react'
-import { useForm, useFieldArray } from 'react-hook-form'
+import { useFieldArray, useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Plus, Trash2, MapPin, Calendar, Globe } from 'lucide-react'
+import { Calendar, Globe, MapPin, Plus, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -36,7 +36,9 @@ const tourPackageSchema = z.object({
     slug: z.string().min(1, 'Slug is required'),
     pricing_starts_from: z.string().min(1, 'Pricing starts from is missing'),
     hero_image_url: z.string().min(1, 'Hero image is required'),
-    itineraries: z.array(itinerarySchema).min(1, 'At least one day itinerary is required'),
+    itineraries: z
+        .array(itinerarySchema)
+        .min(1, 'At least one day itinerary is required'),
 })
 
 type TourPackageForm = z.infer<typeof tourPackageSchema>
@@ -117,27 +119,32 @@ export default function TourPackageBuilder() {
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-background to-accent/20 p-6 mt-10">
-            <div className="max-w-4xl mx-auto">
-                <div className="text-center mb-8">
-                    <h1 className="text-4xl font-bold mb-2">Tour Package Builder</h1>
+        <div className="from-background to-accent/20 mt-10 min-h-screen bg-gradient-to-br p-6">
+            <div className="mx-auto max-w-4xl">
+                <div className="mb-8 text-center">
+                    <h1 className="mb-2 text-4xl font-bold">
+                        Tour Package Builder
+                    </h1>
                     <p className="text-muted-foreground text-lg">
                         Create amazing travel experiences
                     </p>
                 </div>
 
-                <Card className="shadow-elegant border-0 bg-card/50 backdrop-blur-sm">
+                <Card className="shadow-elegant bg-card/50 border-0 backdrop-blur-sm">
                     <CardHeader className="pb-6">
                         <CardTitle className="flex items-center gap-2 text-2xl">
-                            <Globe className="h-6 w-6 text-primary" />
+                            <Globe className="text-primary h-6 w-6" />
                             Package Details
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
                         <Form {...form}>
-                            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+                            <form
+                                onSubmit={form.handleSubmit(onSubmit)}
+                                className="space-y-8"
+                            >
                                 {/* Basic Information */}
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                                     <FormField
                                         control={form.control}
                                         name="title"
@@ -163,7 +170,7 @@ export default function TourPackageBuilder() {
                                         name="numberOfDays"
                                         render={({ field }) => (
                                             <FormItem>
-                                                <FormLabel className="text-base font-semibold flex items-center gap-2">
+                                                <FormLabel className="flex items-center gap-2 text-base font-semibold">
                                                     <Calendar className="h-4 w-4" />
                                                     Number of Days
                                                 </FormLabel>
@@ -173,9 +180,12 @@ export default function TourPackageBuilder() {
                                                         min="1"
                                                         className="h-12"
                                                         {...field}
-                                                        onChange={e =>
+                                                        onChange={(e) =>
                                                             field.onChange(
-                                                                parseInt(e.target.value) || 1
+                                                                parseInt(
+                                                                    e.target
+                                                                        .value,
+                                                                ) || 1,
                                                             )
                                                         }
                                                     />
@@ -210,7 +220,7 @@ export default function TourPackageBuilder() {
                                         name="slug"
                                         render={({ field }) => (
                                             <FormItem className="md:col-span-2">
-                                                <FormLabel className="text-base font-semibold flex items-center gap-2">
+                                                <FormLabel className="flex items-center gap-2 text-base font-semibold">
                                                     Slug Url
                                                 </FormLabel>
                                                 <FormControl>
@@ -230,7 +240,7 @@ export default function TourPackageBuilder() {
                                         name="destination"
                                         render={({ field }) => (
                                             <FormItem className="md:col-span-2">
-                                                <FormLabel className="text-base font-semibold flex items-center gap-2">
+                                                <FormLabel className="flex items-center gap-2 text-base font-semibold">
                                                     <MapPin className="h-4 w-4" />
                                                     Destination
                                                 </FormLabel>
@@ -309,15 +319,17 @@ export default function TourPackageBuilder() {
 
                                 {/* Itinerary Section */}
                                 <div>
-                                    <div className="flex justify-between items-center mb-6">
-                                        <h3 className="text-xl font-semibold">Daily Itinerary</h3>
+                                    <div className="mb-6 flex items-center justify-between">
+                                        <h3 className="text-xl font-semibold">
+                                            Daily Itinerary
+                                        </h3>
                                         <Button
                                             type="button"
                                             onClick={addItineraryDay}
                                             variant="outline"
                                             className="hover:bg-primary hover:text-primary-foreground transition-colors"
                                         >
-                                            <Plus className="h-4 w-4 mr-2" />
+                                            <Plus className="mr-2 h-4 w-4" />
                                             Add Day
                                         </Button>
                                     </div>
@@ -329,8 +341,8 @@ export default function TourPackageBuilder() {
                                                 className="border-accent/50 bg-accent/10"
                                             >
                                                 <CardHeader className="pb-4">
-                                                    <div className="flex justify-between items-center">
-                                                        <CardTitle className="text-lg text-primary">
+                                                    <div className="flex items-center justify-between">
+                                                        <CardTitle className="text-primary text-lg">
                                                             Day {index + 1}
                                                         </CardTitle>
                                                         {fields.length > 1 && (
@@ -339,7 +351,9 @@ export default function TourPackageBuilder() {
                                                                 variant="ghost"
                                                                 size="sm"
                                                                 onClick={() =>
-                                                                    removeItineraryDay(index)
+                                                                    removeItineraryDay(
+                                                                        index,
+                                                                    )
                                                                 }
                                                                 className="text-destructive hover:text-destructive hover:bg-destructive/10"
                                                             >
@@ -354,7 +368,9 @@ export default function TourPackageBuilder() {
                                                         name={`itineraries.${index}.title`}
                                                         render={({ field }) => (
                                                             <FormItem>
-                                                                <FormLabel>Day Title</FormLabel>
+                                                                <FormLabel>
+                                                                    Day Title
+                                                                </FormLabel>
                                                                 <FormControl>
                                                                     <Input
                                                                         placeholder="Arrival and Welcome"
@@ -372,7 +388,10 @@ export default function TourPackageBuilder() {
                                                         render={({ field }) => (
                                                             <FormItem>
                                                                 <FormLabel>
-                                                                    Estimated Driving Distance (km)
+                                                                    Estimated
+                                                                    Driving
+                                                                    Distance
+                                                                    (km)
                                                                 </FormLabel>
                                                                 <FormControl>
                                                                     <Input
@@ -390,7 +409,9 @@ export default function TourPackageBuilder() {
                                                         name={`itineraries.${index}.activities`}
                                                         render={({ field }) => (
                                                             <FormItem>
-                                                                <FormLabel>Activities</FormLabel>
+                                                                <FormLabel>
+                                                                    Activities
+                                                                </FormLabel>
                                                                 <FormControl>
                                                                     <Textarea
                                                                         placeholder="Game drive, cultural visit, sunset viewing..."
@@ -408,7 +429,9 @@ export default function TourPackageBuilder() {
                                                         name={`itineraries.${index}.accommodation`}
                                                         render={({ field }) => (
                                                             <FormItem>
-                                                                <FormLabel>Accommodation</FormLabel>
+                                                                <FormLabel>
+                                                                    Accommodation
+                                                                </FormLabel>
                                                                 <FormControl>
                                                                     <Textarea
                                                                         placeholder="Safari Lodge or Tented Camp"
@@ -431,9 +454,11 @@ export default function TourPackageBuilder() {
                                         type="submit"
                                         size="lg"
                                         disabled={isSubmitting}
-                                        className="min-w-32 cursor-poiner"
+                                        className="cursor-poiner min-w-32"
                                     >
-                                        {isSubmitting ? 'Creating...' : 'Create Package'}
+                                        {isSubmitting
+                                            ? 'Creating...'
+                                            : 'Create Package'}
                                     </Button>
                                 </div>
                             </form>

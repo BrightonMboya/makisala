@@ -9,10 +9,12 @@ export interface FAQProps {
 
 export function FAQ({ faqs }: FAQProps) {
     return (
-        <section className="w-full max-w-4xl mx-auto px-4 py-12">
-            <div className="text-center mb-12">
-                <h2 className="text-3xl font-bold text-balance mb-4">Frequently Asked Questions</h2>
-                <p className="text-lg text-muted-foreground text-pretty max-w-2xl mx-auto">
+        <section className="mx-auto w-full max-w-4xl px-4 py-12">
+            <div className="mb-12 text-center">
+                <h2 className="mb-4 text-3xl font-bold text-balance">
+                    Frequently Asked Questions
+                </h2>
+                <p className="text-muted-foreground mx-auto max-w-2xl text-lg text-pretty">
                     Find answers to the most common questions about this tour.
                 </p>
             </div>
@@ -20,9 +22,9 @@ export function FAQ({ faqs }: FAQProps) {
             <div className="space-y-6">
                 {faqs.map((faq, index) => (
                     <div key={index} className="flex items-center space-x-3">
-                        <p className="font-medium text-2xl ">{index + 1}</p>
+                        <p className="text-2xl font-medium">{index + 1}</p>
                         <div className="p-6">
-                            <h3 className="text-xl font-semibold mb-3 text-balance">
+                            <h3 className="mb-3 text-xl font-semibold text-balance">
                                 {faq.question}
                             </h3>
                             <p className="text-muted-foreground leading-relaxed text-pretty">
