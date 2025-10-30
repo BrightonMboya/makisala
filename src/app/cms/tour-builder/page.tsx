@@ -1,9 +1,9 @@
 'use client'
 import { useState } from 'react'
-
-import { useToast } from '@/lib/hooks/use-toast'
-import { CreateTourPackageData } from '@/lib/cms-service'
-import { Calendar, MapPin, Plus, Trash2 } from 'lucide-react'
+import { useForm, useFieldArray } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { z } from 'zod'
+import { Plus, Trash2, MapPin, Calendar, Globe } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -16,12 +16,10 @@ import {
     FormLabel,
     FormMessage,
 } from '@/components/ui/form'
+import { useToast } from '@/lib/hooks/use-toast'
 import { Separator } from '@/components/ui/separator'
 import SelectAccommodation from '@/app/cms/tour-builder/_components/SelectAccommodation'
 import SelectDestination from '@/app/cms/tour-builder/_components/SelectDestination'
-import { z } from 'zod'
-import { useFieldArray, useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
 
 const sampleAccomodations = [
     {
@@ -155,7 +153,7 @@ export default function TourPackageBuilder() {
     const onSubmit = async (data: TourPackageForm) => {
         setIsSubmitting(true)
         try {
-            // // Import the API function dynamically to avoid build issues
+            // Import the API function dynamically to avoid build issues
             const { createTourPackage } = await import('@/lib/cms-service')
 
             // Form validation ensures all required fields are present
