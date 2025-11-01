@@ -45,7 +45,11 @@ export default function RootLayout({
     return (
         <html lang="en">
             <Nav />
-            <Script type={'application/ld+json'} strategy={'lazyOnload'}>
+            <Script
+                type={'application/ld+json'}
+                strategy={'lazyOnload'}
+                id="schema-id"
+            >
                 {JSON.stringify([OrganizationSchema(), WebsiteSchema()])}
             </Script>
             <Script id="apollo-tracker" strategy="afterInteractive">
@@ -64,7 +68,9 @@ export default function RootLayout({
             initApollo();
           `}
             </Script>
-            <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+            <body
+                className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+            >
                 <Analytics />
                 <SpeedInsights />
                 <Providers>

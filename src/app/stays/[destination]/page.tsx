@@ -3,6 +3,7 @@ import Stay from '@/app/stays/_components/Stay'
 import { destinationCoordinates } from '@/app/stays/_components/data'
 import { slugify } from '@/lib/utils'
 import Link from 'next/link'
+import { type Metadata } from 'next'
 
 interface IParams {
     params: {
@@ -10,10 +11,12 @@ interface IParams {
     }
 }
 
-export async function generateMetadata({ params }: IParams): Promise<any> {
+export async function generateMetadata({ params }: IParams): Promise<Metadata> {
     const { destination } = await params
     const coordinates =
-        destinationCoordinates[destination.toLowerCase() as keyof typeof destinationCoordinates]
+        destinationCoordinates[
+            destination.toLowerCase() as keyof typeof destinationCoordinates
+        ]
 
     if (!coordinates) {
         return {
@@ -24,10 +27,10 @@ export async function generateMetadata({ params }: IParams): Promise<any> {
 
     return {
         title: `Best places to stay in ${coordinates.name}`,
-        destination: `Find best places to stay in ${coordinates.name} and compare rates, and plan your trip accordingly`,
+        description: `Find best places to stay in ${coordinates.name} and compare rates, and plan your trip accordingly`,
         openGraph: {
             title: `Best places to stay in ${coordinates.name}`,
-            destination: `Find best places to stay in ${coordinates.name} and compare rates, and plan your trip accordingly`,
+            description: `Find best places to stay in ${coordinates.name} and compare rates, and plan your trip accordingly`,
             images: 'https://res.cloudinary.com/dr2tdyz2w/image/upload/v1759052000/097c409587dd45988315dbbeabe0e603_hcmxv5.jpg',
         },
     }
@@ -36,14 +39,19 @@ export async function generateMetadata({ params }: IParams): Promise<any> {
 export default async function Page({ params }: IParams) {
     const { destination } = await params
     const coordinates =
-        destinationCoordinates[destination.toLowerCase() as keyof typeof destinationCoordinates]
+        destinationCoordinates[
+            destination.toLowerCase() as keyof typeof destinationCoordinates
+        ]
 
     if (!coordinates) {
         return (
             <main className="mt-[100px] text-center">
-                <h1 className="text-3xl font-semibold mb-4">Destination not found</h1>
+                <h1 className="mb-4 text-3xl font-semibold">
+                    Destination not found
+                </h1>
                 <p className="text-gray-600">
-                    Sorry, we don’t have data for <strong>{destination}</strong> yet.
+                    Sorry, we don’t have data for <strong>{destination}</strong>{' '}
+                    yet.
                 </p>
             </main>
         )
@@ -58,9 +66,9 @@ export default async function Page({ params }: IParams) {
 
     return (
         <main className="mt-[100px]">
-            <h1 className="font-bold text-xl lg:text-3xl text-center pb-10">{`Best Places to Stay in ${coordinates.name}`}</h1>
-            <section className="grid grid-cols-1 container mx-auto px-4 lg:grid-cols-3 gap-10 mb-10">
-                {data.map(stay => (
+            <h1 className="pb-10 text-center text-xl font-bold lg:text-3xl">{`Best Places to Stay in ${coordinates.name}`}</h1>
+            <section className="container mx-auto mb-10 grid grid-cols-1 gap-10 px-4 lg:grid-cols-3">
+                {data.map((stay) => (
                     <Link
                         href={`/stays/${destination}/${slugify(stay.name)}-${stay.id}`}
                         key={stay.id}

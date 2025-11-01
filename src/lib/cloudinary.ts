@@ -9,9 +9,12 @@ cloudinary.config({
 
 export async function getImagesInFolder(folderName: string) {
     try {
-        const res = await cloudinary.api.resources_by_asset_folder(folderName, {})
+        const res = await cloudinary.api.resources_by_asset_folder(
+            folderName,
+            {},
+        )
 
-        return res.resources.map(r => ({
+        return res.resources.map((r) => ({
             public_id: r.public_id,
             url: r.secure_url,
             format: r.format,

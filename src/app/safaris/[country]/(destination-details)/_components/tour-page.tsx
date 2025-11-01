@@ -103,7 +103,7 @@ export default function ToursPage() {
 
             try {
                 const response = await fetch(
-                    `/api/tours?${new URLSearchParams(params as any)}`,
+                    `/api/tours?${new URLSearchParams(params)}`,
                 )
                 const data: ToursResponse = await response.json()
 

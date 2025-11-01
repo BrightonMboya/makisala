@@ -37,34 +37,41 @@ export default function Page() {
                 img_url: raw.img_url,
                 activities: raw.activities ?? [],
                 topFeatures: raw.top_features ?? [],
-                itinerary: (raw.itinerary ?? []).map((day: any) => ({
-                    ...day,
-                    accomodation: {
-                        ...day.accomodation,
-                        overview:
-                            day.accomodation?.accomodation_overview ?? null,
-                        img_urls: (day.accomodation?.img_urls ?? []).map(
-                            (img: any) => ({
-                                image_url: img.img_url, // normalize key for our upload function
-                            }),
-                        ),
-                        accomodation_name:
-                            day.accomodation?.accomodation_name ?? null,
-                        accomodation_url:
-                            day.accomodation?.accomodation_url ?? null,
-                    },
-                })),
+                itinerary: (raw.itinerary ?? []).map(
+                    (day: {
+                        accomodation: {
+                            accomodation_overview: string
+                            img_urls: Array<{ img_url: string }>
+                            accomodation_name: string
+                            accomodation_url: string
+                        }
+                    }) => ({
+                        ...day,
+                        accomodation: {
+                            ...day.accomodation,
+                            overview:
+                                day.accomodation?.accomodation_overview ?? null,
+                            img_urls: (day.accomodation?.img_urls ?? []).map(
+                                (img) => ({
+                                    image_url: img.img_url, // normalize key for our upload function
+                                }),
+                            ),
+                            accomodation_name:
+                                day.accomodation?.accomodation_name ?? null,
+                            accomodation_url:
+                                day.accomodation?.accomodation_url ?? null,
+                        },
+                    }),
+                ),
             }
 
             setParsedData(normalized)
 
-            toast({
-                title: 'JSON Parsed Successfully',
+            toast('JSON Parsed Successfully', {
                 description: `Found tour: ${normalized.tourName}`,
             })
         } catch (error) {
-            toast({
-                title: 'Invalid JSON',
+            toast('Invalid JSON', {
                 description: 'Please check your JSON format and try again.',
                 variant: 'destructive',
             })
@@ -73,8 +80,7 @@ export default function Page() {
 
     const importToDatabase = async () => {
         if (!parsedData) {
-            toast({
-                title: 'No Data to Import',
+            toast('No Data to Import', {
                 description: 'Please parse JSON data first.',
                 variant: 'destructive',
             })
@@ -98,13 +104,11 @@ export default function Page() {
             setParsedData(null)
             setJsonInput('')
 
-            toast({
-                title: 'Import Successful',
+            toast('Import Successful', {
                 description: 'Tour and related data saved to database.',
             })
         } catch (err: any) {
-            toast({
-                title: 'Import Failed',
+            toast('Import Failed', {
                 description: err.message,
                 variant: 'destructive',
             })

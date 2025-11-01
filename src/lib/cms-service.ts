@@ -14,7 +14,7 @@ import {
     tours,
     wildlife,
     wildlifeParkOverrides,
-} from '../db'
+} from '@/db'
 import { pages } from '@/db/schema'
 import {
     and,
@@ -509,7 +509,7 @@ export async function getNPInfo(
         .where(eq(nationalParks.name, name))
         .limit(1)
 
-    return rows[0] ?? null
+    return rows[0]
 }
 
 export async function fetchAllNps() {

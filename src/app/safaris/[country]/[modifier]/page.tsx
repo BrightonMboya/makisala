@@ -6,6 +6,7 @@ import { BreadcrumbSchema } from '@/components/schema'
 import Script from 'next/script'
 import { BASE_URL } from '@/lib/constants'
 import { notFound } from 'next/navigation'
+import { type Metadata } from 'next'
 
 interface Params {
     params: {
@@ -14,7 +15,7 @@ interface Params {
     }
 }
 
-export async function generateMetadata({ params }: Params) {
+export async function generateMetadata({ params }: Params): Promise<Metadata> {
     const { country, modifier } = await params
     return {
         title: `${modifier.replace('-', ' ')} ${capitalize(country)} safaris | Makisala Safaris`,
@@ -23,7 +24,9 @@ export async function generateMetadata({ params }: Params) {
 }
 
 export async function generateStaticParams() {
-    return countries.flatMap(country => modifiers.map(modifier => ({ country, modifier })))
+    return countries.flatMap((country) =>
+        modifiers.map((modifier) => ({ country, modifier })),
+    )
 }
 
 export default async function SafariPage({ params }: Params) {
@@ -35,7 +38,11 @@ export default async function SafariPage({ params }: Params) {
 
     return (
         <>
-            <Script type={'application/ld+json'} strategy={'lazyOnload'}>
+            <Script
+                type={'application/ld+json'}
+                strategy={'lazyOnload'}
+                id="schema-id"
+            >
                 {JSON.stringify([
                     BreadcrumbSchema({
                         breadcrumbs: [
@@ -54,10 +61,10 @@ export default async function SafariPage({ params }: Params) {
                 ])}
             </Script>
             <main className="mt-[60px]">
-                <div className="min-h-screen bg-background">
-                    <div className="bg-gradient-to-r from-safari-gold/10 to-safari-bronze/10 border-b border-border">
+                <div className="bg-background min-h-screen">
+                    <div className="from-safari-gold/10 to-safari-bronze/10 border-border border-b bg-gradient-to-r">
                         <div className="container mx-auto px-4 py-8">
-                            <h1 className="text-4xl font-bold text-safari-earth mb-2">{`${capitalize(modifier.replace('-', ' '))} ${capitalize(country)}  Safaris`}</h1>
+                            <h1 className="text-safari-earth mb-2 text-4xl font-bold">{`${capitalize(modifier.replace('-', ' '))} ${capitalize(country)}  Safaris`}</h1>
                             <p className="text-muted-foreground">
                                 {safariDescriptions[`${country}-${modifier}`]}
                             </p>
@@ -66,8 +73,8 @@ export default async function SafariPage({ params }: Params) {
 
                     {/* Tours Grid */}
                     <div className="container mx-auto px-4 py-8">
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                            {tours.map(tour => (
+                        <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+                            {tours.map((tour) => (
                                 <TourCard key={tour.id} tour={tour} />
                             ))}
                         </div>

@@ -11,16 +11,22 @@ import { InquiryDialog } from '@/components/enquire-dialog-button'
 export default function Page() {
     return (
         <main>
-            <Script type={'application/ld+json'} strategy={'lazyOnload'}>
+            <Script
+                type={'application/ld+json'}
+                strategy={'lazyOnload'}
+                id="schema-id"
+            >
                 {JSON.stringify([
                     BreadcrumbSchema({
-                        breadcrumbs: [{ name: 'Home', url: 'https://www.makisala.com' }],
+                        breadcrumbs: [
+                            { name: 'Home', url: 'https://www.makisala.com' },
+                        ],
                     }),
                 ])}
             </Script>
             <div className="min-h-screen bg-white">
                 {/* Hero Section */}
-                <section className="relative h-[80dvh] lg:h-screen flex items-center justify-start overflow-hidden mt-16">
+                <section className="relative mt-16 flex h-[80dvh] items-center justify-start overflow-hidden lg:h-screen">
                     <div className="absolute inset-0">
                         <Image
                             src="https://res.cloudinary.com/dr2tdyz2w/image/upload/v1753373725/6-Days-Best-Family-Safaris-and-Culture-Tour-in-Tanzania_l9fgum.jpg"
@@ -31,14 +37,14 @@ export default function Page() {
                         />
                         <div className="absolute inset-0 bg-black/70 lg:bg-black/60" />
                     </div>
-                    <div className="relative z-10 text-white max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
+                    <div className="relative z-10 mx-auto w-full max-w-7xl px-4 text-white sm:px-6 lg:px-8">
                         <div className="max-w-2xl">
-                            <div className="text-md lg:text-lg font-light tracking-wider mb-1">
+                            <div className="text-md mb-1 font-light tracking-wider lg:text-lg">
                                 Discover Africa, Effortlessly
                             </div>
-                            <h1 className="text-xl md:text-5xl font-medium mb-8 leading-tight">
-                                Luxury safaris made simple for couples, families, and first-time
-                                explorers.
+                            <h1 className="mb-8 text-xl leading-tight font-medium md:text-5xl">
+                                Luxury safaris made simple for couples,
+                                families, and first-time explorers.
                             </h1>
                             <div className="flex space-x-4">
                                 {/*<Button*/}
@@ -47,7 +53,7 @@ export default function Page() {
                                 {/*    EXPERIENCES*/}
                                 {/*</Button>*/}
                                 <InquiryDialog>
-                                    <Button className="bg-white text-black hover:bg-gray-100 px-8 py-3 text-sm font-medium">
+                                    <Button className="bg-white px-8 py-3 text-sm font-medium text-black hover:bg-gray-100">
                                         START PLANNING
                                     </Button>
                                 </InquiryDialog>
@@ -57,39 +63,42 @@ export default function Page() {
                 </section>
 
                 {/* Destinations and Experiences Section */}
-                <section className="pt-16 mt-16 bg-white">
-                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-                        <div className="text-sm font-medium tracking-wider text-gray-500 mb-4">
+                <section className="mt-16 bg-white pt-16">
+                    <div className="mx-auto max-w-7xl px-4 text-center sm:px-6 lg:px-8">
+                        <div className="mb-4 text-sm font-medium tracking-wider text-gray-500">
                             DESTINATIONS, EXPERIENCES AND TRIP TYPES
                         </div>
                     </div>
                 </section>
 
                 {/* What Would You Like To Experience Section */}
-                <section className="pb-20 bg-white">
-                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                        <div className="text-center mb-16">
-                            <h2 className="text-4xl font-light text-gray-900 mb-4">
+                <section className="bg-white pb-20">
+                    <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                        <div className="mb-16 text-center">
+                            <h2 className="mb-4 text-4xl font-light text-gray-900">
                                 What Would You Like To Experience
                             </h2>
                         </div>
-                        <div className="grid md:grid-cols-3 gap-6">
+                        <div className="grid gap-6 md:grid-cols-3">
                             {safaris.map((experience, index) => (
                                 <Link href={experience.page_url} key={index}>
                                     <div
                                         key={index}
-                                        className="relative group cursor-pointer overflow-hidden rounded-lg"
+                                        className="group relative cursor-pointer overflow-hidden rounded-lg"
                                     >
-                                        <div className="aspect-[4/3] relative">
+                                        <div className="relative aspect-[4/3]">
                                             <Image
-                                                src={experience.image || '/placeholder.svg'}
+                                                src={
+                                                    experience.image ||
+                                                    '/placeholder.svg'
+                                                }
                                                 alt={experience.title}
                                                 fill
-                                                className="object-cover group-hover:scale-105 transition-transform duration-300"
+                                                className="object-cover transition-transform duration-300 group-hover:scale-105"
                                             />
-                                            <div className="absolute inset-0 bg-black/40 group-hover:bg-black/50 transition-colors" />
+                                            <div className="absolute inset-0 bg-black/40 transition-colors group-hover:bg-black/50" />
                                             <div className="absolute inset-0 flex items-center justify-center">
-                                                <h3 className="text-white text-lg font-medium absolute bottom-3 px-4">
+                                                <h3 className="absolute bottom-3 px-4 text-lg font-medium text-white">
                                                     {experience.title}
                                                 </h3>
                                             </div>
@@ -101,45 +110,51 @@ export default function Page() {
                     </div>
                 </section>
 
-                <section className="py-20 bg-gray-50">
-                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                        <div className="grid lg:grid-cols-2 gap-16 items-center">
+                <section className="bg-gray-50 py-20">
+                    <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                        <div className="grid items-center gap-16 lg:grid-cols-2">
                             <div>
-                                <h2 className="text-4xl font-light mb-8 text-gray-900">
+                                <h2 className="mb-8 text-4xl font-light text-gray-900">
                                     Traveling with Kids or Grandkids?
                                 </h2>
-                                <div className="space-y-6 text-gray-700 leading-relaxed">
+                                <div className="space-y-6 leading-relaxed text-gray-700">
                                     <p>
-                                        A family safari isn't just a vacation, it's a story your
-                                        kids will tell for the rest of their lives. Imagine their
-                                        faces the first time they see a lion in the wild, or hear
-                                        Maasai legends by firelight.
+                                        A family safari isn't just a vacation,
+                                        it's a story your kids will tell for the
+                                        rest of their lives. Imagine their faces
+                                        the first time they see a lion in the
+                                        wild, or hear Maasai legends by
+                                        firelight.
                                     </p>
 
                                     <p>
-                                        We plan your trip with every generation in mind. From
-                                        kid-friendly lodges and private guides to downtime by the
-                                        pool, your itinerary balances adventure with comfort, so no
-                                        one feels rushed or overwhelmed.
+                                        We plan your trip with every generation
+                                        in mind. From kid-friendly lodges and
+                                        private guides to downtime by the pool,
+                                        your itinerary balances adventure with
+                                        comfort, so no one feels rushed or
+                                        overwhelmed.
                                     </p>
 
                                     <p>
-                                        Whether you're traveling with little ones, teens, or grown
-                                        kids, we make it easy to connect, unplug, and create
+                                        Whether you're traveling with little
+                                        ones, teens, or grown kids, we make it
+                                        easy to connect, unplug, and create
                                         memories that matter.
                                     </p>
 
                                     <p className="font-medium text-gray-900">
-                                        Tell us about your crew, we’ll take care of the rest.
+                                        Tell us about your crew, we’ll take care
+                                        of the rest.
                                     </p>
                                 </div>
                             </div>
-                            <div className="relative w-[400px] lg:w-[600px] h-[300px] lg:h-[400px]">
+                            <div className="relative h-[300px] w-[400px] lg:h-[400px] lg:w-[600px]">
                                 <Image
                                     src="https://res.cloudinary.com/dr2tdyz2w/image/upload/v1753793635/Tanzania-Family-Safari-1_njxhyq.webp"
                                     alt="Makisala Family Safari"
                                     fill={true}
-                                    className="rounded-lg lg:w-[500px] object-cover"
+                                    className="rounded-lg object-cover lg:w-[500px]"
                                 />
                             </div>
                         </div>
@@ -147,9 +162,9 @@ export default function Page() {
                 </section>
 
                 {/* Family Passion Section */}
-                <section className="pt-16 bg-white">
-                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-                        <div className="text-sm font-medium tracking-wider text-gray-500 mb-4">
+                <section className="bg-white pt-16">
+                    <div className="mx-auto max-w-7xl px-4 text-center sm:px-6 lg:px-8">
+                        <div className="mb-4 text-sm font-medium tracking-wider text-gray-500">
                             FAMILY PASSION MEETS SAFARI EXPERTISE
                         </div>
                     </div>
@@ -157,13 +172,13 @@ export default function Page() {
 
                 {/* Why Travel With Us Section */}
                 <section className="bg-white">
-                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                        <div className="text-center mb-16">
-                            <h2 className="text-4xl font-light text-gray-900 mb-4">
+                    <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                        <div className="mb-16 text-center">
+                            <h2 className="mb-4 text-4xl font-light text-gray-900">
                                 Why travel with MAKISALA
                             </h2>
                         </div>
-                        <div className="grid md:grid-cols-3 gap-12">
+                        <div className="grid gap-12 md:grid-cols-3">
                             {why_travel_with_us.map((item, index) => (
                                 <ImageCard
                                     key={index}
@@ -246,14 +261,16 @@ export default function Page() {
                 {/*</section>*/}
 
                 {/* How It Works Section */}
-                <section className="py-20 bg-white">
-                    <div className="max-w-lg mx-auto px-4 sm:px-6 lg:max-w-none">
-                        <div className="text-center mb-16">
-                            <h2 className="text-4xl font-light text-gray-900 mb-4">How It Works</h2>
-                            <div className="w-16 h-px bg-gray-300 mx-auto"></div>
+                <section className="bg-white py-20">
+                    <div className="mx-auto max-w-lg px-4 sm:px-6 lg:max-w-none">
+                        <div className="mb-16 text-center">
+                            <h2 className="mb-4 text-4xl font-light text-gray-900">
+                                How It Works
+                            </h2>
+                            <div className="mx-auto h-px w-16 bg-gray-300"></div>
                         </div>
 
-                        <div className="grid md:grid-cols-5 gap-5">
+                        <div className="grid gap-5 md:grid-cols-5">
                             {[
                                 {
                                     step: 'STEP 1',
@@ -286,15 +303,18 @@ export default function Page() {
                                         'From the moment you land, we’re right there with you. Our team and trusted partners are on hand throughout your journey so you can relax, explore, and enjoy every moment.',
                                 },
                             ].map((item, index) => (
-                                <div key={index} className="bg-gray-50 p-8 rounded-lg text-center">
-                                    <div className="text-xs font-medium tracking-wider text-gray-500 mb-2">
+                                <div
+                                    key={index}
+                                    className="rounded-lg bg-gray-50 p-8 text-center"
+                                >
+                                    <div className="mb-2 text-xs font-medium tracking-wider text-gray-500">
                                         {item.step}
                                     </div>
-                                    <div className="w-8 h-px bg-gray-300 mx-auto mb-4"></div>
-                                    <h3 className="text-2xl font-light text-gray-900 mb-4">
+                                    <div className="mx-auto mb-4 h-px w-8 bg-gray-300"></div>
+                                    <h3 className="mb-4 text-2xl font-light text-gray-900">
                                         {item.title}
                                     </h3>
-                                    <p className="text-gray-600 text-sm leading-relaxed">
+                                    <p className="text-sm leading-relaxed text-gray-600">
                                         {item.description}
                                     </p>
                                 </div>
@@ -306,38 +326,45 @@ export default function Page() {
                 <C2A />
 
                 {/* Founder Quote Section */}
-                <section className="py-20 bg-gray-50">
-                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                        <div className="grid lg:grid-cols-2 gap-16 items-center">
+                <section className="bg-gray-50 py-20">
+                    <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                        <div className="grid items-center gap-16 lg:grid-cols-2">
                             <div>
                                 {/*<div className="text-sm font-medium tracking-wider text-gray-500 mb-6">*/}
                                 {/*    BRIGHTON MBOYA, CO-FOUNDER MAKISALA*/}
                                 {/*</div>*/}
-                                <h2 className="text-4xl font-light mb-8 text-gray-900">
-                                    We’re in the business of making wild dreams come true.
+                                <h2 className="mb-8 text-4xl font-light text-gray-900">
+                                    We’re in the business of making wild dreams
+                                    come true.
                                 </h2>
-                                <div className="space-y-6 text-gray-700 leading-relaxed">
+                                <div className="space-y-6 leading-relaxed text-gray-700">
                                     <p>
-                                        At Makisala, we plan life-changing safaris with heart,
-                                        purpose, and deep local expertise. We know Tanzania and East
-                                        Africa like home because it is. We believe a great safari
-                                        isn’t just about what you see. It’s about{' '}
-                                        <strong>how it makes you feel more connected</strong>, more
-                                        alive, more in awe of the world. And yes, we’re proud to
-                                        give back: every trip supports the people and places that
+                                        At Makisala, we plan life-changing
+                                        safaris with heart, purpose, and deep
+                                        local expertise. We know Tanzania and
+                                        East Africa like home because it is. We
+                                        believe a great safari isn’t just about
+                                        what you see. It’s about{' '}
+                                        <strong>
+                                            how it makes you feel more connected
+                                        </strong>
+                                        , more alive, more in awe of the world.
+                                        And yes, we’re proud to give back: every
+                                        trip supports the people and places that
                                         make Africa magical.
                                     </p>
                                     <p className="font-medium">
-                                        Let's make the world a little wilder, one safari at a time.
+                                        Let's make the world a little wilder,
+                                        one safari at a time.
                                     </p>
                                 </div>
                             </div>
-                            <div className="relative w-[400px] lg:w-[600px] h-[300px] lg:h-[400px]">
+                            <div className="relative h-[300px] w-[400px] lg:h-[400px] lg:w-[600px]">
                                 <Image
                                     src="https://res.cloudinary.com/dr2tdyz2w/image/upload/v1753373584/family-safari.jpg_vu3zur.jpg"
                                     alt="Makisala Family Safari"
                                     fill={true}
-                                    className="rounded-lg lg:w-[500px] object-cover"
+                                    className="rounded-lg object-cover lg:w-[500px]"
                                 />
                             </div>
                         </div>

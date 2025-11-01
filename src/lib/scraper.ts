@@ -1,10 +1,10 @@
 import { db } from '@/db'
 import {
-    tours,
-    itineraryDays,
-    accommodations,
     accommodationImages,
+    accommodations,
     itineraryAccommodations,
+    itineraryDays,
+    tours,
 } from '@/db/schema'
 import { and, eq } from 'drizzle-orm'
 import { v2 as cloudinary } from 'cloudinary'
@@ -129,7 +129,7 @@ cloudinary.config({
 
 // ---- saveTourData.ts ----
 export async function saveTourData(tour: TourData) {
-    return db.transaction(async tx => {
+    return db.transaction(async (tx) => {
         // 1) Insert tour
 
         let coverUrl: string | null = null
@@ -179,7 +179,12 @@ export async function saveTourData(tour: TourData) {
                 const existing = await tx
                     .select()
                     .from(accommodations)
-                    .where(and(eq(accommodations.name, rawName), eq(accommodations.url, rawUrl)))
+                    .where(
+                        and(
+                            eq(accommodations.name, rawName),
+                            eq(accommodations.url, rawUrl),
+                        ),
+                    )
                     .limit(1)
 
                 if (existing.length) {
@@ -191,12 +196,15 @@ export async function saveTourData(tour: TourData) {
                         .from(accommodationImages)
                         .where(eq(accommodationImages.accommodationId, accomId))
 
-                    if (existingImgs.length === 0 && day.accomodation?.img_urls?.length) {
+                    if (
+                        existingImgs.length === 0 &&
+                        day.accomodation?.img_urls?.length
+                    ) {
                         await uploadAccommodationImages(
                             tx,
                             accomId,
                             rawName,
-                            day.accomodation.img_urls
+                            day.accomodation.img_urls,
                         )
                     }
                 } else {
@@ -218,7 +226,7 @@ export async function saveTourData(tour: TourData) {
                             tx,
                             accomId,
                             rawName,
-                            day.accomodation.img_urls
+                            day.accomodation.img_urls,
                         )
                     }
                 }
@@ -253,7 +261,7 @@ async function uploadAccommodationImages(
     tx: any,
     accommodationId: string,
     rawName: string,
-    images: { image_url: string }[]
+    images: { image_url: string }[],
 ) {
     if (!images || images.length === 0) return []
 
@@ -263,7 +271,7 @@ async function uploadAccommodationImages(
         .from(accommodationImages)
         .where(eq(accommodationImages.accommodationId, accommodationId))
 
-    const existingUrls = new Set(existingImgs.map(img => img.imageUrl))
+    const existingUrls = new Set(existingImgs.map((img) => img.imageUrl))
     const uploadedImgs = []
 
     for (const img of images) {
