@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { useFieldArray, useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Calendar, Globe, MapPin, Plus, Trash2 } from 'lucide-react'
+import { Calendar, MapPin, Plus, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -33,7 +33,6 @@ const tourPackageSchema = z.object({
     country: z.string().min(1, 'Country is required'),
     destination: z.string().min(1, 'Destination is required'),
     overview: z.string().min(1, 'Overview is required'),
-    slug: z.string().min(1, 'Slug is required'),
     pricing_starts_from: z.string().min(1, 'Pricing starts from is missing'),
     hero_image_url: z.string().min(1, 'Hero image is required'),
     itineraries: z
@@ -55,7 +54,6 @@ export default function TourPackageBuilder() {
             country: '',
             destination: '',
             overview: '',
-            slug: '',
             pricing_starts_from: '',
             hero_image_url: '',
             itineraries: [
@@ -130,14 +128,11 @@ export default function TourPackageBuilder() {
                     </p>
                 </div>
 
-                <Card className="shadow-elegant bg-card/50 border-0 backdrop-blur-sm">
-                    <CardHeader className="pb-6">
-                        <CardTitle className="flex items-center gap-2 text-2xl">
-                            <Globe className="text-primary h-6 w-6" />
-                            Package Details
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
+                <div className="">
+                    <h3 className="my-5 flex items-center text-2xl">
+                        Tour Details
+                    </h3>
+                    <section>
                         <Form {...form}>
                             <form
                                 onSubmit={form.handleSubmit(onSubmit)}
@@ -206,26 +201,6 @@ export default function TourPackageBuilder() {
                                                 <FormControl>
                                                     <Input
                                                         placeholder="Kenya"
-                                                        className="h-12"
-                                                        {...field}
-                                                    />
-                                                </FormControl>
-                                                <FormMessage />
-                                            </FormItem>
-                                        )}
-                                    />
-
-                                    <FormField
-                                        control={form.control}
-                                        name="slug"
-                                        render={({ field }) => (
-                                            <FormItem className="md:col-span-2">
-                                                <FormLabel className="flex items-center gap-2 text-base font-semibold">
-                                                    Slug Url
-                                                </FormLabel>
-                                                <FormControl>
-                                                    <Input
-                                                        placeholder="kilimanjaro-marangu-route"
                                                         className="h-12"
                                                         {...field}
                                                     />
@@ -463,8 +438,8 @@ export default function TourPackageBuilder() {
                                 </div>
                             </form>
                         </Form>
-                    </CardContent>
-                </Card>
+                    </section>
+                </div>
             </div>
         </div>
     )
