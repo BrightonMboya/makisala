@@ -1,8 +1,8 @@
 'use client'
 import { useState } from 'react'
-import { useFieldArray, useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { z } from 'zod'
+
+import { useToast } from '@/lib/hooks/use-toast'
+import { CreateTourPackageData } from '@/lib/cms-service'
 import { Calendar, MapPin, Plus, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -17,14 +17,76 @@ import {
     FormMessage,
 } from '@/components/ui/form'
 import { Separator } from '@/components/ui/separator'
-import { useToast } from '@/lib/hooks/use-toast'
-import { CreateTourPackageData } from '@/lib/cms-service'
+import SelectAccommodation from '@/app/cms/tour-builder/_components/SelectAccommodation'
+import SelectDestination from '@/app/cms/tour-builder/_components/SelectDestination'
+import { z } from 'zod'
+import { useFieldArray, useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+
+const sampleAccomodations = [
+    {
+        name: 'Baobab Lodges',
+        id: 'acc_1912',
+    },
+    {
+        name: 'Moivaro Lodges',
+        id: 'acc_1323',
+    },
+    {
+        name: 'Planet Lodges',
+        id: 'acc_1424',
+    },
+    {
+        name: 'Airport Planet',
+        id: 'acc_1290',
+    },
+    {
+        name: 'Gibbs Farm',
+        id: 'acc_3§24',
+    },
+    {
+        name: 'Tanganyika Wilderness Camps',
+        id: 'fjkawe',
+    },
+    {
+        name: 'Serengeti Serena Hotel',
+        id: 'WE1ef',
+    },
+]
+
+const sampleDestinations = [
+    {
+        name: 'Tarangire',
+        id: 'dst_kasjd',
+    },
+    {
+        name: 'Lake Manyara',
+        id: 'dst_adsad',
+    },
+    {
+        name: 'Tsavo',
+        id: 'dst_EFCFAD',
+    },
+    {
+        name: 'Akagera',
+        id: 'dst_qewrf',
+    },
+    {
+        name: 'Serengeti',
+        id: 'dst_rqerf',
+    },
+    {
+        name: 'Hauller Park',
+        id: 'dst_WR3qwe',
+    },
+]
 
 const itinerarySchema = z.object({
     title: z.string().min(1, 'Day title is required'),
     estimatedDrivingDistance: z.string().optional(),
     activities: z.string().min(1, 'Activities are required'),
-    accommodation: z.string().optional(),
+    accommodation: z.string(),
+    main_destination: z.string().min(1, 'Destination is required'),
 })
 
 const tourPackageSchema = z.object({
@@ -40,7 +102,7 @@ const tourPackageSchema = z.object({
         .min(1, 'At least one day itinerary is required'),
 })
 
-type TourPackageForm = z.infer<typeof tourPackageSchema>
+export type TourPackageForm = z.infer<typeof tourPackageSchema>
 
 export default function TourPackageBuilder() {
     const [isSubmitting, setIsSubmitting] = useState(false)
@@ -62,6 +124,7 @@ export default function TourPackageBuilder() {
                     estimatedDrivingDistance: '',
                     activities: '',
                     accommodation: '',
+                    main_destination: '',
                 },
             ],
         },
@@ -79,6 +142,7 @@ export default function TourPackageBuilder() {
             estimatedDrivingDistance: '',
             activities: '',
             accommodation: '',
+            main_destination: '',
         })
     }
 
@@ -91,14 +155,13 @@ export default function TourPackageBuilder() {
     const onSubmit = async (data: TourPackageForm) => {
         setIsSubmitting(true)
         try {
-            // Import the API function dynamically to avoid build issues
+            // // Import the API function dynamically to avoid build issues
             const { createTourPackage } = await import('@/lib/cms-service')
 
             // Form validation ensures all required fields are present
             await createTourPackage(data as CreateTourPackageData)
 
-            toast({
-                title: 'Success!',
+            toast('Success!', {
                 description: 'Tour package has been created successfully.',
             })
 
@@ -106,8 +169,7 @@ export default function TourPackageBuilder() {
             form.reset()
         } catch (error) {
             console.error('Error creating tour package:', error)
-            toast({
-                title: 'Error',
+            toast('Error', {
                 description: 'Failed to create tour package. Please try again.',
                 variant: 'destructive',
             })
@@ -399,25 +461,62 @@ export default function TourPackageBuilder() {
                                                         )}
                                                     />
 
-                                                    <FormField
-                                                        control={form.control}
-                                                        name={`itineraries.${index}.accommodation`}
-                                                        render={({ field }) => (
-                                                            <FormItem>
-                                                                <FormLabel>
-                                                                    Accommodation
-                                                                </FormLabel>
-                                                                <FormControl>
-                                                                    <Textarea
-                                                                        placeholder="Safari Lodge or Tented Camp"
-                                                                        className="min-h-20 resize-none"
-                                                                        {...field}
-                                                                    />
-                                                                </FormControl>
-                                                                <FormMessage />
-                                                            </FormItem>
-                                                        )}
-                                                    />
+                                                    <div className="lg:grid lg:grid-cols-2 lg:gap-5">
+                                                        <FormField
+                                                            control={
+                                                                form.control
+                                                            }
+                                                            name={`itineraries.${index}.accommodation`}
+                                                            render={({
+                                                                field,
+                                                            }) => (
+                                                                <FormItem>
+                                                                    <FormLabel>
+                                                                        Accommodation
+                                                                    </FormLabel>
+                                                                    <FormControl>
+                                                                        <SelectAccommodation
+                                                                            accomodations={
+                                                                                sampleAccomodations
+                                                                            }
+                                                                            field={
+                                                                                field
+                                                                            }
+                                                                        />
+                                                                    </FormControl>
+                                                                    <FormMessage />
+                                                                </FormItem>
+                                                            )}
+                                                        />
+
+                                                        <FormField
+                                                            control={
+                                                                form.control
+                                                            }
+                                                            name={`itineraries.${index}.main_destination`}
+                                                            render={({
+                                                                field,
+                                                            }) => (
+                                                                <FormItem>
+                                                                    <FormLabel>
+                                                                        Main
+                                                                        Destination
+                                                                    </FormLabel>
+                                                                    <FormControl>
+                                                                        <SelectDestination
+                                                                            destinations={
+                                                                                sampleDestinations
+                                                                            }
+                                                                            field={
+                                                                                field
+                                                                            }
+                                                                        />
+                                                                    </FormControl>
+                                                                    <FormMessage />
+                                                                </FormItem>
+                                                            )}
+                                                        />
+                                                    </div>
                                                 </CardContent>
                                             </Card>
                                         ))}

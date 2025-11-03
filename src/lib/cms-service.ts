@@ -154,6 +154,7 @@ export interface CreateTourPackageData {
         estimatedDrivingDistance?: string
         activities: string
         accommodation?: string
+        main_description: string
     }>
 }
 

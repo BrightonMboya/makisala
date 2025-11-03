@@ -1,5 +1,5 @@
 'use client'
-import React, { useCallback, useState, forwardRef, useEffect } from 'react'
+import React, { forwardRef, useCallback, useEffect, useState } from 'react'
 import {
     Command,
     CommandEmpty,
@@ -8,9 +8,13 @@ import {
     CommandItem,
     CommandList,
 } from '@/components/ui/command'
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from '@/components/ui/popover'
 import { cn } from '@/lib/utils'
-import { ChevronDown, CheckIcon, Globe } from 'lucide-react'
+import { CheckIcon, ChevronDown, Globe } from 'lucide-react'
 import { CircleFlag } from 'react-circle-flags'
 import { countries } from 'country-data-list'
 
@@ -40,26 +44,31 @@ const CountryDropdownComponent = (
     {
         options = countries.all.filter(
             (country: Country) =>
-                country.emoji && country.status !== 'deleted' && country.ioc !== 'PRK'
+                country.emoji &&
+                country.status !== 'deleted' &&
+                country.ioc !== 'PRK',
         ),
         onChange,
-        defaultValue,
         disabled = false,
         placeholder = 'Select a country',
         slim = false,
         value,
         ...props
     }: CountryDropdownProps,
-    ref: React.ForwardedRef<HTMLButtonElement>
+    ref: React.ForwardedRef<HTMLButtonElement>,
 ) => {
     const [open, setOpen] = useState(false)
-    const [selectedCountry, setSelectedCountry] = useState<Country | undefined>(undefined)
+    const [selectedCountry, setSelectedCountry] = useState<Country | undefined>(
+        undefined,
+    )
 
     useEffect(() => {
         if (value) {
             const country = options.find(
-                country =>
-                    country.name === value || country.alpha2 === value || country.alpha3 === value
+                (country) =>
+                    country.name === value ||
+                    country.alpha2 === value ||
+                    country.alpha3 === value,
             )
             setSelectedCountry(country)
         } else {
@@ -73,20 +82,25 @@ const CountryDropdownComponent = (
             onChange?.(country)
             setOpen(false)
         },
-        [onChange]
+        [onChange],
     )
 
     const triggerClasses = cn(
         'flex h-9 w-full items-center justify-between whitespace-nowrap rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1',
-        slim === true && 'w-20'
+        slim === true && 'w-20',
     )
 
     return (
         <Popover open={open} onOpenChange={setOpen}>
-            <PopoverTrigger ref={ref} className={triggerClasses} disabled={disabled} {...props}>
+            <PopoverTrigger
+                ref={ref}
+                className={triggerClasses}
+                disabled={disabled}
+                {...props}
+            >
                 {selectedCountry ? (
-                    <div className="flex items-center flex-grow w-0 gap-2 overflow-hidden">
-                        <div className="inline-flex items-center justify-center w-5 h-5 shrink-0 overflow-hidden rounded-full">
+                    <div className="flex w-0 flex-grow items-center gap-2 overflow-hidden">
+                        <div className="inline-flex h-5 w-5 shrink-0 items-center justify-center overflow-hidden rounded-full">
                             <CircleFlag
                                 countryCode={selectedCountry.alpha2.toLowerCase()}
                                 height={20}
@@ -114,23 +128,23 @@ const CountryDropdownComponent = (
                 side="bottom"
                 className="min-w-[--radix-popper-anchor-width] p-0"
             >
-                <Command className="w-full max-h-[200px] sm:max-h-[270px]">
+                <Command className="max-h-[200px] w-full sm:max-h-[270px]">
                     <CommandList>
-                        <div className="sticky top-0 z-10 bg-popover">
+                        <div className="bg-popover sticky top-0 z-10">
                             <CommandInput placeholder="Search country..." />
                         </div>
                         <CommandEmpty>No country found.</CommandEmpty>
                         <CommandGroup>
                             {options
-                                .filter(x => x.name)
+                                .filter((x) => x.name)
                                 .map((option, key: number) => (
                                     <CommandItem
-                                        className="flex items-center w-full gap-2"
+                                        className="flex w-full items-center gap-2"
                                         key={key}
                                         onSelect={() => handleSelect(option)}
                                     >
-                                        <div className="flex flex-grow w-0 space-x-2 overflow-hidden">
-                                            <div className="inline-flex items-center justify-center w-5 h-5 shrink-0 overflow-hidden rounded-full">
+                                        <div className="flex w-0 flex-grow space-x-2 overflow-hidden">
+                                            <div className="inline-flex h-5 w-5 shrink-0 items-center justify-center overflow-hidden rounded-full">
                                                 <CircleFlag
                                                     countryCode={option.alpha2.toLowerCase()}
                                                     height={20}
@@ -143,9 +157,10 @@ const CountryDropdownComponent = (
                                         <CheckIcon
                                             className={cn(
                                                 'ml-auto h-4 w-4 shrink-0',
-                                                option.name === selectedCountry?.name
+                                                option.name ===
+                                                    selectedCountry?.name
                                                     ? 'opacity-100'
-                                                    : 'opacity-0'
+                                                    : 'opacity-0',
                                             )}
                                         />
                                     </CommandItem>
