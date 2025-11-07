@@ -211,7 +211,7 @@ export default function Editor({
                                 </Button>
                             </div>
 
-                            {faqs.length === 0 && (
+                            {faqs?.length === 0 && (
                                 <p className="text-muted-foreground text-sm">
                                     No FAQs added yet. Click &#34;Add FAQ&#34;
                                     to get started.
@@ -219,7 +219,7 @@ export default function Editor({
                             )}
 
                             <div className="space-y-4">
-                                {faqs.map((faq, index) => (
+                                {faqs?.map((faq, index) => (
                                     <div
                                         key={index}
                                         className="bg-muted/20 space-y-2 rounded-lg border p-4"

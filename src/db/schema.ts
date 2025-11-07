@@ -348,6 +348,7 @@ export const wildlifeParkOverrides = pgTable('wildlife_park_overrides', {
 })
 
 export type Tours = typeof tours.$inferSelect
+export type Pages = typeof pages.$inferSelect
 export type NewTourPackage = typeof tourPackages.$inferInsert
 export type Itinerary = typeof itineraries.$inferSelect
 export type NewItinerary = typeof itineraries.$inferInsert

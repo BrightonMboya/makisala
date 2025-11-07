@@ -1,16 +1,16 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Eye, FileText, Globe, Save, Settings } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useToast } from '@/lib/hooks/use-toast'
-import { createPage, getPages, updatePage } from '@/lib/cms-service'
+import { createPage, updatePage } from '@/lib/cms-service'
 import Editor from './_components/Editor'
 import SEOTab from './_components/seo'
-import Manage from './_components/Manage'
 import Preview from './_components/LivePreview'
 import { FAQItem } from '@/components/faq'
+import Manage from '@/app/cms/_components/Manage'
 
 export interface PageData {
     id?: string
@@ -30,12 +30,12 @@ export interface PageData {
 }
 
 export type HandleInputChange = (field: keyof PageData, value: string) => void
+export type HandleLoadPage = (page: PageData) => void
 
 export default function CMSPage() {
     const { toast } = useToast()
     const [activeTab, setActiveTab] = useState('editor')
     const [isLoading, setIsLoading] = useState(false)
-    const [savedPages, setSavedPages] = useState<PageData[]>([])
 
     const [pageData, setPageData] = useState<PageData>({
         title: '',
@@ -50,24 +50,6 @@ export default function CMSPage() {
         status: 'draft',
         page_type: 'page',
     })
-
-    // Auto-generate slug from title
-    useEffect(() => {
-        if (pageData.title && !pageData.slug) {
-            const slug = pageData.title
-                .toLowerCase()
-                .replace(/[^a-z0-9]+/g, '-')
-                .replace(/(^-|-$)/g, '')
-            setPageData((prev) => ({ ...prev, slug }))
-        }
-    }, [pageData.title, pageData.slug])
-
-    // Auto-generate meta title from title
-    useEffect(() => {
-        if (pageData.title && !pageData.meta_title) {
-            setPageData((prev) => ({ ...prev, meta_title: pageData.title }))
-        }
-    }, [pageData.title, pageData.meta_title])
 
     const handleInputChange = (field: keyof PageData, value: string) => {
         setPageData((prev) => ({ ...prev, [field]: value }))
@@ -93,17 +75,6 @@ export default function CMSPage() {
             // Update local state
             setPageData(savedPage)
 
-            // Update saved pages list
-            setSavedPages((prev) => {
-                const existing = prev.findIndex((p) => p.id === savedPage.id)
-                if (existing >= 0) {
-                    const updated = [...prev]
-                    updated[existing] = savedPage
-                    return updated
-                }
-                return [...prev, savedPage]
-            })
-
             toast({
                 title: 'Success!',
                 description: `${
@@ -121,19 +92,6 @@ export default function CMSPage() {
             setIsLoading(false)
         }
     }
-
-    // Add useEffect to load saved pages on component mount
-    useEffect(() => {
-        const loadPages = async () => {
-            try {
-                const pages = await getPages('page')
-                setSavedPages(pages)
-            } catch (error) {
-                console.error('Failed to load pages:', error)
-            }
-        }
-        loadPages()
-    }, [])
 
     const handleLoadPage = (page: PageData) => {
         setPageData(page)
@@ -223,7 +181,6 @@ export default function CMSPage() {
                         </TabsTrigger>
                     </TabsList>
 
-                    {/* Editor Tab */}
                     <Editor
                         wordCount={wordCount}
                         pageData={pageData}
@@ -231,21 +188,12 @@ export default function CMSPage() {
                         faqs={pageData.faqs || []}
                         onFaqsChange={handleFaqsChange}
                     />
-
-                    {/* SEO Tab */}
                     <SEOTab
                         pageData={pageData}
                         handleInputChange={handleInputChange}
                     />
-
-                    {/* Preview Tab */}
                     <Preview wordCount={wordCount} pageData={pageData} />
-
-                    {/* Manage Tab */}
-                    <Manage
-                        savedPages={savedPages}
-                        handleLoadPage={handleLoadPage}
-                    />
+                    <Manage handleLoadPage={handleLoadPage} />
                 </Tabs>
             </div>
         </div>

@@ -16,8 +16,16 @@ import {
     wildlifeParkOverrides,
 } from '../db'
 import { pages } from '@/db/schema'
-import type { InferInsertModel, InferSelectModel } from 'drizzle-orm'
-import { and, desc, eq, or, sql } from 'drizzle-orm'
+import {
+    and,
+    desc,
+    eq,
+    ilike,
+    InferInsertModel,
+    InferSelectModel,
+    or,
+    sql,
+} from 'drizzle-orm'
 import cuid from 'cuid'
 import { modifiers } from '@/lib/p_seo_info'
 
@@ -72,6 +80,19 @@ export async function updatePage(
 /* ------------------------------------------------------------------ */
 export async function getPages(page_type: 'blog' | 'page'): Promise<Page[]> {
     return await db.select().from(pages).where(eq(pages.page_type, page_type))
+}
+
+export async function searchPagesByTitle({ query }: { query: string }) {
+    const q = (query || '').trim()
+    if (!q) {
+        return db.select().from(pages)
+    }
+
+    // pattern for partial match
+    const pattern = `%${q}%`
+
+    // Use case-insensitive match (ILIKE)
+    return db.select().from(pages).where(ilike(pages.title, pattern)) // or use your client's `ilike` equivalent
 }
 
 export async function getPageSlugs(page_type: 'blog' | 'page') {
