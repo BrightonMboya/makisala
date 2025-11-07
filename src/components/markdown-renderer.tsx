@@ -1,19 +1,20 @@
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
-import React from 'react'
+import React, { Suspense } from 'react'
+import { MDXRemote } from 'next-mdx-remote-client/rsc'
 
 interface MarkdownRendererProps {
     content: string
     className?: string
 }
 
-const markdownComponents = {
+export const markdownComponents = {
     img({ src, alt, ...props }) {
         return (
             <img
                 src={src || '/placeholder.svg'}
                 alt={alt}
-                className="rounded-lg shadow-lg w-full h-auto"
+                className="h-auto w-full rounded-lg shadow-lg"
                 loading="lazy"
                 {...props}
             />
@@ -21,7 +22,7 @@ const markdownComponents = {
     },
     h3({ children, ...props }) {
         return (
-            <h3 className="text-2xl font-semibold mt-6 mb-4" {...props}>
+            <h3 className="mt-6 mb-4 text-2xl font-semibold" {...props}>
                 {children}
             </h3>
         )
@@ -29,13 +30,7 @@ const markdownComponents = {
     table({ children, ...props }) {
         return (
             <table
-                className="w-full border-collapse border border-gray-300 text-sm
-                  [&_th]:bg-gray-100
-                  [&_th]:text-left
-                  [&_th]:px-4 [&_th]:py-2 [&_th]:border [&_th]:border-gray-300
-                  [&_td]:px-4 [&_td]:py-2 [&_td]:border [&_td]:border-gray-300
-                  [&_tr:nth-child(even)]:bg-gray-50
-                  [&_tr:hover]:bg-gray-100 transition-colors"
+                className="w-full border-collapse border border-gray-300 text-sm transition-colors [&_td]:border [&_td]:border-gray-300 [&_td]:px-4 [&_td]:py-2 [&_th]:border [&_th]:border-gray-300 [&_th]:bg-gray-100 [&_th]:px-4 [&_th]:py-2 [&_th]:text-left [&_tr:hover]:bg-gray-100 [&_tr:nth-child(even)]:bg-gray-50"
                 {...props}
             >
                 {children}
@@ -44,7 +39,7 @@ const markdownComponents = {
     },
     h2({ children, ...props }) {
         return (
-            <h2 className="text-3xl font-bold mt-8 mb-6" {...props}>
+            <h2 className="mt-8 mb-6 text-3xl font-bold" {...props}>
                 {children}
             </h2>
         )
@@ -58,7 +53,7 @@ const markdownComponents = {
     },
     ol({ children, ...props }) {
         return (
-            <ol className="list-decimal pl-6 mb-4" {...props}>
+            <ol className="mb-4 list-decimal pl-6" {...props}>
                 {children}
             </ol>
         )
@@ -73,7 +68,7 @@ const markdownComponents = {
     blockquote({ children, ...props }) {
         return (
             <blockquote
-                className="border-l-4 border-amber-500 pl-6 italic text-gray-700 bg-amber-50 py-4 rounded-r-lg"
+                className="rounded-r-lg border-l-4 border-amber-500 bg-amber-50 py-4 pl-6 text-gray-700 italic"
                 {...props}
             >
                 {children}
@@ -100,18 +95,21 @@ function ImageContent({
 }: ImageContentProps) {
     return (
         <div
-            className={`flex flex-col lg:flex-row gap-6 pt-6 my-6 ${position === 'right' ? 'flex-col-reverse lg:flex-row-reverse' : 'flex-col lg:flex-row'} items-start`}
+            className={`my-6 flex flex-col gap-6 pt-6 lg:flex-row ${position === 'right' ? 'flex-col-reverse lg:flex-row-reverse' : 'flex-col lg:flex-row'} items-start`}
         >
-            <div className={`w-full lg:w-1/2 flex-shrink-0`}>
+            <div className={`w-full flex-shrink-0 lg:w-1/2`}>
                 <img
                     src={src}
                     alt={alt}
-                    className="rounded-md w-full h-auto lg:h-[400px] object-cover"
+                    className="h-auto w-full rounded-md object-cover lg:h-[400px]"
                     loading="lazy"
                 />
             </div>
-            <div className="flex-1 prose prose-sm max-w-none">
-                <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
+            <div className="prose prose-sm max-w-none flex-1">
+                <ReactMarkdown
+                    remarkPlugins={[remarkGfm]}
+                    components={markdownComponents}
+                >
                     {content}
                 </ReactMarkdown>
             </div>
@@ -195,12 +193,17 @@ function parseAndRender(content: string) {
     return parts
 }
 
-export function MarkdownRenderer({ content, className = '' }: MarkdownRendererProps) {
+export function MarkdownRenderer({
+    content,
+    className = '',
+}: MarkdownRendererProps) {
     const parsedParts = parseAndRender(content)
 
     return (
-        <div className={`prose prose-sm max-w-none whitespace-pre-wrap ${className}`}>
-            {parsedParts.map(part => {
+        <div
+            className={`prose prose-sm max-w-none whitespace-pre-wrap ${className}`}
+        >
+            {parsedParts.map((part) => {
                 if (part.type === 'markdown') {
                     return (
                         <ReactMarkdown
@@ -213,7 +216,10 @@ export function MarkdownRenderer({ content, className = '' }: MarkdownRendererPr
                     )
                 }
 
-                if (part.type === 'component' && part.component === 'ImageContent') {
+                if (
+                    part.type === 'component' &&
+                    part.component === 'ImageContent'
+                ) {
                     return (
                         <ImageContent
                             key={part.key}
@@ -229,5 +235,13 @@ export function MarkdownRenderer({ content, className = '' }: MarkdownRendererPr
                 return null
             })}
         </div>
+    )
+}
+
+export function RemoteMdx({ content }: { content: string }) {
+    return (
+        <Suspense>
+            <MDXRemote source={content} components={markdownComponents} />
+        </Suspense>
     )
 }

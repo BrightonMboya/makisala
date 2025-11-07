@@ -1,15 +1,16 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { Save, Eye, FileText, Settings, Globe } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { Eye, FileText, Globe, Save, Settings } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useToast } from '@/lib/hooks/use-toast'
-import { createPage, updatePage, getPages } from '@/lib/cms-service'
+import { createPage, getPages, updatePage } from '@/lib/cms-service'
 import Editor from './_components/Editor'
 import SEOTab from './_components/seo'
 import Manage from './_components/Manage'
 import Preview from './_components/LivePreview'
+import { FAQItem } from '@/components/faq'
 
 export interface PageData {
     id?: string
@@ -17,6 +18,7 @@ export interface PageData {
     slug: string
     content: string
     excerpt: string | null
+    faqs?: FAQItem[] | null
     featured_image_url: string | null
     meta_title: string | null
     meta_description: string | null
@@ -40,6 +42,7 @@ export default function CMSPage() {
         slug: '',
         content: '',
         excerpt: '',
+        faqs: [],
         featured_image_url: '',
         meta_title: '',
         meta_description: '',
@@ -55,19 +58,23 @@ export default function CMSPage() {
                 .toLowerCase()
                 .replace(/[^a-z0-9]+/g, '-')
                 .replace(/(^-|-$)/g, '')
-            setPageData(prev => ({ ...prev, slug }))
+            setPageData((prev) => ({ ...prev, slug }))
         }
     }, [pageData.title, pageData.slug])
 
     // Auto-generate meta title from title
     useEffect(() => {
         if (pageData.title && !pageData.meta_title) {
-            setPageData(prev => ({ ...prev, meta_title: pageData.title }))
+            setPageData((prev) => ({ ...prev, meta_title: pageData.title }))
         }
     }, [pageData.title, pageData.meta_title])
 
     const handleInputChange = (field: keyof PageData, value: string) => {
-        setPageData(prev => ({ ...prev, [field]: value }))
+        setPageData((prev) => ({ ...prev, [field]: value }))
+    }
+
+    const handleFaqsChange = (faqs: FAQItem[]) => {
+        setPageData((prev) => ({ ...prev, faqs }))
     }
 
     const handleSave = async () => {
@@ -87,8 +94,8 @@ export default function CMSPage() {
             setPageData(savedPage)
 
             // Update saved pages list
-            setSavedPages(prev => {
-                const existing = prev.findIndex(p => p.id === savedPage.id)
+            setSavedPages((prev) => {
+                const existing = prev.findIndex((p) => p.id === savedPage.id)
                 if (existing >= 0) {
                     const updated = [...prev]
                     updated[existing] = savedPage
@@ -149,11 +156,13 @@ export default function CMSPage() {
         setActiveTab('editor')
     }
 
-    const wordCount = pageData.content.split(/\s+/).filter(word => word.length > 0).length
+    const wordCount = pageData.content
+        .split(/\s+/)
+        .filter((word) => word.length > 0).length
 
     return (
-        <div className="min-h-screen bg-gray-50 p-4 mt-10">
-            <div className="max-w-7xl mx-auto">
+        <div className="mt-10 min-h-screen bg-gray-50 p-4">
+            <div className="mx-auto max-w-7xl">
                 {/* Header */}
                 <div className="mb-8">
                     <div className="flex items-center justify-between">
@@ -161,38 +170,54 @@ export default function CMSPage() {
                             <h1 className="text-3xl font-bold text-gray-900">
                                 Content Management System
                             </h1>
-                            <p className="text-gray-600 mt-2">
+                            <p className="mt-2 text-gray-600">
                                 Create and manage your safari website content
                             </p>
                         </div>
                         <div className="flex items-center space-x-4">
                             <Button onClick={handleNewPage} variant="outline">
-                                <FileText className="h-4 w-4 mr-2" />
+                                <FileText className="mr-2 h-4 w-4" />
                                 New Page
                             </Button>
                             <Button onClick={handleSave} disabled={isLoading}>
-                                <Save className="h-4 w-4 mr-2" />
+                                <Save className="mr-2 h-4 w-4" />
                                 {isLoading ? 'Saving...' : 'Save'}
                             </Button>
                         </div>
                     </div>
                 </div>
 
-                <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+                <Tabs
+                    value={activeTab}
+                    onValueChange={setActiveTab}
+                    className="space-y-6"
+                >
                     <TabsList className="grid w-full grid-cols-4">
-                        <TabsTrigger value="editor" className="flex items-center space-x-2">
+                        <TabsTrigger
+                            value="editor"
+                            className="flex items-center space-x-2"
+                        >
                             <FileText className="h-4 w-4" />
                             <span>Editor</span>
                         </TabsTrigger>
-                        <TabsTrigger value="seo" className="flex items-center space-x-2">
+                        <TabsTrigger
+                            value="seo"
+                            className="flex items-center space-x-2"
+                        >
                             <Settings className="h-4 w-4" />
                             <span>SEO & Meta</span>
                         </TabsTrigger>
-                        <TabsTrigger value="preview" className="flex items-center space-x-2">
+                        <TabsTrigger
+                            value="preview"
+                            className="flex items-center space-x-2"
+                        >
                             <Eye className="h-4 w-4" />
                             <span>Preview</span>
                         </TabsTrigger>
-                        <TabsTrigger value="manage" className="flex items-center space-x-2">
+                        <TabsTrigger
+                            value="manage"
+                            className="flex items-center space-x-2"
+                        >
                             <Globe className="h-4 w-4" />
                             <span>Manage</span>
                         </TabsTrigger>
@@ -203,16 +228,24 @@ export default function CMSPage() {
                         wordCount={wordCount}
                         pageData={pageData}
                         handleInputChange={handleInputChange}
+                        faqs={pageData.faqs || []}
+                        onFaqsChange={handleFaqsChange}
                     />
 
                     {/* SEO Tab */}
-                    <SEOTab pageData={pageData} handleInputChange={handleInputChange} />
+                    <SEOTab
+                        pageData={pageData}
+                        handleInputChange={handleInputChange}
+                    />
 
                     {/* Preview Tab */}
                     <Preview wordCount={wordCount} pageData={pageData} />
 
                     {/* Manage Tab */}
-                    <Manage savedPages={savedPages} handleLoadPage={handleLoadPage} />
+                    <Manage
+                        savedPages={savedPages}
+                        handleLoadPage={handleLoadPage}
+                    />
                 </Tabs>
             </div>
         </div>

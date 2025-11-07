@@ -3,7 +3,7 @@ import Image from 'next/image'
 import type { Metadata } from 'next'
 
 import { getPageBySlug, getPageSlugs } from '@/lib/cms-service'
-import { MarkdownRenderer } from '@/components/markdown-renderer'
+import { RemoteMdx } from '@/components/markdown-renderer'
 import { BlogSchema, BreadcrumbSchema, FAQSchema } from '@/components/schema'
 import Script from 'next/script'
 import { FAQ } from '@/components/faq'
@@ -136,7 +136,7 @@ export default async function Page({
                             </div>
                         </header>
 
-                        <MarkdownRenderer content={page.content} />
+                        <RemoteMdx content={page.content} />
                         {page.faqs && <FAQ faqs={page.faqs} />}
                     </article>
                 </div>

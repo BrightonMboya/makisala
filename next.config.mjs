@@ -1,10 +1,14 @@
 import { createJiti } from 'jiti'
 import { fileURLToPath } from 'node:url'
+import createMDX from '@next/mdx'
 
 const jiti = createJiti(fileURLToPath(import.meta.url))
 jiti('./src/lib/env')
+
+const withMDX = createMDX({})
+
 const nextConfig = {
-    /* config options here */
+    pageExtensions: ['js', 'jsx', 'md', 'mdx', 'ts', 'tsx'],
     images: {
         remotePatterns: [
             {
@@ -30,9 +34,10 @@ const nextConfig = {
     typescript: {
         ignoreBuildErrors: true,
     },
+    transpilePackages: ['next-mdx-remote'],
     eslint: {
         ignoreDuringBuilds: true,
     },
 }
 
-export default nextConfig
+export default withMDX(nextConfig)

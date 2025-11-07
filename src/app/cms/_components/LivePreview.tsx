@@ -1,10 +1,12 @@
 'use client'
 import { TabsContent } from '@/components/ui/tabs'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { MarkdownRenderer } from '@/components/markdown-renderer'
 import { Eye } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { PageData } from '../page'
+import { RemoteMdx } from '@/components/markdown-renderer'
+import { FAQ } from '@/components/faq'
+import { Suspense } from 'react'
 
 export default function Preview({
     pageData,
@@ -23,28 +25,31 @@ export default function Preview({
                     </CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <div className="bg-white border rounded-lg p-8 shadow-sm">
-                        <article className="max-w-4xl mx-auto">
+                    <div className="rounded-lg border bg-white p-8 shadow-sm">
+                        <div className="mx-auto max-w-4xl">
                             {pageData.featured_image_url && (
                                 <div className="mb-8">
                                     <img
-                                        src={pageData.featured_image_url || '/placeholder.svg'}
+                                        src={
+                                            pageData.featured_image_url ||
+                                            '/placeholder.svg'
+                                        }
                                         alt={pageData.title}
-                                        className="w-full h-64 object-cover rounded-lg"
+                                        className="h-64 w-full rounded-lg object-cover"
                                     />
                                 </div>
                             )}
 
                             <header className="mb-8">
-                                <h1 className="text-4xl font-bold text-gray-900 mb-4">
+                                <h1 className="mb-4 text-4xl font-bold text-gray-900">
                                     {pageData.title || 'Page Title'}
                                 </h1>
                                 {pageData.excerpt && (
-                                    <p className="text-xl text-gray-600 leading-relaxed">
+                                    <p className="text-xl leading-relaxed text-gray-600">
                                         {pageData.excerpt}
                                     </p>
                                 )}
-                                <div className="flex items-center space-x-4 mt-4 text-sm text-gray-500">
+                                <div className="mt-4 flex items-center space-x-4 text-sm text-gray-500">
                                     <Badge
                                         variant={
                                             pageData.status === 'published'
@@ -55,19 +60,25 @@ export default function Preview({
                                         {pageData.status}
                                     </Badge>
                                     <span>
-                                        {pageData.page_type === 'blog' ? 'Blog Post' : 'Page'}
+                                        {pageData.page_type === 'blog'
+                                            ? 'Blog Post'
+                                            : 'Page'}
                                     </span>
                                     <span>{wordCount} words</span>
                                 </div>
                             </header>
 
-                            <MarkdownRenderer
-                                content={
-                                    pageData.content ||
-                                    '*No content yet. Start writing in the editor tab.*'
-                                }
-                            />
-                        </article>
+                            <Suspense>
+                                <RemoteMdx
+                                    content={
+                                        pageData.content ||
+                                        '*No content yet. Start writing in the editor tab.*'
+                                    }
+                                />
+                            </Suspense>
+
+                            {pageData.faqs && <FAQ faqs={pageData.faqs} />}
+                        </div>
                     </div>
                 </CardContent>
             </Card>
