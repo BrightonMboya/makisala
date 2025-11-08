@@ -4,25 +4,28 @@ import { Badge } from '@/components/ui/badge'
 import { Calendar, MapPin } from 'lucide-react'
 import Link from 'next/link'
 import { capitalize } from '@/lib/utils'
-import { type Tours } from '@/db'
+import { type TourCard } from '@/lib/cms-service'
 
 interface TourCardProps {
-    tour: Tours
+    tour: TourCard
 }
 
 export default function TourCard({ tour }: TourCardProps) {
     return (
         <Link href={`/tours/${tour.slug}`}>
-            <Card className="group hover:shadow-lg transition-all duration-300 hover:scale-[1.02] bg-card border-border">
+            <Card className="group bg-card border-border transition-all duration-300 hover:scale-[1.02] hover:shadow-lg">
                 <CardHeader className="p-0">
                     <div className="relative overflow-hidden rounded-t-lg">
                         <img
                             src={tour.img_url || '/placeholder.svg'}
                             alt={tour.tourName}
-                            className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
+                            className="h-48 w-full object-cover transition-transform duration-300 group-hover:scale-105"
                         />
                         <div className="absolute top-3 right-3">
-                            <Badge variant="secondary" className="bg-secondary font-semibold">
+                            <Badge
+                                variant="secondary"
+                                className="bg-secondary font-semibold"
+                            >
                                 {new Intl.NumberFormat('en-US', {
                                     style: 'currency',
                                     currency: 'USD',
@@ -34,28 +37,32 @@ export default function TourCard({ tour }: TourCardProps) {
                 </CardHeader>
 
                 <CardContent className="p-4">
-                    <h3 className="text-xl font-bold text-card-foreground mb-2 text-balance">
+                    <h3 className="text-card-foreground mb-2 text-xl font-bold text-balance">
                         {tour.tourName}
                     </h3>
 
-                    <p className="text-muted-foreground text-sm mb-4 line-clamp-2 text-pretty">
+                    <p className="text-muted-foreground mb-4 line-clamp-2 text-sm text-pretty">
                         {tour.overview}
                     </p>
 
-                    <div className="flex items-center gap-4 text-sm text-muted-foreground mb-3">
+                    <div className="text-muted-foreground mb-3 flex items-center gap-4 text-sm">
                         <div className="flex items-center gap-1">
-                            <MapPin className="w-4 h-4" />
+                            <MapPin className="h-4 w-4" />
                             <span>{capitalize(tour.country)}</span>
                         </div>
                         <div className="flex items-center gap-1">
-                            <Calendar className="w-4 h-4" />
+                            <Calendar className="h-4 w-4" />
                             <span>{tour.number_of_days} days</span>
                         </div>
                     </div>
 
-                    <div className="flex flex-wrap gap-1 mb-4">
-                        {tour.tags.slice(0, 3).map(tag => (
-                            <Badge key={tag} variant="outline" className="text-xs">
+                    <div className="mb-4 flex flex-wrap gap-1">
+                        {tour.tags.slice(0, 3).map((tag) => (
+                            <Badge
+                                key={tag}
+                                variant="outline"
+                                className="text-xs"
+                            >
                                 {tag}
                             </Badge>
                         ))}
@@ -68,7 +75,7 @@ export default function TourCard({ tour }: TourCardProps) {
                 </CardContent>
 
                 <CardFooter className="p-4 pt-0">
-                    <Button className="w-full bg-primary hover:bg-primary/90 text-primary-foreground">
+                    <Button className="bg-primary hover:bg-primary/90 text-primary-foreground w-full">
                         View Details
                     </Button>
                 </CardFooter>

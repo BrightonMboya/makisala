@@ -8,6 +8,7 @@ import { BreadcrumbSchema } from '@/components/schema'
 import { BASE_URL } from '@/lib/constants'
 import { capitalize } from '@/lib/utils'
 import { NavigationSidebar } from '@/app/national-parks/_components/navigation'
+import TourCard from '@/app/safaris/[country]/[modifier]/_components/TourCard'
 
 export async function generateMetadata({ params }: IParams): Promise<Metadata> {
     const { park } = await params
@@ -33,7 +34,11 @@ export async function generateMetadata({ params }: IParams): Promise<Metadata> {
 
 export default async function page({ params }: IParams) {
     const { park } = await params
-    const { park: np, page } = await getNPInfo(park, 'malaria_safety_page_id')
+    const {
+        park: np,
+        page,
+        tours,
+    } = await getNPInfo(park, 'malaria_safety_page_id')
 
     if (!page) {
         return notFound()
@@ -66,14 +71,16 @@ export default async function page({ params }: IParams) {
             <div className="relative h-[60vh] overflow-hidden">
                 <div
                     className="absolute inset-0 bg-cover bg-no-repeat object-cover"
-                    style={{ backgroundImage: `url(${page.featured_image_url})` }}
+                    style={{
+                        backgroundImage: `url(${page.featured_image_url})`,
+                    }}
                 >
                     <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
                 </div>
-                <div className="relative h-full flex items-end">
+                <div className="relative flex h-full items-end">
                     <div className="container mx-auto px-6 pb-12">
                         <div className="max-w-4xl">
-                            <h1 className="text-3xl md:text-6xl font-bold text-white leading-tight">
+                            <h1 className="text-3xl leading-tight font-bold text-white md:text-6xl">
                                 {page.title}
                             </h1>
                         </div>
@@ -81,13 +88,25 @@ export default async function page({ params }: IParams) {
                 </div>
             </div>
 
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-[20px]">
-                <div className="flex flex-col lg:flex-row gap-8">
+            <div className="mx-auto mt-[20px] max-w-7xl px-4 sm:px-6 lg:px-8">
+                <div className="flex flex-col gap-8 lg:flex-row">
                     <NavigationSidebar park_name={park} />
 
                     <section className="flex-1 lg:max-w-4xl">
                         <MarkdownRenderer content={page.content} />
                     </section>
+                </div>
+            </div>
+
+            <h2 className="pt-10 text-center text-4xl font-bold text-black">
+                {`${capitalize(np.name)} Safaris to inspire your journey.`}
+            </h2>
+
+            <div className="container mx-auto px-4 py-8">
+                <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+                    {tours.slice(0, 6).map((tour) => (
+                        <TourCard key={tour.id} tour={tour} />
+                    ))}
                 </div>
             </div>
         </main>

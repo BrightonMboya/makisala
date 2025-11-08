@@ -9,6 +9,7 @@ import { capitalize } from '@/lib/utils'
 import type { Metadata } from 'next'
 import { NavigationSidebar } from '@/app/national-parks/_components/navigation'
 import { FAQ } from '@/components/faq'
+import TourCard from '@/app/safaris/[country]/[modifier]/_components/TourCard'
 
 export async function generateMetadata({ params }: IParams): Promise<Metadata> {
     const { park } = await params
@@ -34,7 +35,7 @@ export async function generateMetadata({ params }: IParams): Promise<Metadata> {
 
 export default async function page({ params }: IParams) {
     const { park } = await params
-    const { park: np, page } = await getNPInfo(park, 'wildlife_page_id')
+    const { park: np, page, tours } = await getNPInfo(park, 'wildlife_page_id')
 
     if (!page) {
         return notFound()
@@ -131,37 +132,46 @@ export default async function page({ params }: IParams) {
             <div className="relative h-[60vh] overflow-hidden">
                 <div
                     className="absolute inset-0 bg-cover bg-no-repeat object-cover"
-                    style={{ backgroundImage: `url(${page.featured_image_url})` }}
+                    style={{
+                        backgroundImage: `url(${page.featured_image_url})`,
+                    }}
                 >
                     <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
                 </div>
-                <div className="relative h-full flex items-end">
+                <div className="relative flex h-full items-end">
                     <div className="container mx-auto px-6 pb-12">
                         <div className="max-w-4xl">
-                            <h1 className="text-3xl md:text-6xl font-bold text-white leading-tight">
+                            <h1 className="text-3xl leading-tight font-bold text-white md:text-6xl">
                                 {page.title}
                             </h1>
                         </div>
                     </div>
                 </div>
             </div>
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-[20px]">
-                <div className="flex flex-col lg:flex-row gap-8">
+            <div className="mx-auto mt-[20px] max-w-7xl px-4 sm:px-6 lg:px-8">
+                <div className="flex flex-col gap-8 lg:flex-row">
                     <NavigationSidebar park_name={park} />
                     <section className="flex-1 lg:max-w-4xl">
                         <MarkdownRenderer content={page.excerpt!} />
-                        <div className="grid grid-cols-3 lg:grid-cols-4 gap-3 mt-5">
-                            {animal_icons.map(icon => {
+                        <div className="mt-5 grid grid-cols-3 gap-3 lg:grid-cols-4">
+                            {animal_icons.map((icon) => {
                                 return (
-                                    <div key={icon.name} className="flex flex-col items-center">
+                                    <div
+                                        key={icon.name}
+                                        className="flex flex-col items-center"
+                                    >
                                         <img
                                             src={icon.image_url}
                                             alt={icon.name}
-                                            className="w-16 h-16 lg:w-20 lg:h-20"
+                                            className="h-16 w-16 lg:h-20 lg:w-20"
                                         />
                                         {/* @ts-ignore*/}
                                         <p className="text-sm font-medium">
-                                            {np.wildlife_highlights[0][`${icon.name}`]}
+                                            {
+                                                np.wildlife_highlights[0][
+                                                    `${icon.name}`
+                                                ]
+                                            }
                                         </p>
                                     </div>
                                 )
@@ -170,6 +180,17 @@ export default async function page({ params }: IParams) {
                         <MarkdownRenderer content={page.content} />
                         {page.faqs && <FAQ faqs={page.faqs} />}
                     </section>
+                </div>
+                <h2 className="pt-10 text-center text-4xl font-bold text-black">
+                    {`${capitalize(np.name)} Safaris to inspire your journey.`}
+                </h2>
+
+                <div className="container mx-auto px-4 py-8">
+                    <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+                        {tours.slice(0, 6).map((tour) => (
+                            <TourCard key={tour.id} tour={tour} />
+                        ))}
+                    </div>
                 </div>
             </div>
         </main>

@@ -437,6 +437,18 @@ export const getTravelAdvice = async (destination: string) => {
     })
 }
 
+export type TourCard = {
+    id: string
+    tourName: string
+    overview: string
+    slug: string
+    country: string
+    tags: string[]
+    pricing: string
+    img_url: string
+    number_of_days: number
+}
+
 export async function getNPInfo(
     name: string,
     pageColumn: keyof typeof nationalParks,
@@ -462,12 +474,33 @@ export async function getNPInfo(
     const rows = await db
         .select({
             park: {
+                id: nationalParks.id,
                 name: nationalParks.name,
                 country: nationalParks.country,
                 wildlife_highlights: nationalParks.wildlife_highlights,
                 park_overview: nationalParks.park_overview,
             },
             page: pageAlias,
+            tours: sql<TourCard[]>`
+                (SELECT json_agg(jsonb_build_object(
+                    'id', t.id,
+                    'tourName', t.tour_name,
+                    'slug', t.slug,
+                    'country', t.country,
+                    'overview', t.overview,
+                    'tags', t.tags,
+                    'pricing', t.pricing,
+                    'img_url', t.img_url,
+                    'number_of_days', t.number_of_days
+                                 ))
+                 FROM (SELECT DISTINCT
+                       ON (t.id) t.*
+                       FROM tours t
+                           JOIN itinerary_days d
+                       ON d.tour_id = t.id
+                       WHERE d.national_park_id = national_parks.id
+                           LIMIT 6) t)
+            `.as('tours'),
         })
         .from(nationalParks)
         .leftJoin(pageAlias, eq(pageAlias.id, nationalParks[pageColumn]))

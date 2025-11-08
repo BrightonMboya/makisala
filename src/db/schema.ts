@@ -194,6 +194,9 @@ export const itineraryDays = pgTable('itinerary_days', {
     dayNumber: integer('day_number').notNull(), // day.day_number
     dayTitle: text('itinerary_day_title'), // day.itinerary_day_title
     overview: text('overview'), // day.overview
+    national_park_id: uuid('national_park_id').references(
+        () => nationalParks.id,
+    ),
 })
 
 export const itineraryDaysRelations = relations(
@@ -285,12 +288,12 @@ export const destinations = pgTable('destinations', {
     where_to_go: text(),
 })
 
-interface WildlifeHighlights {
+export interface WildlifeHighlights {
     name: string
     abundance: 'Abundant' | 'common' | 'occasional' | 'rare'
 }
 
-interface JsonOverview {
+export interface JsonOverview {
     name: string
     description: string
 }
@@ -348,11 +351,10 @@ export const wildlifeParkOverrides = pgTable('wildlife_park_overrides', {
 })
 
 export type Tours = typeof tours.$inferSelect
-export type Pages = typeof pages.$inferSelect
 export type NewTourPackage = typeof tourPackages.$inferInsert
 export type Itinerary = typeof itineraries.$inferSelect
 export type NewItinerary = typeof itineraries.$inferInsert
 export type NewInquiries = typeof inquiries.$inferInsert
-export type Inquiries = typeof inquiries.$inferSelect
 export type IWildlife = typeof wildlife.$inferSelect
 export type IWildlifeParkOverrides = typeof wildlifeParkOverrides.$inferSelect
+export type IPage = typeof pages.$inferSelect
