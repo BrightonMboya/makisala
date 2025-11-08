@@ -9,6 +9,7 @@ import type { Metadata } from 'next'
 import Script from 'next/script'
 import { BreadcrumbSchema, FAQSchema } from '@/components/schema'
 import { BASE_URL } from '@/lib/constants'
+import TourCard from '@/app/safaris/[country]/[modifier]/_components/TourCard'
 
 interface IParams {
     params: {
@@ -21,6 +22,10 @@ export default async function Page({ params }: IParams) {
     const { animal, destination } = await params
     const data = await getWildlifeByNameAndPark(animal, destination)
     const images = await getImagesInFolder(`wildlife/${animal}`)
+
+    if (!data) {
+        return notFound()
+    }
 
     if (!data) {
         return notFound()
@@ -113,6 +118,20 @@ export default async function Page({ params }: IParams) {
                                     {fact.label}
                                 </div>
                             </div>
+                        ))}
+                    </div>
+                </div>
+            </section>
+
+            <section>
+                <h2 className="pt-10 text-center text-4xl font-bold text-black">
+                    {`Safaris where you can see ${capitalize(animal)} in ${capitalize(destination)}`}
+                </h2>
+
+                <div className="container mx-auto px-4 py-8">
+                    <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+                        {data.tours?.slice(0, 6).map((tour) => (
+                            <TourCard key={tour.id} tour={tour} />
                         ))}
                     </div>
                 </div>

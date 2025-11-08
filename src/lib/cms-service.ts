@@ -28,6 +28,7 @@ import {
 } from 'drizzle-orm'
 import cuid from 'cuid'
 import { modifiers } from '@/lib/p_seo_info'
+import { FAQItem } from '@/components/faq'
 
 // Types
 export type Page = InferSelectModel<typeof pages>
@@ -523,7 +524,7 @@ type WildlifeByNameAndPark = IWildlife & IWildlifeParkOverrides
 export async function getWildlifeByNameAndPark(
     animalName: string,
     parkName: string,
-): Promise<WildlifeByNameAndPark | null> {
+) {
     const parkId = await db.query.nationalParks.findFirst({
         where: eq(nationalParks.name, parkName),
         columns: {
@@ -556,8 +557,27 @@ export async function getWildlifeByNameAndPark(
                 string | null
             >`${wildlifeParkOverrides.meta_description}
             ::text`,
-            faqs: sql`${wildlifeParkOverrides.faqs}
+            faqs: sql<FAQItem[]>`${wildlifeParkOverrides.faqs}
             ::json`,
+            tours: sql<TourCard[] | null>`
+                (SELECT json_agg(jsonb_build_object(
+                    'id', t.id,
+                    'tourName', t.tour_name,
+                    'slug', t.slug,
+                    'country', t.country,
+                    'tags', t.tags,
+                    'pricing', t.pricing,
+                    'img_url', t.img_url,
+                    'number_of_days', t.number_of_days
+                                 ))
+                 FROM (SELECT DISTINCT
+                       ON (t.id) t.*
+                       FROM tours t
+                           JOIN itinerary_days d
+                       ON d.tour_id = t.id
+                       WHERE d.national_park_id = ${parkId.id}
+                           LIMIT 6) t)
+            `.as('tours'),
         })
         .from(wildlife)
         .leftJoin(

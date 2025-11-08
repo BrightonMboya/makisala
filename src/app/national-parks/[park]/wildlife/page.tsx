@@ -10,6 +10,7 @@ import type { Metadata } from 'next'
 import { NavigationSidebar } from '@/app/national-parks/_components/navigation'
 import { FAQ } from '@/components/faq'
 import TourCard from '@/app/safaris/[country]/[modifier]/_components/TourCard'
+import { type WildlifeHighlights } from '@/db'
 
 export async function generateMetadata({ params }: IParams): Promise<Metadata> {
     const { park } = await params
@@ -165,19 +166,16 @@ export default async function page({ params }: IParams) {
                                             alt={icon.name}
                                             className="h-16 w-16 lg:h-20 lg:w-20"
                                         />
-                                        {/* @ts-ignore*/}
                                         <p className="text-sm font-medium">
-                                            {
-                                                np.wildlife_highlights[0][
-                                                    `${icon.name}`
-                                                ]
-                                            }
+                                            {np.wildlife_highlights?.[0]?.[
+                                                icon.name as keyof WildlifeHighlights
+                                            ] ?? 'N/A'}
                                         </p>
                                     </div>
                                 )
                             })}
                         </div>
-                        <MarkdownRenderer content={page.content} />
+                        {/*<MarkdownRenderer content={page.content} />*/}
                         {page.faqs && <FAQ faqs={page.faqs} />}
                     </section>
                 </div>
