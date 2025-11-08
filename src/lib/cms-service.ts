@@ -41,11 +41,10 @@ export type NewPage = Omit<
 
 /* ------------------------------------------------------------------ */
 export async function createPage(data: NewPage): Promise<Page> {
-    console.log('this should work now??')
     const [inserted] = await db
         .insert(pages)
         .values({
-            id: cuid(), // ✅ generate here
+            id: cuid(),
             updatedAt: new Date().toISOString(),
             ...data,
         })

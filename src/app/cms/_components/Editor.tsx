@@ -20,7 +20,7 @@ import {
     Trash2,
 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
-import { type PageData } from '../page'
+import { type HandleInputChange, type PageData } from '../page'
 import { Suspense } from 'react'
 import { Button } from '@/components/ui/button'
 import { FAQ, FAQItem } from '@/components/faq'
@@ -28,7 +28,7 @@ import { FAQ, FAQItem } from '@/components/faq'
 interface EditorProps {
     wordCount: number
     pageData: PageData
-    handleInputChange: any
+    handleInputChange: HandleInputChange
     faqs: FAQItem[] | null
     onFaqsChange: (faqs: FAQItem[]) => void
 }
@@ -41,11 +41,11 @@ export default function Editor({
     onFaqsChange,
 }: EditorProps) {
     const handleAddFaq = () => {
-        onFaqsChange([...faqs, { question: '', answer: '' }])
+        onFaqsChange([...(faqs || []), { question: '', answer: '' }])
     }
 
     const handleRemoveFaq = (index: number) => {
-        onFaqsChange(faqs.filter((_, i) => i !== index))
+        onFaqsChange((faqs || []).filter((_, i) => i !== index))
     }
 
     const handleFaqChange = (
@@ -53,7 +53,7 @@ export default function Editor({
         field: 'question' | 'answer',
         value: string,
     ) => {
-        const updatedFaqs = [...faqs]
+        const updatedFaqs = [...(faqs || [])]
         updatedFaqs[index][field] = value
         onFaqsChange(updatedFaqs)
     }

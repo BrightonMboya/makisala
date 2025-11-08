@@ -11,33 +11,19 @@ import SEOTab from './_components/seo'
 import Preview from './_components/LivePreview'
 import { FAQItem } from '@/components/faq'
 import Manage from '@/app/cms/_components/Manage'
-
-export interface PageData {
-    id?: string
-    title: string
-    slug: string
-    content: string
-    excerpt: string | null
-    faqs?: FAQItem[] | null
-    featured_image_url: string | null
-    meta_title: string | null
-    meta_description: string | null
-    meta_keywords: string | null
-    status: 'draft' | 'published'
-    page_type: 'page' | 'blog'
-    created_at?: string
-    updated_at?: string
-}
+import { type Pages as PageData } from '@/db/schema'
 
 export type HandleInputChange = (field: keyof PageData, value: string) => void
 export type HandleLoadPage = (page: PageData) => void
+
+// TODO: Gentle reminder to refactor this to use Forms
 
 export default function CMSPage() {
     const { toast } = useToast()
     const [activeTab, setActiveTab] = useState('editor')
     const [isLoading, setIsLoading] = useState(false)
 
-    const [pageData, setPageData] = useState<PageData>({
+    const [pageData, setPageData] = useState<Partial<PageData>>({
         title: '',
         slug: '',
         content: '',
@@ -69,7 +55,7 @@ export default function CMSPage() {
                 savedPage = await updatePage(pageData.id, pageData)
             } else {
                 // Create new page
-                savedPage = await createPage(pageData)
+                savedPage = await createPage(pageData as PageData)
             }
 
             // Update local state
@@ -115,8 +101,8 @@ export default function CMSPage() {
     }
 
     const wordCount = pageData.content
-        .split(/\s+/)
-        .filter((word) => word.length > 0).length
+        ? pageData.content.split(/\s+/).filter((word) => word.length > 0).length
+        : 0
 
     return (
         <div className="mt-10 min-h-screen bg-gray-50 p-4">

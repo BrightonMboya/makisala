@@ -101,9 +101,9 @@ function PageCard({
                 <div className="mb-3 flex items-start justify-between gap-2">
                     <div className="flex items-center gap-2">
                         <FileText className="text-primary h-5 w-5" />
-                        {/*<Badge variant="secondary" className="text-xs">*/}
-                        {/*    {page.category}*/}
-                        {/*</Badge>*/}
+                        <Badge variant="secondary" className="text-xs">
+                            {page.page_type}
+                        </Badge>
                     </div>
                     <Badge
                         className={statusColor[page.status!]}
