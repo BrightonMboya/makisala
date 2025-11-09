@@ -11,7 +11,7 @@ import SEOTab from './_components/seo'
 import Preview from './_components/LivePreview'
 import { FAQItem } from '@/components/faq'
 import Manage from '@/app/cms/_components/Manage'
-import { type Pages as PageData } from '@/db/schema'
+import { type IPage as PageData } from '@/db/schema'
 
 export type HandleInputChange = (field: keyof PageData, value: string) => void
 export type HandleLoadPage = (page: PageData) => void
@@ -61,16 +61,14 @@ export default function CMSPage() {
             // Update local state
             setPageData(savedPage)
 
-            toast({
-                title: 'Success!',
+            toast('Success!', {
                 description: `${
                     pageData.page_type === 'blog' ? 'Blog post' : 'Page'
                 } saved successfully.`,
             })
         } catch (error) {
             console.error('Save error:', error)
-            toast({
-                title: 'Error',
+            toast('Error', {
                 description: 'Failed to save. Please try again.',
                 variant: 'destructive',
             })
