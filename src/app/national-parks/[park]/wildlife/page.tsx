@@ -175,21 +175,25 @@ export default async function page({ params }: IParams) {
                                 )
                             })}
                         </div>
-                        {/*<MarkdownRenderer content={page.content} />*/}
+                        <MarkdownRenderer content={page.content} />
                         {page.faqs && <FAQ faqs={page.faqs} />}
                     </section>
                 </div>
-                <h2 className="pt-10 text-center text-4xl font-bold text-black">
-                    {`${capitalize(np.name)} Safaris to inspire your journey.`}
-                </h2>
+                {tours.length > 0 && (
+                    <section>
+                        <h2 className="pt-10 text-center text-4xl font-bold text-black">
+                            {`${capitalize(np.name)} Safaris to inspire your journey.`}
+                        </h2>
 
-                <div className="container mx-auto px-4 py-8">
-                    <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-                        {tours.slice(0, 6).map((tour) => (
-                            <TourCard key={tour.id} tour={tour} />
-                        ))}
-                    </div>
-                </div>
+                        <div className="container mx-auto px-4 py-8">
+                            <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+                                {tours.slice(0, 6).map((tour) => (
+                                    <TourCard key={tour.id} tour={tour} />
+                                ))}
+                            </div>
+                        </div>
+                    </section>
+                )}
             </div>
         </main>
     )
