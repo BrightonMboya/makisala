@@ -301,7 +301,9 @@ export interface JsonOverview {
 export const nationalParks = pgTable('national_parks', {
     id: uuid('id').defaultRandom().primaryKey(),
     name: text().notNull(),
+    // TODO: this country field should be removed
     country: text().notNull(),
+    destination_id: uuid().references(() => destinations.id),
     overview_page_id: text().references(() => pages.id),
     wildlife_page_id: text().references(() => pages.id),
     best_time_to_visit_id: text().references(() => pages.id),
@@ -318,6 +320,17 @@ export const nationalParks = pgTable('national_parks', {
         .notNull(),
     updatedAt: timestamp({ precision: 3, mode: 'string' }).notNull(),
 })
+
+export const nationalParksRelations = relations(nationalParks, ({ one }) => ({
+    destination: one(destinations, {
+        fields: [nationalParks.destination_id],
+        references: [destinations.id],
+    }),
+}))
+
+export const destinationsRelations = relations(destinations, ({ many }) => ({
+    nationalParks: many(nationalParks),
+}))
 
 export const wildlife = pgTable('wildlife', {
     id: uuid('id').defaultRandom().primaryKey(),
