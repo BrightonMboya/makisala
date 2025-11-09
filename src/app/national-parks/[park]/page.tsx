@@ -9,7 +9,6 @@ import { capitalize } from '@/lib/utils'
 import type { Metadata } from 'next'
 import { NavigationSidebar } from '@/app/national-parks/_components/navigation'
 import TourCard from '@/app/safaris/[country]/[modifier]/_components/TourCard'
-import ParkSelector from '@/app/national-parks/_components/parkSelector'
 
 export async function generateMetadata({ params }: IParams): Promise<Metadata> {
     const { park } = await params
@@ -84,7 +83,6 @@ export default async function page({ params }: IParams) {
                     </div>
                 </div>
             </div>
-            <ParkSelector />
             <div className="mx-auto mt-[20px] max-w-7xl px-4 sm:px-6 lg:px-8">
                 <div className="flex flex-col gap-8 lg:flex-row">
                     <NavigationSidebar park_name={park} />
