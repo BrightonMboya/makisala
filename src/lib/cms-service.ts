@@ -78,14 +78,20 @@ export async function updatePage(
 /*  GET ALL                                                           */
 
 /* ------------------------------------------------------------------ */
-export async function getPages(page_type: 'blog' | 'page'): Promise<Page[]> {
-    return await db.select().from(pages).where(eq(pages.page_type, page_type))
+export async function fetchAllBlogs(
+    page_type: 'blog' | 'page',
+): Promise<Page[]> {
+    return await db
+        .select()
+        .from(pages)
+        .where(eq(pages.page_type, page_type))
+        .orderBy(desc(pages.createdAt))
 }
 
 export async function searchPagesByTitle({ query }: { query: string }) {
     const q = (query || '').trim()
     if (!q) {
-        return db.select().from(pages)
+        return db.select().from(pages).orderBy(desc(pages.createdAt))
     }
 
     // pattern for partial match
@@ -486,15 +492,15 @@ export async function getNPInfo(
             page: pageAlias,
             tours: sql<TourCard[]>`
                 (SELECT json_agg(jsonb_build_object(
-                    'id', t.id,
-                    'tourName', t.tour_name,
-                    'slug', t.slug,
-                    'country', t.country,
-                    'overview', t.overview,
-                    'tags', t.tags,
-                    'pricing', t.pricing,
-                    'img_url', t.img_url,
-                    'number_of_days', t.number_of_days
+                        'id', t.id,
+                        'tourName', t.tour_name,
+                        'slug', t.slug,
+                        'country', t.country,
+                        'overview', t.overview,
+                        'tags', t.tags,
+                        'pricing', t.pricing,
+                        'img_url', t.img_url,
+                        'number_of_days', t.number_of_days
                                  ))
                  FROM (SELECT DISTINCT
                        ON (t.id) t.*
@@ -563,14 +569,14 @@ export async function getWildlifeByNameAndPark(
             ::json`,
             tours: sql<TourCard[] | null>`
                 (SELECT json_agg(jsonb_build_object(
-                    'id', t.id,
-                    'tourName', t.tour_name,
-                    'slug', t.slug,
-                    'country', t.country,
-                    'tags', t.tags,
-                    'pricing', t.pricing,
-                    'img_url', t.img_url,
-                    'number_of_days', t.number_of_days
+                        'id', t.id,
+                        'tourName', t.tour_name,
+                        'slug', t.slug,
+                        'country', t.country,
+                        'tags', t.tags,
+                        'pricing', t.pricing,
+                        'img_url', t.img_url,
+                        'number_of_days', t.number_of_days
                                  ))
                  FROM (SELECT DISTINCT
                        ON (t.id) t.*

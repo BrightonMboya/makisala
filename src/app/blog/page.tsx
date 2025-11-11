@@ -1,5 +1,5 @@
 'use client'
-import { getPages } from '@/lib/cms-service'
+import { fetchAllBlogs } from '@/lib/cms-service'
 import { useQuery } from '@tanstack/react-query'
 import ImageCard from '@/components/home/image-card'
 import Link from 'next/link'
@@ -9,7 +9,7 @@ import Script from 'next/script'
 export default function Page() {
     const { data: blogs, isLoading } = useQuery({
         queryKey: ['pages'],
-        queryFn: () => getPages('blog'),
+        queryFn: () => fetchAllBlogs('blog'),
     })
 
     return (

@@ -2,6 +2,7 @@ import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import React, { Suspense } from 'react'
 import { MDXRemote } from 'next-mdx-remote-client/rsc'
+import C2A from '@/components/home/call-to-action'
 
 interface MarkdownRendererProps {
     content: string
@@ -11,13 +12,16 @@ interface MarkdownRendererProps {
 export const markdownComponents = {
     img({ src, alt, ...props }) {
         return (
-            <img
-                src={src || '/placeholder.svg'}
-                alt={alt}
-                className="h-auto w-full rounded-lg shadow-lg"
-                loading="lazy"
-                {...props}
-            />
+            <div className="my-5">
+                <img
+                    src={src || '/placeholder.svg'}
+                    alt={alt}
+                    className="h-full w-full rounded-lg object-cover shadow-lg"
+                    loading="lazy"
+                    {...props}
+                />
+                <p className="text-center text-sm italic">{alt}</p>
+            </div>
         )
     },
     h3({ children, ...props }) {
@@ -73,6 +77,13 @@ export const markdownComponents = {
             >
                 {children}
             </blockquote>
+        )
+    },
+    C2A() {
+        return (
+            <div className="my-5">
+                <C2A />
+            </div>
         )
     },
 }

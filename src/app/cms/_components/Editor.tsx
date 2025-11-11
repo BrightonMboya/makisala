@@ -20,7 +20,8 @@ import {
     Trash2,
 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
-import { type HandleInputChange, type PageData } from '../page'
+import { type HandleInputChange } from '../page'
+import { IPage as PageData } from '@/db'
 import { Suspense } from 'react'
 import { Button } from '@/components/ui/button'
 import { FAQ, FAQItem } from '@/components/faq'
@@ -74,7 +75,7 @@ export default function Editor({
                             <div>
                                 <Label htmlFor="page-type">Content Type</Label>
                                 <Select
-                                    value={pageData.page_type}
+                                    value={pageData.page_type!}
                                     onValueChange={(value: 'page' | 'blog') =>
                                         handleInputChange('page_type', value)
                                     }
@@ -95,7 +96,7 @@ export default function Editor({
                             <div>
                                 <Label htmlFor="status">Status</Label>
                                 <Select
-                                    value={pageData.status}
+                                    value={pageData.status!}
                                     onValueChange={(
                                         value: 'draft' | 'published',
                                     ) => handleInputChange('status', value)}
