@@ -89,3 +89,20 @@
         @apply opacity-60 md:opacity-100;
     }
 }
+
+/* fancy gradient used in the blog page */
+.gradient::before {
+    --line: hsl(0 0% 90%);
+    content: "";
+    position: fixed;
+    height: 100%;
+    width: 100%;
+    background: linear-gradient(90deg, var(--line) 1px, transparent 1px 10vmin) 0 -5vmin /
+      10vmin 10vmin,
+    linear-gradient(var(--line) 1px, transparent 1px 10vmin) 0 -5vmin / 10vmin 10vmin;
+    mask: linear-gradient(-25deg, transparent 30%, white);
+    top: 0;
+    box-sizing: border-box;
+    z-index: -1;
+    /* background-color: black; */
+}
