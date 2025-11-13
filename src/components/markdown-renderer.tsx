@@ -30,7 +30,7 @@ export const markdownComponents = {
         return (
             <h3
                 id={typeof children === 'string' ? slugify(children) : ''}
-                className="mt-6 mb-4 scroll-mt-20 text-2xl font-semibold"
+                className="scroll-mt-20 text-2xl font-semibold"
                 {...props}
             >
                 {children}
@@ -51,7 +51,7 @@ export const markdownComponents = {
         return (
             <h2
                 id={typeof children === 'string' ? slugify(children) : ''}
-                className="mt-8 mb-6 scroll-mt-20 text-3xl font-bold"
+                className="scroll-mt-20 text-3xl font-bold"
                 {...props}
             >
                 {children}
