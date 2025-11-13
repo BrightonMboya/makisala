@@ -100,7 +100,7 @@ export default async function page({ params }: IParams) {
                 </div>
             </div>
 
-            {tours.length > 0 && (
+            {tours && (
                 <section>
                     <h2 className="pt-10 text-center text-4xl font-bold text-black">
                         {`${capitalize(np.name)} Safaris to inspire your journey.`}
