@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 
-import { getPageBySlug, getPageSlugs } from '@/lib/cms-service'
+import { getPageBySlug } from '@/lib/cms-service'
 import {
     generateTableOfContentsFromMarkdown,
     RemoteMdx,
@@ -38,13 +38,13 @@ export async function generateMetadata({
     }
 }
 
-// generating static params
-export async function generateStaticParams() {
-    const pages = await getPageSlugs('blog')
-    return pages.map((page) => ({
-        slug: page.slug,
-    }))
-}
+// // generating static params this makes the content not live, has to wait for another build
+// export async function generateStaticParams() {
+//     const pages = await getPageSlugs('blog')
+//     return pages.map((page) => ({
+//         slug: page.slug,
+//     }))
+// }
 
 // Page renderer
 export default async function Page({
@@ -119,9 +119,9 @@ export default async function Page({
                         <TableOfContents tableOfContents={toc} />
 
                         <div className="mt-4 flex flex-col">
-                            <p className="text-md pt-10 text-black">
-                                Suggested
-                            </p>
+                            {/*<p className="text-md pt-10 text-black">*/}
+                            {/*    Suggested*/}
+                            {/*</p>*/}
                             <div>
                                 {/*<SuggestedBlogs currentPostSlug={post.url} />*/}
                             </div>
