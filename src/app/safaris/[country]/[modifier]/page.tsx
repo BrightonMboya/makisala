@@ -18,7 +18,7 @@ interface Params {
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
     const { country, modifier } = await params
     return {
-        title: `${modifier.replace('-', ' ')} ${capitalize(country)} safaris | Makisala Safaris`,
+        title: `${capitalize(modifier.replace('-', ' '))} ${capitalize(country)} safaris | Makisala Safaris`,
         description: `Discover the best ${modifier.replace('-', ' ')} safari tours in ${country}. Tailored itineraries, expert guides, and unforgettable adventures.`,
     }
 }

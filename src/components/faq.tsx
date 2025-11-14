@@ -8,6 +8,7 @@ export interface FAQProps {
 }
 
 export function FAQ({ faqs }: FAQProps) {
+    if (faqs.length === 0) return <p></p>
     return (
         <section className="mx-auto w-full max-w-4xl px-4 py-12">
             <div className="mb-12 text-center">
