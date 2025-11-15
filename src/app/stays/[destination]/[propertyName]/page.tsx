@@ -2,6 +2,10 @@ import { duffel } from '@/lib/duffel'
 import PropertyDetails from '@/app/stays/[destination]/[propertyName]/_components/PropertyDetails'
 import { notFound } from 'next/navigation'
 import { Metadata } from 'next'
+import { AccomodationSchema, BreadcrumbSchema } from '@/components/schema'
+import Script from 'next/script'
+import { BASE_URL } from '@/lib/constants'
+import { slugify } from '@/lib/utils'
 
 interface IParams {
     params: {
@@ -32,7 +36,7 @@ export async function generateMetadata({ params }: IParams): Promise<Metadata> {
 }
 
 export default async function Page({ params }: IParams) {
-    const { propertyName } = await params
+    const { destination, propertyName } = await params
 
     const id = propertyName.split('-').pop()
 
@@ -44,6 +48,37 @@ export default async function Page({ params }: IParams) {
 
     return (
         <main>
+            <Script
+                type="application/ld+json"
+                strategy="lazyOnload"
+                id="schema-script"
+            >
+                {JSON.stringify([
+                    BreadcrumbSchema({
+                        breadcrumbs: [
+                            { name: 'Home', url: BASE_URL },
+                            {
+                                name: `Best Stays in ${destination}`,
+                                url: `${BASE_URL}/stays/${destination}`,
+                            },
+                            {
+                                name: data.name,
+                                url: `${BASE_URL}/stays/${destination}/${slugify(data.name)}-${data.id}`,
+                            },
+                        ],
+                    }),
+                    AccomodationSchema({
+                        name: data.name,
+                        description: data.description || '',
+                        telephone: data.phone_number || '',
+                        url: `${BASE_URL}/stays/${destination}/${slugify(data.name)}-${data.id}`,
+                        location: data.location,
+                        ratings: data.ratings,
+                        review_count: data.review_count || 100,
+                        amenities: data.amenities,
+                    }),
+                ])}
+            </Script>
             <PropertyDetails propertyData={data} reviews={reviews.reviews} />
         </main>
     )

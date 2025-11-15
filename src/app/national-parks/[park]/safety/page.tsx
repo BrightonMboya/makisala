@@ -4,7 +4,11 @@ import { MarkdownRenderer } from '@/components/markdown-renderer'
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import Script from 'next/script'
-import { BreadcrumbSchema } from '@/components/schema'
+import {
+    BreadcrumbSchema,
+    TouristAttractionSchema,
+    TouristDestinationSchema,
+} from '@/components/schema'
 import { BASE_URL } from '@/lib/constants'
 import { capitalize } from '@/lib/utils'
 import { NavigationSidebar } from '@/app/national-parks/_components/navigation'
@@ -64,10 +68,21 @@ export default async function page({ params }: IParams) {
                                 url: `${BASE_URL}/safaris/${np.name}/`,
                             },
                             {
-                                name: `Best time to visit ${capitalize(np.name)} National Park`,
+                                name: `${capitalize(np.name)} National Park Safety`,
                                 url: `${BASE_URL}/national-parks/${np.name}/safety`,
                             },
                         ],
+                    }),
+                    TouristDestinationSchema({
+                        name: capitalize(np.name),
+                        description: page.meta_description || '',
+                        url: `${BASE_URL}/national-parks/${np.name}/`,
+                        image: page.featured_image_url!,
+                        country: capitalize(np.country),
+                    }),
+                    TouristAttractionSchema({
+                        name: capitalize(np.name),
+                        url: `${BASE_URL}/national-parks/${np.name}/`,
                     }),
                 ])}
             </Script>

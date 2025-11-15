@@ -1,6 +1,11 @@
 import { FAQItem } from '@/components/faq'
 import { BASE_URL } from '@/lib/constants'
 import { addYears } from 'date-fns'
+import {
+    StaysAmenity,
+    StaysLocation,
+    StaysRating,
+} from '@duffel/api/Stays/StaysTypes'
 
 export const OrganizationSchema = () => {
     return {
@@ -250,5 +255,94 @@ export const ProductSchema = ({
             availability: 'https://schema.org/InStock',
             url: `${BASE_URL}/tours/${tour_slug}`,
         },
+    }
+}
+
+export const TouristAttractionSchema = ({
+    name,
+    // description,
+    // image,
+    url,
+}: {
+    name: string
+    // description: string
+    // image: string
+    url: string
+}) => {
+    return {
+        '@context': 'https://schema.org',
+        '@type': 'TouristAttraction',
+        name: name,
+        url: url,
+        // geo: {
+        //     '@type': 'GeoCoordinates',
+        //     latitude: '48.8584',
+        //     longitude: '2.2945',
+        // },
+        openingHoursSpecification: {
+            '@type': 'OpeningHoursSpecification',
+            dayOfWeek: [
+                'Monday',
+                'Tuesday',
+                'Wednesday',
+                'Thursday',
+                'Friday',
+                'Saturday',
+                'Sunday',
+            ],
+            opens: '09:00',
+            closes: '00:45',
+        },
+        isAccessibleForFree: false,
+        touristType: ['Couples', 'Families', 'Solo Travelers'],
+    }
+}
+
+export const AccomodationSchema = ({
+    name,
+    url,
+    location,
+    description,
+    telephone,
+    ratings,
+    review_count,
+    amenities,
+}: {
+    name: string
+    url: string
+    description: string
+    telephone: string
+    location: StaysLocation
+    ratings: StaysRating[] | null
+    review_count: number
+    amenities: StaysAmenity[] | null
+}) => {
+    return {
+        '@context': 'https://schema.org',
+        '@type': 'Hotel',
+        name: name,
+        description: description,
+        url: url,
+        telephone: telephone,
+        // priceRange: '€€€',
+        address: {
+            '@type': 'PostalAddress',
+            streetAddress: location.address.line_one,
+            addressLocality: location.address.city_name,
+            postalCode: location.address.postal_code,
+            addressCountry: location.address.country_code,
+        },
+        aggregateRating: {
+            '@type': 'AggregateRating',
+            ratingValue: !ratings || ratings[0].value || 4.5,
+            reviewCount: review_count,
+        },
+        amenityFeature: amenities?.map((amenity) => {
+            return {
+                '@type': 'LocationFeatureSpecification',
+                name: amenity.type,
+                value: true,
+            }
+        }),
     }
 }

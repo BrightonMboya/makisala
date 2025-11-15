@@ -12,6 +12,6 @@ export default async function generateSitemaps(): Promise<MetadataRoute.Sitemap>
 
     return blogs_slugs.map((pages) => ({
         url: `${BASE_URL}/blog/${pages.slug}`,
-        lastModified: new Date(pages.updatedAt).toISOString(),
+        // lastModified: new Date(pages.updatedAt).toISOString(),
     }))
 }

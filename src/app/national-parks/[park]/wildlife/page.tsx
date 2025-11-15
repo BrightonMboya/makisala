@@ -3,7 +3,12 @@ import { getNPInfo } from '@/lib/cms-service'
 import { MarkdownRenderer } from '@/components/markdown-renderer'
 import { notFound } from 'next/navigation'
 import Script from 'next/script'
-import { BreadcrumbSchema, FAQSchema } from '@/components/schema'
+import {
+    BreadcrumbSchema,
+    FAQSchema,
+    TouristAttractionSchema,
+    TouristDestinationSchema,
+} from '@/components/schema'
 import { BASE_URL } from '@/lib/constants'
 import { capitalize } from '@/lib/utils'
 import type { Metadata } from 'next'
@@ -107,7 +112,11 @@ export default async function page({ params }: IParams) {
 
     return (
         <main>
-            <Script type={'application/ld+json'} strategy={'lazyOnload'}>
+            <Script
+                type={'application/ld+json'}
+                strategy={'lazyOnload'}
+                id="schema-script"
+            >
                 {JSON.stringify([
                     BreadcrumbSchema({
                         breadcrumbs: [
@@ -125,6 +134,17 @@ export default async function page({ params }: IParams) {
                                 url: `${BASE_URL}/national-parks/${np.name}/wildlife`,
                             },
                         ],
+                    }),
+                    TouristDestinationSchema({
+                        name: capitalize(np.name),
+                        description: page.meta_description || '',
+                        url: `${BASE_URL}/national-parks/${np.name}/`,
+                        image: page.featured_image_url!,
+                        country: capitalize(np.country),
+                    }),
+                    TouristAttractionSchema({
+                        name: capitalize(np.name),
+                        url: `${BASE_URL}/national-parks/${np.name}/`,
                     }),
                     page.faqs && FAQSchema({ faqs: page.faqs }),
                 ])}

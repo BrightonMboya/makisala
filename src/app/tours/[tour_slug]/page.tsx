@@ -9,7 +9,11 @@ import {
 import { BASE_URL, exclusions, inclusions } from '@/lib/constants'
 import { type Metadata } from 'next'
 import Script from 'next/script'
-import { BreadcrumbSchema, ProductSchema } from '@/components/schema'
+import {
+    BreadcrumbSchema,
+    ProductSchema,
+    TouristTripSchema,
+} from '@/components/schema'
 import { capitalize } from '@/lib/utils'
 import ItineraryAccordion from '@/app/tours/[tour_slug]/_components/ItineraryAccordion'
 
@@ -73,6 +77,16 @@ export default async function Page({ params }: Params) {
                                 url: `${BASE_URL}/tours/${tour_slug}`,
                             },
                         ],
+                    }),
+                    TouristTripSchema({
+                        name: tour.tourName,
+                        description: tour.overview,
+                        url: `${BASE_URL}/tours/${tour_slug}`,
+                        pricingStartsFrom: tour.pricing,
+                        itineraryItems: tour.days.map((day) => ({
+                            name: day.dayTitle || '',
+                            description: day.overview || '',
+                        })),
                     }),
                     ProductSchema({
                         name: tour.tourName,
@@ -142,7 +156,7 @@ export default async function Page({ params }: Params) {
                         <DesktopNavigation />
                     </div>
                     <div>
-                        {tour.days.map((day, index) => (
+                        {tour.days.map((day) => (
                             <ItineraryAccordion
                                 key={day.id}
                                 dayNumber={day.dayNumber}

@@ -8,12 +8,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const parks = await fetchAllNps()
     const urls: MetadataRoute.Sitemap = []
 
-    const today = new Date('2025-09-14')
-
     parks.forEach((park) => {
         urls.push({
             url: `${BASE_URL}/national-parks/${park.name}`,
-            lastModified: today,
+            // lastModified: new Date(),
             changeFrequency: 'weekly',
             priority: 0.9,
         })
@@ -21,7 +19,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         subpages.forEach((page) => {
             urls.push({
                 url: `${BASE_URL}/national-parks/${park.name}/${page}`,
-                lastModified: today,
+                // lastModified: new Date().toISOString(),
                 changeFrequency: 'weekly',
                 priority: 0.8,
             })

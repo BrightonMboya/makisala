@@ -3,7 +3,11 @@ import { getNPInfo } from '@/lib/cms-service'
 import { MarkdownRenderer } from '@/components/markdown-renderer'
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
-import { BreadcrumbSchema } from '@/components/schema'
+import {
+    BreadcrumbSchema,
+    TouristAttractionSchema,
+    TouristDestinationSchema,
+} from '@/components/schema'
 import { BASE_URL } from '@/lib/constants'
 import { capitalize } from '@/lib/utils'
 import Script from 'next/script'
@@ -68,6 +72,17 @@ export default async function page({ params }: IParams) {
                                 url: `${BASE_URL}/national-parks/${np.name}/best-time-to-visit`,
                             },
                         ],
+                    }),
+                    TouristDestinationSchema({
+                        name: capitalize(np.name),
+                        description: page.meta_description || '',
+                        url: `${BASE_URL}/national-parks/${np.name}/`,
+                        image: page.featured_image_url!,
+                        country: capitalize(np.country),
+                    }),
+                    TouristAttractionSchema({
+                        name: capitalize(np.name),
+                        url: `${BASE_URL}/national-parks/${np.name}/`,
                     }),
                 ])}
             </Script>
