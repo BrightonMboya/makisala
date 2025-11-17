@@ -1,17 +1,27 @@
 User-Agent: *
 Allow: /
 Disallow: /cms/*
+Disallow: /login
+Disallow: /sign-in
 
 User-agent: ChatGPT-User
 Disallow: /cms/*
+Disallow: /login
+Disallow: /sign-in
 
 User-agent: GPTBot
 Disallow: /cms/*
+Disallow: /login
+Disallow: /sign-in
 
 User-agent: OAI-SearchBot
 Disallow: /cms/*
+Disallow: /login
+Disallow: /sign-in
 
 User-agent: OAI-Operator
 Disallow:  /cms/*
+Disallow: /login
+Disallow: /sign-in
 
 Sitemap: https://makisala.com/sitemap.xml
