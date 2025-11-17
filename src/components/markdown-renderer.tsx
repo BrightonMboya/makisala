@@ -39,12 +39,14 @@ export const markdownComponents = {
     },
     table({ children, ...props }) {
         return (
-            <table
-                className="w-full border-collapse border border-gray-300 text-sm transition-colors [&_td]:border [&_td]:border-gray-300 [&_td]:px-4 [&_td]:py-2 [&_th]:border [&_th]:border-gray-300 [&_th]:bg-gray-100 [&_th]:px-4 [&_th]:py-2 [&_th]:text-left [&_tr:hover]:bg-gray-100 [&_tr:nth-child(even)]:bg-gray-50"
-                {...props}
-            >
-                {children}
-            </table>
+            <div className="my-6 overflow-x-auto">
+                <table
+                    className="w-full border-collapse border border-gray-300 text-sm transition-colors [&_td]:border [&_td]:border-gray-300 [&_td]:px-4 [&_td]:py-2 [&_th]:border [&_th]:border-gray-300 [&_th]:bg-gray-100 [&_th]:px-4 [&_th]:py-2 [&_th]:text-left [&_tr:hover]:bg-gray-100 [&_tr:nth-child(even)]:bg-gray-50"
+                    {...props}
+                >
+                    {children}
+                </table>
+            </div>
         )
     },
     h2({ children, ...props }) {
@@ -260,7 +262,17 @@ export function MarkdownRenderer({
 }
 
 export function RemoteMdx({ content }: { content: string }) {
-    return <MDXRemote source={content} components={markdownComponents} />
+    return (
+        <MDXRemote
+            source={content}
+            components={markdownComponents}
+            options={{
+                mdxOptions: {
+                    remarkPlugins: [remarkGfm],
+                },
+            }}
+        />
+    )
 }
 
 export async function generateTableOfContentsFromMarkdown(markdown: string) {
