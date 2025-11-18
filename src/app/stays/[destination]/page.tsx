@@ -40,7 +40,7 @@ export default async function Page({ params }: IParams) {
     const { destination } = await params
     const coordinates =
         destinationCoordinates[
-            destination.toLowerCase() as keyof typeof destinationCoordinates
+            destination as keyof typeof destinationCoordinates
         ]
 
     if (!coordinates) {

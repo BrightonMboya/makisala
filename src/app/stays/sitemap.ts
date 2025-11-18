@@ -10,7 +10,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     for (const key of Object.keys(destinationCoordinates)) {
         urls.push({
             url: `${BASE_URL}/stays/${key}`,
-            lastModified: new Date('2025-09-10'),
             priority: 0.9,
             changeFrequency: 'weekly',
         })
@@ -34,7 +33,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
                 urls.push({
                     url: `${BASE_URL}/stays/${key}/${slug}-${stay.id}`,
-                    lastModified: new Date(),
                     priority: 0.8,
                     changeFrequency: 'weekly',
                 })

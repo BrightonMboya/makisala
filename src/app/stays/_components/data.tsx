@@ -63,14 +63,6 @@ export const destinationCoordinates = {
         country: 'Tanzania',
         region: 'East Africa',
     },
-    selous: {
-        name: 'Selous Game Reserve (Nyerere NP)',
-        latitude: -9.05,
-        longitude: 37.65,
-        country: 'Tanzania',
-        region: 'East Africa',
-    },
-
     nairobi: {
         name: 'Nairobi',
         latitude: -1.2864,
