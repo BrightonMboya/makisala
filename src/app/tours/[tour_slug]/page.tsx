@@ -1,11 +1,5 @@
 import { getProgramaticTourBySlug } from '@/lib/cms-service'
 import { notFound } from 'next/navigation'
-import { Badge } from '@/components/ui/badge'
-import { Calendar, Check, Cross, MapPin } from 'lucide-react'
-import {
-    DesktopNavigation,
-    MobileNavigation,
-} from '@/app/to_book/[slug]/_components/PageNavigation'
 import { BASE_URL, exclusions, inclusions } from '@/lib/constants'
 import { type Metadata } from 'next'
 import Script from 'next/script'
@@ -16,6 +10,10 @@ import {
 } from '@/components/schema'
 import { capitalize } from '@/lib/utils'
 import ItineraryAccordion from '@/app/tours/[tour_slug]/_components/ItineraryAccordion'
+import TourHero from './_components/TourHero'
+import TourOverview from './_components/TourOverview'
+import TourInclusions from './_components/TourInclusions'
+import BookTourCard from './_components/BookTourCard'
 
 interface Params {
     params: {
@@ -98,60 +96,87 @@ export default async function Page({ params }: Params) {
                     }),
                 ])}
             </Script>
-            <div className="from-background to-accent/20 min-h-screen bg-gradient-to-br">
-                {/* Hero Section */}
-                <div className="relative h-[60vh] overflow-hidden">
-                    <div
-                        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-                        style={{ backgroundImage: `url(${tour.img_url})` }}
-                    >
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
-                    </div>
+            <div className="min-h-screen bg-gray-50/50 pb-20">
+                <TourHero
+                    imageUrl={tour.img_url}
+                    title={tour.tourName}
+                    price={tour.pricing}
+                    days={tour.number_of_days}
+                    country={tour.country}
+                />
 
-                    <div className="relative flex h-full items-end">
-                        <div className="container mx-auto px-6 pb-12">
-                            <div className="max-w-4xl">
-                                <div className="mb-4 flex items-center gap-2">
-                                    <Badge className="border-white/30 bg-white/20 text-white capitalize">
-                                        {`From $${tour.pricing}`}
-                                    </Badge>
-                                    <Badge
-                                        variant="secondary"
-                                        className="border-white/30 bg-white/20 text-white"
-                                    >
-                                        <Calendar className="mr-1 h-3 w-3" />
-                                        {tour.number_of_days} Days
-                                    </Badge>
-                                    <Badge
-                                        variant="secondary"
-                                        className="border-white/30 bg-white/20 text-white capitalize"
-                                    >
-                                        <MapPin className="mr-1 h-3 w-3" />
-                                        {tour.country}
-                                    </Badge>
-                                </div>
-
-                                <h1 className="text-3xl leading-tight font-bold text-white md:text-6xl">
-                                    {tour.tourName}
-                                </h1>
-                            </div>
-                        </div>
-                    </div>
+                {/* Mobile Booking Card */}
+                <div className="container mx-auto -mt-8 px-4 lg:hidden relative z-10">
+                    <BookTourCard
+                        price={tour.pricing}
+                        tourName={tour.tourName}
+                    />
                 </div>
 
-                {/* Content Section */}
-                <div className="flex flex-col lg:flex-row">
-                    {/* Navigation - Horizontal on mobile, sidebar on desktop */}
-                    <div className="lg:sticky lg:top-0 lg:h-screen lg:w-72 lg:overflow-y-auto">
-                        {/* Mobile horizontal navigation */}
-                        <div className="bg-card/95 border-border border-b backdrop-blur-lg lg:hidden">
-                            <div className="container mx-auto px-6 py-4">
-                                <div className="grid grid-cols-2 gap-2 pb-4 md:hidden">
-                                    <MobileNavigation />
+                <div className="container mx-auto mt-12 px-4 md:px-6">
+                    <div className="grid gap-12 lg:grid-cols-[1fr_380px]">
+                        {/* Main Content */}
+                        <div className="space-y-16">
+                            <TourOverview
+                                overview={tour.overview}
+                                country={tour.country}
+                                days={tour.number_of_days}
+                            />
+
+                            <section>
+                                <h2 className="font-heading mb-8 text-3xl font-bold text-gray-900">
+                                    Itinerary
+                                </h2>
+                                <div className="space-y-4">
+                                    {tour.days.map((day) => (
+                                        <ItineraryAccordion
+                                            key={day.id}
+                                            dayNumber={day.dayNumber}
+                                            dayTitle={day.dayTitle!}
+                                            overview={day.overview!}
+                                            itineraryAccommodations={
+                                                day.itineraryAccommodations.map(
+                                                    (ia) => ({
+                                                        ...ia,
+                                                        accommodation: {
+                                                            ...ia.accommodation,
+                                                            url:
+                                                                ia.accommodation
+                                                                    .url || '',
+                                                            overview:
+                                                                ia.accommodation
+                                                                    .overview ||
+                                                                '',
+                                                        },
+                                                    })
+                                                )
+                                            }
+                                            mealPlan={
+                                                day.dayNumber === 1
+                                                    ? [
+                                                          'Breakfast',
+                                                          'Lunch',
+                                                          'Dinner',
+                                                      ]
+                                                    : undefined
+                                            }
+                                        />
+                                    ))}
                                 </div>
-                            </div>
+                            </section>
+
+                            <section>
+                                <h2 className="font-heading mb-8 text-3xl font-bold text-gray-900">
+                                    Included & Excluded
+                                </h2>
+                                <TourInclusions
+                                    inclusions={inclusions}
+                                    exclusions={exclusions}
+                                />
+                            </section>
                         </div>
 
+<<<<<<< HEAD
                         {/* Desktop sidebar navigation */}
                         <DesktopNavigation />
                     </div>
@@ -170,48 +195,20 @@ export default async function Page({ params }: Params) {
                                         ? ['Breakfast', 'Lunch', 'Dinner']
                                         : undefined
                                 }
+=======
+                        {/* Sidebar */}
+                        <div className="relative hidden lg:block">
+                            <BookTourCard
+                                price={tour.pricing}
+                                tourName={tour.tourName}
+>>>>>>> 002f484 (fixed the tour ui page)
                             />
-                        ))}
+                        </div>
 
-                        <section className="mx-auto mt-20 grid max-w-4xl grid-cols-1 gap-12 px-4 md:grid-cols-2">
-                            <div>
-                                <div className="mb-4 flex items-center gap-4">
-                                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-green-500">
-                                        <Check className="text-white" />
-                                    </div>
-                                    <h5 className="text-3xl">Cost Includes</h5>
-                                </div>
-                                <ul className="flex list-inside list-disc flex-col gap-3">
-                                    {inclusions.map((item: string) => (
-                                        <li
-                                            key={item}
-                                            className="ml-4 list-item"
-                                        >
-                                            {item}
-                                        </li>
-                                    ))}
-                                </ul>
-                            </div>
-
-                            <div>
-                                <div className="mb-4 flex items-center gap-4">
-                                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-red-600">
-                                        <Cross className="text-white" />
-                                    </div>
-                                    <h5 className="text-3xl">Cost Excludes</h5>
-                                </div>
-                                <ul className="flex list-inside list-disc flex-col gap-3">
-                                    {exclusions.map((item: string) => (
-                                        <li
-                                            key={item}
-                                            className="ml-4 list-item"
-                                        >
-                                            {item}
-                                        </li>
-                                    ))}
-                                </ul>
-                            </div>
-                        </section>
+                        {/* Mobile Sticky Bottom Bar (Optional, if needed) */}
+                        {/* <div className="fixed bottom-0 left-0 right-0 z-50 bg-white p-4 shadow-2xl lg:hidden">
+                            <Button size="lg" className="w-full">Book Now</Button>
+                        </div> */}
                     </div>
                 </div>
             </div>

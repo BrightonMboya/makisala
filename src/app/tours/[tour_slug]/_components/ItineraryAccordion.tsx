@@ -50,6 +50,12 @@ const amenityIconMap: Record<string, React.ReactNode> = {
     restaurant: <UtensilsCrossed className="mr-1 inline-block h-3 w-3" />,
 }
 
+import AccommodationImageCarousel from './AccommodationImageCarousel'
+
+// ... existing imports
+
+// ... existing interfaces
+
 const ItineraryAccordion: React.FunctionComponent<Props> = ({
     dayNumber,
     dayTitle,
@@ -60,6 +66,8 @@ const ItineraryAccordion: React.FunctionComponent<Props> = ({
 }) => {
     const [toggle, setToggle] = React.useState(true)
     const [hotelOpen, setHotelOpen] = React.useState(false)
+    const [carouselOpen, setCarouselOpen] = React.useState(false)
+    const [selectedImageIndex, setSelectedImageIndex] = React.useState(0)
 
     const accommodationData = itineraryAccommodations?.[0]?.accommodation
 
@@ -160,7 +168,14 @@ const ItineraryAccordion: React.FunctionComponent<Props> = ({
                                             .map((img, idx) => (
                                                 <div
                                                     key={idx}
-                                                    className="relative h-40 w-full md:h-48"
+                                                    className="relative h-40 w-full cursor-pointer overflow-hidden rounded-xl transition-opacity hover:opacity-90 md:h-48"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation()
+                                                        setSelectedImageIndex(
+                                                            idx
+                                                        )
+                                                        setCarouselOpen(true)
+                                                    }}
                                                 >
                                                     <Image
                                                         src={
@@ -173,7 +188,7 @@ const ItineraryAccordion: React.FunctionComponent<Props> = ({
                                                             `Gallery ${idx + 1}`
                                                         }
                                                         fill
-                                                        className="rounded-xl object-cover"
+                                                        className="object-cover transition-transform duration-300 hover:scale-105"
                                                         sizes="(max-width: 768px) 100vw, 600px"
                                                     />
                                                 </div>
@@ -230,6 +245,16 @@ const ItineraryAccordion: React.FunctionComponent<Props> = ({
                         </div>
                     </div>
                 </div>
+            )}
+
+            {accommodationData?.images && accommodationData.images.length > 0 && (
+                <AccommodationImageCarousel
+                    images={accommodationData.images}
+                    initialIndex={selectedImageIndex}
+                    open={carouselOpen}
+                    onOpenChange={setCarouselOpen}
+                    accommodationName={accommodationData.name}
+                />
             )}
         </div>
     )
