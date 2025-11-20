@@ -1,0 +1,2 @@
+ALTER TABLE "national_parks" ADD COLUMN "destination_id" uuid;--> statement-breakpoint
+ALTER TABLE "national_parks" ADD CONSTRAINT "national_parks_destination_id_destinations_id_fk" FOREIGN KEY ("destination_id") REFERENCES "public"."destinations"("id") ON DELETE no action ON UPDATE no action;
