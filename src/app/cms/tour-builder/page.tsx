@@ -20,7 +20,8 @@ import { useToast } from '@/lib/hooks/use-toast'
 import SelectAccommodation from '@/app/cms/tour-builder/_components/SelectAccommodation'
 import SelectDestination from '@/app/cms/tour-builder/_components/SelectDestination'
 import { CloudinaryImagePicker } from '@/app/cms/tour-builder/_components/CloudinaryImagePicker'
-import { createTour, getAccommodations, getNationalParks } from './actions'
+import { useSearchParams, useRouter } from 'next/navigation'
+import { createTour, getAccommodations, getNationalParks, getTourById, updateTour } from './actions'
 import { TagInput } from '@/components/ui/tag-input'
 
 const itinerarySchema = z.object({
@@ -75,6 +76,10 @@ export default function TourPackageBuilder() {
     const [parks, setParks] = useState<any[]>([])
     const [accommodations, setAccommodations] = useState<any[]>([])
     const { toast } = useToast()
+    const searchParams = useSearchParams()
+    const router = useRouter()
+    const tourId = searchParams.get('id')
+    const isEditing = !!tourId
 
     const form = useForm<TourPackageForm>({
         resolver: zodResolver(tourPackageSchema),
@@ -118,6 +123,12 @@ export default function TourPackageBuilder() {
         fetchData()
     }, [])
 
+    useEffect(() => {
+        if (tourId) {
+            fetchTourData(tourId)
+        }
+    }, [tourId])
+
     const fetchData = async () => {
         try {
             const [p, a] = await Promise.all([getNationalParks(), getAccommodations()])
@@ -125,6 +136,37 @@ export default function TourPackageBuilder() {
             setAccommodations(a)
         } catch (error) {
             console.error('Failed to fetch data', error)
+        }
+    }
+
+    const fetchTourData = async (id: string) => {
+        try {
+            const tour = await getTourById(id)
+            if (tour) {
+                form.reset({
+                    tourName: tour.tourName,
+                    number_of_days: tour.number_of_days,
+                    country: tour.country,
+                    overview: tour.overview,
+                    pricing: tour.pricing.toString(),
+                    img_url: tour.img_url,
+                    tags: tour.tags,
+                    activities: tour.activities as any[],
+                    topFeatures: tour.topFeatures as any[],
+                    itineraries: tour.days.map((day: any) => ({
+                        title: day.dayTitle || '',
+                        overview: day.overview || '',
+                        national_park_id: day.national_park_id || '',
+                        accommodation_id: day.itineraryAccommodations?.[0]?.accommodationId || '',
+                    })),
+                })
+            }
+        } catch (error) {
+            console.error('Failed to fetch tour data', error)
+            toast('', {
+                description: 'Failed to load tour data.',
+                variant: 'destructive',
+            })
         }
     }
 
@@ -139,20 +181,29 @@ export default function TourPackageBuilder() {
                 })),
             }
 
-            const result = await createTour(formattedData)
+            let result
+            if (isEditing) {
+                result = await updateTour(tourId, formattedData)
+            } else {
+                result = await createTour(formattedData)
+            }
 
             if (result.success) {
                 toast('', {
-                    description: 'Tour package has been created successfully.',
+                    description: `Tour package has been ${isEditing ? 'updated' : 'created'} successfully.`,
                 })
-                form.reset()
+                if (!isEditing) {
+                    form.reset()
+                } else {
+                    router.push('/cms/tours')
+                }
             } else {
                 throw result.error
             }
         } catch (error) {
-            console.error('Error creating tour package:', error)
+            console.error('Error saving tour package:', error)
             toast('', {
-                description: 'Failed to create tour package. Please try again.',
+                description: 'Failed to save tour package. Please try again.',
                 variant: 'destructive',
             })
         } finally {
@@ -164,8 +215,8 @@ export default function TourPackageBuilder() {
         <div className="from-background to-accent/20 mt-10 min-h-screen bg-gradient-to-br p-6">
             <div className="mx-auto max-w-5xl">
                 <div className="mb-8 text-center">
-                    <h1 className="mb-2 text-4xl font-bold">Tour Builder</h1>
-                    <p className="text-muted-foreground text-lg">Create amazing travel experiences</p>
+                    <h1 className="mb-2 text-4xl font-bold">{isEditing ? 'Edit Tour' : 'Tour Builder'}</h1>
+                    <p className="text-muted-foreground text-lg">{isEditing ? 'Update your tour package details' : 'Create amazing travel experiences'}</p>
                 </div>
 
                 <Form {...form}>
@@ -436,7 +487,7 @@ export default function TourPackageBuilder() {
 
                         <div className="flex justify-end">
                             <Button type="submit" size="lg" disabled={isSubmitting}>
-                                {isSubmitting ? 'Creating Tour...' : 'Create Tour Package'}
+                                {isSubmitting ? (isEditing ? 'Updating Tour...' : 'Creating Tour...') : (isEditing ? 'Update Tour Package' : 'Create Tour Package')}
                             </Button>
                         </div>
                     </form>

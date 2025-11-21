@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { Eye, FileText, Globe, Save, Settings } from 'lucide-react'
+import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useToast } from '@/lib/hooks/use-toast'
@@ -55,7 +56,12 @@ export default function CMSPage() {
                 savedPage = await updatePage(pageData.id, pageData)
             } else {
                 // Create new page
-                savedPage = await createPage(pageData as PageData)
+                // Ensure all required fields are present for creation
+                const newPageData = {
+                    ...pageData,
+                    id: crypto.randomUUID(), // Generate a temporary ID or let the backend handle it if optional
+                } as PageData
+                savedPage = await createPage(newPageData)
             }
 
             // Update local state
@@ -117,6 +123,9 @@ export default function CMSPage() {
                             </p>
                         </div>
                         <div className="flex items-center space-x-4">
+                            <Button variant="outline" asChild>
+                                <Link href="/cms/tours">Manage Tours</Link>
+                            </Button>
                             <Button onClick={handleNewPage} variant="outline">
                                 <FileText className="mr-2 h-4 w-4" />
                                 New Page
@@ -173,10 +182,10 @@ export default function CMSPage() {
                         onFaqsChange={handleFaqsChange}
                     />
                     <SEOTab
-                        pageData={pageData}
+                        pageData={pageData as PageData}
                         handleInputChange={handleInputChange}
                     />
-                    <Preview wordCount={wordCount} pageData={pageData} />
+                    <Preview wordCount={wordCount} pageData={pageData as PageData} />
                     <Manage handleLoadPage={handleLoadPage} />
                 </Tabs>
             </div>

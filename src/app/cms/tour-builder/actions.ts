@@ -12,6 +12,7 @@ import { db } from '@/db'
 import { revalidatePath } from 'next/cache'
 import cloudinary from '@/lib/cloudinary'
 import { uploadAccommodationImages } from '@/lib/cloudinary'
+import { desc, eq, sql, and, ilike, gte, lte } from 'drizzle-orm'
 
 export async function getNationalParks() {
     return await db.select().from(nationalParks)
@@ -167,6 +168,168 @@ export async function createTour(data: CreateTourData) {
         return { success: true, tour: newTour }
     } catch (error) {
         console.error('Error creating tour:', error)
+        return { success: false, error }
+    }
+}
+
+
+export async function getAllTours(options?: {
+    page?: number
+    limit?: number
+    query?: string
+    country?: string
+    minDays?: number
+    maxDays?: number
+}) {
+    try {
+        const page = options?.page || 1
+        const limit = options?.limit || 15
+        const offset = (page - 1) * limit
+
+        const conditions = []
+
+        if (options?.query) {
+            conditions.push(ilike(tours.tourName, `%${options.query}%`))
+        }
+
+        if (options?.country && options.country !== 'all') {
+            conditions.push(ilike(tours.country, `%${options.country}%`))
+        }
+
+        if (options?.minDays) {
+            conditions.push(gte(tours.number_of_days, options.minDays))
+        }
+
+        if (options?.maxDays) {
+            conditions.push(lte(tours.number_of_days, options.maxDays))
+        }
+
+        const whereClause = conditions.length > 0 ? and(...conditions) : undefined
+
+        const [data, total] = await Promise.all([
+            db.select({
+                id: tours.id,
+                tourName: tours.tourName,
+                country: tours.country,
+                pricing: tours.pricing,
+                slug: tours.slug,
+                updatedAt: tours.updatedAt,
+                number_of_days: tours.number_of_days,
+            })
+            .from(tours)
+            .where(whereClause)
+            .limit(limit)
+            .offset(offset)
+            .orderBy(desc(tours.updatedAt)),
+            
+            db.select({ count: sql<number>`count(*)` })
+            .from(tours)
+            .where(whereClause)
+            .then(res => Number(res[0].count))
+        ])
+
+        return {
+            tours: data,
+            pagination: {
+                page,
+                limit,
+                total,
+                totalPages: Math.ceil(total / limit)
+            }
+        }
+    } catch (error) {
+        console.error('Error fetching all tours:', error)
+        return {
+            tours: [],
+            pagination: {
+                page: 1,
+                limit: 15,
+                total: 0,
+                totalPages: 0
+            }
+        }
+    }
+}
+
+export async function getTourById(id: string) {
+    try {
+        return await db.query.tours.findFirst({
+            where: eq(tours.id, id),
+            with: {
+                days: {
+                    with: {
+                        itineraryAccommodations: true
+                    },
+                    orderBy: (days, { asc }) => [asc(days.dayNumber)],
+                }
+            }
+        })
+    } catch (error) {
+        console.error('Error fetching tour by id:', error)
+        return null
+    }
+}
+
+export async function updateTour(id: string, data: CreateTourData) {
+    try {
+        // 1. Update Tour
+        await db
+            .update(tours)
+            .set({
+                tourName: data.tourName,
+                slug: data.slug,
+                overview: data.overview,
+                pricing: data.pricing,
+                country: data.country,
+                activities: data.activities,
+                topFeatures: data.topFeatures,
+                img_url: data.img_url,
+                number_of_days: data.number_of_days,
+                tags: data.tags,
+                updatedAt: new Date(),
+            })
+            .where(eq(tours.id, id))
+
+        // 2. Delete existing itineraries and recreate them
+        // This is a simple approach. For better performance/integrity, we could diff updates.
+        // First, get all itinerary days for this tour
+        const existingDays = await db.select({ id: itineraryDays.id }).from(itineraryDays).where(eq(itineraryDays.tourId, id))
+        const dayIds = existingDays.map(d => d.id)
+
+        // Delete accommodations for these days
+        if (dayIds.length > 0) {
+            await db.delete(itineraryAccommodations).where(sql`${itineraryAccommodations.itineraryDayId} IN ${dayIds}`)
+        }
+        
+        // Delete days
+        await db.delete(itineraryDays).where(eq(itineraryDays.tourId, id))
+
+        // Re-create days and accommodations
+        for (const day of data.itineraries) {
+            const [newDay] = await db
+                .insert(itineraryDays)
+                .values({
+                    tourId: id,
+                    dayNumber: day.dayNumber,
+                    dayTitle: day.title,
+                    overview: day.overview,
+                    national_park_id: day.national_park_id,
+                })
+                .returning()
+
+            if (day.accommodation_id) {
+                await db.insert(itineraryAccommodations).values({
+                    itineraryDayId: newDay.id,
+                    accommodationId: day.accommodation_id,
+                })
+            }
+        }
+
+        revalidatePath('/cms/tour-builder')
+        revalidatePath('/cms/tours')
+        return { success: true }
+    } catch (error) {
+        console.error('Error updating tour:', error)
         return { success: false, error }
     }
 }
