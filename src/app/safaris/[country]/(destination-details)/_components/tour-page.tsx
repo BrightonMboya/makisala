@@ -21,7 +21,11 @@ interface ToursResponse {
     }
 }
 
-export default function ToursPage() {
+interface ToursPageProps {
+    initialCountry?: string
+}
+
+export default function ToursPage({ initialCountry }: ToursPageProps) {
     const router = useRouter()
     const searchParams = useSearchParams()
 
@@ -60,7 +64,9 @@ export default function ToursPage() {
         ],
         selectedCountries: searchParams.get('country')
             ? searchParams.get('country')!.split(',')
-            : [],
+            : initialCountry
+              ? [initialCountry]
+              : [],
         selectedTags: searchParams.get('tags')
             ? searchParams.get('tags')!.split(',')
             : [],
@@ -200,7 +206,13 @@ export default function ToursPage() {
 
                                 <div className="mb-8 grid grid-cols-1 gap-6 md:grid-cols-2">
                                     {tours.map((tour) => (
-                                        <TourCard key={tour.id} tour={tour} />
+                                        <TourCard
+                                            key={tour.id}
+                                            tour={{
+                                                ...tour,
+                                                slug: tour.slug || '',
+                                            }}
+                                        />
                                     ))}
                                 </div>
 

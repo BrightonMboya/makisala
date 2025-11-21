@@ -68,7 +68,7 @@ export default async function Page({ params }: Params) {
                         </div>
                     </div>
                     <Suspense>
-                        <ToursPage />
+                        <ToursPage initialCountry={country} />
                     </Suspense>
                 </div>
             </section>
