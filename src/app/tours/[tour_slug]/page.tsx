@@ -109,7 +109,6 @@ export default async function Page({ params }: Params) {
                 <div className="container mx-auto -mt-8 px-4 lg:hidden relative z-10">
                     <BookTourCard
                         price={tour.pricing}
-                        tourName={tour.tourName}
                     />
                 </div>
 
@@ -176,32 +175,10 @@ export default async function Page({ params }: Params) {
                             </section>
                         </div>
 
-<<<<<<< HEAD
-                        {/* Desktop sidebar navigation */}
-                        <DesktopNavigation />
-                    </div>
-                    <div>
-                        {tour.days.map((day) => (
-                            <ItineraryAccordion
-                                key={day.id}
-                                dayNumber={day.dayNumber}
-                                dayTitle={day.dayTitle!}
-                                overview={day.overview!}
-                                itineraryAccommodations={
-                                    day.itineraryAccommodations
-                                }
-                                mealPlan={
-                                    day.dayNumber === 1
-                                        ? ['Breakfast', 'Lunch', 'Dinner']
-                                        : undefined
-                                }
-=======
                         {/* Sidebar */}
                         <div className="relative hidden lg:block">
                             <BookTourCard
                                 price={tour.pricing}
-                                tourName={tour.tourName}
->>>>>>> 002f484 (fixed the tour ui page)
                             />
                         </div>
 
