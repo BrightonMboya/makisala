@@ -17,7 +17,7 @@ import {
 import { CheckIcon, ChevronDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useState } from 'react'
-import AddAccomodation from '@/app/cms/itenaries/_components/AddAccomodation'
+import AddAccomodation from './AddAccomodation'
 import { ControllerRenderProps } from 'react-hook-form'
 import { type TourPackageForm } from '@/app/cms/tour-builder/page'
 
