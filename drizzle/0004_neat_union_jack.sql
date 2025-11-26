@@ -1,1 +1,0 @@
-ALTER TABLE "national_parks" ALTER COLUMN "destination_id" SET DATA TYPE uuid;

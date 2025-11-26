@@ -9,15 +9,6 @@ import {
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select'
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
-import { Checkbox } from '@/components/ui/checkbox'
 import { Calendar } from '@/components/ui/calendar'
 import {
     Popover,
@@ -39,9 +30,6 @@ import { usePathname } from 'next/navigation'
 import { BASE_URL } from '@/lib/constants'
 import { CountryDropdown } from '@/components/ui/country-dropdown'
 
-const nightOptions = Array.from({ length: 30 }, (_, i) => (i + 1).toString())
-const adultOptions = Array.from({ length: 10 }, (_, i) => (i + 1).toString())
-const childrenOptions = Array.from({ length: 6 }, (_, i) => i.toString())
 
 export default function ContactForm({
     setOpen,
@@ -54,23 +42,14 @@ export default function ContactForm({
 
     const formSchema = z.object({
         fullName: z.string().min(1, 'Full Name is required'),
+        email: z.string().email('Valid email is required'),
         countryOfResidence: z
             .string()
             .min(1, 'Country of residence is required'),
         phoneNumber: z.string().min(1, 'Phone number is required'),
-        email: z.string().email('Valid email is required'),
-        startDate: z.date({
-            message: 'Start date is required',
-        }),
-        numberOfNights: z.string().min(1, 'Number of nights is required'),
-        numberOfAdults: z.string().min(1, 'Number of adults is required'),
-        numberOfChildren: z.string(),
-        flightAssistance: z.enum(['yes', 'no']),
-        experienceType: z.enum(['mid-range', 'high-end', 'top-end']),
+        numberOfTravellers: z.number().min(1, 'Number of travellers is required'),
+        startDate: z.date().min(1, 'Start date is required'),
         comments: z.string().min(1, 'Comments are required'),
-        consent: z.boolean().refine((val) => val === true, {
-            message: 'You must agree to the privacy policy',
-        }),
     })
 
     type FormData = z.infer<typeof formSchema>
@@ -81,13 +60,9 @@ export default function ContactForm({
             countryOfResidence: '',
             phoneNumber: '',
             email: '',
-            numberOfNights: '',
-            numberOfAdults: '',
-            numberOfChildren: '0',
-            flightAssistance: 'no',
-            experienceType: 'mid-range',
             comments: '',
-            consent: true,
+            numberOfTravellers: 1,
+            startDate: new Date(),
         },
     })
     const onSubmit = async (data: FormData) => {
@@ -96,17 +71,14 @@ export default function ContactForm({
                 ...data,
                 url: `${BASE_URL}/${pathname}`,
             })
-            toast({
-                title: 'Inquiry Submitted',
+            toast('Inquiry Submitted', {
                 description: "We'll get back to you within 24 hours!",
             })
             setOpen && setOpen(false)
             form.reset()
         } catch (error) {
-            toast({
-                title: 'Error',
+            toast('Error', {
                 description: 'Failed to submit inquiry. Please try again.',
-                variant: 'destructive',
             })
             console.log(error)
         }
@@ -128,7 +100,7 @@ export default function ContactForm({
                                 <FormLabel>Email*</FormLabel>
                                 <FormControl>
                                     <Input
-                                        placeholder="Enter Email"
+                                        placeholder="hi@makisala.com"
                                         type="email"
                                         {...field}
                                     />
@@ -143,9 +115,9 @@ export default function ContactForm({
                             name="fullName"
                             render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel>First Name*</FormLabel>
+                                    <FormLabel>Full Names*</FormLabel>
                                     <FormControl>
-                                        <Input placeholder="First" {...field} />
+                                        <Input placeholder="Brighton Mboya" {...field} />
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>
@@ -251,226 +223,65 @@ export default function ContactForm({
                         )}
                     />
 
-                    <div className="flex flex-col gap-4 md:grid md:grid-cols-3">
-                        <FormField
-                            control={form.control}
-                            name="numberOfNights"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Number of Nights?*</FormLabel>
-                                    <Select
-                                        onValueChange={field.onChange}
-                                        defaultValue={field.value}
-                                    >
-                                        <FormControl>
-                                            <SelectTrigger>
-                                                <SelectValue placeholder="Number of nights" />
-                                            </SelectTrigger>
-                                        </FormControl>
-                                        <SelectContent>
-                                            {nightOptions.map((night) => (
-                                                <SelectItem
-                                                    key={night}
-                                                    value={night}
-                                                >
-                                                    {night} night
-                                                    {night !== '1' ? 's' : ''}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-
-                        <FormField
-                            control={form.control}
-                            name="numberOfAdults"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>
-                                        Number of Adults (over 18)*
-                                    </FormLabel>
-                                    <Select
-                                        onValueChange={field.onChange}
-                                        defaultValue={field.value}
-                                    >
-                                        <FormControl>
-                                            <SelectTrigger>
-                                                <SelectValue placeholder="Number of adults" />
-                                            </SelectTrigger>
-                                        </FormControl>
-                                        <SelectContent>
-                                            {adultOptions.map((adult) => (
-                                                <SelectItem
-                                                    key={adult}
-                                                    value={adult}
-                                                >
-                                                    {adult} adult
-                                                    {adult !== '1' ? 's' : ''}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-
-                        <FormField
-                            control={form.control}
-                            name="numberOfChildren"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>
-                                        Number of Children (under 18)
-                                    </FormLabel>
-                                    <Select
-                                        onValueChange={field.onChange}
-                                        defaultValue={field.value}
-                                    >
-                                        <FormControl>
-                                            <SelectTrigger>
-                                                <SelectValue />
-                                            </SelectTrigger>
-                                        </FormControl>
-                                        <SelectContent>
-                                            {childrenOptions.map((child) => (
-                                                <SelectItem
-                                                    key={child}
-                                                    value={child}
-                                                >
-                                                    {child}{' '}
-                                                    {child !== '1'
-                                                        ? 'children'
-                                                        : 'child'}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                    </div>
-
                     <FormField
                         control={form.control}
-                        name="flightAssistance"
+                        name="numberOfTravellers"
                         render={({ field }) => (
-                            <FormItem className="space-y-3">
-                                <FormLabel>
-                                    Do you need assistance booking your
-                                    international flights?*
-                                </FormLabel>
+                            <FormItem>
+                                <FormLabel>Number of Travellers*</FormLabel>
                                 <FormControl>
-                                    <RadioGroup
-                                        onValueChange={field.onChange}
-                                        defaultValue={field.value}
-                                        className="flex flex-row space-x-6"
-                                    >
-                                        <div className="flex items-center space-x-2">
-                                            <RadioGroupItem
-                                                value="yes"
-                                                id="flights-yes"
-                                            />
-                                            <label htmlFor="flights-yes">
-                                                Yes
-                                            </label>
-                                        </div>
-                                        <div className="flex items-center space-x-2">
-                                            <RadioGroupItem
-                                                value="no"
-                                                id="flights-no"
-                                            />
-                                            <label htmlFor="flights-no">
-                                                No
-                                            </label>
-                                        </div>
-                                    </RadioGroup>
-                                </FormControl>
-                                <FormMessage />
-                            </FormItem>
-                        )}
-                    />
-
-                    <FormField
-                        control={form.control}
-                        name="experienceType"
-                        render={({ field }) => (
-                            <FormItem className="space-y-3">
-                                <FormLabel>
-                                    What kind of experience are you after?*
-                                </FormLabel>
-                                <FormControl>
-                                    <RadioGroup
-                                        onValueChange={field.onChange}
-                                        defaultValue={field.value}
-                                        className="space-y-3"
-                                    >
-                                        <div className="flex items-start space-x-2">
-                                            <RadioGroupItem
-                                                value="mid-range"
-                                                id="mid-range"
-                                                className="mt-1"
-                                            />
-                                            <div>
-                                                <label
-                                                    htmlFor="mid-range"
-                                                    className="font-medium"
-                                                >
-                                                    Mid-range
-                                                </label>
-                                                <p className="text-muted-foreground text-sm">
-                                                    I want a quality experience
-                                                    but don't need luxury, think
-                                                    authentic tented camps.
-                                                </p>
-                                            </div>
-                                        </div>
-                                        <div className="flex items-start space-x-2">
-                                            <RadioGroupItem
-                                                value="high-end"
-                                                id="high-end"
-                                                className="mt-1"
-                                            />
-                                            <div>
-                                                <label
-                                                    htmlFor="high-end"
-                                                    className="font-medium"
-                                                >
-                                                    High-end
-                                                </label>
-                                                <p className="text-muted-foreground text-sm">
-                                                    I want a luxury experience,
-                                                    great food & wine, good
-                                                    service and luxury
-                                                    facilities.
-                                                </p>
-                                            </div>
-                                        </div>
-                                        <div className="flex items-start space-x-2">
-                                            <RadioGroupItem
-                                                value="top-end"
-                                                id="top-end"
-                                                className="mt-1"
-                                            />
-                                            <div>
-                                                <label
-                                                    htmlFor="top-end"
-                                                    className="font-medium"
-                                                >
-                                                    Top-end
-                                                </label>
-                                                <p className="text-muted-foreground text-sm">
-                                                    I simply want the best
-                                                    available, cost should not
-                                                    be a consideration.
-                                                </p>
-                                            </div>
-                                        </div>
-                                    </RadioGroup>
+                                    <div className="flex items-center gap-2">
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            size="icon"
+                                            className="h-10 w-10 shrink-0"
+                                            onClick={() => {
+                                                const newValue = Math.max(1, field.value - 1)
+                                                field.onChange(newValue)
+                                            }}
+                                            disabled={field.value <= 1}
+                                        >
+                                            -
+                                        </Button>
+                                        <Input
+                                            type="number"
+                                            min="1"
+                                            placeholder="1"
+                                            className="text-center"
+                                            value={field.value}
+                                            onChange={(e) => {
+                                                const value = e.target.value
+                                                // Allow empty string during typing
+                                                if (value === '') {
+                                                    field.onChange(undefined)
+                                                } else {
+                                                    const parsed = parseInt(value, 10)
+                                                    if (!isNaN(parsed)) {
+                                                        field.onChange(parsed)
+                                                    }
+                                                }
+                                            }}
+                                            onBlur={(e) => {
+                                                // Ensure minimum value on blur
+                                                const value = e.target.value
+                                                if (value === '' || parseInt(value, 10) < 1) {
+                                                    field.onChange(1)
+                                                }
+                                            }}
+                                        />
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            size="icon"
+                                            className="h-10 w-10 shrink-0"
+                                            onClick={() => {
+                                                field.onChange(field.value + 1)
+                                            }}
+                                        >
+                                            +
+                                        </Button>
+                                    </div>
                                 </FormControl>
                                 <FormMessage />
                             </FormItem>
@@ -497,27 +308,6 @@ export default function ContactForm({
                         )}
                     />
 
-                    <FormField
-                        control={form.control}
-                        name="consent"
-                        render={({ field }) => (
-                            <FormItem className="flex flex-row items-start space-y-0 space-x-3">
-                                <FormControl>
-                                    <Checkbox
-                                        checked={field.value}
-                                        onCheckedChange={field.onChange}
-                                    />
-                                </FormControl>
-                                <div className="space-y-1 leading-none">
-                                    <FormLabel>Consent*</FormLabel>
-                                    <p className="text-muted-foreground text-sm">
-                                        I agree to the privacy policy.
-                                    </p>
-                                </div>
-                                <FormMessage />
-                            </FormItem>
-                        )}
-                    />
                 </div>
 
                 <Button type="submit" className="w-full">

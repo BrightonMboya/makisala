@@ -1,5 +1,3 @@
-CREATE TYPE "public"."experienceType" AS ENUM('mid-range', 'high-end', 'top-end');--> statement-breakpoint
-CREATE TYPE "public"."flightAssistance" AS ENUM('yes', 'no');--> statement-breakpoint
 CREATE TYPE "public"."pageStatus" AS ENUM('published', 'draft');--> statement-breakpoint
 CREATE TYPE "public"."pageType" AS ENUM('page', 'blog');--> statement-breakpoint
 CREATE TABLE "accommodation_images" (
@@ -44,16 +42,11 @@ CREATE TABLE "destinations" (
 CREATE TABLE "inquiries" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"fullName" text NOT NULL,
-	"country_of_residence" varchar(255) NOT NULL,
-	"phone_number" varchar(255) NOT NULL,
 	"email" varchar(255) NOT NULL,
-	"number_of_nights" varchar(255) NOT NULL,
-	"number_of_adults" varchar(255) NOT NULL,
-	"number_of_children" varchar(255) NOT NULL,
-	"flightAssistance" "flightAssistance" DEFAULT 'no',
-	"experienceType" "experienceType" DEFAULT 'mid-range',
+	"country_of_residence" varchar(255) NOT NULL,
 	"comments" text,
-	"consent" boolean,
+	"number_of_travellers" integer NOT NULL,
+	"start_date" timestamp NOT NULL,
 	"url" text
 );
 --> statement-breakpoint
@@ -79,7 +72,8 @@ CREATE TABLE "itinerary_days" (
 	"tour_id" uuid NOT NULL,
 	"day_number" integer NOT NULL,
 	"itinerary_day_title" text,
-	"overview" text
+	"overview" text,
+	"national_park_id" uuid
 );
 --> statement-breakpoint
 CREATE TABLE "modifiers" (
@@ -93,6 +87,7 @@ CREATE TABLE "national_parks" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"name" text NOT NULL,
 	"country" text NOT NULL,
+	"destination_id" uuid,
 	"overview_page_id" text,
 	"wildlife_page_id" text,
 	"best_time_to_visit_id" text,
@@ -151,6 +146,7 @@ CREATE TABLE "tour_packages" (
 CREATE TABLE "tours" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"tour_name" text NOT NULL,
+	"slug" text,
 	"overview" text NOT NULL,
 	"pricing" numeric(12, 2) NOT NULL,
 	"country" text NOT NULL,
@@ -162,7 +158,8 @@ CREATE TABLE "tours" (
 	"tags" text[] NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now(),
 	"updated_at" timestamp with time zone DEFAULT now(),
-	CONSTRAINT "tours_tour_name_unique" UNIQUE("tour_name")
+	CONSTRAINT "tours_tour_name_unique" UNIQUE("tour_name"),
+	CONSTRAINT "tours_slug_unique" UNIQUE("slug")
 );
 --> statement-breakpoint
 CREATE TABLE "user" (
@@ -214,6 +211,8 @@ ALTER TABLE "itineraries" ADD CONSTRAINT "itineraries_tour_package_id_tour_packa
 ALTER TABLE "itinerary_accommodations" ADD CONSTRAINT "itinerary_accommodations_itinerary_day_id_itinerary_days_id_fk" FOREIGN KEY ("itinerary_day_id") REFERENCES "public"."itinerary_days"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "itinerary_accommodations" ADD CONSTRAINT "itinerary_accommodations_accommodation_id_accommodations_id_fk" FOREIGN KEY ("accommodation_id") REFERENCES "public"."accommodations"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "itinerary_days" ADD CONSTRAINT "itinerary_days_tour_id_tours_id_fk" FOREIGN KEY ("tour_id") REFERENCES "public"."tours"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "itinerary_days" ADD CONSTRAINT "itinerary_days_national_park_id_national_parks_id_fk" FOREIGN KEY ("national_park_id") REFERENCES "public"."national_parks"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "national_parks" ADD CONSTRAINT "national_parks_destination_id_destinations_id_fk" FOREIGN KEY ("destination_id") REFERENCES "public"."destinations"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "national_parks" ADD CONSTRAINT "national_parks_overview_page_id_pages_id_fk" FOREIGN KEY ("overview_page_id") REFERENCES "public"."pages"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "national_parks" ADD CONSTRAINT "national_parks_wildlife_page_id_pages_id_fk" FOREIGN KEY ("wildlife_page_id") REFERENCES "public"."pages"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "national_parks" ADD CONSTRAINT "national_parks_best_time_to_visit_id_pages_id_fk" FOREIGN KEY ("best_time_to_visit_id") REFERENCES "public"."pages"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint

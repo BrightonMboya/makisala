@@ -35,28 +35,16 @@ export const pages = pgTable('pages', {
     updatedAt: timestamp({ precision: 3, mode: 'string' }).notNull(),
 })
 
-export const FlightAssistance = pgEnum('flightAssistance', ['yes', 'no'])
-export const ExperienceType = pgEnum('experienceType', [
-    'mid-range',
-    'high-end',
-    'top-end',
-])
-
 export const inquiries = pgTable('inquiries', {
     id: uuid('id').primaryKey().defaultRandom(),
     fullName: text().notNull(),
+    email: varchar('email', { length: 255 }).notNull(),
     countryOfResidence: varchar('country_of_residence', {
         length: 255,
     }).notNull(),
-    phoneNumber: varchar('phone_number', { length: 255 }).notNull(),
-    email: varchar('email', { length: 255 }).notNull(),
-    numberOfNights: varchar('number_of_nights', { length: 255 }).notNull(),
-    numberOfAdults: varchar('number_of_adults', { length: 255 }).notNull(),
-    numberOfChildren: varchar('number_of_children', { length: 255 }).notNull(),
-    flightAssistance: FlightAssistance().default('no'),
-    experienceType: ExperienceType().default('mid-range'),
     comments: text(),
-    consent: boolean(),
+    numberOfTravellers: integer('number_of_travellers').notNull(),
+    startDate: timestamp('start_date').notNull(),
     url: text(),
 })
 
