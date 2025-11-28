@@ -260,19 +260,21 @@ export const ProductSchema = ({
 
 export const TouristAttractionSchema = ({
     name,
-    // description,
-    // image,
+    description,
+    image,
     url,
 }: {
     name: string
-    // description: string
-    // image: string
+    description: string
+    image: string
     url: string
 }) => {
     return {
         '@context': 'https://schema.org',
         '@type': 'TouristAttraction',
         name: name,
+        description: description,
+        image: image,
         url: url,
         // geo: {
         //     '@type': 'GeoCoordinates',
@@ -290,11 +292,64 @@ export const TouristAttractionSchema = ({
                 'Saturday',
                 'Sunday',
             ],
-            opens: '09:00',
-            closes: '00:45',
+            opens: '06:00',
+            closes: '18:00',
         },
         isAccessibleForFree: false,
         touristType: ['Couples', 'Families', 'Solo Travelers'],
+    }
+}
+
+export const ParkSchema = ({
+    name,
+    description,
+    image,
+    url,
+    telephone,
+    address,
+}: {
+    name: string
+    description: string
+    image: string
+    url: string
+    telephone?: string
+    address?: {
+        streetAddress?: string
+        addressLocality?: string
+        addressRegion?: string
+        postalCode?: string
+        addressCountry: string
+    }
+}) => {
+    return {
+        '@context': 'https://schema.org',
+        '@type': 'Park',
+        name: name,
+        description: description,
+        image: image,
+        url: url,
+        telephone: telephone,
+        address: address
+            ? {
+                  '@type': 'PostalAddress',
+                  ...address,
+              }
+            : undefined,
+        openingHoursSpecification: {
+            '@type': 'OpeningHoursSpecification',
+            dayOfWeek: [
+                'Monday',
+                'Tuesday',
+                'Wednesday',
+                'Thursday',
+                'Friday',
+                'Saturday',
+                'Sunday',
+            ],
+            opens: '06:00',
+            closes: '18:00',
+        },
+        isAccessibleForFree: false,
     }
 }
 

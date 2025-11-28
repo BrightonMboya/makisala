@@ -5,6 +5,7 @@ import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import {
     BreadcrumbSchema,
+    ParkSchema,
     TouristAttractionSchema,
     TouristDestinationSchema,
 } from '@/components/schema'
@@ -82,7 +83,18 @@ export default async function page({ params }: IParams) {
                     }),
                     TouristAttractionSchema({
                         name: capitalize(np.name),
+                        description: page.meta_description || '',
+                        image: page.featured_image_url!,
                         url: `${BASE_URL}/national-parks/${np.name}/`,
+                    }),
+                    ParkSchema({
+                        name: capitalize(np.name),
+                        description: page.meta_description || '',
+                        image: page.featured_image_url!,
+                        url: `${BASE_URL}/national-parks/${np.name}/`,
+                        address: {
+                            addressCountry: capitalize(np.country),
+                        },
                     }),
                 ])}
             </Script>
