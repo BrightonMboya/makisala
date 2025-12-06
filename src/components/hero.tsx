@@ -56,9 +56,9 @@ export default function Hero({ parks }: HeroProps) {
     }
 
     return (
-        <section className="relative w-full py-12 md:py-20 flex flex-col items-center justify-center bg-white">
+        <section className="relative w-full py-20 flex flex-col items-center justify-center bg-white">
             <div className="relative z-10 w-full max-w-5xl px-4 sm:px-6 lg:px-8 flex flex-col items-center">
-                <h1 className="mb-12 text-center text-5xl font-extrabold text-gray-900 md:text-7xl tracking-tight">
+                <h1 className="mb-12 text-center text-4xl font-extrabold text-gray-900 md:text-7xl tracking-tight">
                     Experience the Magic of East Africa
                 </h1>
                 
@@ -73,7 +73,7 @@ export default function Hero({ parks }: HeroProps) {
                                     variant="ghost"
                                     role="combobox"
                                     aria-expanded={openDestination}
-                                    className="h-16 w-full justify-start rounded-2xl hover:bg-gray-100 px-6 text-left font-normal border-none"
+                                    className="h-14 md:h-16 w-full justify-start rounded-2xl hover:bg-gray-100 px-6 text-left font-normal border-none"
                                 >
                                     <MapPin className="h-5 w-5 text-gray-900 mr-3 shrink-0" />
                                     <div className="flex flex-col items-start truncate w-full">
@@ -145,7 +145,7 @@ export default function Hero({ parks }: HeroProps) {
                                 <Button
                                     variant="ghost"
                                     className={cn(
-                                        'h-16 w-full justify-start rounded-2xl hover:bg-gray-100 px-6 text-left font-normal border-none',
+                                        'h-14 md:h-16 w-full justify-start rounded-2xl hover:bg-gray-100 px-6 text-left font-normal border-none',
                                     )}
                                 >
                                     <CalendarIcon className="h-5 w-5 text-gray-900 mr-3 shrink-0" />
@@ -181,7 +181,7 @@ export default function Hero({ parks }: HeroProps) {
                             <PopoverTrigger asChild>
                                 <Button
                                     variant="ghost"
-                                    className="h-16 w-full justify-start rounded-2xl hover:bg-gray-100 px-6 text-left font-normal border-none"
+                                    className="h-14 md:h-16 w-full justify-start rounded-2xl hover:bg-gray-100 px-6 text-left font-normal border-none"
                                 >
                                     <Users className="h-5 w-5 text-gray-900 mr-3 shrink-0" />
                                     <div className="flex flex-col items-start w-full">
@@ -223,7 +223,7 @@ export default function Hero({ parks }: HeroProps) {
                     {/* Search Button */}
                     <div className="p-1 w-full md:w-auto">
                         <Button 
-                            className="h-16 w-full md:w-auto md:aspect-square rounded-full bg-primary hover:bg-primary/80 text-white shadow-md transition-all hover:scale-105"
+                            className="h-14 md:h-16 w-full md:w-auto md:aspect-square rounded-2xl md:rounded-full bg-primary hover:bg-primary/80 text-white shadow-md transition-all hover:scale-105"
                             onClick={handleSearch}
                         >
                             <Search className="h-6 w-6" />
