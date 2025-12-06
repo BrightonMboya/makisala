@@ -1,41 +1,16 @@
 "use client";
 
 import Image from 'next/image'
-import { Button } from '@/components/ui/button'
-import { Calendar } from '@/components/ui/calendar'
-import {
-    Popover,
-    PopoverContent,
-    PopoverTrigger,
-} from '@/components/ui/popover'
-import { CalendarIcon, MapPin, Users, Star, Check } from 'lucide-react'
-import { format } from 'date-fns'
-import { capitalize, cn } from '@/lib/utils'
-import { useState } from 'react'
+import { Star } from 'lucide-react'
+import { cn } from '@/lib/utils'
 import Link from 'next/link'
 import { safaris, featured_national_parks, why_travel_with_us } from '@/lib/constants'
 import ContactForm from '@/components/contact-form'
-import { useRouter } from 'next/navigation'
 import { fetchAllNps, getWeekendDeals } from '@/lib/cms-service';
-import {
-    Command,
-    CommandEmpty,
-    CommandGroup,
-    CommandInput,
-    CommandItem,
-    CommandList,
-} from '@/components/ui/command'
-
 import { useQuery } from '@tanstack/react-query'
+import Hero from '@/components/hero'
 
 export default function Page() {
-    const [date, setDate] = useState<Date | undefined>()
-    const [openDate, setOpenDate] = useState(false)
-    const [destination, setDestination] = useState("")
-    const [openDestination, setOpenDestination] = useState(false)
-    const [travellers, setTravellers] = useState(1)
-    const router = useRouter()
-
     const { data: parks = [] } = useQuery({
         queryKey: ['national-parks'],
         queryFn: fetchAllNps,
@@ -46,226 +21,14 @@ export default function Page() {
         queryFn: getWeekendDeals,
     })
 
-    const handleSearch = () => {
-        const params = new URLSearchParams()
-        if (date) params.set('date', date.toISOString())
-        if (travellers) params.set('travellers', travellers.toString())
-        
-        // Check if destination is a country or a park
-        const isCountry = ['Tanzania', 'Rwanda'].includes(destination)
-        
-        if (isCountry) {
-            router.push(`/safaris/${destination.toLowerCase()}?${params.toString()}`)
-        } else if (destination) {
-            // It's a park, find the country
-            const park = parks.find(p => p.name === destination)
-            const country = park?.country || 'tanzania' // Default to Tanzania if not found
-            params.set('np', destination)
-            router.push(`/safaris/${country.toLowerCase()}?${params.toString()}`)
-        } else {
-            // No destination selected, go to generic safaris page or default
-            router.push(`/safaris?${params.toString()}`)
-        }
-    }
-
     return (
-        <main className="min-h-screen bg-gray-50">
+        <main className="min-h-screen">
             {/* Hero Section */}
-            <section className="relative min-h-[600px] w-full lg:h-[600px] h-auto">
-                <div className="absolute inset-0">
-                    <Image
-                        src="https://res.cloudinary.com/dr2tdyz2w/image/upload/v1757620218/Serengeti-Balloon-Safari-andBeyond-Experience_itpmf9.jpg"
-                        alt="Hero Background"
-                        fill
-                        className="object-cover"
-                        priority
-                    />
-                    <div className="absolute inset-0 bg-black/50" />
-                </div>
-
-                <div className="relative z-10 mx-auto flex h-full max-w-7xl flex-col justify-center px-4 py-20 sm:px-6 lg:px-8">
-                    <h1 className="mb-6 text-center text-3xl font-bold text-white shadow-black/50 drop-shadow-md md:text-6xl">
-                        Find your perfect African safari
-                    </h1>
-                    <p className="mb-8 text-center text-lg text-white shadow-black/50 drop-shadow-md max-w-3xl mx-auto md:text-xl">
-                        Tailor-made journeys crafted by local East African experts. Personalized advice,
-                        vetted lodges and ethical travel practices.
-                    </p>
-
-                    {/* Search Widget - Functional */}
-                    <div className="mx-auto flex w-full max-w-5xl flex-col gap-0 rounded-lg bg-white p-1 shadow-lg md:flex-row">
-                        <div className="relative flex-1 border-b md:border-b-0 md:border-r border-gray-200">
-                            <Popover open={openDestination} onOpenChange={setOpenDestination}>
-                                <PopoverTrigger asChild>
-                                    <Button
-                                        variant="ghost"
-                                        role="combobox"
-                                        aria-expanded={openDestination}
-                                        className="h-14 w-full justify-between rounded-none hover:bg-gray-50 px-4 text-left font-normal"
-                                    >
-                                        <div className="flex flex-col items-start truncate">
-                                            <span className="text-xs font-bold uppercase text-gray-500">Destination</span>
-                                            <span className={cn("text-base truncate", !destination && "text-gray-400")}>
-                                                {destination || "Where To?"}
-                                            </span>
-                                        </div>
-                                        <MapPin className="h-4 w-4 text-gray-400 shrink-0 ml-2" />
-                                    </Button>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-[350px] p-0" align="start">
-                                    <Command>
-                                        <CommandInput placeholder="Search country or park..." />
-                                        <CommandList>
-                                            <CommandEmpty>No destination found.</CommandEmpty>
-                                            <CommandGroup heading="Popular Countries">
-                                                {['Tanzania', 'Rwanda'].map((country) => (
-                                                    <CommandItem
-                                                        key={country}
-                                                        value={country}
-                                                        onSelect={(currentValue) => {
-                                                            setDestination(currentValue === destination ? "" : currentValue)
-                                                            setOpenDestination(false)
-                                                        }}
-                                                    >
-                                                        <Check
-                                                            className={cn(
-                                                                "mr-2 h-4 w-4",
-                                                                destination === country ? "opacity-100" : "opacity-0"
-                                                            )}
-                                                        />
-                                                        {country}
-                                                    </CommandItem>
-                                                ))}
-                                            </CommandGroup>
-                                            <CommandGroup heading="Popular Parks & Reserves">
-                                                {parks.map((park) => (
-                                                    <CommandItem
-                                                        key={park.name}
-                                                        value={park.name}
-                                                        onSelect={(currentValue) => {
-                                                            setDestination(currentValue === destination ? "" : currentValue)
-                                                            setOpenDestination(false)
-                                                        }}
-                                                    >
-                                                        <Check
-                                                            className={cn(
-                                                                "mr-2 h-4 w-4",
-                                                                destination === park.name ? "opacity-100" : "opacity-0"
-                                                            )}
-                                                        />
-                                                        {capitalize(park.name)}
-                                                    </CommandItem>
-                                                ))}
-                                            </CommandGroup>
-                                        </CommandList>
-                                    </Command>
-                                </PopoverContent>
-                            </Popover>
-                        </div>
-
-                        <div className="relative flex-1 border-b md:border-b-0 md:border-r border-gray-200">
-                            <Popover open={openDate} onOpenChange={setOpenDate}>
-                                <PopoverTrigger asChild>
-                                    <Button
-                                        variant="ghost"
-                                        className={cn(
-                                            'h-14 w-full justify-between rounded-none hover:bg-gray-50 px-4 text-left font-normal',
-                                            !date && 'text-gray-500'
-                                        )}
-                                    >
-                                        <div className="flex flex-col items-start">
-                                            <span className="text-xs font-bold uppercase text-gray-500">Start Date</span>
-                                            <span className={cn("text-base", !date && "text-gray-400")}>
-                                                {date ? format(date, 'PPP') : "When?"}
-                                            </span>
-                                        </div>
-                                        <CalendarIcon className="h-4 w-4 text-gray-400 shrink-0 ml-2" />
-                                    </Button>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-auto p-0" align="start">
-                                    <Calendar
-                                        mode="single"
-                                        selected={date}
-                                        onSelect={(newDate) => {
-                                            setDate(newDate)
-                                            setOpenDate(false)
-                                        }}
-                                        disabled={(date) => date < new Date()}
-                                        className="p-3"
-                                    />
-                                </PopoverContent>
-                            </Popover>
-                        </div>
-
-                        <div className="relative flex-1">
-                            <Popover>
-                                <PopoverTrigger asChild>
-                                    <Button
-                                        variant="ghost"
-                                        className="h-14 w-full justify-between rounded-none hover:bg-gray-50 px-4 text-left font-normal"
-                                    >
-                                        <div className="flex flex-col items-start">
-                                            <span className="text-xs font-bold uppercase text-gray-500">Travellers</span>
-                                            <span className="text-base text-gray-900">
-                                                {travellers} Adult{travellers !== 1 ? 's' : ''}
-                                            </span>
-                                        </div>
-                                        <Users className="h-4 w-4 text-gray-400 shrink-0 ml-2" />
-                                    </Button>
-                                </PopoverTrigger>
-                                <PopoverContent className="w-64 p-4" align="start">
-                                    <div className="flex items-center justify-between">
-                                        <span className="font-medium text-sm">Adults (18+ years)</span>
-                                        <div className="flex items-center gap-3">
-                                            <Button
-                                                variant="outline"
-                                                size="icon"
-                                                className="h-8 w-8 rounded-full"
-                                                onClick={() => setTravellers(Math.max(1, travellers - 1))}
-                                                disabled={travellers <= 1}
-                                            >
-                                                -
-                                            </Button>
-                                            <span className="w-4 text-center text-base font-medium">{travellers}</span>
-                                            <Button
-                                                variant="outline"
-                                                size="icon"
-                                                className="h-8 w-8 rounded-full"
-                                                onClick={() => setTravellers(travellers + 1)}
-                                            >
-                                                +
-                                            </Button>
-                                        </div>
-                                    </div>
-                                </PopoverContent>
-                            </Popover>
-                        </div>
-
-                        <Button 
-                            className="h-14 bg-primary px-8 text-base font-bold text-white hover:bg-primary/80 rounded-md md:w-auto m-1"
-                            onClick={handleSearch}
-                        >
-                            Show Tours
-                        </Button>
-                    </div>
-
-                    {/* Trust Indicators */}
-                    <div className="mt-6 flex flex-col items-center justify-center gap-2 text-sm font-medium text-white/90 shadow-black/50 drop-shadow-md sm:flex-row sm:gap-6">
-                        <div className="flex items-center gap-1.5">
-                            <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                            <span>4.9/5 from 200+ travellers</span>
-                        </div>
-                        <div className="hidden h-4 w-px bg-white/40 sm:block" />
-                        <div>Local experts in East Africa</div>
-                        <div className="hidden h-4 w-px bg-white/40 sm:block" />
-                        <div>Tailor-made itineraries</div>
-                    </div>
-                </div>
-            </section>
+            <Hero parks={parks} />
 
             {/* Experience Cards - TripAdvisor Style */}
             <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
-                <h2 className="mb-2 text-2xl font-bold text-gray-900">
+                <h2 className="mb-4 text-5xl font-bold text-gray-900">
                     Popular experiences
                 </h2>
                 <p className="mb-8 text-gray-600">
@@ -302,9 +65,12 @@ export default function Page() {
             {/* Why Travel With Us Section */}
             <section className="py-12">
                 <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-                    <h2 className="mb-2 text-2xl font-bold text-gray-900">
+                    <h2 className="mb-4 text-5xl font-bold text-gray-900">
                         Why travel with Makisala
                     </h2>
+                    <p className="mb-12 text-lg text-gray-600 max-w-2xl">
+                        We don't just book trips; we craft unforgettable experiences rooted in local expertise and sustainable travel.
+                    </p>
                     <div className="grid gap-12 md:grid-cols-3">
                         {why_travel_with_us.map((item, index) => (
                             <div key={index} className="flex flex-col items-center text-center">
@@ -331,7 +97,7 @@ export default function Page() {
 
             {/* National Parks Section */}
             <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
-                <h2 className="mb-2 text-2xl font-bold text-gray-900">
+                <h2 className="mb-4 text-5xl font-bold text-gray-900">
                     Popular National Parks
                 </h2>
                 <p className="mb-8 text-gray-600">
@@ -369,7 +135,7 @@ export default function Page() {
             <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
                 <div className="mb-8 flex items-center">
                     <div>
-                        <h2 className="text-2xl font-bold text-gray-900">
+                        <h2 className="text-5xl font-bold text-gray-900">
                             Featured itineraries
                         </h2>
                         <p className="mt-1 text-gray-500">
@@ -431,26 +197,12 @@ export default function Page() {
                 </div>
             </section>
 
-            {/* Contact Form Section */}
-            <section className="bg-gray-50 py-16">
-                <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
-                    <div className="text-center mb-12">
-                        <h2 className="text-3xl font-bold text-gray-900">
-                            Start Planning Your Safari
-                        </h2>
-                        <p className="mt-4 text-lg text-gray-600">
-                            Tell us about your dream trip and we'll make it happen.
-                        </p>
-                    </div>
-                    <div className="bg-white rounded-2xl shadow-xl p-8">
-                        <ContactForm />
-                    </div>
-                </div>
-            </section>
-
-            {/* Google Reviews Section */}
+             {/* Google Reviews Section */}
             <section className="bg-white py-16">
                 <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                    <h2 className="mb-12 text-center text-5xl font-bold text-gray-900">
+                        What our travellers say
+                    </h2>
                     <div className="mb-12 flex items-center justify-center gap-4">
                         <div className="flex items-center gap-1">
                             <span className="text-2xl font-bold text-gray-900">
@@ -525,6 +277,23 @@ export default function Page() {
                                 </div>
                             </div>
                         ))}
+                    </div>
+                </div>
+            </section>
+
+            {/* Contact Form Section */}
+            <section className="py-16">
+                <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
+                    <div className="text-center mb-12">
+                        <h2 className="text-5xl font-bold text-gray-900">
+                            Start Planning Your Safari
+                        </h2>
+                        <p className="mt-4 text-lg text-gray-600">
+                            Tell us about your dream trip and we'll make it happen.
+                        </p>
+                    </div>
+                    <div className="bg-white rounded-2xl shadow-xl p-8">
+                        <ContactForm />
                     </div>
                 </div>
             </section>
