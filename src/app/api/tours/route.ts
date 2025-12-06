@@ -1,13 +1,13 @@
 import { type NextRequest, NextResponse } from 'next/server'
 import { db } from '@/db'
 import { tours, itineraryDays, nationalParks } from '@/db/schema'
-import { and, eq, gte, ilike, lte, or, sql, exists } from 'drizzle-orm'
+import { and, eq, gte, ilike, lte, or, sql, exists, inArray } from 'drizzle-orm'
 
 export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
 
     const search = searchParams.get('search') || ''
-    const country = searchParams.get('country') || ''
+    const countries = searchParams.get('country')?.split(',').filter(Boolean) || []
     const np = searchParams.get('np') || ''
     const minPrice = Number.parseFloat(searchParams.get('minPrice') || '0')
     const maxPrice = Number.parseFloat(searchParams.get('maxPrice') || '10000')
@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
                   ilike(tours.overview, `%${search}%`),
               )
             : undefined,
-        country ? eq(tours.country, country) : undefined,
+        countries.length > 0 ? inArray(tours.country, countries) : undefined,
         gte(tours.pricing, String(minPrice)),
         lte(tours.pricing, String(maxPrice)),
         gte(tours.number_of_days, minDays),

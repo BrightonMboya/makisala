@@ -90,7 +90,7 @@ export default function ContactForm({
                 {/* Personal Information */}
                 <div className="space-y-4">
                     <h3 className="text-lg font-semibold">
-                        Personal Information
+                        Personal Details
                     </h3>
                     <FormField
                         control={form.control}
