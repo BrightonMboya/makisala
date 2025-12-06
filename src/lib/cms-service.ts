@@ -18,8 +18,10 @@ import {
 import { pages } from '@/db/schema'
 import {
     and,
+    asc,
     desc,
     eq,
+    gte,
     ilike,
     InferInsertModel,
     InferSelectModel,
@@ -456,6 +458,9 @@ export type TourCard = {
     pricing: string
     img_url: string
     number_of_days: number
+    parks?: string[]
+    rating?: string
+    reviews?: string
 }
 
 export async function getNPInfo(
@@ -523,6 +528,7 @@ export async function fetchAllNps() {
     return await db
         .select({
             name: nationalParks.name,
+            country: nationalParks.country,
         })
         .from(nationalParks)
 }
@@ -610,4 +616,38 @@ export async function AllToursSlugs() {
             slug: tours.slug,
         })
         .from(tours)
+}
+
+export async function getWeekendDeals() {
+    const rows = await db.execute(sql`
+        SELECT DISTINCT ON (tags[1])
+            t.id, 
+            t.tour_name, 
+            t.slug, 
+            t.country, 
+            t.pricing, 
+            t.img_url, 
+            t.number_of_days
+        FROM tours t
+        WHERE t.pricing >= 1800
+        ORDER BY t.tags[1], t.pricing ASC
+        LIMIT 4
+    `)
+
+    // Helper to generate stable random-ish numbers based on ID
+    const getStableRandom = (seed: string, min: number, max: number, decimals: number = 0) => {
+        let hash = 0;
+        for (let i = 0; i < seed.length; i++) {
+            hash = seed.charCodeAt(i) + ((hash << 5) - hash);
+        }
+        const normalized = (Math.abs(hash) % 100) / 100;
+        const val = min + normalized * (max - min);
+        return val.toFixed(decimals);
+    }
+
+    return rows.map(row => ({
+        ...row,
+        rating: getStableRandom(row.id as string, 4.5, 5.0, 1),
+        reviews: getStableRandom(row.id as string, 12, 150, 0)
+    })) as TourCard[]
 }

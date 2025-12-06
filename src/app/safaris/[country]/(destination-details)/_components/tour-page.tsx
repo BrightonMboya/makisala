@@ -29,6 +29,12 @@ export default function ToursPage({ initialCountry }: ToursPageProps) {
     const router = useRouter()
     const searchParams = useSearchParams()
 
+    // 🔹 Default Values
+    const DEFAULT_MIN_PRICE = 0
+    const DEFAULT_MAX_PRICE = 5000
+    const DEFAULT_MIN_DAYS = 1
+    const DEFAULT_MAX_DAYS = 15
+
     // 🔹 Helper to update the URL
     const updateUrl = (
         params: Record<string, string | string[] | undefined>,
@@ -37,12 +43,22 @@ export default function ToursPage({ initialCountry }: ToursPageProps) {
 
         for (const key in params) {
             const value = params[key]
-            if (!value || (Array.isArray(value) && value.length === 0)) {
+            
+            // Check for default values to exclude from URL
+            let isDefault = false
+            if (key === 'minPrice' && Number(value) === DEFAULT_MIN_PRICE) isDefault = true
+            if (key === 'maxPrice' && Number(value) === DEFAULT_MAX_PRICE) isDefault = true
+            if (key === 'minDays' && Number(value) === DEFAULT_MIN_DAYS) isDefault = true
+            if (key === 'maxDays' && Number(value) === DEFAULT_MAX_DAYS) isDefault = true
+            if (key === 'page' && Number(value) === 1) isDefault = true
+            if (key === 'country' && value === initialCountry) isDefault = true
+
+            if (!value || (Array.isArray(value) && value.length === 0) || isDefault) {
                 newParams.delete(key)
             } else if (Array.isArray(value)) {
                 newParams.set(key, value.join(','))
             } else {
-                newParams.set(key, value)
+                newParams.set(key, value as string)
             }
         }
 
@@ -53,14 +69,15 @@ export default function ToursPage({ initialCountry }: ToursPageProps) {
     const [searchQuery, setSearchQuery] = useState(
         searchParams.get('search') || '',
     )
+    const [npFilter, setNpFilter] = useState(searchParams.get('np') || '')
     const [filters, setFilters] = useState<FilterState>({
         priceRange: [
-            Number(searchParams.get('minPrice') || 0),
-            Number(searchParams.get('maxPrice') || 5000),
+            Number(searchParams.get('minPrice') || DEFAULT_MIN_PRICE),
+            Number(searchParams.get('maxPrice') || DEFAULT_MAX_PRICE),
         ],
         daysRange: [
-            Number(searchParams.get('minDays') || 1),
-            Number(searchParams.get('maxDays') || 15),
+            Number(searchParams.get('minDays') || DEFAULT_MIN_DAYS),
+            Number(searchParams.get('maxDays') || DEFAULT_MAX_DAYS),
         ],
         selectedCountries: searchParams.get('country')
             ? searchParams.get('country')!.split(',')
@@ -88,6 +105,7 @@ export default function ToursPage({ initialCountry }: ToursPageProps) {
 
             const params = {
                 search: searchQuery || '',
+                np: npFilter || '',
                 minPrice: filters.priceRange[0].toString(),
                 maxPrice: filters.priceRange[1].toString(),
                 minDays: filters.daysRange[0].toString(),
@@ -138,6 +156,7 @@ export default function ToursPage({ initialCountry }: ToursPageProps) {
             selectedTags: [],
         })
         setSearchQuery('')
+        setNpFilter('')
         setPagination((prev) => ({ ...prev, currentPage: 1 }))
 
         router.push('?', { scroll: false }) // reset URL completely

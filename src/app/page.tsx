@@ -1,433 +1,533 @@
+"use client";
+
 import Image from 'next/image'
-import { safaris, why_travel_with_us } from '@/lib/constants'
 import { Button } from '@/components/ui/button'
-import ImageCard from '@/components/home/image-card'
+import { Calendar } from '@/components/ui/calendar'
+import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from '@/components/ui/popover'
+import { CalendarIcon, MapPin, Users, Star, Check } from 'lucide-react'
+import { format } from 'date-fns'
+import { capitalize, cn } from '@/lib/utils'
+import { useState } from 'react'
 import Link from 'next/link'
-import C2A from '@/components/home/call-to-action'
-import { BreadcrumbSchema } from '@/components/schema'
-import Script from 'next/script'
-import { InquiryDialog } from '@/components/enquire-dialog-button'
+import { safaris, featured_national_parks, why_travel_with_us } from '@/lib/constants'
+import ContactForm from '@/components/contact-form'
+import { useRouter } from 'next/navigation'
+import { fetchAllNps, getWeekendDeals } from '@/lib/cms-service';
+import {
+    Command,
+    CommandEmpty,
+    CommandGroup,
+    CommandInput,
+    CommandItem,
+    CommandList,
+} from '@/components/ui/command'
+
+import { useQuery } from '@tanstack/react-query'
 
 export default function Page() {
+    const [date, setDate] = useState<Date | undefined>()
+    const [openDate, setOpenDate] = useState(false)
+    const [destination, setDestination] = useState("")
+    const [openDestination, setOpenDestination] = useState(false)
+    const [travellers, setTravellers] = useState(1)
+    const router = useRouter()
+
+    const { data: parks = [] } = useQuery({
+        queryKey: ['national-parks'],
+        queryFn: fetchAllNps,
+    })
+
+    const { data: deals = [] } = useQuery({
+        queryKey: ['weekend-deals'],
+        queryFn: getWeekendDeals,
+    })
+
+    const handleSearch = () => {
+        const params = new URLSearchParams()
+        if (date) params.set('date', date.toISOString())
+        if (travellers) params.set('travellers', travellers.toString())
+        
+        // Check if destination is a country or a park
+        const isCountry = ['Tanzania', 'Rwanda'].includes(destination)
+        
+        if (isCountry) {
+            router.push(`/safaris/${destination.toLowerCase()}?${params.toString()}`)
+        } else if (destination) {
+            // It's a park, find the country
+            const park = parks.find(p => p.name === destination)
+            const country = park?.country || 'tanzania' // Default to Tanzania if not found
+            params.set('np', destination)
+            router.push(`/safaris/${country.toLowerCase()}?${params.toString()}`)
+        } else {
+            // No destination selected, go to generic safaris page or default
+            router.push(`/safaris?${params.toString()}`)
+        }
+    }
+
     return (
-        <main>
-            <Script
-                type={'application/ld+json'}
-                strategy={'lazyOnload'}
-                id="schema-id"
-            >
-                {JSON.stringify([
-                    BreadcrumbSchema({
-                        breadcrumbs: [
-                            { name: 'Home', url: 'https://www.makisala.com' },
-                        ],
-                    }),
-                ])}
-            </Script>
-            <div className="min-h-screen bg-white">
-                {/* Hero Section */}
-                <section className="relative mt-16 flex h-[80dvh] items-center justify-start overflow-hidden lg:h-screen">
-                    <div className="absolute inset-0">
-                        <Image
-                            src="https://res.cloudinary.com/dr2tdyz2w/image/upload/v1753373725/6-Days-Best-Family-Safaris-and-Culture-Tour-in-Tanzania_l9fgum.jpg"
-                            alt="Makisala"
-                            fill
-                            className="object-cover"
-                            priority
-                        />
-                        <div className="absolute inset-0 bg-black/70 lg:bg-black/60" />
-                    </div>
-                    <div className="relative z-10 mx-auto w-full max-w-7xl px-4 text-white sm:px-6 lg:px-8">
-                        <div className="max-w-2xl">
-                            <div className="text-md mb-1 font-light tracking-wider lg:text-lg">
-                                Discover Africa, Effortlessly
-                            </div>
-                            <h1 className="mb-8 text-xl leading-tight font-medium md:text-5xl">
-                                Luxury safaris made simple for couples,
-                                families, and first-time explorers.
-                            </h1>
-                            <div className="flex space-x-4">
-                                {/*<Button*/}
-                                {/*    variant="outline"*/}
-                                {/*    className="border-white text-white hover:bg-white hover:text-black px-8 py-3 text-sm font-medium bg-transparent">*/}
-                                {/*    EXPERIENCES*/}
-                                {/*</Button>*/}
-                                <InquiryDialog>
-                                    <Button className="bg-white px-8 py-3 text-sm font-medium text-black hover:bg-gray-100">
-                                        START PLANNING
-                                    </Button>
-                                </InquiryDialog>
-                            </div>
-                        </div>
-                    </div>
-                </section>
+        <main className="min-h-screen bg-gray-50">
+            {/* Hero Section */}
+            <section className="relative min-h-[600px] w-full lg:h-[600px] h-auto">
+                <div className="absolute inset-0">
+                    <Image
+                        src="https://res.cloudinary.com/dr2tdyz2w/image/upload/v1757620218/Serengeti-Balloon-Safari-andBeyond-Experience_itpmf9.jpg"
+                        alt="Hero Background"
+                        fill
+                        className="object-cover"
+                        priority
+                    />
+                    <div className="absolute inset-0 bg-black/50" />
+                </div>
 
-                {/* Destinations and Experiences Section */}
-                <section className="mt-16 bg-white pt-16">
-                    <div className="mx-auto max-w-7xl px-4 text-center sm:px-6 lg:px-8">
-                        <div className="mb-4 text-sm font-medium tracking-wider text-gray-500">
-                            DESTINATIONS, EXPERIENCES AND TRIP TYPES
-                        </div>
-                    </div>
-                </section>
+                <div className="relative z-10 mx-auto flex h-full max-w-7xl flex-col justify-center px-4 py-20 sm:px-6 lg:px-8">
+                    <h1 className="mb-6 text-center text-3xl font-bold text-white shadow-black/50 drop-shadow-md md:text-6xl">
+                        Find your perfect African safari
+                    </h1>
+                    <p className="mb-8 text-center text-lg text-white shadow-black/50 drop-shadow-md max-w-3xl mx-auto md:text-xl">
+                        Tailor-made journeys crafted by local East African experts. Personalized advice,
+                        vetted lodges and ethical travel practices.
+                    </p>
 
-                {/* What Would You Like To Experience Section */}
-                <section className="bg-white pb-20">
-                    <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-                        <div className="mb-16 text-center">
-                            <h2 className="mb-4 text-4xl font-light text-gray-900">
-                                What Would You Like To Experience
-                            </h2>
-                        </div>
-                        <div className="grid gap-6 md:grid-cols-3">
-                            {safaris.map((experience, index) => (
-                                <Link href={experience.page_url} key={index}>
-                                    <div
-                                        key={index}
-                                        className="group relative cursor-pointer overflow-hidden rounded-lg"
+                    {/* Search Widget - Functional */}
+                    <div className="mx-auto flex w-full max-w-5xl flex-col gap-0 rounded-lg bg-white p-1 shadow-lg md:flex-row">
+                        <div className="relative flex-1 border-b md:border-b-0 md:border-r border-gray-200">
+                            <Popover open={openDestination} onOpenChange={setOpenDestination}>
+                                <PopoverTrigger asChild>
+                                    <Button
+                                        variant="ghost"
+                                        role="combobox"
+                                        aria-expanded={openDestination}
+                                        className="h-14 w-full justify-between rounded-none hover:bg-gray-50 px-4 text-left font-normal"
                                     >
-                                        <div className="relative aspect-[4/3]">
-                                            <Image
-                                                src={
-                                                    experience.image ||
-                                                    '/placeholder.svg'
-                                                }
-                                                alt={experience.title}
-                                                fill
-                                                className="object-cover transition-transform duration-300 group-hover:scale-105"
-                                            />
-                                            <div className="absolute inset-0 bg-black/40 transition-colors group-hover:bg-black/50" />
-                                            <div className="absolute inset-0 flex items-center justify-center">
-                                                <h3 className="absolute bottom-3 px-4 text-lg font-medium text-white">
-                                                    {experience.title}
-                                                </h3>
-                                            </div>
+                                        <div className="flex flex-col items-start truncate">
+                                            <span className="text-xs font-bold uppercase text-gray-500">Destination</span>
+                                            <span className={cn("text-base truncate", !destination && "text-gray-400")}>
+                                                {destination || "Where To?"}
+                                            </span>
+                                        </div>
+                                        <MapPin className="h-4 w-4 text-gray-400 shrink-0 ml-2" />
+                                    </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-[350px] p-0" align="start">
+                                    <Command>
+                                        <CommandInput placeholder="Search country or park..." />
+                                        <CommandList>
+                                            <CommandEmpty>No destination found.</CommandEmpty>
+                                            <CommandGroup heading="Popular Countries">
+                                                {['Tanzania', 'Rwanda'].map((country) => (
+                                                    <CommandItem
+                                                        key={country}
+                                                        value={country}
+                                                        onSelect={(currentValue) => {
+                                                            setDestination(currentValue === destination ? "" : currentValue)
+                                                            setOpenDestination(false)
+                                                        }}
+                                                    >
+                                                        <Check
+                                                            className={cn(
+                                                                "mr-2 h-4 w-4",
+                                                                destination === country ? "opacity-100" : "opacity-0"
+                                                            )}
+                                                        />
+                                                        {country}
+                                                    </CommandItem>
+                                                ))}
+                                            </CommandGroup>
+                                            <CommandGroup heading="Popular Parks & Reserves">
+                                                {parks.map((park) => (
+                                                    <CommandItem
+                                                        key={park.name}
+                                                        value={park.name}
+                                                        onSelect={(currentValue) => {
+                                                            setDestination(currentValue === destination ? "" : currentValue)
+                                                            setOpenDestination(false)
+                                                        }}
+                                                    >
+                                                        <Check
+                                                            className={cn(
+                                                                "mr-2 h-4 w-4",
+                                                                destination === park.name ? "opacity-100" : "opacity-0"
+                                                            )}
+                                                        />
+                                                        {capitalize(park.name)}
+                                                    </CommandItem>
+                                                ))}
+                                            </CommandGroup>
+                                        </CommandList>
+                                    </Command>
+                                </PopoverContent>
+                            </Popover>
+                        </div>
+
+                        <div className="relative flex-1 border-b md:border-b-0 md:border-r border-gray-200">
+                            <Popover open={openDate} onOpenChange={setOpenDate}>
+                                <PopoverTrigger asChild>
+                                    <Button
+                                        variant="ghost"
+                                        className={cn(
+                                            'h-14 w-full justify-between rounded-none hover:bg-gray-50 px-4 text-left font-normal',
+                                            !date && 'text-gray-500'
+                                        )}
+                                    >
+                                        <div className="flex flex-col items-start">
+                                            <span className="text-xs font-bold uppercase text-gray-500">Start Date</span>
+                                            <span className={cn("text-base", !date && "text-gray-400")}>
+                                                {date ? format(date, 'PPP') : "When?"}
+                                            </span>
+                                        </div>
+                                        <CalendarIcon className="h-4 w-4 text-gray-400 shrink-0 ml-2" />
+                                    </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-0" align="start">
+                                    <Calendar
+                                        mode="single"
+                                        selected={date}
+                                        onSelect={(newDate) => {
+                                            setDate(newDate)
+                                            setOpenDate(false)
+                                        }}
+                                        disabled={(date) => date < new Date()}
+                                        className="p-3"
+                                    />
+                                </PopoverContent>
+                            </Popover>
+                        </div>
+
+                        <div className="relative flex-1">
+                            <Popover>
+                                <PopoverTrigger asChild>
+                                    <Button
+                                        variant="ghost"
+                                        className="h-14 w-full justify-between rounded-none hover:bg-gray-50 px-4 text-left font-normal"
+                                    >
+                                        <div className="flex flex-col items-start">
+                                            <span className="text-xs font-bold uppercase text-gray-500">Travellers</span>
+                                            <span className="text-base text-gray-900">
+                                                {travellers} Adult{travellers !== 1 ? 's' : ''}
+                                            </span>
+                                        </div>
+                                        <Users className="h-4 w-4 text-gray-400 shrink-0 ml-2" />
+                                    </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-64 p-4" align="start">
+                                    <div className="flex items-center justify-between">
+                                        <span className="font-medium text-sm">Adults (18+ years)</span>
+                                        <div className="flex items-center gap-3">
+                                            <Button
+                                                variant="outline"
+                                                size="icon"
+                                                className="h-8 w-8 rounded-full"
+                                                onClick={() => setTravellers(Math.max(1, travellers - 1))}
+                                                disabled={travellers <= 1}
+                                            >
+                                                -
+                                            </Button>
+                                            <span className="w-4 text-center text-base font-medium">{travellers}</span>
+                                            <Button
+                                                variant="outline"
+                                                size="icon"
+                                                className="h-8 w-8 rounded-full"
+                                                onClick={() => setTravellers(travellers + 1)}
+                                            >
+                                                +
+                                            </Button>
                                         </div>
                                     </div>
-                                </Link>
-                            ))}
+                                </PopoverContent>
+                            </Popover>
                         </div>
+
+                        <Button 
+                            className="h-14 bg-primary px-8 text-base font-bold text-white hover:bg-primary/80 rounded-md md:w-auto m-1"
+                            onClick={handleSearch}
+                        >
+                            Show Tours
+                        </Button>
                     </div>
-                </section>
 
-                <section className="bg-gray-50 py-20">
-                    <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-                        <div className="grid items-center gap-16 lg:grid-cols-2">
-                            <div>
-                                <h2 className="mb-8 text-4xl font-light text-gray-900">
-                                    Traveling with Kids or Grandkids?
-                                </h2>
-                                <div className="space-y-6 leading-relaxed text-gray-700">
-                                    <p>
-                                        A family safari isn't just a vacation,
-                                        it's a story your kids will tell for the
-                                        rest of their lives. Imagine their faces
-                                        the first time they see a lion in the
-                                        wild, or hear Maasai legends by
-                                        firelight.
-                                    </p>
+                    {/* Trust Indicators */}
+                    <div className="mt-6 flex flex-col items-center justify-center gap-2 text-sm font-medium text-white/90 shadow-black/50 drop-shadow-md sm:flex-row sm:gap-6">
+                        <div className="flex items-center gap-1.5">
+                            <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                            <span>4.9/5 from 200+ travellers</span>
+                        </div>
+                        <div className="hidden h-4 w-px bg-white/40 sm:block" />
+                        <div>Local experts in East Africa</div>
+                        <div className="hidden h-4 w-px bg-white/40 sm:block" />
+                        <div>Tailor-made itineraries</div>
+                    </div>
+                </div>
+            </section>
 
-                                    <p>
-                                        We plan your trip with every generation
-                                        in mind. From kid-friendly lodges and
-                                        private guides to downtime by the pool,
-                                        your itinerary balances adventure with
-                                        comfort, so no one feels rushed or
-                                        overwhelmed.
-                                    </p>
+            {/* Experience Cards - TripAdvisor Style */}
+            <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+                <h2 className="mb-2 text-2xl font-bold text-gray-900">
+                    Popular experiences
+                </h2>
+                <p className="mb-8 text-gray-600">
+                    Tap into the kind of safari you’ve dreamed about.
+                </p>
 
-                                    <p>
-                                        Whether you're traveling with little
-                                        ones, teens, or grown kids, we make it
-                                        easy to connect, unplug, and create
-                                        memories that matter.
-                                    </p>
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
+                    {safaris.map((safari, index) => (
+                        <Link
+                            href={safari.page_url}
+                            key={index}
+                            className={cn(
+                                "group relative overflow-hidden rounded-xl",
+                                index < 2 ? "md:col-span-2 h-[300px] md:h-[400px]" : "md:col-span-1 h-[300px]"
+                            )}
+                        >
+                            <Image
+                                src={safari.image || '/placeholder.svg'}
+                                alt={safari.title}
+                                fill
+                                className="object-cover transition-transform duration-500 group-hover:scale-110"
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                            <div className="absolute bottom-0 left-0 p-6">
+                                <h3 className="text-xl font-bold text-white uppercase tracking-wide">
+                                    {safari.title}
+                                </h3>
+                            </div>
+                        </Link>
+                    ))}
+                </div>
+            </section>
 
-                                    <p className="font-medium text-gray-900">
-                                        Tell us about your crew, we’ll take care
-                                        of the rest.
-                                    </p>
+            {/* Why Travel With Us Section */}
+            <section className="py-12">
+                <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                    <h2 className="mb-2 text-2xl font-bold text-gray-900">
+                        Why travel with Makisala
+                    </h2>
+                    <div className="grid gap-12 md:grid-cols-3">
+                        {why_travel_with_us.map((item, index) => (
+                            <div key={index} className="flex flex-col items-center text-center">
+                                <div className="relative mb-6 h-64 w-full overflow-hidden rounded-2xl shadow-sm">
+                                    <Image
+                                        src={item.img_url}
+                                        alt={item.alt}
+                                        fill
+                                        className="object-cover transition-transform duration-500 hover:scale-105"
+                                    />
                                 </div>
+                                <h3 className="mb-3 text-xl font-semibold text-gray-900">
+                                    {item.title}
+                                </h3>
+                                <p className="max-w-sm leading-relaxed text-gray-600">
+                                    {item.description}
+                                </p>
                             </div>
-                            <div className="relative h-[300px] w-[400px] lg:h-[400px] lg:w-[600px]">
+                        ))}
+                    </div>
+                </div>
+            </section>
+            
+
+            {/* National Parks Section */}
+            <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+                <h2 className="mb-2 text-2xl font-bold text-gray-900">
+                    Popular National Parks
+                </h2>
+                <p className="mb-8 text-gray-600">
+                    Explore the best of Tanzania's wilderness
+                </p>
+
+                <div className="flex w-full gap-6 overflow-x-auto pb-6 scrollbar-hide snap-x">
+                    {featured_national_parks.map((destination, index) => (
+                        <Link
+                            href={destination.page_url}
+                            key={index}
+                            className="group relative min-w-[280px] flex-none snap-start aspect-[4/3] overflow-hidden rounded-xl sm:min-w-[320px]"
+                        >
+                            <Image
+                                src={destination.image || '/placeholder.svg'}
+                                alt={destination.name}
+                                fill
+                                className="object-cover transition-transform duration-300 group-hover:scale-110"
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
+                            <div className="absolute bottom-0 left-0 p-6">
+                                <h3 className="text-xl font-bold text-white">
+                                    {destination.name}
+                                </h3>
+                                <p className="text-sm text-gray-200">
+                                    {destination.description}
+                                </p>
+                            </div>
+                        </Link>
+                    ))}
+                </div>
+            </section>
+
+            {/* Featured Section (Existing) */}
+            <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+                <div className="mb-8 flex items-center">
+                    <div>
+                        <h2 className="text-2xl font-bold text-gray-900">
+                            Featured itineraries
+                        </h2>
+                        <p className="mt-1 text-gray-500">
+                            Real trips real travellers loved, fully customizable.
+                        </p>
+                    </div>
+                   
+                </div>
+
+                <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+                    {deals.map((item) => (
+                        <Link
+                            href={`/tours/${item.slug}`}
+                            key={item.id}
+                            className="group relative overflow-hidden rounded-xl bg-white shadow-md transition-shadow hover:shadow-lg"
+                        >
+                            <div className="relative aspect-[4/3]">
                                 <Image
-                                    src="https://res.cloudinary.com/dr2tdyz2w/image/upload/v1753793635/Tanzania-Family-Safari-1_njxhyq.webp"
-                                    alt="Makisala Family Safari"
-                                    fill={true}
-                                    className="rounded-lg object-cover lg:w-[500px]"
+                                    src={item.img_url || '/placeholder.svg'}
+                                    alt={item.tourName}
+                                    fill
+                                    className="object-cover transition-transform duration-300 group-hover:scale-105"
                                 />
-                            </div>
-                        </div>
-                    </div>
-                </section>
-
-                {/* Family Passion Section */}
-                <section className="bg-white pt-16">
-                    <div className="mx-auto max-w-7xl px-4 text-center sm:px-6 lg:px-8">
-                        <div className="mb-4 text-sm font-medium tracking-wider text-gray-500">
-                            FAMILY PASSION MEETS SAFARI EXPERTISE
-                        </div>
-                    </div>
-                </section>
-
-                {/* Why Travel With Us Section */}
-                <section className="bg-white">
-                    <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-                        <div className="mb-16 text-center">
-                            <h2 className="mb-4 text-4xl font-light text-gray-900">
-                                Why travel with MAKISALA
-                            </h2>
-                        </div>
-                        <div className="grid gap-12 md:grid-cols-3">
-                            {why_travel_with_us.map((item, index) => (
-                                <ImageCard
-                                    key={index}
-                                    img_url={item.img_url}
-                                    alt={item.alt}
-                                    title={item.title}
-                                    description={item.description}
-                                    rounded={false}
-                                />
-                            ))}
-                        </div>
-                    </div>
-                </section>
-
-                {/* When to Travel Section */}
-                {/*<section className="py-20 bg-gray-50">*/}
-                {/*    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">*/}
-                {/*        <div className="text-center mb-16">*/}
-                {/*            <h2 className="text-4xl font-light text-gray-900 mb-4">*/}
-                {/*                When to travel*/}
-                {/*            </h2>*/}
-                {/*            <div className="w-16 h-px bg-gray-300 mx-auto mb-8"></div>*/}
-                {/*            <p className="text-gray-600 max-w-4xl mx-auto leading-relaxed">*/}
-                {/*                Truth be told, there's no bad time to Africa, just different*/}
-                {/*                times! The variety served up by Africa's diversity means unique*/}
-                {/*                experiences throughout the year. See the Wildebeest Migration in*/}
-                {/*                East Africa, go gorilla trekking in Uganda, track the BIG 5 in*/}
-                {/*                Botswana or honeymoon in the Seychelles; SAFARI FRANK will give*/}
-                {/*                you 'frank' advice on what to expect when, as well as options for*/}
-                {/*                the experience of a lifetime.*/}
-                {/*            </p>*/}
-                {/*        </div>*/}
-
-                {/*        /!* Month Tabs *!/*/}
-                {/*        <div className="flex flex-wrap justify-center mb-12">*/}
-                {/*            {months.map((month, index) => (*/}
-                {/*                <button*/}
-                {/*                    key={month}*/}
-                {/*                    className={`px-6 py-3 text-sm font-medium border-r border-gray-300 last:border-r-0 ${*/}
-                {/*                        index === 0*/}
-                {/*                            ? "bg-black text-white"*/}
-                {/*                            : "bg-white text-gray-700 hover:bg-gray-50"*/}
-                {/*                    }`}>*/}
-                {/*                    {month}*/}
-                {/*                </button>*/}
-                {/*            ))}*/}
-                {/*        </div>*/}
-
-                {/*        /!* Featured Destination *!/*/}
-                {/*        <div className="grid lg:grid-cols-2 gap-12 items-center">*/}
-                {/*            <div className="bg-gray-800 text-white p-8 rounded-lg">*/}
-                {/*                <div className="text-sm mb-4">*/}
-                {/*                    Season: High Summer / Ave Temp: 25°C / Highlight: Glorious Cape*/}
-                {/*                    Town*/}
-                {/*                </div>*/}
-                {/*                <h3 className="text-3xl font-light mb-6">*/}
-                {/*                    Cape Town And The Garden Route*/}
-                {/*                </h3>*/}
-                {/*                <p className="text-gray-300 leading-relaxed">*/}
-                {/*                    As the new year descends on Africa so does the much-anticipated*/}
-                {/*                    rain in the south. January in Southern and East Africa tends to*/}
-                {/*                    be quieter making it a great time to take advantage of*/}
-                {/*                    competitive rates, making safaris more accessible and*/}
-                {/*                    affordable. A stay in fabulous Cape Town and self-drive up the*/}
-                {/*                    Whale Coast & Garden Route is a great option and don't forget*/}
-                {/*                    the Cape Vineyards....*/}
-                {/*                </p>*/}
-                {/*            </div>*/}
-                {/*            <div className="relative">*/}
-                {/*                <Image*/}
-                {/*                    src="/placeholder.svg?height=400&width=600"*/}
-                {/*                    alt="Cape Town Coastal View"*/}
-                {/*                    width={600}*/}
-                {/*                    height={400}*/}
-                {/*                    className="rounded-lg"*/}
-                {/*                />*/}
-                {/*            </div>*/}
-                {/*        </div>*/}
-                {/*    </div>*/}
-                {/*</section>*/}
-
-                {/* How It Works Section */}
-                <section className="bg-white py-20">
-                    <div className="mx-auto max-w-lg px-4 sm:px-6 lg:max-w-none">
-                        <div className="mb-16 text-center">
-                            <h2 className="mb-4 text-4xl font-light text-gray-900">
-                                How It Works
-                            </h2>
-                            <div className="mx-auto h-px w-16 bg-gray-300"></div>
-                        </div>
-
-                        <div className="grid gap-5 md:grid-cols-5">
-                            {[
-                                {
-                                    step: 'STEP 1',
-                                    title: 'Get Inspired',
-                                    description:
-                                        "Browse our handpicked safari ideas from the Serengeti to hidden corners of Africa. Whether you're dreaming of big cats or quiet luxury, you'll find something that sparks your imagination.",
-                                },
-                                {
-                                    step: 'STEP 2',
-                                    title: 'Reach Out',
-                                    description:
-                                        "When you're ready, just say hi. Fill out our quick enquiry form or book a call, and we’ll match you with a Makisala safari expert who understands your style and vision.",
-                                },
-                                {
-                                    step: 'STEP 3',
-                                    title: 'Tailor Your Journey',
-                                    description:
-                                        'We build your trip around you your pace, your priorities, your people. From choosing the perfect camps to planning downtime, we handle the details so you can focus on the adventure.',
-                                },
-                                {
-                                    step: 'STEP 4',
-                                    title: 'Refine and Confirm',
-                                    description:
-                                        'We’ll walk you through every part of your itinerary, answer all your questions, and fine-tune the plan until it feels just right. No pressure. No guessing.',
-                                },
-                                {
-                                    step: 'STEP 5',
-                                    title: 'Experience Africa',
-                                    description:
-                                        'From the moment you land, we’re right there with you. Our team and trusted partners are on hand throughout your journey so you can relax, explore, and enjoy every moment.',
-                                },
-                            ].map((item, index) => (
-                                <div
-                                    key={index}
-                                    className="rounded-lg bg-gray-50 p-8 text-center"
-                                >
-                                    <div className="mb-2 text-xs font-medium tracking-wider text-gray-500">
-                                        {item.step}
+                                <div className="absolute left-3 top-3 flex flex-wrap gap-2">
+                                    <div className="rounded bg-gray-900 px-2 py-1 text-xs font-medium text-white">
+                                        {item.number_of_days} Days
                                     </div>
-                                    <div className="mx-auto mb-4 h-px w-8 bg-gray-300"></div>
-                                    <h3 className="mb-4 text-2xl font-light text-gray-900">
-                                        {item.title}
-                                    </h3>
-                                    <p className="text-sm leading-relaxed text-gray-600">
-                                        {item.description}
-                                    </p>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                </section>
-
-                <C2A />
-
-                {/* Founder Quote Section */}
-                <section className="bg-gray-50 py-20">
-                    <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-                        <div className="grid items-center gap-16 lg:grid-cols-2">
-                            <div>
-                                {/*<div className="text-sm font-medium tracking-wider text-gray-500 mb-6">*/}
-                                {/*    BRIGHTON MBOYA, CO-FOUNDER MAKISALA*/}
-                                {/*</div>*/}
-                                <h2 className="mb-8 text-4xl font-light text-gray-900">
-                                    We’re in the business of making wild dreams
-                                    come true.
-                                </h2>
-                                <div className="space-y-6 leading-relaxed text-gray-700">
-                                    <p>
-                                        At Makisala, we plan life-changing
-                                        safaris with heart, purpose, and deep
-                                        local expertise. We know Tanzania and
-                                        East Africa like home because it is. We
-                                        believe a great safari isn’t just about
-                                        what you see. It’s about{' '}
-                                        <strong>
-                                            how it makes you feel more connected
-                                        </strong>
-                                        , more alive, more in awe of the world.
-                                        And yes, we’re proud to give back: every
-                                        trip supports the people and places that
-                                        make Africa magical.
-                                    </p>
-                                    <p className="font-medium">
-                                        Let's make the world a little wilder,
-                                        one safari at a time.
-                                    </p>
                                 </div>
                             </div>
-                            <div className="relative h-[300px] w-[400px] lg:h-[400px] lg:w-[600px]">
-                                <Image
-                                    src="https://res.cloudinary.com/dr2tdyz2w/image/upload/v1753373584/family-safari.jpg_vu3zur.jpg"
-                                    alt="Makisala Family Safari"
-                                    fill={true}
-                                    className="rounded-lg object-cover lg:w-[500px]"
-                                />
+                            <div className="p-4">
+                                <h3 className="text-lg font-semibold text-gray-900 line-clamp-1">
+                                    {item.tourName}
+                                </h3>
+                                <p className="text-sm text-gray-500 capitalize">
+                                    {item.country}
+                                </p>
+                                <div className="mt-2 flex items-center gap-2">
+                                    <span className="rounded bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800">
+                                        {item.rating || '4.8'}/5
+                                    </span>
+                                    <span className="text-xs text-gray-500">
+                                        ({item.reviews || '24'} reviews)
+                                    </span>
+                                </div>
+                                <div className="mt-4">
+                                    <div className="flex items-baseline gap-2">
+                                        <span className="text-lg font-bold text-gray-900">
+                                            {new Intl.NumberFormat('en-US', {
+                                                style: 'currency',
+                                                currency: 'USD',
+                                                maximumFractionDigits: 0,
+                                            }).format(Number(item.pricing))}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </Link>
+                    ))}
+                </div>
+            </section>
+
+            {/* Contact Form Section */}
+            <section className="bg-gray-50 py-16">
+                <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
+                    <div className="text-center mb-12">
+                        <h2 className="text-3xl font-bold text-gray-900">
+                            Start Planning Your Safari
+                        </h2>
+                        <p className="mt-4 text-lg text-gray-600">
+                            Tell us about your dream trip and we'll make it happen.
+                        </p>
+                    </div>
+                    <div className="bg-white rounded-2xl shadow-xl p-8">
+                        <ContactForm />
+                    </div>
+                </div>
+            </section>
+
+            {/* Google Reviews Section */}
+            <section className="bg-white py-16">
+                <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                    <div className="mb-12 flex items-center justify-center gap-4">
+                        <div className="flex items-center gap-1">
+                            <span className="text-2xl font-bold text-gray-900">
+                                4.9
+                            </span>
+                            <div className="flex text-yellow-400">
+                                {[...Array(5)].map((_, i) => (
+                                    <Star
+                                        key={i}
+                                        className="h-6 w-6 fill-current"
+                                    />
+                                ))}
                             </div>
                         </div>
+                        <span className="text-gray-500">
+                            Based on 150+ Google Reviews
+                        </span>
+                        <Image
+                            src="https://upload.wikimedia.org/wikipedia/commons/2/2f/Google_2015_logo.svg"
+                            alt="Google"
+                            width={80}
+                            height={26}
+                            className="opacity-80"
+                        />
                     </div>
-                </section>
 
-                {/* Reviews Section */}
-                {/*<section className="py-20 bg-gray-900 text-white">*/}
-                {/*    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">*/}
-                {/*        <div className="text-center mb-16">*/}
-                {/*            <div className="text-sm font-medium tracking-wider text-gray-400 mb-4">*/}
-                {/*                WHY OUR GUESTS RETURN:*/}
-                {/*            </div>*/}
-                {/*            <h2 className="text-4xl font-light mb-4">Our Latest Reviews</h2>*/}
-                {/*        </div>*/}
-
-                {/*        <div className="grid md:grid-cols-3 gap-8">*/}
-                {/*            {[1, 2, 3].map((review) => (*/}
-                {/*                <Card key={review} className="bg-gray-800 border-gray-700">*/}
-                {/*                    <CardContent className="p-6">*/}
-                {/*                        <div className="flex mb-4">*/}
-                {/*                            {[...Array(5)].map((_, i) => (*/}
-                {/*                                <Star*/}
-                {/*                                    key={i}*/}
-                {/*                                    className="h-4 w-4 text-yellow-400 fill-current"*/}
-                {/*                                />*/}
-                {/*                            ))}*/}
-                {/*                        </div>*/}
-                {/*                        <p className="text-gray-300 mb-4 italic">*/}
-                {/*                            "An absolutely incredible experience. The attention to*/}
-                {/*                            detail and personalized service exceeded all expectations.*/}
-                {/*                            Our guide was phenomenal!"*/}
-                {/*                        </p>*/}
-                {/*                        <div className="text-sm text-gray-400">*/}
-                {/*                            <p className="font-medium">Sarah Johnson</p>*/}
-                {/*                            <p>Verified Guest</p>*/}
-                {/*                        </div>*/}
-                {/*                    </CardContent>*/}
-                {/*                </Card>*/}
-                {/*            ))}*/}
-                {/*        </div>*/}
-                {/*    </div>*/}
-                {/*</section>*/}
-
-                {/* Partners Section */}
-                {/* <section className="py-16 bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <div className="text-sm font-medium tracking-wider text-gray-500 mb-4">
-              OUR PARTNERS IN AFRICA WILL MAKE YOUR DREAM TRIP, A TRIP TO NEVER
-              FORGET
-            </div>
-          </div>
-          <div className="flex justify-center items-center space-x-12 opacity-60">
-            {[1, 2, 3, 4, 5].map((partner) => (
-              <div key={partner} className="text-2xl font-light text-gray-400">
-                Partner {partner}
-              </div>
-            ))}
-          </div>
-        </div>
-      </section> */}
-            </div>
+                    <div className="grid gap-8 md:grid-cols-3">
+                        {[
+                            {
+                                name: 'Sarah Johnson',
+                                date: '2 weeks ago',
+                                text: 'An absolutely incredible experience. The attention to detail and personalized service exceeded all expectations. Our guide was phenomenal!',
+                            },
+                            {
+                                name: 'Michael Chen',
+                                date: '1 month ago',
+                                text: 'We had the most amazing honeymoon safari. Everything was perfectly planned, from the lodges to the game drives. Highly recommend Makisala!',
+                            },
+                            {
+                                name: 'Emma Davis',
+                                date: '2 months ago',
+                                text: 'A trip of a lifetime! Seeing the Great Migration was magical. The team took care of everything so we could just enjoy the adventure.',
+                            },
+                        ].map((review, index) => (
+                            <div
+                                key={index}
+                                className="rounded-xl bg-gray-50 p-8 shadow-sm"
+                            >
+                                <div className="mb-4 flex items-center gap-1 text-yellow-400">
+                                    {[...Array(5)].map((_, i) => (
+                                        <Star
+                                            key={i}
+                                            className="h-4 w-4 fill-current"
+                                        />
+                                    ))}
+                                </div>
+                                <p className="mb-6 text-gray-700">
+                                    "{review.text}"
+                                </p>
+                                <div className="flex items-center gap-3">
+                                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100 font-bold text-blue-600">
+                                        {review.name.charAt(0)}
+                                    </div>
+                                    <div>
+                                        <div className="font-semibold text-gray-900">
+                                            {review.name}
+                                        </div>
+                                        <div className="text-xs text-gray-500">
+                                            {review.date}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </section>
         </main>
     )
 }

@@ -1,13 +1,14 @@
 import { type NextRequest, NextResponse } from 'next/server'
 import { db } from '@/db'
-import { tours } from '@/db/schema'
-import { and, eq, gte, ilike, lte, or, sql } from 'drizzle-orm'
+import { tours, itineraryDays, nationalParks } from '@/db/schema'
+import { and, eq, gte, ilike, lte, or, sql, exists } from 'drizzle-orm'
 
 export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
 
     const search = searchParams.get('search') || ''
     const country = searchParams.get('country') || ''
+    const np = searchParams.get('np') || ''
     const minPrice = Number.parseFloat(searchParams.get('minPrice') || '0')
     const maxPrice = Number.parseFloat(searchParams.get('maxPrice') || '10000')
     const minDays = Number.parseInt(searchParams.get('minDays') || '1')
@@ -35,6 +36,23 @@ export async function GET(request: NextRequest) {
             ? sql`${tours.tags}
             &&
             ${sql.raw(`ARRAY[${tags.map((t) => `'${t}'`).join(', ')}]::text[]`)}`
+            : undefined,
+        np
+            ? exists(
+                  db
+                      .select()
+                      .from(itineraryDays)
+                      .innerJoin(
+                          nationalParks,
+                          eq(itineraryDays.national_park_id, nationalParks.id),
+                      )
+                      .where(
+                          and(
+                              eq(itineraryDays.tourId, tours.id),
+                              ilike(nationalParks.name, `%${np}%`),
+                          ),
+                      ),
+              )
             : undefined,
     )
 

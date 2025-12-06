@@ -1,15 +1,26 @@
 export const BASE_URL = 'https://makisala.com'
 export const safaris = [
     {
-        title: 'TREKKING SAFARIS',
-        page_url: '/location/kilimanjaro',
-        image: 'https://images.unsplash.com/photo-1551632811-561732d1e306?w=900&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8dHJla2tpbmd8ZW58MHx8MHx8fDA%3D',
+        title: 'GORILLA TREKKING',
+        page_url: '/location/rwanda',
+        image: 'https://images.unsplash.com/photo-1676102818778-7dedb5cdad46?w=900&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8Z29yaWxsYSUyMHRyZWtraW5nfGVufDB8fDB8fHww',
     },
     {
         title: 'FAMILY SAFARIS',
         page_url: '/who-is-travelling/family-safari',
-        image: 'https://images.unsplash.com/photo-1627962081793-907d1c65285f?w=900&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTR8fGZhbWx5JTIwc2FmYXJpfGVufDB8fDB8fHww',
+        image: "https://res.cloudinary.com/dr2tdyz2w/image/upload/v1753373584/family-safari.jpg_vu3zur.jpg"
     },
+     {
+        title: 'BIG 5 SAFARIS',
+        page_url: '/location/northern-tanzania',
+        image: 'https://images.unsplash.com/photo-1740927725816-b93880361455?w=900&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTZ8fGNvbnNlcnZhdGlvbiUyMHNhZmFyaXxlbnwwfHwwfHx8MA%3D%3D',
+    },
+    {
+        title: 'TREKKING SAFARIS',
+        page_url: '/location/kilimanjaro',
+        image: 'https://images.unsplash.com/photo-1551632811-561732d1e306?w=900&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8dHJla2tpbmd8ZW58MHx8MHx8fDA%3D',
+    },
+    
     {
         title: 'THE GREAT MIGRATION',
         page_url: '/to_book/migration-tracker-safari-tz-ke',
@@ -27,16 +38,7 @@ export const safaris = [
     //     image:
     //         "https://images.unsplash.com/photo-1580737204647-c30845d38436?w=900&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8d2Fsa2luZyUyMHNhZmFyaXxlbnwwfHwwfHx8MA%3D%3D",
     // },
-    {
-        title: 'BIG 5 SAFARIS',
-        page_url: '/location/northern-tanzania',
-        image: 'https://images.unsplash.com/photo-1740927725816-b93880361455?w=900&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTZ8fGNvbnNlcnZhdGlvbiUyMHNhZmFyaXxlbnwwfHwwfHx8MA%3D%3D',
-    },
-    {
-        title: 'GORILLA TREKKING',
-        page_url: '/location/rwanda',
-        image: 'https://images.unsplash.com/photo-1676102818778-7dedb5cdad46?w=900&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8Z29yaWxsYSUyMHRyZWtraW5nfGVufDB8fDB8fHww',
-    },
+   
     // {
     //     title: "CONSERVATION SAFARIS",
     //     page_url: "",
@@ -109,7 +111,7 @@ export const destinations = {
         {
             name: 'Tanzania',
             description: 'Endless plains and incredible wildlife',
-            page_url: '/safaris/tanzania?country=tanzania',
+            page_url: '/safaris/tanzania',
         },
         // {
         //   name: "Ngorongoro Crater",
@@ -131,12 +133,39 @@ export const destinations = {
         {
             name: 'Rwanda',
             description: 'Gorilla trekking adventures',
-            page_url: '/safaris/rwanda?country=rwanda',
+            page_url: '/safaris/rwanda',
         },
         // { name: "Uganda", description: "Gorilla trekking adventures", page_url: "/location/uganda" },
         // { name: "Zambia", description: "Walking safaris in pristine parks", page_url: "/location/zambia" },
     ],
 }
+
+export const featured_national_parks = [
+    {
+        name: 'Volcanoes National Park',
+        description: 'Home to the endangered mountain gorillas',
+        page_url: '/safaris/rwanda?np=volcanoes',
+        image: 'https://res.cloudinary.com/dr2tdyz2w/image/upload/v1763798673/volcanoes-national-park-750x450_wfupyl.jpg'
+    },
+    {
+        name: 'Serengeti National Park',
+        description: 'Witness the Great Migration',
+        page_url: '/safaris/tanzania?np=serengeti',
+        image: 'https://res.cloudinary.com/dr2tdyz2w/image/upload/v1763039383/Serengeti-Wildebeest-Migration-Safari-10-Days-750x450_lflnpq.jpg'
+    },
+    {
+        name: 'Ngorongoro Crater',
+        description: "Africa's Garden of Eden",
+        page_url: '/safaris/tanzania?np=ngorongoro',
+        image: 'https://res.cloudinary.com/dr2tdyz2w/image/upload/v1763043060/Ngoronoro-scaled-1_wbfcgz.jpg'
+    },
+    {
+        name: 'Akagera National Park',
+        description: "Rwanda's Big 5 Safari Destination",
+        page_url: '/safaris/rwanda?np=akagera',
+        image: 'https://res.cloudinary.com/dr2tdyz2w/image/upload/v1763190681/Top-Luxury-Safari-Lodges-Camps-in-Akagera-National-Park-Rwanda-1024x683_cj8aa7.jpg'
+    },
+]
 export const experiences = [
     {
         name: 'Hot Air Balloon Safari',
