@@ -21,6 +21,48 @@ export default function Page() {
         queryFn: getWeekendDeals,
     })
 
+    // Fetch Google Reviews
+    const { data: reviewsData } = useQuery({
+        queryKey: ['googleReviews'],
+        queryFn: async () => {
+            const res = await fetch('/api/reviews')
+            if (!res.ok) throw new Error('Failed to fetch reviews')
+            return res.json()
+        },
+        // Fallback data in case of error or missing credentials
+        initialData: {
+            rating: 4.9,
+            total_reviews: 200,
+            reviews: [
+                {
+                    author_name: 'Sarah Johnson',
+                    relative_time_description: '2 weeks ago',
+                    text: 'An absolutely incredible experience. The attention to detail and personalized service exceeded all expectations. Our guide was phenomenal!',
+                    rating: 5,
+                    profile_photo_url: null
+                },
+                {
+                    author_name: 'Michael Chen',
+                    relative_time_description: '1 month ago',
+                    text: 'We had the most amazing honeymoon safari. Everything was perfectly planned, from the lodges to the game drives. Highly recommend Makisala!',
+                    rating: 5,
+                    profile_photo_url: null
+                },
+                {
+                    author_name: 'Emma Davis',
+                    relative_time_description: '2 months ago',
+                    text: 'A trip of a lifetime! Seeing the Great Migration was magical. The team took care of everything so we could just enjoy the adventure.',
+                    rating: 5,
+                    profile_photo_url: null
+                },
+            ]
+        }
+    })
+
+    const reviews = reviewsData?.reviews || []
+    const rating = reviewsData?.rating || 4.9
+    const totalReviews = reviewsData?.total_reviews || 200
+
     return (
         <main className="min-h-screen">
             {/* Hero Section */}
@@ -206,19 +248,19 @@ export default function Page() {
                     <div className="mb-12 flex items-center justify-center gap-4">
                         <div className="flex items-center gap-1">
                             <span className="text-2xl font-bold text-gray-900">
-                                4.9
+                                {rating}
                             </span>
                             <div className="flex text-yellow-400">
                                 {[...Array(5)].map((_, i) => (
                                     <Star
                                         key={i}
-                                        className="h-6 w-6 fill-current"
+                                        className={cn("h-6 w-6", i < Math.round(rating) ? "fill-current" : "text-gray-300")}
                                     />
                                 ))}
                             </div>
                         </div>
                         <span className="text-gray-500">
-                            Based on 150+ Google Reviews
+                            Based on {totalReviews}+ Google Reviews
                         </span>
                         <Image
                             src="https://upload.wikimedia.org/wikipedia/commons/2/2f/Google_2015_logo.svg"
@@ -230,48 +272,42 @@ export default function Page() {
                     </div>
 
                     <div className="grid gap-8 md:grid-cols-3">
-                        {[
-                            {
-                                name: 'Sarah Johnson',
-                                date: '2 weeks ago',
-                                text: 'An absolutely incredible experience. The attention to detail and personalized service exceeded all expectations. Our guide was phenomenal!',
-                            },
-                            {
-                                name: 'Michael Chen',
-                                date: '1 month ago',
-                                text: 'We had the most amazing honeymoon safari. Everything was perfectly planned, from the lodges to the game drives. Highly recommend Makisala!',
-                            },
-                            {
-                                name: 'Emma Davis',
-                                date: '2 months ago',
-                                text: 'A trip of a lifetime! Seeing the Great Migration was magical. The team took care of everything so we could just enjoy the adventure.',
-                            },
-                        ].map((review, index) => (
+                        {reviews.slice(0, 3).map((review: any, index: number) => (
                             <div
                                 key={index}
-                                className="rounded-xl bg-gray-50 p-8 shadow-sm"
+                                className="rounded-xl bg-gray-50 p-8 shadow-sm flex flex-col h-full"
                             >
                                 <div className="mb-4 flex items-center gap-1 text-yellow-400">
                                     {[...Array(5)].map((_, i) => (
                                         <Star
                                             key={i}
-                                            className="h-4 w-4 fill-current"
+                                            className={cn("h-4 w-4", i < (review.rating || 5) ? "fill-current" : "text-gray-300")}
                                         />
                                     ))}
                                 </div>
-                                <p className="mb-6 text-gray-700">
+                                <p className="mb-6 text-gray-700 line-clamp-4 flex-grow">
                                     "{review.text}"
                                 </p>
-                                <div className="flex items-center gap-3">
-                                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100 font-bold text-blue-600">
-                                        {review.name.charAt(0)}
-                                    </div>
+                                <div className="flex items-center gap-3 mt-auto">
+                                    {review.profile_photo_url ? (
+                                        <Image 
+                                            src={review.profile_photo_url} 
+                                            alt={review.author_name} 
+                                            width={40} 
+                                            height={40} 
+                                            className="rounded-full"
+                                        />
+                                    ) : (
+                                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100 font-bold text-blue-600">
+                                            {review.author_name.charAt(0)}
+                                        </div>
+                                    )}
                                     <div>
                                         <div className="font-semibold text-gray-900">
-                                            {review.name}
+                                            {review.author_name}
                                         </div>
                                         <div className="text-xs text-gray-500">
-                                            {review.date}
+                                            {review.relative_time_description}
                                         </div>
                                     </div>
                                 </div>

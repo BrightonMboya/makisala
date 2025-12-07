@@ -56,7 +56,7 @@ export default function Hero({ parks }: HeroProps) {
     }
 
     return (
-        <section className="relative w-full py-20 flex flex-col items-center justify-center bg-white">
+        <section className="relative w-full pt-20 pb-20 md:pt-32 md:pb-20 flex flex-col items-center justify-center bg-white">
             <div className="relative z-10 w-full max-w-5xl px-4 sm:px-6 lg:px-8 flex flex-col items-center">
                 <h1 className="mb-12 text-center text-4xl font-extrabold text-gray-900 md:text-7xl tracking-tight">
                     Experience the Magic of East Africa
