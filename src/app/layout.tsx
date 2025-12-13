@@ -68,6 +68,24 @@ export default function RootLayout({
             initApollo();
           `}
             </Script>
+            <Script id="chatwoot" strategy="afterInteractive">
+                {`
+                window.chatwootSettings = {"position":"right","type":"expanded_bubble","launcherTitle":"Talk to our experts"};
+              (function(d,t) {
+                var BASE_URL="https://app.chatwoot.com";
+                var g=d.createElement(t),s=d.getElementsByTagName(t)[0];
+                g.src=BASE_URL+"/packs/js/sdk.js";
+                g.async = true;
+                s.parentNode.insertBefore(g,s);
+                g.onload=function(){
+                  window.chatwootSDK.run({
+                    websiteToken: 'bLp95TQA3BkPqjGt1anRTQo1',
+                    baseUrl: BASE_URL
+                  })
+                }
+              })(document,"script");
+                `}
+            </Script>
             <body
                 className={`${geistSans.variable} ${geistMono.variable} antialiased`}
             >
