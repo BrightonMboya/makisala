@@ -30,7 +30,6 @@
     "react-day-picker": "^9.8.0",
     "cmdk": "^1.1.1",
     "country-data-list": "^1.5.5",
-    "clsx": "^2.1.1",
     "class-variance-authority": "^0.7.1"
   },
   "devDependencies": {
