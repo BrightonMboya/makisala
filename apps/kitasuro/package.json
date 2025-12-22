@@ -1,0 +1,26 @@
+{
+  "name": "kitasuro",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "bun --bun next dev",
+    "build": "bun --bun next build",
+    "start": "bun --bun next start",
+    "lint": "bun --bun next lint"
+  },
+  "dependencies": {
+    "d3-geo": "^3.1.1",
+    "framer-motion": "^12.23.26",
+    "react-simple-maps": "^3.0.0",
+    "@repo/ui": "workspace:*",
+    "@repo/lint": "workspace:*"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/d3-geo": "^3.1.0",
+    "@types/react-simple-maps": "^3.0.6",
+    "tailwindcss": "^4",
+    "@repo/tsconfig": "workspace:*",
+    "typescript": "^5"
+  }
+}
