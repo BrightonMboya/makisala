@@ -16,6 +16,7 @@ import type { FAQItem } from '@/components/faq'
 export const PageType = pgEnum('pageType', ['page', 'blog'])
 
 export const PageStatus = pgEnum('pageStatus', ['published', 'draft'])
+export const CommentStatus = pgEnum('commentStatus', ['open', 'resolved'])
 export const pages = pgTable('pages', {
     id: text().primaryKey().notNull(),
     title: text().notNull(),
@@ -330,6 +331,49 @@ export const wildlifeParkOverrides = pgTable('wildlife_park_overrides', {
         .default(sql`CURRENT_TIMESTAMP`)
         .notNull(),
 })
+
+export const comments = pgTable('comments', {
+    id: uuid('id').primaryKey().defaultRandom(),
+    proposalId: text('proposal_id').notNull(),
+    userId: text('user_id').references(() => user.id),
+    userName: text('user_name'),
+    content: text('content').notNull(),
+    posX: numeric('pos_x', { precision: 5, scale: 2 }).notNull(),
+    posY: numeric('pos_y', { precision: 5, scale: 2 }).notNull(),
+    status: CommentStatus('status').default('open').notNull(),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+})
+
+export const commentReplies = pgTable('comment_replies', {
+    id: uuid('id').primaryKey().defaultRandom(),
+    commentId: uuid('comment_id')
+        .references(() => comments.id, { onDelete: 'cascade' })
+        .notNull(),
+    userId: text('user_id').references(() => user.id),
+    userName: text('user_name'),
+    content: text('content').notNull(),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+})
+
+// Comments Relations
+export const commentsRelations = relations(comments, ({ one, many }) => ({
+    user: one(user, {
+        fields: [comments.userId],
+        references: [user.id],
+    }),
+    replies: many(commentReplies),
+}))
+
+export const commentRepliesRelations = relations(commentReplies, ({ one }) => ({
+    comment: one(comments, {
+        fields: [commentReplies.commentId],
+        references: [comments.id],
+    }),
+    user: one(user, {
+        fields: [commentReplies.userId],
+        references: [user.id],
+    }),
+}))
 
 export type Tours = typeof tours.$inferSelect
 export type NewTourPackage = typeof tourPackages.$inferInsert

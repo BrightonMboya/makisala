@@ -5,6 +5,8 @@ import { useParams, useRouter } from "next/navigation";
 import { itineraries } from "@/data/itineraries";
 import MinimalisticTheme from "@/components/themes/MinimalisticTheme";
 import SafariPortalTheme from "@/components/themes/SafariPortalTheme";
+import { CommentsProvider } from "@/components/comments/CommentsProvider";
+import { CommentsOverlay } from "@/components/comments/CommentsOverlay";
 
 export default function ItineraryPage() {
   const params = useParams();
@@ -28,9 +30,15 @@ export default function ItineraryPage() {
     );
   }
 
-  if (data.theme === "safari-portal") {
-    return <SafariPortalTheme data={data} />;
-  }
-
-  return <MinimalisticTheme data={data} />;
+  return (
+    <CommentsProvider proposalId={id}>
+      <CommentsOverlay>
+        {data.theme === "safari-portal" ? (
+          <SafariPortalTheme data={data} />
+        ) : (
+          <MinimalisticTheme data={data} />
+        )}
+      </CommentsOverlay>
+    </CommentsProvider>
+  );
 }
