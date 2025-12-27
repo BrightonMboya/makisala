@@ -8,7 +8,7 @@ import {
     itineraryDays,
     nationalParks,
     tours,
-} from '@/db'
+} from '@repo/db'
 import { revalidatePath } from 'next/cache'
 import cloudinary, { uploadAccommodationImages } from '@/lib/cloudinary'
 import { and, desc, eq, gte, ilike, lte, sql } from 'drizzle-orm'

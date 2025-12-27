@@ -1,17 +1,31 @@
 import {
-    boolean,
-    integer,
-    json,
-    numeric,
-    pgEnum,
-    pgTable,
-    text,
-    timestamp,
-    uuid,
-    varchar,
-} from 'drizzle-orm/pg-core'
-import { relations, sql } from 'drizzle-orm'
-import type { FAQItem } from '@/components/faq'
+  boolean,
+  integer,
+  json,
+  numeric,
+  pgEnum,
+  pgTable,
+  text,
+  timestamp,
+  uuid,
+  varchar,
+} from "drizzle-orm/pg-core";
+import { relations, sql } from "drizzle-orm";
+
+export interface FAQItem {
+    question: string
+    answer: string
+}
+
+export interface WildlifeHighlights {
+    name: string
+    abundance: 'Abundant' | 'common' | 'occasional' | 'rare'
+}
+
+export interface JsonOverview {
+    name: string
+    description: string
+}
 
 export const PageType = pgEnum('pageType', ['page', 'blog'])
 
@@ -259,16 +273,6 @@ export const destinations = pgTable('destinations', {
     where_to_go: text(),
 })
 
-export interface WildlifeHighlights {
-    name: string
-    abundance: 'Abundant' | 'common' | 'occasional' | 'rare'
-}
-
-export interface JsonOverview {
-    name: string
-    description: string
-}
-
 export const nationalParks = pgTable('national_parks', {
     id: uuid('id').defaultRandom().primaryKey(),
     name: text().notNull(),
@@ -340,6 +344,8 @@ export const comments = pgTable('comments', {
     content: text('content').notNull(),
     posX: numeric('pos_x', { precision: 5, scale: 2 }).notNull(),
     posY: numeric('pos_y', { precision: 5, scale: 2 }).notNull(),
+    width: numeric('width', { precision: 5, scale: 2 }),
+    height: numeric('height', { precision: 5, scale: 2 }),
     status: CommentStatus('status').default('open').notNull(),
     createdAt: timestamp('created_at').defaultNow().notNull(),
 })

@@ -1,17 +1,12 @@
 import type { MetadataRoute } from 'next'
-import { db, nationalParks, wildlife, wildlifeParkOverrides } from '@/db'
+import { db, nationalParks, wildlife, wildlifeParkOverrides } from '@repo/db'
 import { eq, isNotNull } from 'drizzle-orm'
 import { BASE_URL } from '@/lib/constants'
 
 export default async function generateWildlifeSitemap(): Promise<MetadataRoute.Sitemap> {
     const sitemap: MetadataRoute.Sitemap = []
 
-    // 1️⃣ Fetch all wildlife
-    const allWildlife = await db.query.wildlife.findMany({
-        columns: { name: true },
-    })
-
-    // 2️⃣ Fetch all overrides with linked parks
+    // Fetch all overrides with linked parks
     const allOverrides = await db
         .select({
             animalName: wildlife.name,
@@ -23,7 +18,7 @@ export default async function generateWildlifeSitemap(): Promise<MetadataRoute.S
         .where(isNotNull(wildlifeParkOverrides.national_park_id))
         .execute()
 
-    // 3️⃣ Add /wildlife/[animal]/[destination] URLs
+    // Add /wildlife/[animal]/[destination] URLs
     for (const override of allOverrides) {
         if (!override.parkName) continue // skip null parks
         const animalSlug = override.animalName.toLowerCase().replace(/\s+/g, '-')

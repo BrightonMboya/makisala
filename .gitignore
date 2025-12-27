@@ -39,3 +39,5 @@ apps/makisala/.env
 # typescript
 *.tsbuildinfo
 apps/makisala/next-env.d.ts
+
+.env

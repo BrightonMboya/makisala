@@ -14,8 +14,8 @@ import {
     tours,
     wildlife,
     wildlifeParkOverrides,
-} from '@/db'
-import { type JsonOverview, pages, type WildlifeHighlights } from '@/db/schema'
+} from '@repo/db'
+import { type JsonOverview, pages, type WildlifeHighlights } from '@repo/db/schema'
 import {
     and,
     desc,

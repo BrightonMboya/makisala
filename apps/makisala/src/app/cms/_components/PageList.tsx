@@ -6,7 +6,7 @@ import { Badge } from '@repo/ui/badge'
 import { Calendar, ExternalLink, FileText, User } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { searchPagesByTitle } from '@/lib/cms-service'
-import { type IPage as Page } from '@/db'
+import { type IPage as Page } from '@repo/db'
 import { Button } from '@repo/ui/button'
 import { type HandleLoadPage } from '../page'
 

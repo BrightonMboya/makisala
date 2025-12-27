@@ -1,6 +1,6 @@
 import { v2 as cloudinary } from 'cloudinary'
 import { env } from './env'
-import { accommodationImages, db } from '@/db'
+import { accommodationImages, db } from '@repo/db'
 import { eq } from 'drizzle-orm'
 import { hashUrl, slugify } from './utils'
 

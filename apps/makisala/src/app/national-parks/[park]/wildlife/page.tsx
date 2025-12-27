@@ -16,7 +16,7 @@ import type { Metadata } from 'next'
 import { NavigationSidebar } from '../../_components/navigation'
 import { FAQ } from '@/components/faq'
 import TourCard from '../../../safaris/[country]/[modifier]/_components/TourCard'
-import { type WildlifeHighlights } from '@/db'
+import { type WildlifeHighlights } from '@repo/db'
 
 export async function generateMetadata({ params }: IParams): Promise<Metadata> {
     const { park } = await params
