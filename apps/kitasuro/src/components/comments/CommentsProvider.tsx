@@ -1,6 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, useCallback, useEffect } from "react";
+import { getComments, createComment, createCommentReply, resolveComment as resolveCommentAction } from "@/app/new/actions";
 
 export type Comment = {
   id: string;
@@ -28,9 +29,9 @@ interface CommentsContextType {
   comments: Comment[];
   activeCommentId: string | null;
   setActiveCommentId: (id: string | null) => void;
-  addComment: (posX: number, posY: number, content: string, width?: number, height?: number) => void;
-  addReply: (commentId: string, content: string) => void;
-  resolveComment: (commentId: string) => void;
+  addComment: (posX: number, posY: number, content: string, width?: number, height?: number) => Promise<void>;
+  addReply: (commentId: string, content: string) => Promise<void>;
+  resolveComment: (commentId: string) => Promise<void>;
 }
 
 const CommentsContext = createContext<CommentsContextType | undefined>(undefined);
@@ -46,67 +47,83 @@ export function CommentsProvider({ children, proposalId }: CommentsProviderProps
   const [comments, setComments] = useState<Comment[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
 
-  // Load comments from localStorage on mount
+  // Load comments from database on mount
   useEffect(() => {
-    const saved = localStorage.getItem(`comments-${proposalId}`);
-    if (saved) {
+    const loadComments = async () => {
       try {
-        const parsed = JSON.parse(saved, (key, value) => {
-          if (key === "createdAt") return new Date(value);
-          return value;
-        });
-        setComments(parsed);
+        const fetchedComments = await getComments(proposalId);
+        setComments(fetchedComments);
       } catch (e) {
-        console.error("Failed to parse saved comments", e);
+        console.error("Failed to load comments", e);
+      } finally {
+        setIsLoaded(true);
       }
-    }
-    setIsLoaded(true);
+    };
+    
+    loadComments();
   }, [proposalId]);
 
-  // Save comments to localStorage whenever they change
-  useEffect(() => {
-    if (isLoaded) {
-      localStorage.setItem(`comments-${proposalId}`, JSON.stringify(comments));
+  const addComment = useCallback(async (posX: number, posY: number, content: string, width?: number, height?: number) => {
+    try {
+      const result = await createComment({
+        proposalId,
+        authorName: "Guest User", // TODO: Get from auth context
+        content,
+        posX,
+        posY,
+        width,
+        height,
+      });
+
+      if (result.success && result.comment) {
+        // Reload comments to get the new one with proper ID
+        const fetchedComments = await getComments(proposalId);
+        setComments(fetchedComments);
+        
+        // Set the new comment as active
+        if (result.comment.id) {
+          setActiveCommentId(result.comment.id);
+        }
+      }
+    } catch (error) {
+      console.error("Failed to create comment", error);
     }
-  }, [comments, proposalId, isLoaded]);
+  }, [proposalId]);
 
-  const addComment = useCallback((posX: number, posY: number, content: string, width?: number, height?: number) => {
-    const newComment: Comment = {
-      id: Math.random().toString(36).substr(2, 9),
-      posX,
-      posY,
-      width,
-      height,
-      content,
-      userName: "Guest User",
-      createdAt: new Date(),
-      status: "open",
-      replies: [],
-    };
-    setComments((prev) => [...prev, newComment]);
-    setActiveCommentId(newComment.id);
-  }, []);
+  const addReply = useCallback(async (commentId: string, content: string) => {
+    try {
+      const result = await createCommentReply({
+        commentId,
+        authorName: "Guest User", // TODO: Get from auth context
+        content,
+      });
 
-  const addReply = useCallback((commentId: string, content: string) => {
-    const newReply: Reply = {
-      id: Math.random().toString(36).substr(2, 9),
-      content,
-      userName: "Guest User",
-      createdAt: new Date(),
-    };
-    setComments((prev) =>
-      prev.map((c) =>
-        c.id === commentId ? { ...c, replies: [...c.replies, newReply] } : c
-      )
-    );
-  }, []);
+      if (result.success) {
+        // Reload comments to get the updated comment with reply
+        const fetchedComments = await getComments(proposalId);
+        setComments(fetchedComments);
+      }
+    } catch (error) {
+      console.error("Failed to create reply", error);
+    }
+  }, [proposalId]);
 
-  const resolveComment = useCallback((commentId: string) => {
-    setComments((prev) =>
-      prev.map((c) => (c.id === commentId ? { ...c, status: "resolved" } : c))
-    );
-    if (activeCommentId === commentId) {
-      setActiveCommentId(null);
+  const resolveComment = useCallback(async (commentId: string) => {
+    try {
+      const result = await resolveCommentAction(commentId);
+      
+      if (result.success) {
+        // Update local state optimistically
+        setComments((prev) =>
+          prev.map((c) => (c.id === commentId ? { ...c, status: "resolved" } : c))
+        );
+        
+        if (activeCommentId === commentId) {
+          setActiveCommentId(null);
+        }
+      }
+    } catch (error) {
+      console.error("Failed to resolve comment", error);
     }
   }, [activeCommentId]);
 

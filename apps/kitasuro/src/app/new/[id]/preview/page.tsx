@@ -8,6 +8,7 @@ import { ItineraryPreview } from '@/components/itinerary-builder/itinerary-previ
 import { saveProposal } from '@/app/new/actions'
 import { useToast } from '@/lib/hooks/use-toast'
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 
 export default function PreviewPage({ params }: { params: { id: string } }) {
     const {
@@ -22,10 +23,13 @@ export default function PreviewPage({ params }: { params: { id: string } }) {
         startCity,
         pickupPoint,
         transferIncluded,
+        inclusions,
+        exclusions,
         setDays, // we might need to sync state if we loaded from DB, but for preview we read from context
     } = useBuilder()
 
     const { toast } = useToast()
+    const router = useRouter()
     const [isSharing, setIsSharing] = useState(false)
 
     const handleShare = async () => {
@@ -43,7 +47,10 @@ export default function PreviewPage({ params }: { params: { id: string } }) {
                 tourTitle,
                 startCity,
                 pickupPoint,
-                transferIncluded
+                pickupPoint,
+                transferIncluded,
+                inclusions,
+                exclusions
             }
 
             const result = await saveProposal({
@@ -54,11 +61,17 @@ export default function PreviewPage({ params }: { params: { id: string } }) {
             })
 
             if (result.success) {
-                const link = `${window.location.origin}/proposal/${params.id}`
+                // Use the returned ID if a new one was generated
+                const proposalId = (result as any).id || params.id
+                const link = `${window.location.origin}/proposal/${proposalId}`
                 await navigator.clipboard.writeText(link)
                 toast("Proposal Shared", {
-                    description: "Link copied to clipboard: " + link,
+                    description: "Link copied to clipboard. Redirecting...",
                 })
+                // Navigate to the proposal page after a short delay
+                setTimeout(() => {
+                    router.push(`/proposal/${proposalId}`)
+                }, 1000)
             } else {
                 toast("Error", {
                     description: "Failed to share proposal.",
@@ -86,6 +99,9 @@ export default function PreviewPage({ params }: { params: { id: string } }) {
                 pricingRows={pricingRows}
                 extras={extras}
                 clientName={clientName}
+                tourTitle={tourTitle}
+                inclusions={inclusions}
+                exclusions={exclusions}
                 isPublic={false}
             />
 

@@ -1,5 +1,3 @@
-'use client'
-
 import { Button } from '@repo/ui/button'
 import {
     Dialog,
@@ -8,7 +6,7 @@ import {
     DialogTitle,
 } from '@repo/ui/dialog'
 import { Switch } from '@repo/ui/switch'
-import { Plus, Trash2, GripVertical } from 'lucide-react'
+import { Plus, Trash2, GripVertical, ChevronDown, ChevronUp, Image as ImageIcon } from 'lucide-react'
 import { useState, useEffect } from 'react'
 import type { Activity } from './day-table'
 import {
@@ -18,6 +16,14 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@repo/ui/select'
+import { Input } from '@repo/ui/input'
+import { Textarea } from '@repo/ui/textarea'
+import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from '@repo/ui/popover'
+import { ImagePicker } from './image-picker'
 import {
     DndContext,
     type DragEndEvent,
@@ -94,6 +100,8 @@ export function ActivityModal({
             location: '',
             moment: 'Morning',
             isOptional: false,
+            description: '',
+            imageUrl: '',
         }
         setActivities([...activities, newActivity])
     }
@@ -116,7 +124,7 @@ export function ActivityModal({
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="sm:max-w-[900px]">
+            <DialogContent className="sm:max-w-[1000px]">
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-1 text-xl font-bold">
                         Activities Day {dayId}
@@ -127,11 +135,9 @@ export function ActivityModal({
                     <div className="mb-4 grid grid-cols-12 gap-4 border-b pb-2 text-xs font-bold text-gray-500">
                         <div className="col-span-1 text-center">Order</div>
                         <div className="col-span-3">Activity Type</div>
-                        <div className="col-span-4">
-                            Activity Location/Destination
-                        </div>
+                        <div className="col-span-3">Location</div>
                         <div className="col-span-3">Moment</div>
-                        <div className="col-span-1 text-center">Optional</div>
+                        <div className="col-span-2 text-center">Actions</div>
                     </div>
 
                     <DndContext
@@ -143,7 +149,7 @@ export function ActivityModal({
                             items={activities.map((a) => a.id)}
                             strategy={verticalListSortingStrategy}
                         >
-                            <div className="space-y-2">
+                            <div className="space-y-4">
                                 {activities.map((activity) => (
                                     <SortableActivityRow
                                         key={activity.id}
@@ -156,7 +162,7 @@ export function ActivityModal({
                         </SortableContext>
                     </DndContext>
 
-                    <div className="mt-4">
+                    <div className="mt-6">
                         <Button
                             variant="outline"
                             className="w-full justify-start gap-2 border-dashed text-green-600 hover:bg-green-50 hover:text-green-700"
@@ -167,7 +173,7 @@ export function ActivityModal({
                         </Button>
                     </div>
                 </div>
-                <div className="flex justify-start gap-2">
+                <div className="flex justify-start gap-2 border-t pt-4">
                     <Button
                         className="bg-green-600 hover:bg-green-700"
                         onClick={handleSave}
@@ -201,6 +207,8 @@ function SortableActivityRow({
         isDragging,
     } = useSortable({ id: activity.id })
 
+    const [isExpanded, setIsExpanded] = useState(!!activity.description || !!activity.imageUrl)
+
     const style = {
         transform: CSS.Transform.toString(transform),
         transition,
@@ -212,68 +220,143 @@ function SortableActivityRow({
         <div
             ref={setNodeRef}
             style={style}
-            className="grid grid-cols-12 gap-4 items-center bg-white"
+            className="rounded-lg border bg-white p-2 shadow-sm transition-all hover:border-stone-300"
         >
-            <div className="col-span-1 flex justify-center">
-                <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 cursor-grab active:cursor-grabbing"
-                    {...attributes}
-                    {...listeners}
-                >
-                    <GripVertical className="h-4 w-4 text-gray-400" />
-                </Button>
+            <div className="grid grid-cols-12 gap-4 items-center">
+                <div className="col-span-1 flex justify-center">
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 cursor-grab active:cursor-grabbing text-stone-400"
+                        {...attributes}
+                        {...listeners}
+                    >
+                        <GripVertical className="h-4 w-4" />
+                    </Button>
+                </div>
+                <div className="col-span-3">
+                    <Combobox
+                        items={commonActivities}
+                        value={activity.name}
+                        onChange={(val) => onUpdate(activity.id, 'name', val)}
+                        placeholder="Select activity"
+                        className="h-9 border-stone-200"
+                    />
+                </div>
+                <div className="col-span-3">
+                     <Combobox
+                        items={nationalParks}
+                        value={activity.location}
+                        onChange={(val) => onUpdate(activity.id, 'location', val)}
+                        placeholder="Select location"
+                        className="h-9 border-stone-200"
+                    />
+                </div>
+                <div className="col-span-3">
+                    <Select
+                        value={activity.moment}
+                        onValueChange={(val) => onUpdate(activity.id, 'moment', val)}
+                    >
+                        <SelectTrigger className="h-9 border-stone-200">
+                            <SelectValue placeholder="Moment" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {moments.map((moment) => (
+                                <SelectItem key={moment} value={moment}>
+                                    {moment}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                </div>
+                <div className="col-span-2 flex items-center justify-end gap-2">
+                    <div className="flex items-center gap-1.5 mr-2" title="Is Optional?">
+                        <Switch
+                            checked={activity.isOptional}
+                            onCheckedChange={(checked) =>
+                                onUpdate(activity.id, 'isOptional', checked)
+                            }
+                            className="scale-75"
+                        />
+                        <span className="text-[10px] uppercase font-bold text-stone-400">Opt</span>
+                    </div>
+                    
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-stone-400 hover:text-stone-700"
+                        onClick={() => setIsExpanded(!isExpanded)}
+                    >
+                         {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                    </Button>
+
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-red-400 hover:text-red-600 hover:bg-red-50"
+                        onClick={() => onDelete(activity.id)}
+                    >
+                        <Trash2 className="h-4 w-4" />
+                    </Button>
+                </div>
             </div>
-            <div className="col-span-3">
-                <Combobox
-                    items={commonActivities}
-                    value={activity.name}
-                    onChange={(val) => onUpdate(activity.id, 'name', val)}
-                    placeholder="Select activity"
-                />
-            </div>
-            <div className="col-span-4">
-                 <Combobox
-                    items={nationalParks}
-                    value={activity.location}
-                    onChange={(val) => onUpdate(activity.id, 'location', val)}
-                    placeholder="Select location"
-                />
-            </div>
-            <div className="col-span-3">
-                <Select
-                    value={activity.moment}
-                    onValueChange={(val) => onUpdate(activity.id, 'moment', val)}
-                >
-                    <SelectTrigger className="h-9">
-                        <SelectValue placeholder="Moment" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        {moments.map((moment) => (
-                            <SelectItem key={moment} value={moment}>
-                                {moment}
-                            </SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
-            </div>
-            <div className="col-span-1 flex items-center justify-center gap-2">
-                <Switch
-                    checked={activity.isOptional}
-                    onCheckedChange={(checked) =>
-                        onUpdate(activity.id, 'isOptional', checked)
-                    }
-                />
-                <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 text-red-500 hover:text-red-600 hover:bg-red-50"
-                    onClick={() => onDelete(activity.id)}
-                >
-                    <Trash2 className="h-4 w-4" />
-                </Button>
-            </div>
+
+            {isExpanded && (
+                <div className="mt-3 border-t border-stone-100 pt-3 px-10 grid grid-cols-2 gap-4">
+                     <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-stone-500 uppercase">Description</label>
+                        <Textarea 
+                            value={activity.description || ''}
+                            onChange={(e) => onUpdate(activity.id, 'description', e.target.value)}
+                            placeholder="Describe what guests will do..."
+                            className="bg-stone-50 border-stone-200 text-sm min-h-[80px]"
+                        />
+                     </div>
+                     <div className="space-y-1.5">
+                        <label className="text-xs font-bold text-stone-500 uppercase">Image URL</label>
+                        <div className="flex gap-2">
+                            <Popover>
+                                <PopoverTrigger asChild>
+                                    <Button
+                                        variant="outline"
+                                        className="h-[80px] w-[120px] p-0 overflow-hidden relative border-dashed border-stone-300 hover:border-stone-400"
+                                    >
+                                        {activity.imageUrl ? (
+                                            <img 
+                                                src={activity.imageUrl} 
+                                                alt="Selected" 
+                                                className="w-full h-full object-cover"
+                                            />
+                                        ) : (
+                                            <div className="flex flex-col items-center gap-1 text-stone-400">
+                                                <ImageIcon className="h-5 w-5" />
+                                                <span className="text-[10px]">Select Image</span>
+                                            </div>
+                                        )}
+                                    </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-auto p-0" align="start">
+                                    <ImagePicker 
+                                        value={activity.imageUrl} 
+                                        onChange={(url) => onUpdate(activity.id, 'imageUrl', url)} 
+                                    />
+                                </PopoverContent>
+                            </Popover>
+                            <div className="flex-1">
+                                <Input 
+                                    value={activity.imageUrl || ''}
+                                    onChange={(e) => onUpdate(activity.id, 'imageUrl', e.target.value)}
+                                    placeholder="Or paste URL here..."
+                                    className="bg-stone-50 border-stone-200 text-sm mb-2"
+                                />
+                                <p className="text-[10px] text-stone-500">
+                                    Select from library or paste any image URL.
+                                </p>
+                            </div>
+                        </div>
+                     </div>
+                </div>
+            )}
         </div>
     )
 }

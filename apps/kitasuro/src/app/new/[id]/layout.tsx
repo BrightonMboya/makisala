@@ -267,6 +267,7 @@ export default function BuilderLayout({
     const clientNameParam = searchParams.get('clientName')
     const tourTitleParam = searchParams.get('tourTitle')
     const tourTypeParam = searchParams.get('tourType')
+    const travelersParam = searchParams.get('travelers')
     const [initialData, setInitialData] = useState<any>(null)
     const [loading, setLoading] = useState(!!tourId)
 
@@ -279,6 +280,18 @@ export default function BuilderLayout({
                 tourType: tourTypeParam
             }
 
+            // Convert travelers count to travelerGroups if provided
+            if (travelersParam) {
+                const travelersCount = parseInt(travelersParam, 10)
+                if (!isNaN(travelersCount) && travelersCount > 0) {
+                    data.travelerGroups = [{
+                        id: '1',
+                        count: travelersCount,
+                        type: 'Adult'
+                    }]
+                }
+            }
+
             if (tourId) {
                 const tourData = await getTourDetails(tourId)
                 if (tourData) {
@@ -286,13 +299,25 @@ export default function BuilderLayout({
                         ...data,
                         ...tourData,
                     }
+                    // If travelerGroups weren't set from query param but we have tour data,
+                    // preserve any existing travelerGroups or use the query param
+                    if (!data.travelerGroups && travelersParam) {
+                        const travelersCount = parseInt(travelersParam, 10)
+                        if (!isNaN(travelersCount) && travelersCount > 0) {
+                            data.travelerGroups = [{
+                                id: '1',
+                                count: travelersCount,
+                                type: 'Adult'
+                            }]
+                        }
+                    }
                 }
             }
             setInitialData(data)
             setLoading(false)
         }
         loadData()
-    }, [tourId, startDateParam, clientNameParam, tourTitleParam, tourTypeParam])
+    }, [tourId, startDateParam, clientNameParam, tourTitleParam, tourTypeParam, travelersParam])
 
     if (loading) {
         return (

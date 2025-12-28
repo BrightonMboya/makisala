@@ -14,6 +14,14 @@ import { ItineraryData } from "@/data/itineraries";
 
 function TripMap({ data }: { data: ItineraryData["mapData"] }) {
   const { geojson, locations, scale, rotate } = data;
+  // Handle empty locations array
+  if (!locations || locations.length === 0) {
+    return (
+      <div className="w-full h-full min-h-[400px] bg-stone-100/50 rounded-xl overflow-hidden border border-stone-200 flex items-center justify-center">
+        <p className="text-stone-400 text-sm">Map data not available</p>
+      </div>
+    );
+  }
   return (
     <div className="w-full h-full min-h-[400px] bg-stone-100/50 rounded-xl overflow-hidden border border-stone-200">
       <ComposableMap

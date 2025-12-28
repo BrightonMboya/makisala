@@ -38,10 +38,12 @@ import {
     Plus,
     Trash2,
     X,
+    FileText,
 } from 'lucide-react'
 import { useState } from 'react'
 import { ActivityModal } from './activity-modal'
 import { Combobox } from '@repo/ui/combobox'
+import { Textarea } from '@repo/ui/textarea'
 import { addDays, format } from 'date-fns'
 
 export type Activity = {
@@ -291,6 +293,8 @@ function SortableDayRow({
         isDragging,
     } = useSortable({ id: day.id })
 
+    const [isExpanded, setIsExpanded] = useState(!!day.description)
+
     const style = {
         transform: CSS.Transform.toString(transform),
         transition,
@@ -302,8 +306,9 @@ function SortableDayRow({
         <div
             ref={setNodeRef}
             style={style}
-            className="grid grid-cols-12 gap-4 bg-white px-4 py-4 hover:bg-stone-50"
+            className="bg-white hover:bg-stone-50 border-b border-stone-100"
         >
+            <div className="grid grid-cols-12 gap-4 px-4 py-4">
             {/* Day Column */}
             <div className="col-span-1 flex gap-2">
                 <button
@@ -450,6 +455,43 @@ function SortableDayRow({
                         </DropdownMenuItem>
                     </DropdownMenuContent>
                 </DropdownMenu>
+            </div>
+            </div>
+            
+            {/* Expandable Day Overview Section */}
+            <div className="px-4 pb-3">
+                {isExpanded ? (
+                    <div className="space-y-2 pt-2 border-t border-stone-100">
+                        <div className="flex items-center justify-between">
+                            <label className="text-xs font-bold text-stone-600 uppercase tracking-wider flex items-center gap-1.5">
+                                <FileText className="w-3.5 h-3.5" />
+                                Day Overview
+                            </label>
+                            <button
+                                onClick={() => setIsExpanded(false)}
+                                className="text-xs text-stone-400 hover:text-stone-600"
+                            >
+                                Hide
+                            </button>
+                        </div>
+                        <Textarea
+                            value={day.description || ''}
+                            onChange={(e) => onUpdate(day.id, 'description', e.target.value)}
+                            placeholder="Tell the story of this day... What will guests experience? What makes it special?"
+                            className="min-h-[80px] text-sm bg-stone-50 border-stone-200 focus:border-green-500 focus:ring-green-500"
+                        />
+                    </div>
+                ) : (
+                    <button
+                        onClick={() => setIsExpanded(true)}
+                        className="w-full text-left py-2 px-3 mt-2 rounded-md border border-dashed border-stone-200 hover:border-stone-300 hover:bg-stone-50 transition-colors group"
+                    >
+                        <span className="text-xs text-stone-500 group-hover:text-stone-700 flex items-center gap-1.5">
+                            <FileText className="w-3.5 h-3.5" />
+                            {day.description ? 'Edit day overview' : 'Add day overview (optional)'}
+                        </span>
+                    </button>
+                )}
             </div>
         </div>
     )

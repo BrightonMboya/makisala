@@ -12,8 +12,12 @@ import {
     Utensils,
     BedDouble,
     Mountain,
-    Camera
+    Camera,
+    Map,
+    X,
+    Check
 } from 'lucide-react'
+import { ItineraryMap } from './itinerary-map'
 import { 
     type Day, 
     type TravelerGroup, 
@@ -37,7 +41,9 @@ export function ItineraryPreview({
     clientName,
     tourTitle = "Your Safari Adventure",
     isPublic = false,
-    className
+    className,
+    inclusions,
+    exclusions
 }: {
     days: Day[]
     startDate: Date | undefined
@@ -49,6 +55,8 @@ export function ItineraryPreview({
     tourTitle?: string
     isPublic?: boolean
     className?: string
+    inclusions?: string[]
+    exclusions?: string[]
 }) {
     // Calculations
     const totalDuration = days.length
@@ -118,6 +126,15 @@ export function ItineraryPreview({
                         <p className="text-xl leading-relaxed text-stone-600 font-light">
                             Welcome to your personalized itinerary. This journey has been carefully curated to offer you the best of Rwanda's landscapes, wildlife, and culture. From the vibrant streets of Kigali to the misty volcanoes and savannah plains, get ready for an unforgettable adventure.
                         </p>
+
+                        {/* Interactive Map Section */}
+                        <div className="mb-12 border rounded-2xl overflow-hidden shadow-sm border-stone-100">
+                            <div className="bg-stone-50 px-6 py-4 border-b border-stone-100 flex items-center gap-2">
+                                <Map className="w-5 h-5 text-green-600" />
+                                <h3 className="text-lg font-bold font-serif text-stone-900">Your Route</h3>
+                            </div>
+                            <ItineraryMap days={days} className="border-0 shadow-none rounded-none" />
+                        </div>
                     </div>
 
                     {/* Day by Day Plan */}
@@ -141,7 +158,7 @@ export function ItineraryPreview({
                                         </div>
 
                                         <div className="space-y-8">
-                                            {/* Day Header */}
+                                            {/* Date & Destination Header */}
                                             <div>
                                                 <div className="flex flex-col md:flex-row md:items-baseline gap-2 md:gap-4 mb-2">
                                                     <span className="text-sm font-bold uppercase tracking-widest text-green-700">
@@ -154,14 +171,23 @@ export function ItineraryPreview({
                                                          </span>
                                                     )}
                                                 </div>
-                                                <h3 className="text-2xl font-bold text-stone-900">
+                                                <h3 className="text-2xl font-bold text-stone-900 mb-4">
                                                     {richDestination && day.destination ? `Explore ${nationalParksMap[day.destination] || day.destination}` : (day.activities[0]?.name || "Leisure Day")}
                                                 </h3>
+                                                
+                                                {/* Day Narrative / Description */}
+                                                {day.description && (
+                                                    <div className="prose prose-stone prose-sm max-w-none mb-6">
+                                                        <p className="text-stone-600 leading-relaxed whitespace-pre-wrap">
+                                                            {day.description}
+                                                        </p>
+                                                    </div>
+                                                )}
                                             </div>
 
-                                            {/* Destination Highlight if New or Main */}
-                                            {richDestination && (
-                                                <div className="group relative h-64 w-full overflow-hidden rounded-2xl">
+                                            {/* Destination Highlight if New or Main (Keep existing logic, but maybe move it after narrative) */}
+                                            {richDestination && !day.description && (
+                                                <div className="group relative h-64 w-full overflow-hidden rounded-2xl mb-6">
                                                     <Image
                                                         src={richDestination.image}
                                                         alt={day.destination || "Destination"}
@@ -185,19 +211,48 @@ export function ItineraryPreview({
                                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                         {day.activities.map(activity => {
                                                             const richActivity = activityDetails[activity.name]
+                                                            const description = activity.description || richActivity?.description
+                                                            const imageUrl = activity.imageUrl || (richActivity?.image) // We don't have richActivity.image in the type yet but assuming for future or if added.
+                                                            // Actually activityDetails in itinerary-data.ts has 'description' and 'image' (generic).
+
                                                             return (
-                                                                <div key={activity.id} className="bg-stone-50 rounded-xl p-4 space-y-3 hover:shadow-md transition-shadow duration-300">
-                                                                    <div className="flex justify-between items-start">
-                                                                       <h5 className="font-bold text-stone-800">{activity.name}</h5>
-                                                                       <span className="text-[10px] bg-stone-200 px-2 py-1 rounded-full uppercase tracking-wide font-medium text-stone-600">
-                                                                           {activity.moment}
-                                                                       </span>
-                                                                    </div>
-                                                                    {richActivity && (
-                                                                        <p className="text-xs text-stone-600 leading-relaxed line-clamp-3">
-                                                                            {richActivity.description}
-                                                                        </p>
+                                                                <div key={activity.id} className="bg-stone-50 rounded-xl overflow-hidden hover:shadow-md transition-shadow duration-300 border border-stone-100">
+                                                                    {imageUrl && (
+                                                                        <div className="relative h-40 w-full">
+                                                                            <Image 
+                                                                                src={imageUrl} 
+                                                                                alt={activity.name}
+                                                                                fill
+                                                                                className="object-cover"
+                                                                            />
+                                                                            <div className="absolute top-2 right-2">
+                                                                                <span className="text-[10px] bg-white/90 backdrop-blur-sm px-2 py-1 rounded-full uppercase tracking-wide font-bold text-stone-800 shadow-sm">
+                                                                                    {activity.moment}
+                                                                                </span>
+                                                                            </div>
+                                                                        </div>
                                                                     )}
+                                                                    <div className="p-4 space-y-3">
+                                                                        {!imageUrl && (
+                                                                             <div className="flex justify-between items-start">
+                                                                                <span className="text-[10px] bg-stone-200 px-2 py-1 rounded-full uppercase tracking-wide font-medium text-stone-600">
+                                                                                    {activity.moment}
+                                                                                </span>
+                                                                            </div>
+                                                                        )}
+                                                                        <div>
+                                                                            <h5 className="font-bold text-stone-800 text-lg leading-tight mb-1">{activity.name}</h5>
+                                                                            {activity.isOptional && (
+                                                                                <span className="text-[10px] font-bold text-amber-600 uppercase tracking-wider border border-amber-200 px-1.5 py-0.5 rounded">Optional</span>
+                                                                            )}
+                                                                        </div>
+                                                                        
+                                                                        {description && (
+                                                                            <p className="text-xs text-stone-600 leading-relaxed line-clamp-4">
+                                                                                {description}
+                                                                            </p>
+                                                                        )}
+                                                                    </div>
                                                                 </div>
                                                             )
                                                         })}
@@ -209,11 +264,11 @@ export function ItineraryPreview({
                                             <div className="flex flex-col md:flex-row gap-4">
                                                 {/* Accommodation Card */}
                                                 <div className="flex-1 bg-white border border-stone-100 rounded-xl p-4 shadow-sm flex gap-4 items-start">
-                                                    {richAccommodation && (
+                                                    {(richAccommodation || day.accommodationImage) && (
                                                         <div className="relative w-20 h-20 shrink-0 rounded-lg overflow-hidden bg-stone-100">
                                                             <Image 
-                                                                src={richAccommodation.image}
-                                                                alt={richAccommodation.name}
+                                                                src={day.accommodationImage || richAccommodation?.image || ''}
+                                                                alt={richAccommodation?.name || "Accommodation"}
                                                                 fill
                                                                 className="object-cover"
                                                             />
@@ -267,13 +322,50 @@ export function ItineraryPreview({
                 <div className="relative">
                     <div className="sticky top-8 space-y-8">
                         
-                        {/* Map Placeholder */}
-                        <div className="bg-stone-100 rounded-3xl aspect-square w-full flex items-center justify-center text-stone-400">
-                            <div className="text-center space-y-2">
-                                <MapPin className="w-8 h-8 mx-auto" />
-                                <span className="text-sm font-medium">Route Map Visualization</span>
+                        {/* Inclusions & Exclusions */}
+                        {(inclusions?.length || exclusions?.length) && (
+                            <div className="bg-white border border-stone-200 rounded-2xl overflow-hidden shadow-sm">
+                                {inclusions && inclusions.length > 0 && (
+                                    <div className="p-6 space-y-4">
+                                        <h3 className="font-bold text-stone-800 flex items-center gap-2 text-sm uppercase tracking-wider">
+                                            <div className="w-5 h-5 rounded-full bg-green-100 flex items-center justify-center">
+                                                <Check className="w-3 h-3 text-green-600" />
+                                            </div>
+                                            Included
+                                        </h3>
+                                        <ul className="space-y-2.5">
+                                            {inclusions.map((item, idx) => (
+                                                <li key={idx} className="flex items-start gap-2.5 text-sm text-stone-600">
+                                                    <span className="mt-2 w-1 h-1 rounded-full bg-green-500 shrink-0" />
+                                                    <span className="leading-snug">{item}</span>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                )}
+                                
+                                {inclusions && exclusions && <div className="h-px bg-stone-100 mx-6" />}
+                                
+                                {exclusions && exclusions.length > 0 && (
+                                    <div className="p-6 space-y-4 bg-stone-50/50">
+                                        <h3 className="font-bold text-stone-800 flex items-center gap-2 text-sm uppercase tracking-wider">
+                                            <div className="w-5 h-5 rounded-full bg-red-100 flex items-center justify-center">
+                                                <X className="w-3 h-3 text-red-600" />
+                                            </div>
+                                            Excluded
+                                        </h3>
+                                        <ul className="space-y-2.5">
+                                            {exclusions.map((item, idx) => (
+                                                <li key={idx} className="flex items-start gap-2.5 text-sm text-stone-600">
+                                                    <span className="mt-2 w-1 h-1 rounded-full bg-red-400 shrink-0" />
+                                                    <span className="leading-snug">{item}</span>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                )}
                             </div>
-                        </div>
+                        )}
 
                         {/* Pricing Summary */}
                         {!isPublic && (

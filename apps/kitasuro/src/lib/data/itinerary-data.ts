@@ -39,26 +39,36 @@ export const commonExtras = [
 
 // --- Rich Content for Preview ---
 
-export const destinationDetails: Record<string, { description: string; image: string }> = {
+export const destinationDetails: Record<string, { description: string; image: string; coordinates: { lat: number; lng: number } }> = {
     'kigali': {
         description: "Rwanda's vibrant capital, Kigali, is a clean, safe, and modern city nestled among rolling hills. It serves as the country's cultural and economic hub, offering a blend of traditional charm and contemporary energy. Visitors can explore the poignant Kigali Genocide Memorial, vibrant markets like Kimironko, and a burgeoning art scene.",
         image: "https://images.unsplash.com/photo-1576023799446-2775f0d3c468?q=80&w=2000&auto=format&fit=crop",
+        coordinates: { lat: -1.9441, lng: 30.0619 },
     },
     'volcanoes-np': {
         description: "Volcanoes National Park, part of the Virunga Massif, is a majestic landscape of rainforests and five dormant volcanoes. It is world-renowned as the sanctuary for the endangered mountain gorillas and the golden monkeys. The park offers a dramatic backdrop for some of the most profound wildlife encounters on Earth.",
         image: "https://images.unsplash.com/photo-1544224726-52c713844622?q=80&w=2000&auto=format&fit=crop",
+        coordinates: { lat: -1.4700, lng: 29.4900 },
     },
     'akagera-np': {
         description: "Akagera National Park is Central Africa's largest protected wetland and the last remaining refuge for savannah-adapted species in Rwanda. It offers a classic safari experience with the chance to see the Big Five (lion, leopard, elephant, rhino, buffalo) amidst rolling highlands, vast plains, and swamp-fringed lakes.",
         image: "https://images.unsplash.com/photo-1516426122078-c23e76319801?q=80&w=2000&auto=format&fit=crop",
+        coordinates: { lat: -1.6800, lng: 30.6300 }, // Adjusted center
     },
     'nyungwe-np': {
         description: "One of the oldest rainforests in Africa, Nyungwe is rich in biodiversity and spectacularly beautiful. The mountainous region is teaming with wildlife, including a small population of chimpanzees as well as 12 other species of primate, including the L'Hoest's monkey endemic to the Albertine Rift.",
         image: "https://images.unsplash.com/photo-1518182170546-0766aa6f5926?q=80&w=2000&auto=format&fit=crop",
+        coordinates: { lat: -2.4800, lng: 29.2300 },
     },
     'lake-kivu': {
         description: "Lake Kivu is one of Africa's Great Lakes and a stunningly beautiful inland sea enclosed by steep, green terraced hills. It offers a relaxing retreat with opportunities for swimming, kayaking, and boat tours to explore the many islands and coffee plantations along its shores.",
         image: "https://images.unsplash.com/photo-1573155993874-d5d48af862ba?q=80&w=2000&auto=format&fit=crop",
+        coordinates: { lat: -2.0500, lng: 29.2800 },
+    },
+    'gishwati-mukura-np': {
+         description: "Gishwati-Mukura National Park is Rwanda's newest national park, formed by two separate forests: Gishwati and Mukura. It is a haven for primates, including chimpanzees and golden monkeys, and offers a unique off-the-beaten-path experience.",
+         image: "https://images.unsplash.com/photo-1440557653067-160eb8094917?q=80&w=2000&auto=format&fit=crop",
+         coordinates: { lat: -1.78, lng: 29.44 },
     }
 }
 

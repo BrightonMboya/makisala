@@ -9,10 +9,11 @@ interface CommentFormProps {
   posY: number;
   width?: number;
   height?: number;
+  stickySelector?: string;
   onClose: () => void;
 }
 
-export function CommentForm({ posX, posY, width, height, onClose }: CommentFormProps) {
+export function CommentForm({ posX, posY, width, height, stickySelector, onClose }: CommentFormProps) {
   const { addComment } = useComments();
   const [text, setText] = useState("");
 

@@ -16,12 +16,13 @@ import { useParams } from 'next/navigation'
 import { Combobox } from '@repo/ui/combobox'
 import { commonExtras } from '@/lib/data/itinerary-data'
 import { useBuilder, type PricingRow, type ExtraOption } from '@/components/itinerary-builder/builder-context'
+import { useState } from 'react'
 
 export default function PricingPage() {
     const params = useParams()
     const id = params.id as string
 
-    const { pricingRows, setPricingRows, extras, setExtras } = useBuilder()
+    const { pricingRows, setPricingRows, extras, setExtras, inclusions, setInclusions, exclusions, setExclusions } = useBuilder()
 
     const handleAddRow = () => {
         setPricingRows([
@@ -302,6 +303,49 @@ export default function PricingPage() {
                 </div>
             </div>
 
+            {/* Inclusions & Exclusions Section */}
+            <div className="rounded-xl border border-stone-200 bg-white shadow-sm">
+                <div className="rounded-t-xl border-b border-stone-100 bg-stone-50/50 px-6 py-4">
+                    <h3 className="font-bold text-stone-800 flex items-center gap-2">
+                         <span className="flex h-6 w-6 items-center justify-center rounded-full bg-green-100 text-xs font-bold text-green-700">3</span>
+                        Inclusions & Exclusions
+                    </h3>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-stone-100">
+                    {/* Inclusions */}
+                    <div className="p-6 space-y-4">
+                        <div className="flex items-center gap-2 mb-4">
+                            <div className="w-6 h-6 rounded-full bg-green-100 flex items-center justify-center">
+                                <Plus className="w-4 h-4 text-green-600" />
+                            </div>
+                            <h4 className="font-bold text-sm uppercase tracking-wider text-stone-700">What's Included</h4>
+                        </div>
+                        <InclusionList 
+                            items={inclusions} 
+                            onUpdate={setInclusions} 
+                            placeholder="Add inclusion (e.g. Park Fees)"
+                        />
+                    </div>
+
+                    {/* Exclusions */}
+                    <div className="p-6 space-y-4">
+                        <div className="flex items-center gap-2 mb-4">
+                            <div className="w-6 h-6 rounded-full bg-red-100 flex items-center justify-center">
+                                <Trash2 className="w-4 h-4 text-red-600" />
+                            </div>
+                            <h4 className="font-bold text-sm uppercase tracking-wider text-stone-700">What's Excluded</h4>
+                        </div>
+                        <InclusionList 
+                            items={exclusions} 
+                            onUpdate={setExclusions} 
+                            placeholder="Add exclusion (e.g. Flight)"
+                            isExclusion
+                        />
+                    </div>
+                </div>
+            </div>
+
             <div className="flex justify-end pt-4">
                 <Link href={`/new/${id}/preview`}>
                     <Button className="bg-green-600 hover:bg-green-700 text-white shadow-md shadow-green-600/20 px-8">
@@ -309,6 +353,67 @@ export default function PricingPage() {
                     </Button>
                 </Link>
             </div>
+        </div>
+    )
+}
+
+function InclusionList({ items, onUpdate, placeholder, isExclusion = false }: { items: string[], onUpdate: (items: string[]) => void, placeholder: string, isExclusion?: boolean }) {
+    // const [newItem, setNewItem] = useState('') // Actually we don't need this state here as we use NewItemInput component specifically for this.
+    // The previous dynamic import was a mistake. We will just remove it.
+
+    return (
+        <div className="space-y-3">
+             <ul className="space-y-2">
+                {items.map((item, idx) => (
+                    <li key={idx} className="group flex items-start gap-2 text-sm text-stone-600 bg-stone-50 rounded-lg p-2.5 border border-stone-100 hover:border-stone-200 transition-colors">
+                        <span className={`mt-0.5 w-1.5 h-1.5 rounded-full shrink-0 ${isExclusion ? 'bg-red-400' : 'bg-green-400'}`} />
+                        <span className="flex-1 leading-snug">{item}</span>
+                        <button 
+                            onClick={() => onUpdate(items.filter((_, i) => i !== idx))}
+                            className="text-stone-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all"
+                        >
+                            <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                    </li>
+                ))}
+            </ul>
+            <div className="relative">
+                <NewItemInput onAdd={(val) => onUpdate([...items, val])} placeholder={placeholder} />
+            </div>
+        </div>
+    )
+}
+
+function NewItemInput({ onAdd, placeholder }: { onAdd: (val: string) => void, placeholder: string }) {
+    const [val, setVal] = useState('')
+    return (
+        <div className="flex gap-2">
+            <Input 
+                value={val}
+                onChange={(e) => setVal(e.target.value)}
+                onKeyDown={(e) => {
+                    if (e.key === 'Enter' && val.trim()) {
+                        onAdd(val.trim())
+                        setVal('')
+                    }
+                }}
+                placeholder={placeholder}
+                className="bg-white text-xs border-stone-200 h-9"
+            />
+            <Button 
+                size="sm"
+                variant="outline"
+                className="h-9 px-3 border-stone-200 text-stone-500 hover:text-green-600 hover:bg-green-50"
+                onClick={() => {
+                    if(val.trim()) {
+                        onAdd(val.trim())
+                        setVal('')
+                    }
+                }}
+                disabled={!val.trim()}
+            >
+                <Plus className="h-4 w-4" />
+            </Button>
         </div>
     )
 }
