@@ -1,0 +1,114 @@
+'use client'
+
+import { Button } from '@repo/ui/button'
+import { Share2 } from 'lucide-react'
+import { useBuilder } from '@/components/itinerary-builder/builder-context'
+import { format } from 'date-fns'
+import { ItineraryPreview } from '@/components/itinerary-builder/itinerary-preview'
+import { saveProposal } from '@/app/new/actions'
+import { useToast } from '@/lib/hooks/use-toast'
+import { useState } from 'react'
+
+export default function PreviewPage({ params }: { params: { id: string } }) {
+    const {
+        days,
+        startDate,
+        travelerGroups,
+        tourType,
+        pricingRows,
+        extras,
+        clientName,
+        tourTitle,
+        startCity,
+        pickupPoint,
+        transferIncluded,
+        setDays, // we might need to sync state if we loaded from DB, but for preview we read from context
+    } = useBuilder()
+
+    const { toast } = useToast()
+    const [isSharing, setIsSharing] = useState(false)
+
+    const handleShare = async () => {
+        setIsSharing(true)
+        try {
+            // Prepare data object to save
+            const proposalData = {
+                days,
+                startDate,
+                travelerGroups,
+                tourType,
+                pricingRows,
+                extras,
+                clientName,
+                tourTitle,
+                startCity,
+                pickupPoint,
+                transferIncluded
+            }
+
+            const result = await saveProposal({
+                id: params.id, // Using the builder ID as the proposal ID
+                name: tourTitle || 'Untitled Safari',
+                data: proposalData,
+                status: 'shared'
+            })
+
+            if (result.success) {
+                const link = `${window.location.origin}/proposal/${params.id}`
+                await navigator.clipboard.writeText(link)
+                toast("Proposal Shared", {
+                    description: "Link copied to clipboard: " + link,
+                })
+            } else {
+                toast("Error", {
+                    description: "Failed to share proposal.",
+                    variant: "destructive"
+                })
+            }
+        } catch (error) {
+            console.error(error)
+             toast("Error", {
+                description: "An unexpected error occurred.",
+                variant: "destructive"
+            })
+        } finally {
+            setIsSharing(false)
+        }
+    }
+
+    return (
+        <div className="relative">
+            <ItineraryPreview
+                days={days}
+                startDate={startDate}
+                travelerGroups={travelerGroups}
+                tourType={tourType}
+                pricingRows={pricingRows}
+                extras={extras}
+                clientName={clientName}
+                isPublic={false}
+            />
+
+            {/* Floating Action Bar Override for CMS Context */}
+             <div className="fixed bottom-0 left-0 right-0 z-50 border-t bg-white p-4 shadow-lg">
+                <div className="mx-auto flex max-w-5xl items-center justify-between">
+                    <div className="text-sm text-gray-500">
+                        Proposal generated on{' '}
+                        {format(new Date(), 'MMMM d, yyyy')}
+                    </div>
+                    <div className="flex gap-4">
+                        <Button variant="outline">Edit Itinerary</Button>
+                        <Button 
+                            className="gap-2 bg-green-600 hover:bg-green-700" 
+                            onClick={handleShare}
+                            disabled={isSharing}
+                        >
+                            <Share2 className="h-4 w-4" />
+                            {isSharing ? 'Saving...' : 'Share Proposal'}
+                        </Button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    )
+}

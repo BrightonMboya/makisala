@@ -13,6 +13,7 @@
         "name": "next"
       }
     ],
+    "jsx": "preserve",
     "moduleResolution": "bundler",
     "strictNullChecks": true
   },

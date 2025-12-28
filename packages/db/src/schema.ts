@@ -336,6 +336,42 @@ export const wildlifeParkOverrides = pgTable('wildlife_park_overrides', {
         .notNull(),
 })
 
+
+// ---------- PROPOSALS ----------
+export const ProposalStatus = pgEnum('proposal_status', ['draft', 'shared'])
+
+export const proposals = pgTable('proposals', {
+    id: text('id').primaryKey(), // Using text/cuid for ID to make it url-friendly if needed, or uuid. keeping uuid for consistency with other tables if applicable, but implementation plan said String (UUID). Let's use uuid defaultRandom to be consistent with itineraries.
+    // Actually implementation plan asked for String (UUID).
+    // Let's stick to standard uuid driven IDs for this project as seen in 'itineraries' table.
+    // However, for shareable links, sometimes a shorter ID is nicer, but UUID is fine.
+    // Wait, the schema shows 'id: uuid ...' for most tables. Let's stick to uuid.
+    // Re-reading implementation plan: "- `id`: String (UUID) Pk"
+    // Let's use text for flexibility or uuid. The existing schema uses `uuid('id').defaultRandom().primaryKey()` often.
+    // But 'pages' uses text. 'user' uses text.
+    // Let's use uuid to be safe with collision and "uniqueness".
+    name: text('name').notNull(),
+    data: json('data').notNull(), // Stores the entire builder state
+    status: ProposalStatus('status').default('draft').notNull(),
+    createdAt: timestamp('created_at', { precision: 3, mode: 'string' })
+        .default(sql`CURRENT_TIMESTAMP`)
+        .notNull(),
+    updatedAt: timestamp('updated_at', { precision: 3, mode: 'string' })
+        .default(sql`CURRENT_TIMESTAMP`)
+        .notNull(),
+})
+
+
+
+export const proposalsRelations = relations(proposals, ({ many }) => ({
+    comments: many(comments),
+}))
+
+export type Proposal = typeof proposals.$inferSelect
+export type NewProposal = typeof proposals.$inferInsert
+export type Comment = typeof comments.$inferSelect
+export type NewComment = typeof comments.$inferInsert
+
 export const comments = pgTable('comments', {
     id: uuid('id').primaryKey().defaultRandom(),
     proposalId: text('proposal_id').notNull(),
