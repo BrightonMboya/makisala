@@ -1,9 +1,8 @@
 "use client";
 
 import React, { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { useComments, type Comment } from "./CommentsProvider";
-import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 
 interface CommentThreadProps {
@@ -11,7 +10,7 @@ interface CommentThreadProps {
 }
 
 export function CommentThread({ comment }: CommentThreadProps) {
-  const { addReply, resolveComment, setActiveCommentId } = useComments();
+  const { addReply, resolveComment } = useComments();
   const [replyText, setReplyText] = useState("");
 
   const handleSubmitReply = (e: React.FormEvent) => {

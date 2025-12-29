@@ -7,13 +7,7 @@ import type {
   Accommodation,
   NationalParkInfo,
 } from '@/types/itinerary-types';
-import type {
-  Day as BuilderDay,
-  TravelerGroup,
-  PricingRow,
-  ExtraOption,
-} from '@/components/itinerary-builder/builder-context';
-import { destinationDetails, accommodationDetails } from './data/itinerary-data';
+import type { BuilderDay, TravelerGroup, PricingRow, ExtraOption } from '@/types/itinerary-types';
 import type { Proposal } from '@repo/db/schema';
 
 // GeoJSON data for different countries
@@ -263,7 +257,7 @@ export async function transformProposalToItineraryData(
     if (!title && day.nationalPark) {
       title = `${day.nationalPark.name} National Park`;
     }
-    if (!title && activities.length > 0) {
+    if (!title && activities.length > 0 && activities[0]) {
       title = activities[0].activity;
     }
     if (!title) {
@@ -295,7 +289,7 @@ export async function transformProposalToItineraryData(
       title,
       description: day.description || undefined,
       destination: day.nationalPark?.name || day.title || undefined,
-      nationalParkId: day.nationalPark?.id, // Store the park ID for direct matching
+      nationalParkId: day.nationalPark?.id,
       activities,
       accommodation: accommodationName,
       meals: mealsStr,
@@ -328,20 +322,21 @@ export async function transformProposalToItineraryData(
   const mapLocations: Location[] = [];
   const seenParks = new Set<string>();
 
+  // Default coordinates by country (TODO: Add coordinates to nationalParks schema)
+  const defaultCoords: Record<string, [number, number]> = {
+    rwanda: [30.0619, -1.9441], // Kigali
+    tanzania: [36.683, -3.367], // Arusha
+    botswana: [23.41, -19.98], // Maun
+  };
+
   proposalDays.forEach((day) => {
     if (day.nationalPark && !seenParks.has(day.nationalPark.id)) {
       seenParks.add(day.nationalPark.id);
-      // Try to get coordinates from destinationDetails
-      const parkNameLower = day.nationalPark.name.toLowerCase();
-      const destDetail =
-        destinationDetails[parkNameLower.replace(/\s+/g, '-')] ||
-        destinationDetails[parkNameLower.replace(/\s+/g, '-') + '-np'];
-      if (destDetail) {
-        mapLocations.push({
-          name: day.nationalPark.name,
-          coordinates: [destDetail.coordinates.lng, destDetail.coordinates.lat],
-        });
-      }
+      const coords = (defaultCoords[country] || defaultCoords['rwanda']) as [number, number];
+      mapLocations.push({
+        name: day.nationalPark.name,
+        coordinates: coords,
+      });
     }
   });
 
@@ -362,36 +357,15 @@ export async function transformProposalToItineraryData(
       },
     };
     const defaultLoc = defaultLocations[country] || defaultLocations['rwanda'];
-    mapLocations.push(defaultLoc);
+    if (defaultLoc) {
+      mapLocations.push(defaultLoc);
+    }
   }
 
   const geoJson = getGeoJsonForCountry(country);
   const mapConfig = getMapConfigForCountry(country);
 
-  // Get hero image from first national park's page or default
-  let heroImage =
-    'https://images.unsplash.com/photo-1516426122078-c23e76319801?q=80&w=2000&auto=format&fit=crop';
-  if (firstPark) {
-    const parkNameLower = firstPark.name.toLowerCase();
-    const destDetail =
-      destinationDetails[parkNameLower.replace(/\s+/g, '-')] ||
-      destinationDetails[parkNameLower.replace(/\s+/g, '-') + '-np'];
-    if (destDetail) {
-      heroImage = destDetail.image;
-    }
-  }
-
-  // Calculate pricing
-  const pricing = calculatePricing(pricingRows, extras, travelerGroups);
-
-  // Generate subtitle
-  const duration = `${proposalDays.length} Days`;
-  const subtitle = `${duration} ${tourTitle.includes('Gorilla') ? 'Gorilla Trekking Safari' : 'Safari Adventure'}`;
-
-  // Build national parks map from relational data - key by park ID for direct matching
-  const nationalParksMap: Record<string, NationalParkInfo> = {};
-
-  // Fetch pages for featured images
+  // Fetch pages for featured images (needed for hero image and park images)
   const pageIds = new Set<string>();
   proposalDays.forEach((day) => {
     if (day.nationalPark?.overview_page_id) {
@@ -418,6 +392,26 @@ export async function transformProposalToItineraryData(
     });
   }
 
+  // Get hero image from first national park's page or default
+  let heroImage =
+    'https://images.unsplash.com/photo-1516426122078-c23e76319801?q=80&w=2000&auto=format&fit=crop';
+  if (firstPark?.overview_page_id) {
+    const featuredImage = pagesMap.get(firstPark.overview_page_id);
+    if (featuredImage) {
+      heroImage = featuredImage;
+    }
+  }
+
+  // Calculate pricing
+  const pricing = calculatePricing(pricingRows, extras, travelerGroups);
+
+  // Generate subtitle
+  const duration = `${proposalDays.length} Days`;
+  const subtitle = `${duration} ${tourTitle.includes('Gorilla') ? 'Gorilla Trekking Safari' : 'Safari Adventure'}`;
+
+  // Build national parks map from relational data - key by park ID for direct matching
+  const nationalParksMap: Record<string, NationalParkInfo> = {};
+
   proposalDays.forEach((day) => {
     if (day.nationalPark) {
       const park = day.nationalPark;
@@ -426,22 +420,6 @@ export async function transformProposalToItineraryData(
       let featuredImageUrl: string | null = null;
       if (park.overview_page_id) {
         featuredImageUrl = pagesMap.get(park.overview_page_id) || null;
-      }
-
-      // Fallback to destinationDetails if no page image
-      if (!featuredImageUrl) {
-        const parkNameLower = park.name.toLowerCase();
-        const parkNameHyphenated = parkNameLower.replace(/\s+/g, '-');
-        const parkNameShort = parkNameLower.replace(/\s+national\s+park/i, '').trim();
-
-        const destDetail =
-          destinationDetails[parkNameHyphenated] ||
-          destinationDetails[parkNameHyphenated + '-np'] ||
-          destinationDetails[parkNameShort] ||
-          destinationDetails[parkNameShort + '-np'];
-        if (destDetail) {
-          featuredImageUrl = destDetail.image;
-        }
       }
 
       const parkData: NationalParkInfo = {
@@ -490,7 +468,7 @@ export async function transformProposalToItineraryData(
       geojson: geoJson,
       locations: mapLocations,
       scale: mapConfig.scale,
-      rotate: mapConfig.rotate,
+      rotate: mapConfig.rotate as [number, number, number],
     },
   };
 }

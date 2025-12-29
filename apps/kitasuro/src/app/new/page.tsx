@@ -10,13 +10,10 @@ import {
   Clock,
   FileText,
   Folder,
-  LayoutDashboard,
-  Mail,
   Plus,
   Search,
   Settings,
   Star,
-  Truck,
 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -33,7 +30,7 @@ import { useToast } from '@/lib/hooks/use-toast';
 import { useEffect } from 'react';
 
 const requestSchema = z.object({
-  email: z.string().email('Valid email is required'),
+  email: z.email('Valid email is required'),
   firstName: z.string().optional(),
   lastName: z.string().min(1, 'Last name is required'),
   country: z.string().min(1, 'Country is required'),
@@ -95,13 +92,15 @@ export default function RequestsPage() {
 
         // Transform proposals to request format
         const transformedRequests: RequestItem[] = proposals.map((proposal) => {
-          const data = proposal.data as any;
-          const clientName = data.clientName || 'Unknown Client';
+          const clientName = proposal.clientName || 'Unknown Client';
+          const travelerGroups = (proposal.travelerGroups as any) || [];
           const travelers =
-            data.travelerGroups?.reduce((acc: number, g: any) => acc + (g.count || 0), 0) || 0;
-          const title = proposal.name || data.tourTitle || 'Untitled Proposal';
-          const startDate = data.startDate
-            ? new Date(data.startDate).toLocaleDateString('en-US', {
+            Array.isArray(travelerGroups) && travelerGroups.length > 0
+              ? travelerGroups.reduce((acc: number, g: any) => acc + (g.count || 0), 0)
+              : 0;
+          const title = proposal.tourTitle || proposal.name || 'Untitled Proposal';
+          const startDate = proposal.startDate
+            ? new Date(proposal.startDate).toLocaleDateString('en-US', {
                 month: 'short',
                 day: 'numeric',
                 year: 'numeric',
@@ -127,7 +126,7 @@ export default function RequestsPage() {
             id: proposal.id,
             client: clientName,
             travelers,
-            country: data.country || 'Unknown',
+            country: 'Unknown', // Country not directly available, could be fetched from tour if needed
             title,
             startDate,
             received,

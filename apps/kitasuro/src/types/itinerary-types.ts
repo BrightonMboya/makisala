@@ -1,3 +1,91 @@
+import type React from 'react';
+
+// ========== BUILDER TYPES (for form/state management) ==========
+export type BuilderActivity = {
+  id: string;
+  name: string;
+  location: string;
+  moment: 'Morning' | 'Afternoon' | 'Evening' | 'Half Day' | 'Full Day' | 'Night';
+  isOptional: boolean;
+  description?: string;
+  imageUrl?: string;
+};
+
+export type BuilderDay = {
+  id: string;
+  dayNumber: number;
+  date: string;
+  accommodation: string | null;
+  destination: string | null;
+  activities: BuilderActivity[];
+  meals: {
+    breakfast: boolean;
+    lunch: boolean;
+    dinner: boolean;
+  };
+  description?: string; // Narrative for the day
+  accommodationImage?: string;
+};
+
+export type TravelerType = 'Adult' | 'Senior' | 'Child' | 'Baby';
+
+export type TravelerGroup = {
+  id: string;
+  count: number;
+  type: TravelerType;
+};
+
+export type PricingRow = {
+  id: string;
+  count: number;
+  type: string;
+  unitPrice: number;
+};
+
+export type ExtraOption = {
+  id: string;
+  name: string;
+  price: number;
+  selected: boolean;
+};
+
+export type BuilderContextType = {
+  // Tour Details
+  tourType: string;
+  setTourType: React.Dispatch<React.SetStateAction<string>>;
+  clientName: string;
+  setClientName: React.Dispatch<React.SetStateAction<string>>;
+  tourTitle: string;
+  setTourTitle: React.Dispatch<React.SetStateAction<string>>;
+  travelerGroups: TravelerGroup[];
+  setTravelerGroups: React.Dispatch<React.SetStateAction<TravelerGroup[]>>;
+
+  // Day by Day
+  days: BuilderDay[];
+  setDays: React.Dispatch<React.SetStateAction<BuilderDay[]>>;
+  startDate: Date | undefined;
+  setStartDate: React.Dispatch<React.SetStateAction<Date | undefined>>;
+  startCity: string;
+  setStartCity: React.Dispatch<React.SetStateAction<string>>;
+  transferIncluded: string;
+  setTransferIncluded: React.Dispatch<React.SetStateAction<string>>;
+  pickupPoint: string;
+  setPickupPoint: React.Dispatch<React.SetStateAction<string>>;
+
+  // Pricing
+  pricingRows: PricingRow[];
+  setPricingRows: React.Dispatch<React.SetStateAction<PricingRow[]>>;
+  extras: ExtraOption[];
+  setExtras: React.Dispatch<React.SetStateAction<ExtraOption[]>>;
+
+  // Inclusions & Exclusions
+  inclusions: string[];
+  setInclusions: React.Dispatch<React.SetStateAction<string[]>>;
+  exclusions: string[];
+  setExclusions: React.Dispatch<React.SetStateAction<string[]>>;
+};
+
+// ========== THEME TYPES (for rendering) ==========
 export interface DayActivity {
   time: string;
   activity: string;

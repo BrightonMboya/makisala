@@ -3,7 +3,6 @@
 import { db } from '@repo/db';
 import {
   tours,
-  accommodations,
   nationalParks,
   proposals,
   proposalDays,
@@ -11,9 +10,10 @@ import {
   proposalActivities,
   proposalMeals,
   comments,
-  commentReplies
+  commentReplies,
+  pages,
 } from '@repo/db/schema';
-import { eq, desc } from 'drizzle-orm';
+import { eq, desc, inArray } from 'drizzle-orm';
 
 export async function getToursList(country?: string) {
   try {
@@ -80,12 +80,13 @@ export async function getTourDetails(id: string) {
 
 export async function getAllAccommodations() {
   try {
-    return await db
-      .select({
-        id: accommodations.id,
-        name: accommodations.name,
-      })
-      .from(accommodations);
+    return await db.query.accommodations.findMany({
+      with: {
+        images: {
+          limit: 1,
+        },
+      },
+    });
   } catch (error) {
     console.error('Error fetching accommodations:', error);
     return [];
@@ -98,10 +99,27 @@ export async function getAllNationalParks() {
       .select({
         id: nationalParks.id,
         name: nationalParks.name,
+        overview_page_id: nationalParks.overview_page_id,
       })
       .from(nationalParks);
   } catch (error) {
     console.error('Error fetching national parks:', error);
+    return [];
+  }
+}
+
+export async function getPageImages(pageIds: string[]) {
+  try {
+    if (pageIds.length === 0) return [];
+
+    const pagesData = await db
+      .select({ id: pages.id, featured_image_url: pages.featured_image_url })
+      .from(pages)
+      .where(inArray(pages.id, pageIds));
+
+    return pagesData;
+  } catch (error) {
+    console.error('Error fetching page images:', error);
     return [];
   }
 }
@@ -117,6 +135,8 @@ export async function getAllProposals() {
         updatedAt: proposals.updatedAt,
         tourTitle: proposals.tourTitle,
         clientName: proposals.clientName,
+        startDate: proposals.startDate,
+        travelerGroups: proposals.travelerGroups,
       })
       .from(proposals)
       .orderBy(desc(proposals.updatedAt));
