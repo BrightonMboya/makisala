@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import TourCard from '../../[modifier]/_components/TourCard'
 import { type FilterState, TourFilters } from './tour-filter'
 import { Button } from '@repo/ui/button'
-import { type Tours } from '@/db'
+import { type Tours } from '@repo/db'
 
 interface ToursResponse {
     tours: Tours[]

@@ -1,5 +1,7 @@
+CREATE TYPE "public"."commentStatus" AS ENUM('open', 'resolved');--> statement-breakpoint
 CREATE TYPE "public"."pageStatus" AS ENUM('published', 'draft');--> statement-breakpoint
 CREATE TYPE "public"."pageType" AS ENUM('page', 'blog');--> statement-breakpoint
+CREATE TYPE "public"."proposal_status" AS ENUM('draft', 'shared');--> statement-breakpoint
 CREATE TABLE "accommodation_images" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"accommodation_id" uuid NOT NULL,
@@ -27,6 +29,29 @@ CREATE TABLE "account" (
 	"password" text,
 	"created_at" timestamp NOT NULL,
 	"updated_at" timestamp NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE "comment_replies" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"comment_id" uuid NOT NULL,
+	"user_id" text,
+	"user_name" text,
+	"content" text NOT NULL,
+	"created_at" timestamp DEFAULT now() NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE "comments" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"proposal_id" text NOT NULL,
+	"user_id" text,
+	"user_name" text,
+	"content" text NOT NULL,
+	"pos_x" numeric(5, 2) NOT NULL,
+	"pos_y" numeric(5, 2) NOT NULL,
+	"width" numeric(5, 2),
+	"height" numeric(5, 2),
+	"status" "commentStatus" DEFAULT 'open' NOT NULL,
+	"created_at" timestamp DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE "destinations" (
@@ -115,6 +140,15 @@ CREATE TABLE "pages" (
 	"status" "pageStatus" DEFAULT 'published',
 	"createdAt" timestamp(3) DEFAULT CURRENT_TIMESTAMP NOT NULL,
 	"updatedAt" timestamp(3) NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE "proposals" (
+	"id" text PRIMARY KEY NOT NULL,
+	"name" text NOT NULL,
+	"data" json NOT NULL,
+	"status" "proposal_status" DEFAULT 'draft' NOT NULL,
+	"created_at" timestamp(3) DEFAULT CURRENT_TIMESTAMP NOT NULL,
+	"updated_at" timestamp(3) DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE "session" (
@@ -207,6 +241,9 @@ CREATE TABLE "wildlife_park_overrides" (
 --> statement-breakpoint
 ALTER TABLE "accommodation_images" ADD CONSTRAINT "accommodation_images_accommodation_id_accommodations_id_fk" FOREIGN KEY ("accommodation_id") REFERENCES "public"."accommodations"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "account" ADD CONSTRAINT "account_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "comment_replies" ADD CONSTRAINT "comment_replies_comment_id_comments_id_fk" FOREIGN KEY ("comment_id") REFERENCES "public"."comments"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "comment_replies" ADD CONSTRAINT "comment_replies_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."user"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "comments" ADD CONSTRAINT "comments_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."user"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "itineraries" ADD CONSTRAINT "itineraries_tour_package_id_tour_packages_id_fk" FOREIGN KEY ("tour_package_id") REFERENCES "public"."tour_packages"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "itinerary_accommodations" ADD CONSTRAINT "itinerary_accommodations_itinerary_day_id_itinerary_days_id_fk" FOREIGN KEY ("itinerary_day_id") REFERENCES "public"."itinerary_days"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "itinerary_accommodations" ADD CONSTRAINT "itinerary_accommodations_accommodation_id_accommodations_id_fk" FOREIGN KEY ("accommodation_id") REFERENCES "public"."accommodations"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint

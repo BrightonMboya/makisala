@@ -1,5 +1,5 @@
 import type { MetadataRoute } from 'next'
-import { db, tourPackages } from '@/db'
+import { db, tourPackages } from '@repo/db'
 import { BASE_URL } from '@/lib/constants'
 
 export default async function generateSitemaps(): Promise<MetadataRoute.Sitemap> {

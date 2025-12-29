@@ -32,6 +32,7 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 apps/makisala/.env
+packages/db/.env
 
 # vercel
 .vercel
@@ -39,3 +40,5 @@ apps/makisala/.env
 # typescript
 *.tsbuildinfo
 apps/makisala/next-env.d.ts
+
+.env

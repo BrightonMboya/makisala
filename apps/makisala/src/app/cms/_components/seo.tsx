@@ -6,7 +6,7 @@ import { Textarea } from '@repo/ui/textarea'
 import { Label } from '@repo/ui/label'
 import { Separator } from '@repo/ui/separator'
 import { Settings } from 'lucide-react'
-import type { IPage as PageData } from '@/db/schema'
+import type { IPage as PageData } from '@repo/db/schema'
 import { type HandleInputChange } from '../page'
 
 export default function SEOTab({

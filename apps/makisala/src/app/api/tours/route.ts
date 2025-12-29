@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from 'next/server'
-import { db } from '@/db'
-import { itineraryDays, nationalParks, tours } from '@/db/schema'
+import { db } from '@repo/db'
+import { itineraryDays, nationalParks, tours } from '@repo/db/schema'
 import { and, eq, exists, gte, ilike, inArray, lte, or, sql } from 'drizzle-orm'
 
 export async function GET(request: NextRequest) {
@@ -62,12 +62,12 @@ export async function GET(request: NextRequest) {
         .offset(offset)
 
     // Count total results (for pagination)
-    const [{ count }] = await db
+    const countResult = await db
         .select({ count: sql<number>`count(*)` })
         .from(tours)
         .where(conditions)
 
-    const totalCount = Number(count)
+    const totalCount = Number(countResult[0]?.count || 0)
     const totalPages = Math.ceil(totalCount / limit)
 
     return NextResponse.json({

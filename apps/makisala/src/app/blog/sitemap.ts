@@ -1,5 +1,5 @@
 import type { MetadataRoute } from 'next'
-import { db, pages } from '../../db'
+import { db, pages } from '@repo/db'
 import { eq } from 'drizzle-orm'
 import { BASE_URL } from '../../lib/constants'
 
