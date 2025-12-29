@@ -1,0 +1,22 @@
+{
+  "name": "@repo/resend",
+  "version": "0.0.0",
+  "private": true,
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "lint": "eslint ."
+  },
+  "dependencies": {
+    "resend": "^4.0.0",
+    "@t3-oss/env-nextjs": "^0.11.1",
+    "zod": "^4.0.17"
+  },
+  "devDependencies": {
+    "@repo/lint": "workspace:*",
+    "@repo/tsconfig": "workspace:*",
+    "eslint": "^9.10.0",
+    "typescript": "^5.5.4"
+  }
+}

@@ -14,6 +14,7 @@ import {
   pages,
 } from '@repo/db/schema';
 import { eq, desc, inArray } from 'drizzle-orm';
+import { sendCommentNotificationEmail } from '@repo/resend';
 
 export async function getToursList(country?: string) {
   try {
@@ -376,6 +377,28 @@ export async function createComment(data: {
         height: data.height?.toString(),
       })
       .returning();
+
+    // Send email notification if comment was created successfully
+    // This is fire-and-forget - we don't want email failures to block comment creation
+    if (comment) {
+      // Fetch proposal details to get client name and title
+      const proposal = await getProposal(data.proposalId);
+
+      if (proposal?.clientName) {
+        // Send email notification asynchronously (don't await to avoid blocking)
+        sendCommentNotificationEmail({
+          proposalId: data.proposalId,
+          clientName: proposal.clientName,
+          proposalTitle: proposal.tourTitle || proposal.name,
+          commentContent: data.content,
+          commentAuthor: data.authorName,
+        }).catch((error) => {
+          // Log error but don't throw - email failure shouldn't break comment creation
+          console.error('Failed to send comment notification email:', error);
+        });
+      }
+    }
+
     return { success: true, comment };
   } catch (error) {
     console.error('Error creating comment:', error);
