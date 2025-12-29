@@ -5,13 +5,15 @@ import {
   tours,
   accommodations,
   nationalParks,
-  itineraryDays,
-  itineraryAccommodations,
   proposals,
+  proposalDays,
+  proposalAccommodations,
+  proposalActivities,
+  proposalMeals,
   comments,
-  commentReplies,
+  commentReplies
 } from '@repo/db/schema';
-import { eq, inArray, desc } from 'drizzle-orm';
+import { eq, desc } from 'drizzle-orm';
 
 export async function getToursList(country?: string) {
   try {
@@ -56,28 +58,7 @@ export async function getTourDetails(id: string) {
 
     if (!tour) return null;
 
-    // Fetch national parks map for quick lookup if needed, or just fetch individual names
-    // Since we can't easily rely on the relation being present in the schema object without checking,
-    // we will manually fetch the national park name if a day has a national_park_id.
-    // Optimization: Fetch all needed national parks in one go.
-    const parkIds = tour.days.map((d) => d.national_park_id).filter((id): id is string => !!id);
-
-    let parkMap = new Map<string, string>();
-    if (parkIds.length > 0) {
-      const parks = await db
-        .select({
-          id: nationalParks.id,
-          name: nationalParks.name,
-        })
-        .from(nationalParks)
-        .where(inArray(nationalParks.id, parkIds));
-
-      parks.forEach((p) => {
-        parkMap.set(p.id, p.name);
-      });
-    }
-
-    // Transform to builder format
+    // Transform to builder format - use IDs for destination and accommodation
     return {
       tourType: 'Private Tour', // Default
       price: tour.pricing,
@@ -85,10 +66,8 @@ export async function getTourDetails(id: string) {
         id: day.id,
         dayNumber: day.dayNumber,
         date: undefined, // Will be calculated from start date
-        destination: day.national_park_id
-          ? parkMap.get(day.national_park_id) || ''
-          : day.dayTitle || '',
-        accommodation: day.itineraryAccommodations?.[0]?.accommodation?.name || '',
+        destination: day.national_park_id || null, // Use ID directly
+        accommodation: day.itineraryAccommodations?.[0]?.accommodation?.id || null, // Use ID directly
         activities: [], // Activities are currently stored as JSON in tours table, not per day.
         meals: { breakfast: true, lunch: true, dinner: true }, // Default
       })),
@@ -136,7 +115,8 @@ export async function getAllProposals() {
         status: proposals.status,
         createdAt: proposals.createdAt,
         updatedAt: proposals.updatedAt,
-        data: proposals.data,
+        tourTitle: proposals.tourTitle,
+        clientName: proposals.clientName,
       })
       .from(proposals)
       .orderBy(desc(proposals.updatedAt));
@@ -151,7 +131,32 @@ export async function getProposal(id: string) {
   try {
     const result = await db.query.proposals.findFirst({
       where: eq(proposals.id, id),
+      with: {
+        tour: true,
+        days: {
+          with: {
+            nationalPark: {
+              with: {
+                destination: true,
+              },
+            },
+            accommodations: {
+              with: {
+                accommodation: {
+                  with: {
+                    images: true,
+                  },
+                },
+              },
+            },
+            activities: true,
+            meals: true,
+          },
+          orderBy: (days, { asc }) => [asc(days.dayNumber)],
+        },
+      },
     });
+
     return result;
   } catch (error) {
     console.error('Error fetching proposal:', error);
@@ -162,8 +167,9 @@ export async function getProposal(id: string) {
 export async function saveProposal(data: {
   id: string;
   name: string;
-  data: any;
+  data: any; // Builder state data
   status?: 'draft' | 'shared';
+  tourId: string; // Required: proposal must be created from a tour
 }) {
   try {
     // Generate UUID if id is not provided or is empty
@@ -173,24 +179,154 @@ export async function saveProposal(data: {
       proposalId = randomUUID();
     }
 
-    await db
-      .insert(proposals)
-      .values({
-        id: proposalId,
-        name: data.name,
-        data: data.data,
-        status: data.status || 'draft',
-        updatedAt: new Date().toISOString(),
-      })
-      .onConflictDoUpdate({
-        target: proposals.id,
-        set: {
-          name: data.name,
-          data: data.data,
-          status: data.status || 'draft',
+    const builderData = data.data;
+
+    // Extract proposal-level data
+    const proposalData = {
+      id: proposalId,
+      name: data.name,
+      tourId: data.tourId || builderData.tourId, // Required - must be provided
+      clientName: builderData.clientName || null,
+      tourTitle: builderData.tourTitle || data.name,
+      tourType: builderData.tourType || null,
+      startDate: builderData.startDate ? new Date(builderData.startDate).toISOString() : null,
+      startCity: builderData.startCity || null,
+      pickupPoint: builderData.pickupPoint || null,
+      transferIncluded: builderData.transferIncluded || null,
+      pricingRows: builderData.pricingRows || null,
+      extras: builderData.extras || null,
+      travelerGroups: builderData.travelerGroups || null,
+      inclusions: builderData.inclusions || null,
+      exclusions: builderData.exclusions || null,
+      status: data.status || 'draft',
+      updatedAt: new Date().toISOString(),
+    };
+
+    // Use transaction to save proposal and all related data
+    await db.transaction(async (tx) => {
+      // Insert or update proposal
+      await tx
+        .insert(proposals)
+        .values({
+          id: proposalId,
+          name: proposalData.name,
+          tourId: proposalData.tourId, // Required
+          clientName: proposalData.clientName || null,
+          tourTitle: proposalData.tourTitle || null,
+          tourType: proposalData.tourType || null,
+          startDate: proposalData.startDate || null,
+          travelerGroups: proposalData.travelerGroups || null,
+          pricingRows: proposalData.pricingRows || null,
+          extras: proposalData.extras || null,
+          inclusions: proposalData.inclusions || null,
+          exclusions: proposalData.exclusions || null,
+          status: proposalData.status || 'draft',
           updatedAt: new Date().toISOString(),
-        },
-      });
+        })
+        .onConflictDoUpdate({
+          target: proposals.id,
+          set: {
+            name: proposalData.name,
+            tourId: proposalData.tourId, // Required
+            clientName: proposalData.clientName || null,
+            tourTitle: proposalData.tourTitle || null,
+            tourType: proposalData.tourType || null,
+            startDate: proposalData.startDate || null,
+            travelerGroups: proposalData.travelerGroups || null,
+            pricingRows: proposalData.pricingRows || null,
+            extras: proposalData.extras || null,
+            inclusions: proposalData.inclusions || null,
+            exclusions: proposalData.exclusions || null,
+            status: proposalData.status || 'draft',
+            updatedAt: new Date().toISOString(),
+          },
+        });
+
+      // Delete existing days and related data (cascade will handle children)
+      await tx.delete(proposalDays).where(eq(proposalDays.proposalId, proposalId));
+
+      // Insert days with relationships
+      const days: any[] = builderData.days || [];
+
+      for (const day of days) {
+        // Destination should be a national park ID (UUID) from the picker
+        let nationalParkId: string | null = null;
+
+        if (day.destination) {
+          // Check if destination is a valid UUID (national park ID)
+          const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+            day.destination,
+          );
+
+          if (isUUID) {
+            // It's an ID from the picker, use it directly
+            nationalParkId = day.destination;
+          }
+          // If it's not a UUID, it means the picker wasn't used properly or data is corrupted
+          // We'll skip it rather than trying to match by name
+        }
+
+        // Insert proposal day
+        const [proposalDay] = await tx
+          .insert(proposalDays)
+          .values({
+            proposalId,
+            dayNumber: day.dayNumber,
+            title: day.title || `Day ${day.dayNumber}`,
+            description: day.description || null,
+            nationalParkId,
+          })
+          .returning();
+
+        if (!proposalDay) {
+          throw new Error(`Failed to create proposal day ${day.dayNumber}`);
+        }
+
+        // Insert accommodations - accommodation should be an ID from the picker
+        if (day.accommodation) {
+          // Check if accommodation is a valid UUID
+          const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+            day.accommodation,
+          );
+
+          if (isUUID) {
+            // It's an ID from the picker, use it directly
+            await tx.insert(proposalAccommodations).values({
+              proposalDayId: proposalDay.id,
+              accommodationId: day.accommodation,
+            });
+          }
+          // If it's not a UUID, skip it (picker wasn't used properly)
+        }
+
+        // Insert activities
+        if (day.activities && Array.isArray(day.activities)) {
+          for (const activity of day.activities) {
+            await tx.insert(proposalActivities).values({
+              proposalDayId: proposalDay.id,
+              name: activity.name,
+              description: activity.description || null,
+              location: activity.location || null,
+              moment: activity.moment || 'Full Day',
+              isOptional: activity.isOptional || false,
+              imageUrl: activity.imageUrl || null,
+              time: activity.time || null,
+            });
+          }
+        }
+
+        // Insert meals
+        if (day.meals) {
+          await tx.insert(proposalMeals).values({
+            proposalDayId: proposalDay.id,
+            breakfast: day.meals.breakfast || false,
+            lunch: day.meals.lunch || false,
+            dinner: day.meals.dinner || false,
+          });
+        }
+      }
+    });
+
     return { success: true, id: proposalId };
   } catch (error) {
     console.error('Error saving proposal:', error);

@@ -4,7 +4,7 @@ import React from 'react';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { ComposableMap, Geographies, Geography, Line, Marker } from 'react-simple-maps';
-import { ItineraryData, Location } from '@/data/itineraries';
+import type { ItineraryData, NationalParkInfo } from '@/types/itinerary-types';
 
 function TripMap({ data }: { data: ItineraryData['mapData'] }) {
   const { geojson, locations, scale, rotate } = data;
@@ -16,7 +16,7 @@ function TripMap({ data }: { data: ItineraryData['mapData'] }) {
       </div>
     );
   }
-  const start = locations[0].coordinates;
+  const start = locations[0]?.coordinates!;
 
   return (
     <div className="relative aspect-square w-full overflow-hidden rounded-2xl border border-stone-100/50 bg-stone-50 p-4">
@@ -55,10 +55,12 @@ function TripMap({ data }: { data: ItineraryData['mapData'] }) {
         {/* Route Path */}
         {locations.map((loc, idx) => {
           if (idx === 0) return null;
+          const prevLocation = locations[idx - 1];
+          if (!prevLocation) return null;
           return (
             <Line
               key={idx}
-              from={locations[idx - 1].coordinates}
+              from={prevLocation.coordinates}
               to={loc.coordinates}
               stroke="#A8A29E"
               strokeWidth={1.5}
@@ -160,80 +162,158 @@ export default function MinimalisticTheme({ data }: { data: ItineraryData }) {
               </h2>
 
               <div className="space-y-24">
-                {data.itinerary.map((day) => (
-                  <div key={day.day} className="group">
-                    <div className="flex flex-col gap-8 md:flex-row md:gap-16">
-                      <div className="shrink-0 md:w-32">
-                        <span className="font-serif text-5xl text-stone-200 italic transition-colors group-hover:text-stone-300">
-                          0{day.day}
-                        </span>
-                        <p className="mt-2 text-xs tracking-widest text-stone-500 uppercase">
-                          {day.date}
-                        </p>
-                      </div>
+                {data.itinerary.map((day, dayIndex) => {
+                  // Match by national park ID (from picker)
+                  const parkInfo: NationalParkInfo | null =
+                    data.nationalParks && day.nationalParkId
+                      ? (data.nationalParks[day.nationalParkId] ?? null)
+                      : null;
 
-                      <div className="flex-1 space-y-12">
-                        <h3 className="font-serif text-3xl leading-tight text-stone-800 md:text-4xl">
-                          {day.title}
-                        </h3>
+                  // Only show park info if it's different from the previous day
+                  const previousDay = dayIndex > 0 ? data.itinerary[dayIndex - 1] : null;
+                  const previousParkId = previousDay?.nationalParkId;
+                  const shouldShowParkInfo =
+                    parkInfo !== null && day.nationalParkId !== previousParkId;
 
-                        <div className="space-y-10 border-l border-stone-200 pl-8">
-                          {day.activities.map((activity, idx) => (
-                            <div key={idx} className="relative">
-                              <div className="absolute top-2 -left-[37px] h-2 w-2 rounded-full bg-stone-500 outline outline-8 outline-[#FDFCFB]" />
-                              <div className="space-y-2">
-                                <div className="flex items-baseline gap-4">
-                                  <span className="text-[10px] font-medium tracking-tighter text-stone-500 uppercase">
-                                    {activity.time}
-                                  </span>
-                                  <h4 className="text-lg font-medium text-stone-700">
-                                    {activity.activity}
-                                  </h4>
-                                </div>
-                                <p className="max-w-2xl leading-relaxed text-balance text-stone-600">
-                                  {activity.description}
-                                </p>
-                                {activity.location && (
-                                  <span className="inline-flex items-center gap-1.5 text-[11px] tracking-wider text-stone-500 uppercase">
-                                    <svg
-                                      width="10"
-                                      height="10"
-                                      viewBox="0 0 24 24"
-                                      fill="none"
-                                      stroke="currentColor"
-                                      strokeWidth="2.5"
-                                    >
-                                      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" />
-                                      <circle cx="12" cy="10" r="3" />
-                                    </svg>
-                                    {activity.location}
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                          ))}
+                  return (
+                    <div key={day.day} className="group">
+                      <div className="flex flex-col gap-8 md:flex-row md:gap-16">
+                        <div className="shrink-0 md:w-32">
+                          <span className="font-serif text-5xl text-stone-200 italic transition-colors group-hover:text-stone-300">
+                            0{day.day}
+                          </span>
+                          <p className="mt-2 text-xs tracking-widest text-stone-500 uppercase">
+                            {day.date}
+                          </p>
                         </div>
 
-                        <div className="flex flex-col justify-between gap-8 rounded-2xl bg-stone-50 p-8 md:flex-row">
-                          <div>
-                            <span className="mb-2 block text-[10px] tracking-[0.2em] text-stone-400 uppercase">
-                              Accommodation
-                            </span>
-                            <span className="font-serif text-lg text-stone-700 italic">
-                              {day.accommodation}
-                            </span>
+                        <div className="flex-1 space-y-12">
+                          <h3 className="font-serif text-3xl leading-tight text-stone-800 md:text-4xl">
+                            {day.title}
+                          </h3>
+
+                          {day.description && (
+                            <p className="text-lg leading-relaxed text-stone-600">
+                              {day.description}
+                            </p>
+                          )}
+
+                          {/* National Park Information Section - only show if different from previous day */}
+                          {shouldShowParkInfo && parkInfo && (
+                            <div className="space-y-8">
+                              {parkInfo.featured_image_url && (
+                                <div className="relative h-64 w-full overflow-hidden rounded-2xl">
+                                  <Image
+                                    src={parkInfo.featured_image_url}
+                                    alt={parkInfo.name}
+                                    fill
+                                    className="object-cover"
+                                  />
+                                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                                  <div className="absolute bottom-6 left-6">
+                                    <span className="text-[10px] font-bold tracking-[0.3em] text-white/80 uppercase">
+                                      {parkInfo.name} National Park
+                                    </span>
+                                  </div>
+                                </div>
+                              )}
+
+                              {parkInfo.park_overview &&
+                                Array.isArray(parkInfo.park_overview) &&
+                                parkInfo.park_overview.length > 0 && (
+                                  <div className="rounded-2xl border border-stone-200 bg-stone-50/50 p-8">
+                                    <h4 className="mb-6 text-sm font-medium tracking-[0.2em] text-stone-400 uppercase">
+                                      Park Information
+                                    </h4>
+                                    <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                                      {parkInfo.park_overview.map(
+                                        (
+                                          item: {
+                                            title?: string;
+                                            name?: string;
+                                            description: string;
+                                          },
+                                          idx: number,
+                                        ) => {
+                                          // Handle both 'title' and 'name' fields (schema uses 'name', but data might use 'title')
+                                          const itemTitle =
+                                            item.title || item.name || 'Information';
+                                          return (
+                                            <div key={idx} className="space-y-2">
+                                              <span className="text-xs font-bold tracking-wider text-stone-500 uppercase">
+                                                {itemTitle}
+                                              </span>
+                                              <p className="text-sm leading-relaxed text-stone-700">
+                                                {item.description}
+                                              </p>
+                                            </div>
+                                          );
+                                        },
+                                      )}
+                                    </div>
+                                  </div>
+                                )}
+                            </div>
+                          )}
+
+                          <div className="space-y-10 border-l border-stone-200 pl-8">
+                            {day.activities.map((activity, idx) => (
+                              <div key={idx} className="relative">
+                                <div className="absolute top-2 -left-[37px] h-2 w-2 rounded-full bg-stone-500 outline outline-8 outline-[#FDFCFB]" />
+                                <div className="space-y-2">
+                                  <div className="flex items-baseline gap-4">
+                                    <span className="text-[10px] font-medium tracking-tighter text-stone-500 uppercase">
+                                      {activity.time}
+                                    </span>
+                                    <h4 className="text-lg font-medium text-stone-700">
+                                      {activity.activity}
+                                    </h4>
+                                  </div>
+                                  <p className="max-w-2xl leading-relaxed text-balance text-stone-600">
+                                    {activity.description}
+                                  </p>
+                                  {activity.location && (
+                                    <span className="inline-flex items-center gap-1.5 text-[11px] tracking-wider text-stone-500 uppercase">
+                                      <svg
+                                        width="10"
+                                        height="10"
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        strokeWidth="2.5"
+                                      >
+                                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" />
+                                        <circle cx="12" cy="10" r="3" />
+                                      </svg>
+                                      {activity.location}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            ))}
                           </div>
-                          <div className="md:text-right">
-                            <span className="mb-2 block text-[10px] tracking-[0.2em] text-stone-400 uppercase">
-                              Dining
-                            </span>
-                            <span className="text-sm text-stone-600 italic">{day.meals}</span>
+
+                          <div className="flex flex-col justify-between gap-8 rounded-2xl bg-stone-50 p-8 md:flex-row">
+                            <div>
+                              <span className="mb-2 block text-[10px] tracking-[0.2em] text-stone-400 uppercase">
+                                Accommodation
+                              </span>
+                              <span className="font-serif text-lg text-stone-700 italic">
+                                {day.accommodation}
+                              </span>
+                            </div>
+                            <div className="md:text-right">
+                              <span className="mb-2 block text-[10px] tracking-[0.2em] text-stone-400 uppercase">
+                                Dining
+                              </span>
+                              <span className="text-sm text-stone-600 italic">{day.meals}</span>
+                            </div>
                           </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
 
