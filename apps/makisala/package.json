@@ -1,0 +1,41 @@
+{
+  "name": "makisala-website",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "bun --bun next dev",
+    "build": "bun --bun next build",
+    "start": "bun --bun next start",
+    "lint": "bun --bun next lint"
+  },
+  "dependencies": {
+    "autoprefixer": "^10.4.14",
+    "@duffel/api": "^4.18.0",
+    "@duffel/components": "^3.11.0",
+    "@hookform/resolvers": "^5.1.1",
+    "@repo/ui": "workspace:*",
+    "@repo/lint": "workspace:*",
+    "@tanstack/react-query": "^5.83.0",
+    "@tanstack/react-query-devtools": "^5.83.0",
+    "@tanstack/react-query-next-experimental": "^5.83.0",
+    "@next/mdx": "^16.0.1",
+    "@t3-oss/env-nextjs": "^0.13.8",
+    "@types/mdx": "^2.0.13",
+    "@vercel/analytics": "^1.5.0",
+    "@vercel/speed-insights": "^1.2.0",
+    "drizzle-orm": "^0.44.3",
+    "drizzle-zod": "^0.8.2",
+    "next-mdx-remote-client": "^2.1.7",
+    "cloudinary": "^2.7.0",
+    "better-auth": "1.4.2",
+    "remark-gfm": "^4.0.1",
+    "react-markdown": "^10.1.0"
+  },
+  "devDependencies": {
+    "drizzle-kit": "^0.31.4",
+    "@repo/tsconfig": "workspace:*",
+    "@tailwindcss/postcss": "^4",
+    "tailwindcss": "^4"
+  }
+}
