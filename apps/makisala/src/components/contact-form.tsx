@@ -270,7 +270,7 @@ export default function ContactForm({
                 </div>
 
                 <Button type="submit" className="w-full">
-                    Submit Inquiry
+                    Request My Free Quote
                 </Button>
             </form>
         </Form>

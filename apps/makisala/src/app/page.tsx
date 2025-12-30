@@ -212,11 +212,13 @@ export default function Page() {
                                 <div className="mt-4">
                                     <div className="flex items-baseline gap-2">
                                         <span className="text-lg font-bold text-gray-900">
+                                            From{' '}
                                             {new Intl.NumberFormat('en-US', {
                                                 style: 'currency',
                                                 currency: 'USD',
                                                 maximumFractionDigits: 0,
                                             }).format(Number(item.pricing))}
+                                            {' '} pp
                                         </span>
                                     </div>
                                 </div>

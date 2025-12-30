@@ -55,7 +55,7 @@ export default function Hero({ parks }: HeroProps) {
         <section className="relative flex w-full flex-col items-center justify-center bg-white pt-20 pb-20 md:pt-32 md:pb-20">
             <div className="relative z-10 flex w-full max-w-5xl flex-col items-center px-4 sm:px-6 lg:px-8">
                 <h1 className="mb-12 text-center text-4xl font-extrabold tracking-tight text-gray-900 md:text-7xl">
-                    Experience the Magic of East Africa
+                    Tailor-made Safaris Crafted by Local Experts
                 </h1>
 
                 {/* Search Widget - TripAdvisor Style */}
@@ -328,18 +328,19 @@ export default function Hero({ parks }: HeroProps) {
                                 />
                             </svg>
                         </div>
-                        <span className="font-semibold text-gray-900">4.9/5</span>
-                        <span className="text-gray-500">from 200+ travellers</span>
+                        <span className="text-gray-900 font-bold">
+                            Rated 4.9/5 from 200+ happy travellers
+                        </span>
                     </div>
                     <div className="hidden h-4 w-px bg-gray-300 sm:block" />
                     <div className="flex items-center gap-1.5">
                         <Check className="h-4 w-4 text-green-600" />
-                        <span>Local experts in East Africa</span>
+                        <span className="text-gray-900 font-bold">Local experts in East Africa</span>
                     </div>
                     <div className="hidden h-4 w-px bg-gray-300 sm:block" />
                     <div className="flex items-center gap-1.5">
                         <Check className="h-4 w-4 text-green-600" />
-                        <span>Tailor-made itineraries</span>
+                        <span className="text-gray-900 font-bold">Tailor-made itineraries</span>
                     </div>
                 </div>
             </div>

@@ -231,7 +231,7 @@ export default function Nav() {
                     <div className="flex items-center space-x-4">
                         <InquiryDialog>
                             <Button className="bg-primary hidden px-6 py-2 text-sm font-medium text-white md:block">
-                                START PLANNING
+                               GET A FREE QUOTE
                             </Button>
                         </InquiryDialog>
 
@@ -353,7 +353,7 @@ export default function Nav() {
                                     <div className="border-t pt-6">
                                         <InquiryDialog>
                                             <Button className="w-full bg-black text-white">
-                                                START PLANNING
+                                                GET A FREE QUOTE
                                             </Button>
                                         </InquiryDialog>
                                     </div>
