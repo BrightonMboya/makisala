@@ -8,9 +8,9 @@ export const safaris = [
     {
         title: 'FAMILY SAFARIS',
         page_url: '/who-is-travelling/family-safari',
-        image: "https://res.cloudinary.com/dr2tdyz2w/image/upload/v1753373584/family-safari.jpg_vu3zur.jpg"
+        image: 'https://res.cloudinary.com/dr2tdyz2w/image/upload/v1753373584/family-safari.jpg_vu3zur.jpg',
     },
-     {
+    {
         title: 'BIG 5 SAFARIS',
         page_url: '/location/northern-tanzania',
         image: 'https://images.unsplash.com/photo-1740927725816-b93880361455?w=900&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTZ8fGNvbnNlcnZhdGlvbiUyMHNhZmFyaXxlbnwwfHwwfHx8MA%3D%3D',
@@ -20,7 +20,7 @@ export const safaris = [
         page_url: '/location/kilimanjaro',
         image: 'https://images.unsplash.com/photo-1551632811-561732d1e306?w=900&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8dHJla2tpbmd8ZW58MHx8MHx8fDA%3D',
     },
-    
+
     {
         title: 'THE GREAT MIGRATION',
         page_url: '/to_book/migration-tracker-safari-tz-ke',
@@ -38,7 +38,7 @@ export const safaris = [
     //     image:
     //         "https://images.unsplash.com/photo-1580737204647-c30845d38436?w=900&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8d2Fsa2luZyUyMHNhZmFyaXxlbnwwfHwwfHx8MA%3D%3D",
     // },
-   
+
     // {
     //     title: "CONSERVATION SAFARIS",
     //     page_url: "",
@@ -70,8 +70,7 @@ export const why_travel_with_us = [
             'We’re Tanzanian, we’re passionate, and we’re with you every step from first call to final sunset.',
     },
     {
-        img_url:
-            'https://res.cloudinary.com/dr2tdyz2w/image/upload/v1753789925/17_hcqlpn.webp',
+        img_url: 'https://res.cloudinary.com/dr2tdyz2w/image/upload/v1753789925/17_hcqlpn.webp',
         alt: 'Safaris For Good',
         title: 'Travel That Gives Back',
         description:
@@ -145,25 +144,25 @@ export const featured_national_parks = [
         name: 'Volcanoes National Park',
         description: 'Home to the endangered mountain gorillas',
         page_url: '/safaris/rwanda?np=volcanoes',
-        image: 'https://res.cloudinary.com/dr2tdyz2w/image/upload/v1763798673/volcanoes-national-park-750x450_wfupyl.jpg'
+        image: 'https://res.cloudinary.com/dr2tdyz2w/image/upload/v1763798673/volcanoes-national-park-750x450_wfupyl.jpg',
     },
     {
         name: 'Serengeti National Park',
         description: 'Witness the Great Migration',
         page_url: '/safaris/tanzania?np=serengeti',
-        image: 'https://res.cloudinary.com/dr2tdyz2w/image/upload/v1763039383/Serengeti-Wildebeest-Migration-Safari-10-Days-750x450_lflnpq.jpg'
+        image: 'https://res.cloudinary.com/dr2tdyz2w/image/upload/v1763039383/Serengeti-Wildebeest-Migration-Safari-10-Days-750x450_lflnpq.jpg',
     },
     {
         name: 'Ngorongoro Crater',
         description: "Africa's Garden of Eden",
         page_url: '/safaris/tanzania?np=ngorongoro',
-        image: 'https://res.cloudinary.com/dr2tdyz2w/image/upload/v1763043060/Ngoronoro-scaled-1_wbfcgz.jpg'
+        image: 'https://res.cloudinary.com/dr2tdyz2w/image/upload/v1763043060/Ngoronoro-scaled-1_wbfcgz.jpg',
     },
     {
         name: 'Akagera National Park',
         description: "Rwanda's Big 5 Safari Destination",
         page_url: '/safaris/rwanda?np=akagera',
-        image: 'https://res.cloudinary.com/dr2tdyz2w/image/upload/v1763190681/Top-Luxury-Safari-Lodges-Camps-in-Akagera-National-Park-Rwanda-1024x683_cj8aa7.jpg'
+        image: 'https://res.cloudinary.com/dr2tdyz2w/image/upload/v1763190681/Top-Luxury-Safari-Lodges-Camps-in-Akagera-National-Park-Rwanda-1024x683_cj8aa7.jpg',
     },
 ]
 export const experiences = [
@@ -203,11 +202,6 @@ export const about_us_nav = [
         name: 'Our Story',
         description: 'Learn more about our journey and mission',
         page_url: '/about',
-    },
-    {
-        name: 'Contact Us',
-        description: 'Get in touch with our team',
-        page_url: '/contact',
     },
 ]
 

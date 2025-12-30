@@ -72,7 +72,7 @@ export default async function Page() {
                                 size="lg"
                                 className="border-2 border-white bg-transparent px-8 py-3 text-lg font-medium text-white hover:bg-white hover:text-black"
                             >
-                                Enquire Now
+                                Get a Free Quote
                             </Button>
                         </InquiryDialog>
                     </div>
