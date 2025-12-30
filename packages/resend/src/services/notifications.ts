@@ -36,6 +36,7 @@ export interface CommentNotificationData {
     content: string;
     author: string;
   };
+  recipientEmail?: string;
 }
 
 /**
@@ -113,11 +114,11 @@ export async function sendCommentNotificationEmail(
                 locationDescription = `on Day ${day.dayNumber}`;
                 commentedSection = `Day ${day.dayNumber}`;
               }
-            } else if (day.accommodations && day.accommodations.length > 0) {
+            } else if (day.accommodations && day.accommodations.length > 0 && day.accommodations[0]?.accommodation) {
               // Accommodation is typically in the last 40% of a day section
-              const accommodation = day.accommodations[0];
-              locationDescription = `on Day ${day.dayNumber}: Accommodation - ${accommodation.accommodation.name}`;
-              commentedSection = `Day ${day.dayNumber} - ${accommodation.accommodation.name}`;
+              const accommodation = day.accommodations[0].accommodation;
+              locationDescription = `on Day ${day.dayNumber}: Accommodation - ${accommodation.name}`;
+              commentedSection = `Day ${day.dayNumber} - ${accommodation.name}`;
             } else {
               // Just show the day number, no redundant title
               locationDescription = `on Day ${day.dayNumber}`;
@@ -160,7 +161,7 @@ export async function sendCommentNotificationEmail(
 
     const result = await resend.emails.send({
       from: fromEmail,
-      to: env.NOTIFICATION_EMAIL,
+      to: data.recipientEmail || env.NOTIFICATION_EMAIL,
       subject,
       html,
     });

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, useCallback, useEffect } from "react";
-import { getComments, createComment, createCommentReply, resolveComment as resolveCommentAction } from "@/app/new/actions";
+import { getComments, createComment, createCommentReply, resolveComment as resolveCommentAction } from "@/app/itineraries/actions";
 
 export type Comment = {
   id: string;

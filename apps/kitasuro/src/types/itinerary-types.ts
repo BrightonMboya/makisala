@@ -125,6 +125,12 @@ export interface NationalParkInfo {
   featured_image_url: string | null;
 }
 
+export interface OrganizationInfo {
+  name: string;
+  logoUrl: string | null;
+  primaryColor: string | null;
+}
+
 export interface ItineraryData {
   id: string;
   title: string;
@@ -133,6 +139,7 @@ export interface ItineraryData {
   location: string;
   heroImage: string;
   theme: 'minimalistic' | 'safari-portal';
+  organization?: OrganizationInfo;
   itinerary: Day[];
   accommodations: Accommodation[];
   nationalParks?: Record<string, NationalParkInfo>; // Key is destination value (e.g., 'akagera-np')

@@ -131,7 +131,7 @@ export default function MinimalisticTheme({ data }: { data: ItineraryData }) {
 
         <div className="relative flex h-full flex-col items-center justify-center px-6 text-center">
           <span className="animate-fade-in-up mb-4 text-xs tracking-[0.3em] text-white/80 uppercase">
-            Kitasuro Travel • Private Journey
+            {data.organization?.name || 'Kitasuro Travel'} • Private Journey
           </span>
           <h1 className="animate-fade-in-up mb-6 max-w-4xl font-serif text-5xl leading-tight text-white [animation-delay:200ms] md:text-7xl">
             {data.title} <br />

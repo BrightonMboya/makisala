@@ -12,9 +12,18 @@ import {
   comments,
   commentReplies,
   pages,
+  organizations,
 } from '@repo/db/schema';
 import { eq, desc, inArray } from 'drizzle-orm';
 import { sendCommentNotificationEmail } from '@repo/resend';
+import { auth } from '@/lib/auth';
+import { headers } from 'next/headers';
+
+async function getSession() {
+  return await auth.api.getSession({
+    headers: await headers(),
+  });
+}
 
 export async function getToursList(country?: string) {
   try {
@@ -59,7 +68,6 @@ export async function getTourDetails(id: string) {
 
     if (!tour) return null;
 
-    // Transform to builder format - use IDs for destination and accommodation
     return {
       tourType: 'Private Tour', // Default
       price: tour.pricing,
@@ -76,6 +84,47 @@ export async function getTourDetails(id: string) {
   } catch (error) {
     console.error('Error fetching tour details:', error);
     return null;
+  }
+}
+
+export async function getOrganizationSettings() {
+  try {
+    const session = await getSession();
+    if (!session?.user?.organizationId) return null;
+
+    return await db.query.organizations.findFirst({
+      where: eq(organizations.id, session.user.organizationId),
+    });
+  } catch (error) {
+    console.error('Error fetching organization settings:', error);
+    return null;
+  }
+}
+
+export async function updateOrganizationSettings(data: {
+  name?: string;
+  logoUrl?: string;
+  primaryColor?: string;
+  notificationEmail?: string;
+}) {
+  try {
+    const session = await getSession();
+    if (!session?.user?.organizationId) {
+      return { success: false, error: 'User must be associated with an organization' };
+    }
+
+    await db
+      .update(organizations)
+      .set({
+        ...data,
+        updatedAt: new Date(),
+      })
+      .where(eq(organizations.id, session.user.organizationId));
+
+    return { success: true };
+  } catch (error) {
+    console.error('Error updating organization settings:', error);
+    return { success: false, error: 'Failed to update settings' };
   }
 }
 
@@ -127,6 +176,9 @@ export async function getPageImages(pageIds: string[]) {
 
 export async function getAllProposals() {
   try {
+    const session = await getSession();
+    if (!session?.user?.organizationId) return [];
+
     const result = await db
       .select({
         id: proposals.id,
@@ -140,6 +192,7 @@ export async function getAllProposals() {
         travelerGroups: proposals.travelerGroups,
       })
       .from(proposals)
+      .where(eq(proposals.organizationId, session.user.organizationId))
       .orderBy(desc(proposals.updatedAt));
     return result;
   } catch (error) {
@@ -153,6 +206,7 @@ export async function getProposal(id: string) {
     const result = await db.query.proposals.findFirst({
       where: eq(proposals.id, id),
       with: {
+        organization: true,
         tour: true,
         days: {
           with: {
@@ -201,12 +255,17 @@ export async function saveProposal(data: {
     }
 
     const builderData = data.data;
+    const session = await getSession();
+    if (!session?.user?.organizationId) {
+      return { success: false, error: 'User must be associated with an organization' };
+    }
 
     // Extract proposal-level data
     const proposalData = {
       id: proposalId,
       name: data.name,
       tourId: data.tourId || builderData.tourId, // Required - must be provided
+      organizationId: session.user.organizationId,
       clientName: builderData.clientName || null,
       tourTitle: builderData.tourTitle || data.name,
       tourType: builderData.tourType || null,
@@ -232,6 +291,7 @@ export async function saveProposal(data: {
           id: proposalId,
           name: proposalData.name,
           tourId: proposalData.tourId, // Required
+          organizationId: proposalData.organizationId,
           clientName: proposalData.clientName || null,
           tourTitle: proposalData.tourTitle || null,
           tourType: proposalData.tourType || null,
@@ -249,6 +309,7 @@ export async function saveProposal(data: {
           set: {
             name: proposalData.name,
             tourId: proposalData.tourId, // Required
+            organizationId: proposalData.organizationId,
             clientName: proposalData.clientName || null,
             tourTitle: proposalData.tourTitle || null,
             tourType: proposalData.tourType || null,
@@ -378,45 +439,52 @@ export async function createComment(data: {
       })
       .returning();
 
-    // Send email notification if comment was created successfully
-    // This is fire-and-forget - we don't want email failures to block comment creation
+    // Trigger email notification
     if (comment) {
-      // Fetch proposal details to get client name and title
-      const proposal = await getProposal(data.proposalId);
-
-      if (proposal?.clientName) {
-        // Send email notification asynchronously (don't await to avoid blocking)
-        sendCommentNotificationEmail({
-          proposalId: data.proposalId,
-          clientName: proposal.clientName,
-          proposalTitle: proposal.tourTitle || proposal.name,
-          commentContent: data.content,
-          commentAuthor: data.authorName,
-          commentPosition: {
-            posX: data.posX,
-            posY: data.posY,
-            width: data.width,
-            height: data.height,
-          },
-          proposalData: {
-            days: proposal.days?.map((day) => ({
-              dayNumber: day.dayNumber,
-              title: day.title,
-              activities: day.activities?.map((act) => ({
-                name: act.name,
-                moment: act.moment,
-              })),
-              accommodations: day.accommodations?.map((acc) => ({
-                accommodation: {
-                  name: acc.accommodation.name,
+      try {
+        const proposal = await db.query.proposals.findFirst({
+          where: eq(proposals.id, data.proposalId),
+          with: {
+            organization: true,
+            days: {
+              with: {
+                activities: true,
+                accommodations: {
+                  with: {
+                    accommodation: true,
+                  },
                 },
-              })),
-            })),
+              },
+            },
           },
-        }).catch((error) => {
-          // Log error but don't throw - email failure shouldn't break comment creation
-          console.error('Failed to send comment notification email:', error);
         });
+
+        if (proposal?.organization?.notificationEmail) {
+          await sendCommentNotificationEmail({
+            proposalId: data.proposalId,
+            clientName: data.authorName,
+            proposalTitle: proposal.tourTitle || proposal.name,
+            commentContent: data.content,
+            commentAuthor: data.authorName,
+            recipientEmail: proposal.organization.notificationEmail,
+            commentPosition: {
+              posX: data.posX,
+              posY: data.posY,
+              width: data.width,
+              height: data.height,
+            },
+            proposalData: {
+              days: (proposal.days as any[]).map((d) => ({
+                dayNumber: d.dayNumber,
+                title: d.title,
+                activities: d.activities,
+                accommodations: d.accommodations,
+              })),
+            },
+          });
+        }
+      } catch (e) {
+        console.error('Failed to send comment notification email:', e);
       }
     }
 
@@ -488,56 +556,39 @@ export async function createCommentReply(data: {
       })
       .returning();
 
-    // Send email notification if reply was created successfully
+    // Trigger email notification for reply
     if (reply) {
-      // Fetch the parent comment to get proposal ID and comment details
-      const parentComment = await db.query.comments.findFirst({
-        where: eq(comments.id, data.commentId),
-      });
+      try {
+        const comment = await db.query.comments.findFirst({
+          where: eq(comments.id, data.commentId),
+        });
 
-      if (parentComment) {
-        // Fetch proposal details
-        const proposal = await getProposal(parentComment.proposalId);
-
-        if (proposal?.clientName) {
-          // Send email notification asynchronously (don't await to avoid blocking)
-          sendCommentNotificationEmail({
-            proposalId: parentComment.proposalId,
-            clientName: proposal.clientName,
-            proposalTitle: proposal.tourTitle || proposal.name,
-            commentContent: data.content,
-            commentAuthor: data.authorName,
-            commentPosition: {
-              posX: parseFloat(parentComment.posX),
-              posY: parseFloat(parentComment.posY),
-              width: parentComment.width ? parseFloat(parentComment.width) : undefined,
-              height: parentComment.height ? parseFloat(parentComment.height) : undefined,
+        if (comment) {
+          const proposal = await db.query.proposals.findFirst({
+            where: eq(proposals.id, comment.proposalId),
+            with: {
+              organization: true,
             },
-            proposalData: {
-              days: proposal.days?.map((day) => ({
-                dayNumber: day.dayNumber,
-                title: day.title,
-                activities: day.activities?.map((act) => ({
-                  name: act.name,
-                  moment: act.moment,
-                })),
-                accommodations: day.accommodations?.map((acc) => ({
-                  accommodation: {
-                    name: acc.accommodation.name,
-                  },
-                })),
-              })),
-            },
-            isReply: true,
-            parentComment: {
-              content: parentComment.content,
-              author: parentComment.userName || 'Guest User',
-            },
-          }).catch((error) => {
-            // Log error but don't throw - email failure shouldn't break reply creation
-            console.error('Failed to send reply notification email:', error);
           });
+
+          if (proposal?.organization?.notificationEmail) {
+            await sendCommentNotificationEmail({
+              proposalId: proposal.id,
+              clientName: data.authorName,
+              proposalTitle: proposal.tourTitle || proposal.name,
+              commentContent: data.content,
+              commentAuthor: data.authorName,
+              recipientEmail: proposal.organization.notificationEmail,
+              isReply: true,
+              parentComment: {
+                content: comment.content,
+                author: comment.userName || 'Unknown',
+              },
+            });
+          }
         }
+      } catch (e) {
+        console.error('Failed to send reply notification email:', e);
       }
     }
 

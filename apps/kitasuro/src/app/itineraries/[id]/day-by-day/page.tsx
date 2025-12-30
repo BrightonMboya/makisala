@@ -13,7 +13,7 @@ import { Input } from '@repo/ui/input';
 import { Combobox } from '@repo/ui/combobox';
 import { airports } from '@/lib/data/itinerary-data';
 import { useBuilder } from '@/components/itinerary-builder/builder-context';
-import { getAllAccommodations, getAllNationalParks } from '@/app/new/actions';
+import { getAllAccommodations, getAllNationalParks } from '@/app/itineraries/actions';
 
 export default function DayByDayPage() {
   const params = useParams();
@@ -42,8 +42,8 @@ export default function DayByDayPage() {
     const fetchData = async () => {
       const [accs, parks] = await Promise.all([getAllAccommodations(), getAllNationalParks()]);
 
-      setAccommodationsList(accs.map((a) => ({ value: a.id, label: a.name })));
-      setDestinationsList(parks.map((p) => ({ value: p.id, label: p.name })));
+      setAccommodationsList(accs.map((a: any) => ({ value: a.id, label: a.name })));
+      setDestinationsList(parks.map((p: any) => ({ value: p.id, label: p.name })));
     };
     fetchData();
   }, []); // Remove dependencies that cause re-runs
@@ -192,7 +192,7 @@ export default function DayByDayPage() {
       </div>
 
       <div className="flex justify-end pt-6">
-        <Link href={`/new/${id}/pricing`}>
+        <Link href={`/itineraries/${id}/pricing`}>
           <Button
             size="lg"
             className="bg-green-700 px-8 py-6 text-base shadow-md shadow-green-900/10 hover:bg-green-800"

@@ -4,7 +4,7 @@ import MinimalisticTheme from '@/components/themes/MinimalisticTheme';
 import SafariPortalTheme from '@/components/themes/SafariPortalTheme';
 import { CommentsProvider } from '@/components/comments/CommentsProvider';
 import { CommentsOverlay } from '@/components/comments/CommentsOverlay';
-import { getProposal } from '@/app/new/actions';
+import { getProposal } from '@/app/itineraries/actions';
 import { transformProposalToItineraryData } from '@/lib/proposal-transform';
 
 export default async function ItineraryPage({ params }: { params: Promise<{ id: string }> }) {

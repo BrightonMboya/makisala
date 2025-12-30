@@ -171,6 +171,11 @@ function calculatePricing(
 
 export async function transformProposalToItineraryData(
   proposal: Proposal & {
+    organization?: {
+      name: string;
+      logoUrl: string | null;
+      primaryColor: string | null;
+    } | null;
     days?: Array<{
       id: string;
       dayNumber: number;
@@ -448,7 +453,14 @@ export async function transformProposalToItineraryData(
     duration,
     location,
     heroImage,
-    theme: 'minimalistic', // Default theme, could be configurable
+    theme: (proposal.organization as any)?.primaryColor ? 'safari-portal' : 'minimalistic',
+    organization: proposal.organization
+      ? {
+          name: proposal.organization.name,
+          logoUrl: proposal.organization.logoUrl,
+          primaryColor: proposal.organization.primaryColor,
+        }
+      : undefined,
     itinerary,
     accommodations,
     nationalParks: Object.keys(nationalParksMap).length > 0 ? nationalParksMap : undefined,

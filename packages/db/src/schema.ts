@@ -102,6 +102,23 @@ export const itinerariesRelations = relations(itineraries, ({ one }) => ({
   }),
 }));
 
+// ---------- ORGANIZATIONS ----------
+export const organizations = pgTable('organizations', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  name: text('name').notNull(),
+  slug: text('slug').notNull().unique(),
+  logoUrl: text('logo_url'),
+  primaryColor: text('primary_color').default('#15803d'), // Default green
+  notificationEmail: text('notification_email'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+export const organizationsRelations = relations(organizations, ({ many }) => ({
+  users: many(user),
+  proposals: many(proposals),
+}));
+
 // Better auth schemas
 export const user = pgTable('user', {
   id: text('id').primaryKey(),
@@ -117,6 +134,7 @@ export const user = pgTable('user', {
   updatedAt: timestamp('updated_at')
     .$defaultFn(() => /* @__PURE__ */ new Date())
     .notNull(),
+  organizationId: uuid('organization_id').references(() => organizations.id),
 });
 
 export const session = pgTable('session', {
@@ -363,6 +381,7 @@ export const proposals = pgTable('proposals', {
     json('traveler_groups').$type<Array<{ id: string; count: number; type: string }>>(),
   inclusions: text('inclusions').array(),
   exclusions: text('exclusions').array(),
+  organizationId: uuid('organization_id').references(() => organizations.id),
   status: ProposalStatus('status').default('draft').notNull(),
   createdAt: timestamp('created_at', { precision: 3, mode: 'string' })
     .default(sql`CURRENT_TIMESTAMP`)
@@ -441,6 +460,10 @@ export const proposalsRelations = relations(proposals, ({ one, many }) => ({
   tour: one(tours, {
     fields: [proposals.tourId],
     references: [tours.id],
+  }),
+  organization: one(organizations, {
+    fields: [proposals.organizationId],
+    references: [organizations.id],
   }),
   days: many(proposalDays),
   comments: many(comments),

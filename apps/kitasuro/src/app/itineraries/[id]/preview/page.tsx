@@ -5,7 +5,7 @@ import { Share2 } from 'lucide-react';
 import { useBuilder } from '@/components/itinerary-builder/builder-context';
 import { format } from 'date-fns';
 import { ItineraryPreview } from '@/components/itinerary-builder/itinerary-preview';
-import { saveProposal } from '@/app/new/actions';
+import { saveProposal } from '@/app/itineraries/actions';
 import { useToast } from '@/lib/hooks/use-toast';
 import { useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';

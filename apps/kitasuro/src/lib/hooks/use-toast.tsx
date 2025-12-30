@@ -7,11 +7,14 @@ import type { ToastActionElement, ToastProps } from '@repo/ui/toast'
 const TOAST_LIMIT = 1
 const TOAST_REMOVE_DELAY = 1000000
 
-type ToasterToast = ToastProps & {
+type ToasterToast = {
     id: string
     title?: React.ReactNode
     description?: React.ReactNode
     action?: ToastActionElement
+    open?: boolean
+    onOpenChange?: (open: boolean) => void
+    variant?: 'default' | 'destructive'
 }
 
 const actionTypes = {
@@ -138,13 +141,29 @@ function dispatch(action: Action) {
 
 type Toast = Omit<ToasterToast, 'id'>
 
-function toast(p0: string, { ...props }: Toast) {
+interface ToastWithTitle extends Toast {
+    title?: React.ReactNode
+}
+
+function toast(props: ToastWithTitle): { id: string; dismiss: () => void; update: (props: ToasterToast) => void }
+function toast(title: string, props?: Toast): { id: string; dismiss: () => void; update: (props: ToasterToast) => void }
+function toast(
+    titleOrProps: string | ToastWithTitle,
+    maybeProps?: Toast
+): { id: string; dismiss: () => void; update: (props: ToasterToast) => void } {
     const id = genId()
 
-    const update = (props: ToasterToast) =>
+    let props: ToastWithTitle
+    if (typeof titleOrProps === 'string') {
+        props = { ...maybeProps, title: titleOrProps }
+    } else {
+        props = titleOrProps
+    }
+
+    const update = (newProps: ToasterToast) =>
         dispatch({
             type: 'UPDATE_TOAST',
-            toast: { ...props, id },
+            toast: { ...newProps, id },
         })
     const dismiss = () => dispatch({ type: 'DISMISS_TOAST', toastId: id })
 

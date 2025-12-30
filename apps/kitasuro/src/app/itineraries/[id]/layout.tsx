@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { BuilderProvider, useBuilder } from '@/components/itinerary-builder/builder-context';
 import type { TravelerGroup } from '@/types/itinerary-types';
 import { useState, useEffect } from 'react';
-import { getTourDetails } from '../actions';
+import { getTourDetails } from '@/app/itineraries/actions';
 
 function Header() {
   const pathname = usePathname();
@@ -200,7 +200,7 @@ function Header() {
             return (
               <div key={step.id} className="flex items-center">
                 <Link
-                  href={`/new/${id}/${step.id}`}
+                  href={`/itineraries/${id}/${step.id}`}
                   className={`flex items-center gap-2 border-b-2 px-8 py-3 text-sm font-medium transition-colors ${
                     isActive
                       ? 'border-green-600 bg-green-50/50 text-green-800'
