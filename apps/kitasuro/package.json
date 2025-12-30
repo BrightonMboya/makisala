@@ -16,6 +16,7 @@
     "@repo/lint": "workspace:*",
     "@repo/ui": "workspace:*",
     "@repo/db": "workspace:*",
+    "@repo/resend": "workspace:*",
     "clsx": "^2.1.1",
     "d3-geo": "^3.1.1",
     "date-fns": "^4.1.0",

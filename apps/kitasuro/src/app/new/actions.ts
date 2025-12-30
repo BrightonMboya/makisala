@@ -14,6 +14,7 @@ import {
   pages,
 } from '@repo/db/schema';
 import { eq, desc, inArray } from 'drizzle-orm';
+import { sendCommentNotificationEmail } from '@repo/resend';
 
 export async function getToursList(country?: string) {
   try {
@@ -376,6 +377,49 @@ export async function createComment(data: {
         height: data.height?.toString(),
       })
       .returning();
+
+    // Send email notification if comment was created successfully
+    // This is fire-and-forget - we don't want email failures to block comment creation
+    if (comment) {
+      // Fetch proposal details to get client name and title
+      const proposal = await getProposal(data.proposalId);
+
+      if (proposal?.clientName) {
+        // Send email notification asynchronously (don't await to avoid blocking)
+        sendCommentNotificationEmail({
+          proposalId: data.proposalId,
+          clientName: proposal.clientName,
+          proposalTitle: proposal.tourTitle || proposal.name,
+          commentContent: data.content,
+          commentAuthor: data.authorName,
+          commentPosition: {
+            posX: data.posX,
+            posY: data.posY,
+            width: data.width,
+            height: data.height,
+          },
+          proposalData: {
+            days: proposal.days?.map((day) => ({
+              dayNumber: day.dayNumber,
+              title: day.title,
+              activities: day.activities?.map((act) => ({
+                name: act.name,
+                moment: act.moment,
+              })),
+              accommodations: day.accommodations?.map((acc) => ({
+                accommodation: {
+                  name: acc.accommodation.name,
+                },
+              })),
+            })),
+          },
+        }).catch((error) => {
+          // Log error but don't throw - email failure shouldn't break comment creation
+          console.error('Failed to send comment notification email:', error);
+        });
+      }
+    }
+
     return { success: true, comment };
   } catch (error) {
     console.error('Error creating comment:', error);
@@ -443,6 +487,60 @@ export async function createCommentReply(data: {
         content: data.content,
       })
       .returning();
+
+    // Send email notification if reply was created successfully
+    if (reply) {
+      // Fetch the parent comment to get proposal ID and comment details
+      const parentComment = await db.query.comments.findFirst({
+        where: eq(comments.id, data.commentId),
+      });
+
+      if (parentComment) {
+        // Fetch proposal details
+        const proposal = await getProposal(parentComment.proposalId);
+
+        if (proposal?.clientName) {
+          // Send email notification asynchronously (don't await to avoid blocking)
+          sendCommentNotificationEmail({
+            proposalId: parentComment.proposalId,
+            clientName: proposal.clientName,
+            proposalTitle: proposal.tourTitle || proposal.name,
+            commentContent: data.content,
+            commentAuthor: data.authorName,
+            commentPosition: {
+              posX: parseFloat(parentComment.posX),
+              posY: parseFloat(parentComment.posY),
+              width: parentComment.width ? parseFloat(parentComment.width) : undefined,
+              height: parentComment.height ? parseFloat(parentComment.height) : undefined,
+            },
+            proposalData: {
+              days: proposal.days?.map((day) => ({
+                dayNumber: day.dayNumber,
+                title: day.title,
+                activities: day.activities?.map((act) => ({
+                  name: act.name,
+                  moment: act.moment,
+                })),
+                accommodations: day.accommodations?.map((acc) => ({
+                  accommodation: {
+                    name: acc.accommodation.name,
+                  },
+                })),
+              })),
+            },
+            isReply: true,
+            parentComment: {
+              content: parentComment.content,
+              author: parentComment.userName || 'Guest User',
+            },
+          }).catch((error) => {
+            // Log error but don't throw - email failure shouldn't break reply creation
+            console.error('Failed to send reply notification email:', error);
+          });
+        }
+      }
+    }
+
     return { success: true, reply };
   } catch (error) {
     console.error('Error creating comment reply:', error);
