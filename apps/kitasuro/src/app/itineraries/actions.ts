@@ -13,11 +13,13 @@ import {
   commentReplies,
   pages,
   organizations,
+  clients,
 } from '@repo/db/schema';
 import { eq, desc, inArray } from 'drizzle-orm';
-import { sendCommentNotificationEmail } from '@repo/resend';
+import { sendCommentNotificationEmail, sendProposalShareEmail, sendProposalAcceptanceEmail } from '@repo/resend';
 import { auth } from '@/lib/auth';
 import { headers } from 'next/headers';
+import cloudinary from '@/lib/cloudinary';
 
 async function getSession() {
   return await auth.api.getSession({
@@ -80,6 +82,7 @@ export async function getTourDetails(id: string) {
         activities: [], // Activities are currently stored as JSON in tours table, not per day.
         meals: { breakfast: true, lunch: true, dinner: true }, // Default
       })),
+      selectedTheme: 'minimalistic', // Default theme for tours
     };
   } catch (error) {
     console.error('Error fetching tour details:', error);
@@ -179,25 +182,90 @@ export async function getAllProposals() {
     const session = await getSession();
     if (!session?.user?.organizationId) return [];
 
-    const result = await db
-      .select({
-        id: proposals.id,
-        name: proposals.name,
-        status: proposals.status,
-        createdAt: proposals.createdAt,
-        updatedAt: proposals.updatedAt,
-        tourTitle: proposals.tourTitle,
-        clientName: proposals.clientName,
-        startDate: proposals.startDate,
-        travelerGroups: proposals.travelerGroups,
-      })
-      .from(proposals)
-      .where(eq(proposals.organizationId, session.user.organizationId))
-      .orderBy(desc(proposals.updatedAt));
+    const result = await db.query.proposals.findMany({
+      where: eq(proposals.organizationId, session.user.organizationId),
+      orderBy: desc(proposals.updatedAt),
+      with: {
+        client: true,
+      },
+      columns: {
+        id: true,
+        name: true,
+        status: true,
+        createdAt: true,
+        updatedAt: true,
+        tourTitle: true,
+        startDate: true,
+        travelerGroups: true,
+      },
+    });
     return result;
   } catch (error) {
     console.error('Error fetching proposals:', error);
     return [];
+  }
+}
+
+// Combined dashboard data fetch - single session call
+export async function getDashboardData() {
+  try {
+    const session = await getSession();
+    if (!session?.user?.organizationId) {
+      return { proposals: [], clients: [], tours: [], organization: null };
+    }
+
+    const orgId = session.user.organizationId;
+
+    // Fetch all data in parallel with single session
+    const [proposalsData, clientsData, toursData, orgData] = await Promise.all([
+      db.query.proposals.findMany({
+        where: eq(proposals.organizationId, orgId),
+        orderBy: desc(proposals.updatedAt),
+        with: { client: true },
+        columns: {
+          id: true,
+          name: true,
+          status: true,
+          createdAt: true,
+          updatedAt: true,
+          tourTitle: true,
+          startDate: true,
+          travelerGroups: true,
+        },
+      }),
+      db
+        .select({ id: clients.id, name: clients.name })
+        .from(clients)
+        .where(eq(clients.organizationId, orgId))
+        .orderBy(clients.name),
+      db
+        .select({
+          id: tours.id,
+          name: tours.tourName,
+          days: tours.number_of_days,
+        })
+        .from(tours),
+      db.query.organizations.findFirst({
+        where: eq(organizations.id, orgId),
+        columns: {
+          id: true,
+          name: true,
+          logoUrl: true,
+          primaryColor: true,
+          notificationEmail: true,
+        },
+      }),
+    ]);
+
+    return {
+      proposals: proposalsData,
+      clients: clientsData,
+      tours: toursData,
+      organization: orgData,
+    };
+  } catch (error) {
+    console.error('Error fetching dashboard data:', error);
+    return { proposals: [], clients: [], tours: [], organization: null };
   }
 }
 
@@ -208,6 +276,7 @@ export async function getProposal(id: string) {
       with: {
         organization: true,
         tour: true,
+        client: true,
         days: {
           with: {
             nationalPark: {
@@ -266,11 +335,14 @@ export async function saveProposal(data: {
       name: data.name,
       tourId: data.tourId || builderData.tourId, // Required - must be provided
       organizationId: session.user.organizationId,
-      clientName: builderData.clientName || null,
+      clientId: builderData.clientId || null,
       tourTitle: builderData.tourTitle || data.name,
       tourType: builderData.tourType || null,
+      theme: builderData.selectedTheme || 'minimalistic',
+      heroImage: builderData.heroImage || null,
       startDate: builderData.startDate ? new Date(builderData.startDate).toISOString() : null,
       startCity: builderData.startCity || null,
+      endCity: builderData.endCity || null,
       pickupPoint: builderData.pickupPoint || null,
       transferIncluded: builderData.transferIncluded || null,
       pricingRows: builderData.pricingRows || null,
@@ -292,10 +364,16 @@ export async function saveProposal(data: {
           name: proposalData.name,
           tourId: proposalData.tourId, // Required
           organizationId: proposalData.organizationId,
-          clientName: proposalData.clientName || null,
+          clientId: proposalData.clientId || null,
           tourTitle: proposalData.tourTitle || null,
           tourType: proposalData.tourType || null,
+          theme: proposalData.theme || 'minimalistic',
+          heroImage: proposalData.heroImage || null,
           startDate: proposalData.startDate || null,
+          startCity: proposalData.startCity || null,
+          endCity: proposalData.endCity || null,
+          pickupPoint: proposalData.pickupPoint || null,
+          transferIncluded: proposalData.transferIncluded || null,
           travelerGroups: proposalData.travelerGroups || null,
           pricingRows: proposalData.pricingRows || null,
           extras: proposalData.extras || null,
@@ -310,10 +388,16 @@ export async function saveProposal(data: {
             name: proposalData.name,
             tourId: proposalData.tourId, // Required
             organizationId: proposalData.organizationId,
-            clientName: proposalData.clientName || null,
+            clientId: proposalData.clientId || null,
             tourTitle: proposalData.tourTitle || null,
             tourType: proposalData.tourType || null,
+            theme: proposalData.theme || 'minimalistic',
+            heroImage: proposalData.heroImage || null,
             startDate: proposalData.startDate || null,
+            startCity: proposalData.startCity || null,
+            endCity: proposalData.endCity || null,
+            pickupPoint: proposalData.pickupPoint || null,
+            transferIncluded: proposalData.transferIncluded || null,
             travelerGroups: proposalData.travelerGroups || null,
             pricingRows: proposalData.pricingRows || null,
             extras: proposalData.extras || null,
@@ -356,6 +440,7 @@ export async function saveProposal(data: {
             dayNumber: day.dayNumber,
             title: day.title || `Day ${day.dayNumber}`,
             description: day.description || null,
+            previewImage: day.previewImage || null,
             nationalParkId,
           })
           .returning();
@@ -596,5 +681,175 @@ export async function createCommentReply(data: {
   } catch (error) {
     console.error('Error creating comment reply:', error);
     return { success: false, error: 'Failed to create reply' };
+  }
+}
+
+export async function sendProposalToClient(proposalId: string, message?: string) {
+  try {
+    const session = await getSession();
+    if (!session?.user?.organizationId) {
+      return { success: false, error: 'Unauthorized' };
+    }
+
+    // Fetch the proposal with client and organization data
+    const proposal = await db.query.proposals.findFirst({
+      where: eq(proposals.id, proposalId),
+      with: {
+        client: true,
+        organization: true,
+      },
+    });
+
+    if (!proposal) {
+      return { success: false, error: 'Proposal not found' };
+    }
+
+    if (!proposal.client?.email) {
+      return { success: false, error: 'Client does not have an email address' };
+    }
+
+    // Calculate duration
+    const daysCount = await db.query.proposalDays.findMany({
+      where: eq(proposalDays.proposalId, proposalId),
+    });
+    const duration = daysCount.length > 0 ? `${daysCount.length} days` : undefined;
+
+    // Format start date
+    const startDate = proposal.startDate
+      ? new Date(proposal.startDate).toLocaleDateString('en-US', {
+          weekday: 'long',
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+        })
+      : undefined;
+
+    const proposalUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/proposal/${proposalId}`;
+
+    const result = await sendProposalShareEmail({
+      clientEmail: proposal.client.email,
+      clientName: proposal.client.name,
+      agencyName: proposal.organization?.name || 'Your Travel Agency',
+      proposalTitle: proposal.tourTitle || proposal.name,
+      proposalUrl,
+      startDate,
+      duration,
+      message,
+    });
+
+    if (!result.success) {
+      return { success: false, error: result.error };
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error('Error sending proposal to client:', error);
+    return { success: false, error: 'Failed to send email' };
+  }
+}
+
+// Cloudinary Actions
+export async function getCloudinaryImages(folder?: string) {
+  try {
+    const expression = folder ? `folder:"${folder}"` : 'folder=""';
+
+    const result = await cloudinary.search
+      .expression(expression)
+      .sort_by('created_at', 'desc')
+      .max_results(50)
+      .execute();
+
+    return result.resources.map((r: any) => ({
+      public_id: r.public_id,
+      secure_url: r.secure_url,
+    }));
+  } catch (error) {
+    console.error('Error fetching Cloudinary images:', error);
+    return [];
+  }
+}
+
+export async function getCloudinaryFolders(parent_folder?: string) {
+  try {
+    const result = parent_folder
+      ? await cloudinary.api.sub_folders(parent_folder)
+      : await cloudinary.api.root_folders();
+
+    return result.folders;
+  } catch (error) {
+    console.error('Error fetching Cloudinary folders:', error);
+    return [];
+  }
+}
+
+export async function confirmProposal(proposalId: string, clientName: string) {
+  try {
+    // Fetch the proposal with organization and client data
+    const proposal = await db.query.proposals.findFirst({
+      where: eq(proposals.id, proposalId),
+      with: {
+        organization: true,
+        client: true,
+        days: true,
+      },
+    });
+
+    if (!proposal) {
+      return { success: false, error: 'Proposal not found' };
+    }
+
+    if (!proposal.organization?.notificationEmail) {
+      return { success: false, error: 'No notification email configured for this organization' };
+    }
+
+    // Calculate duration
+    const duration = proposal.days?.length > 0 ? `${proposal.days.length} days` : undefined;
+
+    // Format start date
+    const startDate = proposal.startDate
+      ? new Date(proposal.startDate).toLocaleDateString('en-US', {
+          weekday: 'long',
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+        })
+      : undefined;
+
+    // Calculate total price from pricing rows
+    let totalPrice: string | undefined;
+    if (proposal.pricingRows) {
+      const rows = proposal.pricingRows as Array<{ count: number; unitPrice: number }>;
+      const total = rows.reduce((acc, row) => acc + row.count * row.unitPrice, 0);
+      if (total > 0) {
+        totalPrice = `$${total.toLocaleString()}`;
+      }
+    }
+
+    const proposalUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/proposal/${proposalId}`;
+
+    // Send the acceptance email
+    const result = await sendProposalAcceptanceEmail({
+      agencyName: proposal.organization.name,
+      clientName: clientName || proposal.client?.name || 'Guest',
+      clientEmail: proposal.client?.email || undefined,
+      proposalTitle: proposal.tourTitle || proposal.name,
+      proposalUrl,
+      startDate,
+      duration,
+      totalPrice,
+      recipientEmail: proposal.organization.notificationEmail,
+    });
+
+    if (!result.success) {
+      return { success: false, error: result.error };
+    }
+
+    // Optionally update proposal status to 'confirmed' if you want to track this
+    // await db.update(proposals).set({ status: 'confirmed' }).where(eq(proposals.id, proposalId));
+
+    return { success: true };
+  } catch (error) {
+    console.error('Error confirming proposal:', error);
+    return { success: false, error: 'Failed to confirm proposal' };
   }
 }

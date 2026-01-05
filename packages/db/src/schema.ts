@@ -31,6 +31,17 @@ export const PageType = pgEnum('pageType', ['page', 'blog']);
 
 export const PageStatus = pgEnum('pageStatus', ['published', 'draft']);
 export const CommentStatus = pgEnum('commentStatus', ['open', 'resolved']);
+
+// User role enum for team management
+export const UserRole = pgEnum('user_role', ['admin', 'member']);
+
+// Invitation status enum
+export const InvitationStatus = pgEnum('invitation_status', [
+  'pending',
+  'accepted',
+  'expired',
+  'revoked',
+]);
 export const pages = pgTable('pages', {
   id: text().primaryKey().notNull(),
   title: text().notNull(),
@@ -117,6 +128,31 @@ export const organizations = pgTable('organizations', {
 export const organizationsRelations = relations(organizations, ({ many }) => ({
   users: many(user),
   proposals: many(proposals),
+  clients: many(clients),
+  invitations: many(teamInvitations),
+}));
+
+// ---------- CLIENTS ----------
+export const clients = pgTable('clients', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  organizationId: uuid('organization_id')
+    .notNull()
+    .references(() => organizations.id, { onDelete: 'cascade' }),
+  name: text('name').notNull(),
+  email: text('email'),
+  phone: text('phone'),
+  countryOfResidence: text('country_of_residence'),
+  notes: text('notes'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+export const clientsRelations = relations(clients, ({ one, many }) => ({
+  organization: one(organizations, {
+    fields: [clients.organizationId],
+    references: [organizations.id],
+  }),
+  proposals: many(proposals),
 }));
 
 // Better auth schemas
@@ -135,6 +171,7 @@ export const user = pgTable('user', {
     .$defaultFn(() => /* @__PURE__ */ new Date())
     .notNull(),
   organizationId: uuid('organization_id').references(() => organizations.id),
+  role: UserRole('role').default('admin').notNull(), // First user of org is admin
 });
 
 export const session = pgTable('session', {
@@ -176,6 +213,43 @@ export const verification = pgTable('verification', {
   createdAt: timestamp('created_at').$defaultFn(() => /* @__PURE__ */ new Date()),
   updatedAt: timestamp('updated_at').$defaultFn(() => /* @__PURE__ */ new Date()),
 });
+
+// ---------- TEAM INVITATIONS ----------
+export const teamInvitations = pgTable('team_invitations', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  organizationId: uuid('organization_id')
+    .notNull()
+    .references(() => organizations.id, { onDelete: 'cascade' }),
+  email: text('email').notNull(),
+  role: UserRole('role').default('member').notNull(),
+  token: text('token').notNull().unique(),
+  invitedBy: text('invited_by')
+    .notNull()
+    .references(() => user.id, { onDelete: 'cascade' }),
+  status: InvitationStatus('status').default('pending').notNull(),
+  expiresAt: timestamp('expires_at').notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  acceptedAt: timestamp('accepted_at'),
+});
+
+export const teamInvitationsRelations = relations(teamInvitations, ({ one }) => ({
+  organization: one(organizations, {
+    fields: [teamInvitations.organizationId],
+    references: [organizations.id],
+  }),
+  inviter: one(user, {
+    fields: [teamInvitations.invitedBy],
+    references: [user.id],
+  }),
+}));
+
+export const userRelations = relations(user, ({ one, many }) => ({
+  organization: one(organizations, {
+    fields: [user.organizationId],
+    references: [organizations.id],
+  }),
+  sentInvitations: many(teamInvitations),
+}));
 
 // the following tables are for p_seo, some tables looks duplicated
 // reason is i want to rollback this feature if it doesnt provide values
@@ -228,6 +302,9 @@ export const accommodations = pgTable('accommodations', {
   name: text('name').notNull(),
   url: text('url'), // e.g. https://www.melia.com/...
   overview: text('overview'), // scraped accommodation overview
+  description: text('description'),
+  latitude: numeric('latitude', { precision: 10, scale: 7 }),
+  longitude: numeric('longitude', { precision: 10, scale: 7 }),
 });
 
 export const accommodationsRelations = relations(accommodations, ({ many }) => ({
@@ -241,7 +318,8 @@ export const accommodationImages = pgTable('accommodation_images', {
   accommodationId: uuid('accommodation_id')
     .notNull()
     .references(() => accommodations.id, { onDelete: 'cascade' }),
-  imageUrl: text('image_url').notNull(), // img.image_url
+  bucket: text('bucket').notNull(),
+  key: text('key').notNull(),
 });
 
 export const accommodationImagesRelations = relations(accommodationImages, ({ one }) => ({
@@ -362,12 +440,15 @@ export const proposals = pgTable('proposals', {
   name: text('name').notNull(),
   tourId: uuid('tour_id')
     .notNull()
-    .references(() => tours.id, { onDelete: 'cascade' }), // Required: proposal must be created from a tour
-  clientName: text('client_name'),
+    .references(() => tours.id, { onDelete: 'cascade' }),
+  clientId: uuid('client_id').references(() => clients.id, { onDelete: 'set null' }),
   tourTitle: text('tour_title'),
   tourType: text('tour_type'),
+  theme: text('theme').default('minimalistic'),
+  heroImage: text('hero_image'),
   startDate: timestamp('start_date', { precision: 3, mode: 'string' }),
   startCity: text('start_city'),
+  endCity: text('end_city'),
   pickupPoint: text('pickup_point'),
   transferIncluded: text('transfer_included'),
   // Pricing data stored as JSON for flexibility
@@ -400,6 +481,7 @@ export const proposalDays = pgTable('proposal_days', {
   dayNumber: integer('day_number').notNull(),
   title: text('title'),
   description: text('description'),
+  previewImage: text('preview_image'),
   nationalParkId: uuid('national_park_id').references(() => nationalParks.id, {
     onDelete: 'set null',
   }),
@@ -465,6 +547,10 @@ export const proposalsRelations = relations(proposals, ({ one, many }) => ({
     fields: [proposals.organizationId],
     references: [organizations.id],
   }),
+  client: one(clients, {
+    fields: [proposals.clientId],
+    references: [clients.id],
+  }),
   days: many(proposalDays),
   comments: many(comments),
 }));
@@ -511,19 +597,6 @@ export const proposalMealsRelations = relations(proposalMeals, ({ one }) => ({
   }),
 }));
 
-export type Proposal = typeof proposals.$inferSelect;
-export type NewProposal = typeof proposals.$inferInsert;
-export type ProposalDay = typeof proposalDays.$inferSelect;
-export type NewProposalDay = typeof proposalDays.$inferInsert;
-export type ProposalAccommodation = typeof proposalAccommodations.$inferSelect;
-export type NewProposalAccommodation = typeof proposalAccommodations.$inferInsert;
-export type ProposalActivity = typeof proposalActivities.$inferSelect;
-export type NewProposalActivity = typeof proposalActivities.$inferInsert;
-export type ProposalMeal = typeof proposalMeals.$inferSelect;
-export type NewProposalMeal = typeof proposalMeals.$inferInsert;
-export type Comment = typeof comments.$inferSelect;
-export type NewComment = typeof comments.$inferInsert;
-
 export const comments = pgTable('comments', {
   id: uuid('id').primaryKey().defaultRandom(),
   proposalId: text('proposal_id').notNull(),
@@ -569,6 +642,9 @@ export const commentRepliesRelations = relations(commentReplies, ({ one }) => ({
   }),
 }));
 
+
+
+
 export type Tours = typeof tours.$inferSelect;
 export type NewTourPackage = typeof tourPackages.$inferInsert;
 export type Itinerary = typeof itineraries.$inferSelect;
@@ -577,3 +653,22 @@ export type NewInquiries = typeof inquiries.$inferInsert;
 export type IWildlife = typeof wildlife.$inferSelect;
 export type IWildlifeParkOverrides = typeof wildlifeParkOverrides.$inferSelect;
 export type IPage = typeof pages.$inferSelect;
+
+export type Proposal = typeof proposals.$inferSelect;
+export type NewProposal = typeof proposals.$inferInsert;
+export type ProposalDay = typeof proposalDays.$inferSelect;
+export type NewProposalDay = typeof proposalDays.$inferInsert;
+export type ProposalAccommodation = typeof proposalAccommodations.$inferSelect;
+export type NewProposalAccommodation = typeof proposalAccommodations.$inferInsert;
+export type ProposalActivity = typeof proposalActivities.$inferSelect;
+export type NewProposalActivity = typeof proposalActivities.$inferInsert;
+export type ProposalMeal = typeof proposalMeals.$inferSelect;
+export type NewProposalMeal = typeof proposalMeals.$inferInsert;
+export type Comment = typeof comments.$inferSelect;
+export type NewComment = typeof comments.$inferInsert;
+export type Client = typeof clients.$inferSelect;
+export type NewClient = typeof clients.$inferInsert;
+export type User = typeof user.$inferSelect;
+export type Organization = typeof organizations.$inferSelect;
+export type TeamInvitation = typeof teamInvitations.$inferSelect;
+export type NewTeamInvitation = typeof teamInvitations.$inferInsert;

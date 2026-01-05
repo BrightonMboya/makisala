@@ -25,6 +25,7 @@ export type BuilderDay = {
   };
   description?: string; // Narrative for the day
   accommodationImage?: string;
+  previewImage?: string; // Custom image for theme preview
 };
 
 export type TravelerType = 'Adult' | 'Senior' | 'Child' | 'Baby';
@@ -49,12 +50,16 @@ export type ExtraOption = {
   selected: boolean;
 };
 
+export type ThemeType = 'minimalistic' | 'safari-portal' | 'kudu';
+
 export type BuilderContextType = {
   // Tour Details
+  tourId: string | null;
+  setTourId: React.Dispatch<React.SetStateAction<string | null>>;
   tourType: string;
   setTourType: React.Dispatch<React.SetStateAction<string>>;
-  clientName: string;
-  setClientName: React.Dispatch<React.SetStateAction<string>>;
+  clientId: string | null;
+  setClientId: React.Dispatch<React.SetStateAction<string | null>>;
   tourTitle: string;
   setTourTitle: React.Dispatch<React.SetStateAction<string>>;
   travelerGroups: TravelerGroup[];
@@ -67,6 +72,8 @@ export type BuilderContextType = {
   setStartDate: React.Dispatch<React.SetStateAction<Date | undefined>>;
   startCity: string;
   setStartCity: React.Dispatch<React.SetStateAction<string>>;
+  endCity: string;
+  setEndCity: React.Dispatch<React.SetStateAction<string>>;
   transferIncluded: string;
   setTransferIncluded: React.Dispatch<React.SetStateAction<string>>;
   pickupPoint: string;
@@ -83,6 +90,14 @@ export type BuilderContextType = {
   setInclusions: React.Dispatch<React.SetStateAction<string[]>>;
   exclusions: string[];
   setExclusions: React.Dispatch<React.SetStateAction<string[]>>;
+
+  // Theme
+  selectedTheme: ThemeType;
+  setSelectedTheme: React.Dispatch<React.SetStateAction<ThemeType>>;
+
+  // Hero Image
+  heroImage: string;
+  setHeroImage: React.Dispatch<React.SetStateAction<string>>;
 };
 
 // ========== THEME TYPES (for rendering) ==========
@@ -103,6 +118,7 @@ export interface Day {
   activities: DayActivity[];
   accommodation: string;
   meals: string;
+  previewImage?: string; // Custom image for theme preview
 }
 
 export interface Location {
@@ -135,10 +151,11 @@ export interface ItineraryData {
   id: string;
   title: string;
   subtitle: string;
+  clientName?: string;
   duration: string;
   location: string;
   heroImage: string;
-  theme: 'minimalistic' | 'safari-portal';
+  theme: ThemeType;
   organization?: OrganizationInfo;
   itinerary: Day[];
   accommodations: Accommodation[];
@@ -159,5 +176,7 @@ export interface ItineraryData {
     locations: Location[];
     scale: number;
     rotate: [number, number, number];
+    startLocation?: Location;
+    endLocation?: Location;
   };
 }

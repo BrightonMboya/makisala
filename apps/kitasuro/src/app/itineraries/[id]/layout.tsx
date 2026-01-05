@@ -1,7 +1,7 @@
 'use client';
 
 import { Button } from '@repo/ui/button';
-import { ChevronLeft, ChevronRight, Plus, Users, Info, Check, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, Users, Info, Check, X, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams, useParams } from 'next/navigation';
 import { Popover, PopoverContent, PopoverTrigger } from '@repo/ui/popover';
@@ -10,16 +10,163 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { BuilderProvider, useBuilder } from '@/components/itinerary-builder/builder-context';
 import type { TravelerGroup } from '@/types/itinerary-types';
 import { useState, useEffect } from 'react';
-import { getTourDetails } from '@/app/itineraries/actions';
+import { getTourDetails, saveProposal } from '@/app/itineraries/actions';
+import { getClientById } from '@/app/(dashboard)/clients/actions';
+import { useMutation } from '@tanstack/react-query';
+import { toast } from '@repo/ui/toast';
 
 function Header() {
   const pathname = usePathname();
   const router = useRouter();
-  const { tourType, setTourType, travelerGroups, setTravelerGroups, clientName, tourTitle } =
-    useBuilder();
+  const {
+    tourId,
+    tourType,
+    setTourType,
+    travelerGroups,
+    setTravelerGroups,
+    clientId,
+    tourTitle,
+    days,
+    startDate,
+    pricingRows,
+    extras,
+    startCity,
+    endCity,
+    pickupPoint,
+    transferIncluded,
+    inclusions,
+    exclusions,
+    selectedTheme,
+    heroImage,
+  } = useBuilder();
+  const [clientName, setClientName] = useState<string>('');
 
   const params = useParams();
   const id = params.id as string;
+
+  // Fetch client name when clientId changes
+  useEffect(() => {
+    if (clientId) {
+      getClientById(clientId).then((client) => {
+        if (client) setClientName(client.name);
+      });
+    }
+  }, [clientId]);
+
+  // Save Draft Mutation
+  const saveDraftMutation = useMutation({
+    mutationFn: async () => {
+      if (!tourId) {
+        throw new Error('Tour ID is required to save. Please go back to dashboard and create a new proposal.');
+      }
+
+      const proposalData = {
+        days,
+        startDate,
+        travelerGroups,
+        tourType,
+        pricingRows,
+        extras,
+        clientId,
+        tourTitle,
+        startCity,
+        endCity,
+        pickupPoint,
+        transferIncluded,
+        inclusions,
+        exclusions,
+        selectedTheme,
+        heroImage,
+      };
+
+      const result = await saveProposal({
+        id,
+        name: tourTitle || 'Untitled Safari',
+        data: proposalData,
+        status: 'draft',
+        tourId,
+      });
+
+      if (!result.success) {
+        throw new Error('Failed to save draft.');
+      }
+
+      return result;
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Draft Saved!',
+        description: 'Your proposal has been saved as a draft.',
+      });
+    },
+    onError: (error: Error) => {
+      console.error('Save draft error:', error);
+      toast({
+        title: 'Failed to save draft',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+
+  // Publish Proposal Mutation
+  const publishMutation = useMutation({
+    mutationFn: async () => {
+      if (!tourId) {
+        throw new Error('Tour ID is required to publish. Please go back to dashboard and create a new proposal.');
+      }
+
+      const proposalData = {
+        days,
+        startDate,
+        travelerGroups,
+        tourType,
+        pricingRows,
+        extras,
+        clientId,
+        tourTitle,
+        startCity,
+        endCity,
+        pickupPoint,
+        transferIncluded,
+        inclusions,
+        exclusions,
+        selectedTheme,
+        heroImage,
+      };
+
+      const result = await saveProposal({
+        id,
+        name: tourTitle || 'Untitled Safari',
+        data: proposalData,
+        status: 'shared',
+        tourId,
+      });
+
+      if (!result.success) {
+        throw new Error('Failed to publish proposal.');
+      }
+
+      return result;
+    },
+    onSuccess: async (result) => {
+      const savedId = (result as any).id || id;
+      const link = `${window.location.origin}/proposal/${savedId}`;
+      await navigator.clipboard.writeText(link);
+      toast({
+        title: 'Proposal Published!',
+        description: 'Link copied to clipboard.',
+      });
+    },
+    onError: (error: Error) => {
+      console.error('Publish error:', error);
+      toast({
+        title: 'Failed to publish',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
 
   // Helper to calculate total travelers
   const totalTravelers = travelerGroups.reduce((acc, curr) => acc + curr.count, 0);
@@ -48,6 +195,7 @@ function Header() {
     { id: 'day-by-day', label: 'Day by Day' },
     { id: 'pricing', label: 'Pricing' },
     { id: 'preview', label: 'Preview' },
+    { id: 'share', label: 'Share' },
   ];
 
   const currentStepIndex = steps.findIndex((step) => pathname.includes(step.id));
@@ -176,15 +324,21 @@ function Header() {
             <Button
               variant="outline"
               size="sm"
-              className="border-stone-200 text-stone-600 hover:bg-stone-50 hover:text-stone-900"
+              className="gap-2 border-stone-200 text-stone-600 hover:bg-stone-50 hover:text-stone-900"
+              onClick={() => saveDraftMutation.mutate()}
+              disabled={saveDraftMutation.isPending}
             >
-              Save Draft
+              {saveDraftMutation.isPending && <Loader2 className="h-3 w-3 animate-spin" />}
+              {saveDraftMutation.isPending ? 'Saving...' : 'Save Draft'}
             </Button>
             <Button
               size="sm"
-              className="border-transparent bg-green-700 text-white shadow-sm hover:bg-green-800"
+              className="gap-2 border-transparent bg-green-700 text-white shadow-sm hover:bg-green-800"
+              onClick={() => publishMutation.mutate()}
+              disabled={publishMutation.isPending}
             >
-              Publish Proposal
+              {publishMutation.isPending && <Loader2 className="h-3 w-3 animate-spin" />}
+              {publishMutation.isPending ? 'Publishing...' : 'Publish Proposal'}
             </Button>
           </div>
         </div>
@@ -196,11 +350,12 @@ function Header() {
           {steps.map((step, index) => {
             const isActive = index === currentStepIndex;
             const isCompleted = index < currentStepIndex;
+            const stepHref = `/itineraries/${id}/${step.id}`;
 
             return (
               <div key={step.id} className="flex items-center">
                 <Link
-                  href={`/itineraries/${id}/${step.id}`}
+                  href={stepHref}
                   className={`flex items-center gap-2 border-b-2 px-8 py-3 text-sm font-medium transition-colors ${
                     isActive
                       ? 'border-green-600 bg-green-50/50 text-green-800'
@@ -245,18 +400,22 @@ export default function BuilderLayout({ children }: { children: React.ReactNode 
   const searchParams = useSearchParams();
   const tourId = searchParams.get('tourId');
   const startDateParam = searchParams.get('startDate');
-  const clientNameParam = searchParams.get('clientName');
+  const clientIdParam = searchParams.get('clientId');
   const tourTitleParam = searchParams.get('tourTitle');
   const tourTypeParam = searchParams.get('tourType');
   const travelersParam = searchParams.get('travelers');
   const [initialData, setInitialData] = useState<any>(null);
   const [loading, setLoading] = useState(!!tourId);
 
+  const params = useParams();
+  const id = params.id as string;
+
   useEffect(() => {
     const loadData = async () => {
       let data: any = {
+        tourId: tourId,
         startDate: startDateParam ? new Date(startDateParam) : undefined,
-        clientName: clientNameParam,
+        clientId: clientIdParam,
         tourTitle: tourTitleParam,
         tourType: tourTypeParam,
       };
@@ -275,6 +434,70 @@ export default function BuilderLayout({ children }: { children: React.ReactNode 
         }
       }
 
+      // 1. Try to fetch existing proposal first if we have an ID
+      if (id && id !== 'new') {
+        try {
+          // Dynamically import to avoid circular dep issues if any, though import at top is fine
+          const { getProposal } = await import('@/app/itineraries/actions');
+          const proposal = await getProposal(id);
+
+          if (proposal) {
+            // Map proposal data to builder state
+            data = {
+              ...data,
+              tourId: proposal.tourId || tourId, // Use proposal's tourId if available
+              tourTitle: proposal.tourTitle || proposal.name,
+              tourType: proposal.tourType || data.tourType,
+              clientId: proposal.clientId || data.clientId,
+              startDate: proposal.startDate ? new Date(proposal.startDate) : data.startDate,
+              startCity: proposal.startCity || '',
+              endCity: proposal.endCity || '',
+              pickupPoint: proposal.pickupPoint || '',
+              transferIncluded: proposal.transferIncluded || 'excluded',
+              travelerGroups: (proposal.travelerGroups as any) || data.travelerGroups,
+              pricingRows: (proposal.pricingRows as any) || [],
+              extras: (proposal.extras as any) || [],
+              inclusions: proposal.inclusions || [],
+              exclusions: proposal.exclusions || [],
+              selectedTheme: proposal.theme || 'minimalistic',
+              heroImage: proposal.heroImage || null,
+              // Map days
+              days: (proposal.days || []).map((day: any) => ({
+                id: day.id,
+                dayNumber: day.dayNumber,
+                date: undefined, // Recalculated by context
+                destination: day.nationalPark?.id || null, // Use ID
+                accommodation: day.accommodations?.[0]?.accommodationId || null, // Use ID
+                description: day.description || '',
+                previewImage: day.previewImage || undefined,
+                meals: {
+                  breakfast: day.meals?.breakfast || false,
+                  lunch: day.meals?.lunch || false,
+                  dinner: day.meals?.dinner || false,
+                },
+                activities: (day.activities || []).map((act: any) => ({
+                    id: act.id,
+                    name: act.name,
+                    description: act.description,
+                    location: act.location,
+                    moment: act.moment,
+                    isOptional: act.isOptional,
+                    imageUrl: act.imageUrl,
+                    time: act.time
+                }))
+              })),
+            };
+            
+            setInitialData(data);
+            setLoading(false);
+            return; // Exit if proposal loaded successfully
+          }
+        } catch (e) {
+          console.error("Failed to load proposal", e);
+        }
+      }
+
+      // 2. Fallback to existing logic (Tour Template) if no proposal found
       if (tourId) {
         const tourData = await getTourDetails(tourId);
         if (tourData) {
@@ -302,7 +525,7 @@ export default function BuilderLayout({ children }: { children: React.ReactNode 
       setLoading(false);
     };
     loadData();
-  }, [tourId, startDateParam, clientNameParam, tourTitleParam, tourTypeParam, travelersParam]);
+  }, [tourId, startDateParam, clientIdParam, tourTitleParam, tourTypeParam, travelersParam, id]);
 
   if (loading) {
     return (

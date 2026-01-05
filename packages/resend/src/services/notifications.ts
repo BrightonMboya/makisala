@@ -1,6 +1,9 @@
 import { resend } from '../client';
 import { env } from '../env';
 import { renderCommentNotificationEmail } from '../templates/comment-notification';
+import { renderProposalShareEmail } from '../templates/proposal-share';
+import { renderProposalAcceptanceEmail } from '../templates/proposal-acceptance';
+import { renderTeamInvitationEmail } from '../templates/team-invitation';
 
 export interface CommentNotificationData {
   proposalId: string;
@@ -177,6 +180,181 @@ export async function sendCommentNotificationEmail(
     return { success: true };
   } catch (error) {
     console.error('Error sending comment notification email:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error occurred',
+    };
+  }
+}
+
+export interface ProposalShareData {
+  clientEmail: string;
+  clientName: string;
+  agencyName: string;
+  proposalTitle: string;
+  proposalUrl: string;
+  startDate?: string;
+  duration?: string;
+  message?: string;
+}
+
+/**
+ * Sends an email to share a proposal with a client.
+ */
+export async function sendProposalShareEmail(
+  data: ProposalShareData,
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const html = renderProposalShareEmail({
+      clientName: data.clientName,
+      agencyName: data.agencyName,
+      proposalTitle: data.proposalTitle,
+      proposalUrl: data.proposalUrl,
+      startDate: data.startDate,
+      duration: data.duration,
+      message: data.message,
+    });
+
+    const fromEmail = env.RESEND_FROM_EMAIL || 'notifications@makisala.com';
+
+    const result = await resend.emails.send({
+      from: fromEmail,
+      to: data.clientEmail,
+      subject: `Your Travel Proposal: ${data.proposalTitle}`,
+      html,
+    });
+
+    if (result.error) {
+      console.error('Resend API error:', result.error);
+      return {
+        success: false,
+        error: result.error.message || 'Failed to send email',
+      };
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error('Error sending proposal share email:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error occurred',
+    };
+  }
+}
+
+export interface ProposalAcceptanceData {
+  agencyName: string;
+  clientName: string;
+  clientEmail?: string;
+  proposalTitle: string;
+  proposalUrl: string;
+  startDate?: string;
+  duration?: string;
+  totalPrice?: string;
+  recipientEmail: string;
+}
+
+/**
+ * Sends an email to the tour operator when a client accepts a proposal.
+ */
+export async function sendProposalAcceptanceEmail(
+  data: ProposalAcceptanceData,
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const acceptedAt = new Date().toLocaleString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      timeZoneName: 'short',
+    });
+
+    const html = renderProposalAcceptanceEmail({
+      agencyName: data.agencyName,
+      clientName: data.clientName,
+      clientEmail: data.clientEmail,
+      proposalTitle: data.proposalTitle,
+      proposalUrl: data.proposalUrl,
+      startDate: data.startDate,
+      duration: data.duration,
+      totalPrice: data.totalPrice,
+      acceptedAt,
+    });
+
+    const fromEmail = env.RESEND_FROM_EMAIL || 'notifications@makisala.com';
+
+    const result = await resend.emails.send({
+      from: fromEmail,
+      to: data.recipientEmail,
+      subject: `Proposal Accepted: ${data.proposalTitle} - ${data.clientName}`,
+      html,
+    });
+
+    if (result.error) {
+      console.error('Resend API error:', result.error);
+      return {
+        success: false,
+        error: result.error.message || 'Failed to send email',
+      };
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error('Error sending proposal acceptance email:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error occurred',
+    };
+  }
+}
+
+export interface TeamInvitationData {
+  recipientEmail: string;
+  inviterName: string;
+  organizationName: string;
+  role: 'admin' | 'member';
+  inviteUrl: string;
+  expiresAt: string;
+}
+
+/**
+ * Sends an email invitation to join a team/organization.
+ */
+export async function sendTeamInvitationEmail(
+  data: TeamInvitationData,
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const html = renderTeamInvitationEmail({
+      recipientEmail: data.recipientEmail,
+      inviterName: data.inviterName,
+      organizationName: data.organizationName,
+      role: data.role,
+      inviteUrl: data.inviteUrl,
+      expiresAt: data.expiresAt,
+    });
+
+    const fromEmail = env.RESEND_FROM_EMAIL || 'notifications@makisala.com';
+
+    const result = await resend.emails.send({
+      from: fromEmail,
+      to: data.recipientEmail,
+      subject: `You're invited to join ${data.organizationName}`,
+      html,
+    });
+
+    if (result.error) {
+      console.error('Resend API error:', result.error);
+      return {
+        success: false,
+        error: result.error.message || 'Failed to send email',
+      };
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error('Error sending team invitation email:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error occurred',

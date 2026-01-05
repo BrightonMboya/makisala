@@ -1,8 +1,8 @@
 import { betterAuth } from 'better-auth'
 import { db } from '@repo/db'
 import { drizzleAdapter } from 'better-auth/adapters/drizzle'
-import { organizations, user as userTable } from '@repo/db/schema'
-import { eq } from 'drizzle-orm'
+import { organizations, user as userTable, teamInvitations } from '@repo/db/schema'
+import { eq, and } from 'drizzle-orm'
 
 export const auth = betterAuth({
     database: drizzleAdapter(db, {
@@ -23,7 +23,34 @@ export const auth = betterAuth({
         user: {
             create: {
                 after: async (user) => {
-                    if (!user.organizationId) {
+                    // Check if there's a pending invitation for this email
+                    const [invitation] = await db
+                        .select()
+                        .from(teamInvitations)
+                        .where(
+                            and(
+                                eq(teamInvitations.email, user.email),
+                                eq(teamInvitations.status, 'pending')
+                            )
+                        )
+                        .limit(1)
+
+                    if (invitation && new Date(invitation.expiresAt) > new Date()) {
+                        // Accept the invitation automatically
+                        await db
+                            .update(userTable)
+                            .set({
+                                organizationId: invitation.organizationId,
+                                role: invitation.role,
+                            })
+                            .where(eq(userTable.id, user.id))
+
+                        await db
+                            .update(teamInvitations)
+                            .set({ status: 'accepted', acceptedAt: new Date() })
+                            .where(eq(teamInvitations.id, invitation.id))
+                    } else if (!user.organizationId) {
+                        // Create new organization for user (existing logic)
                         const orgName = `${user.name}'s Agency`
                         const slug = `${user.name.toLowerCase().replace(/\s+/g, '-')}-${Math.random().toString(36).substring(7)}`
                         const [org] = await db
@@ -39,6 +66,7 @@ export const auth = betterAuth({
                                 .update(userTable)
                                 .set({
                                     organizationId: org.id,
+                                    role: 'admin',
                                 })
                                 .where(eq(userTable.id, user.id))
                         }

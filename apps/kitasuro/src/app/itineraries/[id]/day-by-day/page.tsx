@@ -26,6 +26,8 @@ export default function DayByDayPage() {
     setStartDate,
     startCity,
     setStartCity,
+    endCity,
+    setEndCity,
     transferIncluded,
     setTransferIncluded,
     pickupPoint,
@@ -71,8 +73,26 @@ export default function DayByDayPage() {
           <div className="flex items-center gap-2">
             <span className="font-bold text-stone-700">Destinations:</span>
             <div className="flex items-center gap-1.5">
-              <span className="text-lg">🇷🇼</span>
-              <span className="text-stone-600">Rwanda</span>
+              <span className="text-lg">
+                {(() => {
+                  const city = (startCity || '').toLowerCase();
+                  if (city.includes('tanzania') || city.includes('arusha') || city.includes('kilimanjaro')) return '🇹🇿';
+                  if (city.includes('botswana') || city.includes('maun') || city.includes('okavango')) return '🇧🇼';
+                  if (city.includes('kenya') || city.includes('nairobi')) return '🇰🇪';
+                  if (city.includes('uganda') || city.includes('entebbe')) return '🇺🇬';
+                  return '🇷🇼'; // Default
+                })()}
+              </span>
+              <span className="text-stone-600">
+                {(() => {
+                  const city = (startCity || '').toLowerCase();
+                  if (city.includes('tanzania') || city.includes('arusha') || city.includes('kilimanjaro')) return 'Tanzania';
+                  if (city.includes('botswana') || city.includes('maun') || city.includes('okavango')) return 'Botswana';
+                  if (city.includes('kenya') || city.includes('nairobi')) return 'Kenya';
+                  if (city.includes('uganda') || city.includes('entebbe')) return 'Uganda';
+                  return 'Rwanda'; // Default
+                })()}
+              </span>
             </div>
           </div>
         </div>
@@ -95,11 +115,22 @@ export default function DayByDayPage() {
             </div>
             <div className="space-y-2">
               <label className="text-xs font-semibold tracking-wide text-stone-500 uppercase">
-                Start City / Location
+                Tour Starts In
               </label>
               <Input
                 value={startCity}
                 onChange={(e) => setStartCity(e.target.value)}
+                placeholder="e.g. Kigali, Rwanda"
+                className="border-stone-200 bg-stone-50 focus:bg-white"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-xs font-semibold tracking-wide text-stone-500 uppercase">
+                Tour Ends In
+              </label>
+              <Input
+                value={endCity}
+                onChange={(e) => setEndCity(e.target.value)}
                 placeholder="e.g. Kigali, Rwanda"
                 className="border-stone-200 bg-stone-50 focus:bg-white"
               />
@@ -187,7 +218,7 @@ export default function DayByDayPage() {
               : '—'}
           </span>
           <span className="text-stone-300">|</span>
-          <span>Kigali</span>
+          <span>{endCity || 'End city not set'}</span>
         </div>
       </div>
 

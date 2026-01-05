@@ -338,7 +338,7 @@ export default function PricingPage() {
       </div>
 
       <div className="flex justify-end pt-4">
-        <Link href={`/new/${id}/preview`}>
+        <Link href={`/itineraries/${id}/preview`}>
           <Button className="bg-green-600 px-8 text-white shadow-md shadow-green-600/20 hover:bg-green-700">
             Next: Preview & Edit <ArrowRight className="ml-2 h-4 w-4" />
           </Button>
