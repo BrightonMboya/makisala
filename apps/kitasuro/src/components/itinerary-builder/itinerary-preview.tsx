@@ -23,7 +23,7 @@ import type {
   PricingRow,
   ExtraOption,
 } from '@/types/itinerary-types';
-import { getAllNationalParks, getAllAccommodations } from '@/app/new/actions';
+import { getAllNationalParks, getAllAccommodations } from '@/app/itineraries/actions';
 import { cn } from '@/lib/utils';
 
 export function ItineraryPreview({

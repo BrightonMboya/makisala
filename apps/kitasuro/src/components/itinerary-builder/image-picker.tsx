@@ -7,7 +7,7 @@ import { Button } from '@repo/ui/button';
 import { Input } from '@repo/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@repo/ui/tabs';
 
-import { getAllNationalParks, getAllAccommodations, getPageImages } from '@/app/new/actions';
+import { getAllNationalParks, getAllAccommodations, getPageImages } from '@/app/itineraries/actions';
 import { cn } from '@/lib/utils';
 
 interface ImagePickerProps {

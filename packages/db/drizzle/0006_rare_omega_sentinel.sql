@@ -1,0 +1,1 @@
+ALTER TABLE "proposal_days" ADD COLUMN "preview_image" text;

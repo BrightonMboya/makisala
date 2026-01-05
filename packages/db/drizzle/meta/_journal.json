@@ -15,6 +15,55 @@
       "when": 1766954569066,
       "tag": "0001_tidy_demogoblin",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1767125757437,
+      "tag": "0002_mushy_doctor_strange",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1767178010370,
+      "tag": "0003_sudden_pyro",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1767429171090,
+      "tag": "0004_huge_iron_lad",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1767530816947,
+      "tag": "0005_glamorous_toro",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1767532211210,
+      "tag": "0006_rare_omega_sentinel",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1767570411638,
+      "tag": "0007_bouncy_sleepwalker",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1767602414968,
+      "tag": "0008_overrated_blazing_skull",
+      "breakpoints": true
     }
   ]
 }

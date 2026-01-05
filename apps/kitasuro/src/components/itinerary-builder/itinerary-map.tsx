@@ -2,21 +2,14 @@
 
 import React, { useMemo } from 'react';
 import {
-  ComposableMap,
-  Geographies,
-  Geography,
-  Marker,
-  Line,
-  ZoomableGroup,
-} from 'react-simple-maps';
+  Map,
+  MapRoute,
+  MapMarker,
+  MarkerContent,
+  MarkerTooltip,
+  MapControls,
+} from '@repo/ui/map';
 import type { BuilderDay as Day } from '@/types/itinerary-types';
-
-// Rwanda is roughly 28.8E to 30.9E longitude, and 1S to 2.9S latitude.
-// We can use a geoCentroid or specific projection config.
-// For Rwanda, rotating to [-30, 2] and scaling up works.
-
-const geoUrl =
-  'https://raw.githubusercontent.com/deldersveld/topojson/master/countries/rwanda/rwanda-districts.json';
 
 interface ItineraryMapProps {
   days: Day[];
@@ -25,7 +18,6 @@ interface ItineraryMapProps {
 
 export function ItineraryMap({ days, className }: ItineraryMapProps) {
   const route = useMemo(() => {
-    const uniqueDestinations = new Set<string>();
     const points: { name: string; coordinates: [number, number]; day: number }[] = [];
 
     // TODO: Fetch coordinates from database (nationalParks table should have coordinates)
@@ -48,70 +40,55 @@ export function ItineraryMap({ days, className }: ItineraryMapProps) {
     return points;
   }, [days]);
 
+  // Extract coordinates for the route line
+  const routeCoordinates = useMemo(
+    () => route.map((p) => p.coordinates),
+    [route]
+  );
+
   return (
     <div
-      className={`h-[400px] w-full overflow-hidden rounded-xl border border-stone-200 bg-sky-50 shadow-inner ${className}`}
+      className={`h-[400px] w-full overflow-hidden rounded-xl border border-stone-200 shadow-inner ${className}`}
     >
-      <ComposableMap
-        projection="geoMercator"
-        projectionConfig={{
-          scale: 30000,
-          center: [30.0, -2.0], // Center of Rwanda roughly
-        }}
-        className="h-full w-full"
+      <Map
+        center={[30.0, -2.0]} // Center of Rwanda
+        zoom={7}
+        minZoom={6}
+        maxZoom={12}
       >
-        <ZoomableGroup>
-          <Geographies geography={geoUrl}>
-            {({ geography }) =>
-              geography.map((geo: any) => (
-                <Geography
-                  key={geo.rsmKey}
-                  geography={geo}
-                  fill="#E5E7EB" // stone-200
-                  stroke="#D6D3D1" // stone-300
-                  strokeWidth={0.5}
-                  style={{
-                    default: { outline: 'none' },
-                    hover: { fill: '#D1D5DB', outline: 'none' },
-                    pressed: { outline: 'none' },
-                  }}
-                />
-              ))
-            }
-          </Geographies>
+        <MapControls position="bottom-right" showZoom />
 
-          {/* Route Line */}
-          {route.length > 1 && (
-            <Line
-              coordinates={route.map((p) => p.coordinates)}
-              stroke="#16A34A" // green-600
-              strokeWidth={2}
-              strokeLinecap="round"
-              strokeDasharray="4 4" // Dashed line for safari route feel
-            />
-          )}
+        {/* Route Line */}
+        {routeCoordinates.length > 1 && (
+          <MapRoute
+            coordinates={routeCoordinates}
+            color="#16A34A"
+            width={3}
+            opacity={0.9}
+            dashArray={[4, 4]}
+          />
+        )}
 
-          {/* Markers */}
-          {route.map(({ name, coordinates, day }, index) => (
-            <Marker key={`${name}-${index}`} coordinates={coordinates}>
-              <circle r={6} fill="#16A34A" stroke="#fff" strokeWidth={2} />
-              <text
-                textAnchor="middle"
-                y={-10}
-                style={{
-                  fontFamily: 'system-ui',
-                  fontSize: 8,
-                  fill: '#374151',
-                  fontWeight: 'bold',
-                  textShadow: '0px 0px 3px white',
-                }}
-              >
-                {name.replace(/-/g, ' ').toUpperCase()}
-              </text>
-            </Marker>
-          ))}
-        </ZoomableGroup>
-      </ComposableMap>
+        {/* Markers */}
+        {route.map(({ name, coordinates, day }, index) => (
+          <MapMarker
+            key={`${name}-${index}`}
+            longitude={coordinates[0]}
+            latitude={coordinates[1]}
+          >
+            <MarkerContent>
+              <div className="flex h-6 w-6 items-center justify-center rounded-full border-2 border-white bg-green-600 text-[10px] font-bold text-white shadow-lg">
+                {index + 1}
+              </div>
+            </MarkerContent>
+            <MarkerTooltip>
+              <div className="text-xs font-medium">
+                Day {day}: {name.replace(/-/g, ' ')}
+              </div>
+            </MarkerTooltip>
+          </MapMarker>
+        ))}
+      </Map>
     </div>
   );
 }

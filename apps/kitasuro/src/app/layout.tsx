@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Plus_Jakarta_Sans, Cormorant_Garamond } from "next/font/google";
 import "./globals.css";
+import { Providers } from "@/components/providers";
 
 const jakarta = Plus_Jakarta_Sans({
   variable: "--font-sans",
@@ -28,7 +29,7 @@ export default function RootLayout({
       <body
         className={`${jakarta.variable} ${cormorant.variable} font-sans antialiased`}
       >
-        {children}
+        <Providers>{children}</Providers>
       </body>
     </html>
   );

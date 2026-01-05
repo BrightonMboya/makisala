@@ -263,7 +263,11 @@ export default function SafariPortalTheme({ data }: { data: ItineraryData }) {
                 />
               </svg>
             </button>
-            <div className="font-serif text-lg tracking-tight text-stone-800">Your Logo Here</div>
+            {data.organization?.logoUrl ? (
+              <Image src={data.organization.logoUrl} alt={data.organization.name} width={120} height={40} className="object-contain" />
+            ) : (
+              <div className="font-serif text-lg tracking-tight text-stone-800">{data.organization?.name || 'Your Logo Here'}</div>
+            )}
             <div className="flex gap-4">
               <button className="rounded p-2 hover:bg-stone-100">
                 <svg
@@ -603,7 +607,7 @@ export default function SafariPortalTheme({ data }: { data: ItineraryData }) {
             </div>
 
             <footer className="space-y-6 border-t border-stone-200 pt-12 text-center">
-              <div className="font-serif text-2xl text-stone-300 italic">Kitasuro Travel</div>
+              <div className="font-serif text-2xl text-stone-300 italic">{data.organization?.name || 'Kitasuro Travel'}</div>
               <div className="flex justify-center gap-8 text-[10px] font-bold tracking-[0.3em] text-stone-400 uppercase">
                 <a href="#" className="transition-colors hover:text-stone-900">
                   Instagram

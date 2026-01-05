@@ -35,7 +35,7 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import { Combobox } from '@repo/ui/combobox';
 import { commonActivities } from '@/lib/data/itinerary-data';
-import { getAllNationalParks } from '@/app/new/actions';
+import { getAllNationalParks } from '@/app/itineraries/actions';
 
 const moments = ['Morning', 'Afternoon', 'Evening', 'Half Day', 'Full Day', 'Night'] as const;
 

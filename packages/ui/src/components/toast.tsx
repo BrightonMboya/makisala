@@ -4,6 +4,7 @@ import * as ToastPrimitives from '@radix-ui/react-toast';
 import { cva, type VariantProps } from 'class-variance-authority';
 
 import { cn } from '../cn';
+import { toast } from '../use-toast';
 
 const ToastProvider = ToastPrimitives.Provider;
 
@@ -123,4 +124,5 @@ export {
   ToastDescription,
   ToastClose,
   ToastAction,
+  toast,
 };
