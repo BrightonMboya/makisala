@@ -3,8 +3,11 @@ import { renderToBuffer } from '@react-pdf/renderer';
 import { ProposalPDF } from '@/lib/pdf/proposal-pdf';
 import { db } from '@repo/db';
 import { proposals, proposalDays, proposalActivities, proposalAccommodations, proposalMeals, accommodations, nationalParks } from '@repo/db/schema';
-import { eq } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 import { addDays, format } from 'date-fns';
+import { auth } from '@/lib/auth';
+import { headers } from 'next/headers';
+import { z } from 'zod';
 
 export async function GET(
   request: NextRequest,
@@ -13,9 +16,20 @@ export async function GET(
   try {
     const { id } = await params;
 
-    // Fetch the proposal with all related data
+    // Validate proposal ID format
+    if (!z.string().uuid().safeParse(id).success) {
+      return NextResponse.json({ error: 'Invalid proposal ID' }, { status: 400 });
+    }
+
+    // Check authentication
+    const session = await auth.api.getSession({ headers: await headers() });
+    if (!session?.user?.organizationId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Fetch the proposal with all related data, scoped to user's organization
     const proposal = await db.query.proposals.findFirst({
-      where: eq(proposals.id, id),
+      where: and(eq(proposals.id, id), eq(proposals.organizationId, session.user.organizationId)),
       with: {
         client: true,
         organization: true,

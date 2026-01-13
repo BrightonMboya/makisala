@@ -3,6 +3,7 @@ import { db } from '@repo/db'
 import { drizzleAdapter } from 'better-auth/adapters/drizzle'
 import { organizations, user as userTable, teamInvitations } from '@repo/db/schema'
 import { eq, and } from 'drizzle-orm'
+import { randomBytes } from 'crypto'
 
 export const auth = betterAuth({
     database: drizzleAdapter(db, {
@@ -51,8 +52,9 @@ export const auth = betterAuth({
                             .where(eq(teamInvitations.id, invitation.id))
                     } else if (!user.organizationId) {
                         // Create new organization for user (existing logic)
-                        const orgName = `${user.name}'s Agency`
-                        const slug = `${user.name.toLowerCase().replace(/\s+/g, '-')}-${Math.random().toString(36).substring(7)}`
+                        const userName = user.name || 'User'
+                        const orgName = `${userName}'s Agency`
+                        const slug = `${userName.toLowerCase().replace(/\s+/g, '-')}-${randomBytes(8).toString('hex')}`
                         const [org] = await db
                             .insert(organizations)
                             .values({

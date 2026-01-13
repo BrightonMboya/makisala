@@ -1,11 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@repo/db';
 import { proposals, proposalDays } from '@repo/db/schema';
-import { eq } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 import { resend } from '@repo/resend';
+import { auth } from '@/lib/auth';
+import { headers } from 'next/headers';
+import { z } from 'zod';
 
 export async function POST(request: NextRequest) {
   try {
+    // Check authentication
+    const session = await auth.api.getSession({ headers: await headers() });
+    if (!session?.user?.organizationId) {
+      return NextResponse.json(
+        { success: false, error: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
     const body = await request.json();
     const { proposalId, recipientEmail, recipientName, subject, message, isTest } = body;
 
@@ -16,9 +28,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Fetch proposal data
+    // Validate proposal ID format
+    if (!z.string().uuid().safeParse(proposalId).success) {
+      return NextResponse.json(
+        { success: false, error: 'Invalid proposal ID' },
+        { status: 400 }
+      );
+    }
+
+    // Fetch proposal data, scoped to user's organization
     const proposal = await db.query.proposals.findFirst({
-      where: eq(proposals.id, proposalId),
+      where: and(eq(proposals.id, proposalId), eq(proposals.organizationId, session.user.organizationId)),
       with: {
         organization: true,
         days: true,

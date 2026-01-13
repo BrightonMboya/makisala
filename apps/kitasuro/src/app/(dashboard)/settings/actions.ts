@@ -1,7 +1,7 @@
 'use server';
 
 import { db, organizations, user, teamInvitations } from '@repo/db';
-import { and, desc, eq } from 'drizzle-orm';
+import { and, desc, eq, inArray } from 'drizzle-orm';
 import { auth } from '@/lib/auth';
 import { headers } from 'next/headers';
 import { revalidatePath } from 'next/cache';
@@ -109,14 +109,12 @@ export async function getPendingInvitations() {
 
   // Get inviter names
   const inviterIds = [...new Set(invitations.map((inv) => inv.invitedBy))];
-  const inviters = await db
-    .select({ id: user.id, name: user.name })
-    .from(user)
-    .where(
-      inviterIds.length > 0
-        ? eq(user.id, inviterIds[0]!) // Simplified for now
-        : eq(user.id, '')
-    );
+  const inviters = inviterIds.length > 0
+    ? await db
+        .select({ id: user.id, name: user.name })
+        .from(user)
+        .where(inArray(user.id, inviterIds))
+    : [];
 
   const inviterMap = new Map(inviters.map((u) => [u.id, u.name]));
 
