@@ -238,6 +238,7 @@ export async function getDashboardData() {
         .from(clients)
         .where(eq(clients.organizationId, orgId))
         .orderBy(clients.name),
+      // TODO: the tours here needs to be filtered by organizationId
       db
         .select({
           id: tours.id,

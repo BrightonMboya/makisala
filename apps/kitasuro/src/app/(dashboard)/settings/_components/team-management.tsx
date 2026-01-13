@@ -26,7 +26,7 @@ import {
   updateMemberRole,
   revokeInvitation,
 } from '../actions';
-import { useToast } from '@repo/ui/use-toast';
+import { toast } from '@repo/ui/toast';
 import { Mail, UserMinus, Clock, X, Crown, User } from 'lucide-react';
 
 interface TeamMember {
@@ -55,7 +55,6 @@ export function TeamManagement({ members, invitations, currentUserId }: Props) {
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteRole, setInviteRole] = useState<'admin' | 'member'>('member');
   const [isInviting, setIsInviting] = useState(false);
-  const { toast } = useToast();
 
   async function handleInvite(e: React.FormEvent) {
     e.preventDefault();

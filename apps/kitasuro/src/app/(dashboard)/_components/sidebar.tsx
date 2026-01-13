@@ -16,40 +16,19 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { DatePicker } from '@repo/ui/date-picker';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@repo/ui/form';
 import { CountryDropdown } from '@repo/ui/country-dropdown';
 import { getDashboardData } from '@/app/itineraries/actions';
-import { getAllClients, createClient } from '@/app/(dashboard)/clients/actions';
+import { createClient } from '@/app/(dashboard)/clients/actions';
 import { useToast } from '@/lib/hooks/use-toast';
 import { authClient } from '@/lib/auth-client';
 import { Combobox } from '@repo/ui/combobox';
-import { useQuery } from '@tanstack/react-query';
-
-// --- Zod Schemas ---
-
-const requestSchema = z.object({
-  clientId: z.string().optional(),
-  email: z.string().optional(),
-  firstName: z.string().optional(),
-  lastName: z.string().optional(),
-  country: z.string().optional(),
-  phone: z.string().optional(),
-  tourTitle: z.string().min(1, 'Tour title is required'),
-  tourType: z.string().min(1, 'Tour type is required'),
-  startDate: z.date(),
-  travelers: z.number().min(1, 'At least 1 traveler is required'),
-  selectedTourId: z.string().min(1, 'Please select a tour template'),
-}).refine(data => data.clientId || data.lastName, {
-  message: 'Either select an existing client or enter client details',
-  path: ['clientId'],
-});
-
-type RequestFormValues = z.infer<typeof requestSchema>;
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { requestSchema, type RequestFormValues } from '@/lib/schemas/request';
 
 
 // --- Components ---
@@ -90,28 +69,21 @@ export function Sidebar() {
   const router = useRouter();
   const pathname = usePathname();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isNewClient, setIsNewClient] = useState(false);
-  const [clients, setClients] = useState<{ id: string; name: string }[]>([]);
   const { data: session } = authClient.useSession();
 
   // Query shared data
   const { data: dashboardData } = useQuery({
     queryKey: ['dashboardData'],
     queryFn: getDashboardData,
-    staleTime: 30 * 1000, 
+    staleTime: 30 * 1000,
   });
 
   const availableTours = dashboardData?.tours || [];
-  const organization = dashboardData?.organization;
   const requests = dashboardData?.proposals || [];
-
-  // Update clients state
-  useEffect(() => {
-    if (dashboardData?.clients) {
-      setClients(dashboardData.clients);
-    }
-  }, [dashboardData?.clients]);
+  const clients = dashboardData?.clients || [];
 
   // Forms
   const form = useForm<RequestFormValues>({
@@ -154,9 +126,8 @@ export function Sidebar() {
             countryOfResidence: data.country || undefined,
           });
           clientId = result.id;
-          // Refresh clients list
-          const updatedClients = await getAllClients();
-          setClients(updatedClients);
+          // Invalidate query to refresh clients list
+          queryClient.invalidateQueries({ queryKey: ['dashboardData'] });
         } catch (error) {
           toast({ title: 'Failed to create client', variant: 'destructive' });
           return;

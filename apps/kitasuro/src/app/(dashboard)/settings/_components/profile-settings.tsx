@@ -16,7 +16,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useState } from 'react';
 import { updateUserProfile } from '../actions';
-import { useToast } from '@repo/ui/use-toast';
+import { toast } from '@repo/ui/toast';
 import { CloudinaryImagePicker } from '@/components/cloudinary-image-picker';
 import { Badge } from '@repo/ui/badge';
 
@@ -38,8 +38,7 @@ interface Props {
 }
 
 export function ProfileSettings({ user }: Props) {
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const { toast } = useToast();
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),

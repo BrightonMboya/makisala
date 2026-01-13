@@ -113,20 +113,37 @@ export default async function ClientsPage({
           </Table>
         </div>
 
-        {pagination.totalPages > 1 && (
+        {(pagination.page > 1 || pagination.hasNextPage) && (
           <div className="mt-6 flex items-center justify-center gap-2">
-            {Array.from({ length: pagination.totalPages }, (_, i) => i + 1).map(p => (
-              <Button
-                key={p}
-                variant={p === pagination.page ? 'default' : 'outline'}
-                size="sm"
-                asChild
-              >
-                <Link href={`/clients?page=${p}${query ? `&query=${query}` : ''}`}>
-                  {p}
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={pagination.page <= 1}
+              asChild={pagination.page > 1}
+            >
+              {pagination.page > 1 ? (
+                <Link href={`/clients?page=${pagination.page - 1}${query ? `&query=${query}` : ''}`}>
+                  Previous
                 </Link>
-              </Button>
-            ))}
+              ) : (
+                <span>Previous</span>
+              )}
+            </Button>
+            <span className="text-sm text-gray-600">Page {pagination.page}</span>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={!pagination.hasNextPage}
+              asChild={pagination.hasNextPage}
+            >
+              {pagination.hasNextPage ? (
+                <Link href={`/clients?page=${pagination.page + 1}${query ? `&query=${query}` : ''}`}>
+                  Next
+                </Link>
+              ) : (
+                <span>Next</span>
+              )}
+            </Button>
           </div>
         )}
       </div>

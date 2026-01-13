@@ -1,7 +1,7 @@
 'use server'
 
 import { db, clients } from '@repo/db'
-import { and, desc, eq, ilike, sql } from 'drizzle-orm'
+import { and, desc, eq, ilike } from 'drizzle-orm'
 import { revalidatePath } from 'next/cache'
 import { auth } from '@/lib/auth'
 import { headers } from 'next/headers'
@@ -18,41 +18,40 @@ export async function getClients(options?: {
   limit?: number
 }) {
   const session = await getSession()
-  if (!session?.user?.organizationId) return { clients: [], pagination: { page: 1, limit: 10, total: 0, totalPages: 0 } }
+  if (!session?.user?.organizationId) return { clients: [], pagination: { page: 1, limit: 10, hasNextPage: false } }
 
   const page = options?.page || 1
   const limit = options?.limit || 10
   const offset = (page - 1) * limit
 
   const conditions = [eq(clients.organizationId, session.user.organizationId)]
-  if (options?.query) {
-    conditions.push(ilike(clients.name, `%${options.query}%`))
+
+  // Validate and sanitize search input
+  const query = options?.query?.trim().slice(0, 100)
+  if (query && query.length >= 2) {
+    conditions.push(ilike(clients.name, `%${query}%`))
   }
 
   const whereClause = and(...conditions)
 
-  const [data, total] = await Promise.all([
-    db
-      .select()
-      .from(clients)
-      .where(whereClause)
-      .limit(limit)
-      .offset(offset)
-      .orderBy(desc(clients.createdAt)),
-    db
-      .select({ count: sql<number>`count(*)` })
-      .from(clients)
-      .where(whereClause)
-      .then(res => Number(res[0]?.count || 0)),
-  ])
+  // Fetch one extra record to determine if there's a next page
+  const data = await db
+    .select()
+    .from(clients)
+    .where(whereClause)
+    .limit(limit + 1)
+    .offset(offset)
+    .orderBy(desc(clients.createdAt))
+
+  const hasNextPage = data.length > limit
+  const clientsData = hasNextPage ? data.slice(0, limit) : data
 
   return {
-    clients: data,
+    clients: clientsData,
     pagination: {
       page,
       limit,
-      total,
-      totalPages: Math.ceil(total / limit),
+      hasNextPage,
     },
   }
 }
@@ -85,7 +84,7 @@ export async function createClient(data: {
     throw new Error('Unauthorized')
   }
 
-  const [newClient] = await db
+  const result = await db
     .insert(clients)
     .values({
       organizationId: session.user.organizationId,
@@ -96,6 +95,11 @@ export async function createClient(data: {
       notes: data.notes || null,
     })
     .returning()
+
+  const newClient = result[0]
+  if (!newClient) {
+    throw new Error('Failed to create client')
+  }
 
   revalidatePath('/clients')
   return { success: true, id: newClient.id }

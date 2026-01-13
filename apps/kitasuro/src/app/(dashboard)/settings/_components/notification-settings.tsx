@@ -7,7 +7,7 @@ import { Switch } from '@repo/ui/switch';
 import { Label } from '@repo/ui/label';
 import { useState } from 'react';
 import { updateOrganizationSettings } from '../actions';
-import { useToast } from '@repo/ui/use-toast';
+import {toast } from '@repo/ui/toast';
 
 interface Props {
   organization: {
@@ -19,7 +19,6 @@ interface Props {
 export function NotificationSettings({ organization, isAdmin }: Props) {
   const [email, setEmail] = useState(organization.notificationEmail || '');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { toast } = useToast();
 
   async function handleSave() {
     setIsSubmitting(true);

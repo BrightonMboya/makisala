@@ -4,6 +4,7 @@ import { accommodations, accommodationImages, db } from '@repo/db'
 import { and, desc, eq, ilike, inArray, sql } from 'drizzle-orm'
 import { revalidatePath } from 'next/cache'
 import { uploadToStorage } from '@/lib/storage'
+import { compressImage, replaceExtension } from '@/lib/image-utils'
 
 export async function getAccommodations(options?: {
     query?: string
@@ -114,11 +115,14 @@ export async function createAccommodation(data: {
 
     if (data.images && data.images.length > 0) {
         for (const img of data.images) {
-            const buffer = Buffer.from(img.base64, 'base64')
-            const key = `accommodations/${newAcc.id}/${Date.now()}-${img.name}`
+            const rawBuffer = Buffer.from(img.base64, 'base64')
+            // Compress image to WebP format
+            const compressed = await compressImage(rawBuffer)
+            const compressedName = replaceExtension(img.name, compressed.extension)
+            const key = `accommodations/${newAcc.id}/${Date.now()}-${compressedName}`
             const { bucket, key: storageKey, publicUrl } = await uploadToStorage({
-                file: buffer,
-                contentType: img.type,
+                file: compressed.buffer,
+                contentType: compressed.contentType,
                 key,
                 visibility: 'public',
             })
@@ -171,11 +175,14 @@ export async function updateAccommodation(
 
     if (data.newImages && data.newImages.length > 0) {
         for (const img of data.newImages) {
-            const buffer = Buffer.from(img.base64, 'base64')
-            const key = `accommodations/${id}/${Date.now()}-${img.name}`
+            const rawBuffer = Buffer.from(img.base64, 'base64')
+            // Compress image to WebP format
+            const compressed = await compressImage(rawBuffer)
+            const compressedName = replaceExtension(img.name, compressed.extension)
+            const key = `accommodations/${id}/${Date.now()}-${compressedName}`
             const { bucket, key: storageKey } = await uploadToStorage({
-                file: buffer,
-                contentType: img.type,
+                file: compressed.buffer,
+                contentType: compressed.contentType,
                 key,
                 visibility: 'public',
             })

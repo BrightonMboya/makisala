@@ -4,7 +4,9 @@
       "Bash(npx tsc:*)",
       "Bash(ls:*)",
       "WebFetch(domain:mapcn.vercel.app)",
-      "WebFetch(domain:raw.githubusercontent.com)"
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(gh pr view:*)",
+      "Bash(gh api:*)"
     ]
   }
 }

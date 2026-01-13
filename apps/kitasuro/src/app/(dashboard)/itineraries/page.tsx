@@ -10,19 +10,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { getDashboardData } from '@/app/itineraries/actions';
 import { useQuery } from '@tanstack/react-query';
-
-// Type reused from dashboard
-type RequestItem = {
-  id: string;
-  client: string;
-  travelers: number;
-  country: string;
-  title: string;
-  startDate: string;
-  received: string;
-  source: string;
-  status: 'new' | 'working' | 'draft' | 'shared';
-};
+import type { RequestItem } from '@/types/dashboard';
 
 export default function ItinerariesPage() {
   const router = useRouter();
@@ -75,7 +63,7 @@ export default function ItinerariesPage() {
               {requests.map((req) => (
                 <Link
                   key={req.id}
-                  href={`/itineraries/${req.id}/day-by-day`}
+                  href={`/proposal/${req.id}`}
                   className="group block rounded-xl border border-stone-200 bg-white p-5 shadow-sm transition-all hover:border-green-600/30 hover:shadow-md"
                 >
                   <div className="flex items-start justify-between">
@@ -104,7 +92,7 @@ export default function ItinerariesPage() {
                        onClick={(e) => {
                          e.preventDefault();
                          e.stopPropagation();
-                         router.push(`/itineraries/${req.id}/day-by-day?tourId=${req.id}`);
+                         router.push(`/itineraries/${req.id}/day-by-day`);
                        }}
                     >
                       Edit Proposal

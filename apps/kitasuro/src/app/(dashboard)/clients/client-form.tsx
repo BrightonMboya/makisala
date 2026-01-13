@@ -2,12 +2,25 @@
 
 import { Button } from '@repo/ui/button'
 import { Input } from '@repo/ui/input'
-import { Label } from '@repo/ui/label'
 import { Textarea } from '@repo/ui/textarea'
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@repo/ui/form'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { z } from 'zod'
 import { createClient, updateClient, deleteClient } from './actions'
-import { toast } from '@repo/ui/toast'
+import { useToast } from '@/lib/hooks/use-toast'
+
+const clientSchema = z.object({
+  name: z.string().min(1, 'Name is required'),
+  email: z.string().email('Invalid email').optional().or(z.literal('')),
+  phone: z.string().optional(),
+  countryOfResidence: z.string().optional(),
+  notes: z.string().optional(),
+})
+
+type ClientFormValues = z.infer<typeof clientSchema>
 
 interface ClientFormProps {
   client?: {
@@ -22,37 +35,42 @@ interface ClientFormProps {
 
 export function ClientForm({ client }: ClientFormProps) {
   const router = useRouter()
-  const [isSubmitting, setIsSubmitting] = useState(false)
+  const { toast } = useToast()
   const [isDeleting, setIsDeleting] = useState(false)
 
   const isEditing = !!client
 
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault()
-    setIsSubmitting(true)
+  const form = useForm<ClientFormValues>({
+    resolver: zodResolver(clientSchema),
+    defaultValues: {
+      name: client?.name || '',
+      email: client?.email || '',
+      phone: client?.phone || '',
+      countryOfResidence: client?.countryOfResidence || '',
+      notes: client?.notes || '',
+    },
+  })
 
-    const formData = new FormData(e.currentTarget)
-    const data = {
-      name: formData.get('name') as string,
-      email: formData.get('email') as string || undefined,
-      phone: formData.get('phone') as string || undefined,
-      countryOfResidence: formData.get('countryOfResidence') as string || undefined,
-      notes: formData.get('notes') as string || undefined,
-    }
-
+  const onSubmit = async (data: ClientFormValues) => {
     try {
+      const payload = {
+        name: data.name,
+        email: data.email || undefined,
+        phone: data.phone || undefined,
+        countryOfResidence: data.countryOfResidence || undefined,
+        notes: data.notes || undefined,
+      }
+
       if (isEditing) {
-        await updateClient(client.id, data)
+        await updateClient(client.id, payload)
         toast({ title: 'Client updated successfully' })
       } else {
-        await createClient(data)
+        await createClient(payload)
         toast({ title: 'Client created successfully' })
       }
       router.push('/clients')
     } catch (error) {
       toast({ title: 'Something went wrong', variant: 'destructive' })
-    } finally {
-      setIsSubmitting(false)
     }
   }
 
@@ -72,88 +90,111 @@ export function ClientForm({ client }: ClientFormProps) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="space-y-4">
-        <div>
-          <Label htmlFor="name">Name *</Label>
-          <Input
-            id="name"
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        <div className="space-y-4">
+          <FormField
+            control={form.control}
             name="name"
-            defaultValue={client?.name || ''}
-            required
-            placeholder="John Doe"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Name *</FormLabel>
+                <FormControl>
+                  <Input {...field} placeholder="John Doe" />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
           />
-        </div>
 
-        <div>
-          <Label htmlFor="email">Email</Label>
-          <Input
-            id="email"
+          <FormField
+            control={form.control}
             name="email"
-            type="email"
-            defaultValue={client?.email || ''}
-            placeholder="john@example.com"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Email</FormLabel>
+                <FormControl>
+                  <Input {...field} type="email" placeholder="john@example.com" />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
           />
-        </div>
 
-        <div>
-          <Label htmlFor="phone">Phone</Label>
-          <Input
-            id="phone"
+          <FormField
+            control={form.control}
             name="phone"
-            defaultValue={client?.phone || ''}
-            placeholder="+1 234 567 8900"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Phone</FormLabel>
+                <FormControl>
+                  <Input {...field} placeholder="+1 234 567 8900" />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
           />
-        </div>
 
-        <div>
-          <Label htmlFor="countryOfResidence">Country of Residence</Label>
-          <Input
-            id="countryOfResidence"
+          <FormField
+            control={form.control}
             name="countryOfResidence"
-            defaultValue={client?.countryOfResidence || ''}
-            placeholder="United States"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Country of Residence</FormLabel>
+                <FormControl>
+                  <Input {...field} placeholder="United States" />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
           />
-        </div>
 
-        <div>
-          <Label htmlFor="notes">Notes</Label>
-          <Textarea
-            id="notes"
+          <FormField
+            control={form.control}
             name="notes"
-            defaultValue={client?.notes || ''}
-            placeholder="Any additional notes about this client..."
-            rows={4}
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Notes</FormLabel>
+                <FormControl>
+                  <Textarea
+                    {...field}
+                    placeholder="Any additional notes about this client..."
+                    rows={4}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
           />
         </div>
-      </div>
 
-      <div className="flex items-center justify-between pt-4 border-t">
-        <div>
-          {isEditing && (
+        <div className="flex items-center justify-between pt-4 border-t">
+          <div>
+            {isEditing && (
+              <Button
+                type="button"
+                variant="destructive"
+                onClick={handleDelete}
+                disabled={isDeleting}
+              >
+                {isDeleting ? 'Deleting...' : 'Delete Client'}
+              </Button>
+            )}
+          </div>
+          <div className="flex gap-3">
             <Button
               type="button"
-              variant="destructive"
-              onClick={handleDelete}
-              disabled={isDeleting}
+              variant="outline"
+              onClick={() => router.push('/clients')}
             >
-              {isDeleting ? 'Deleting...' : 'Delete Client'}
+              Cancel
             </Button>
-          )}
+            <Button type="submit" disabled={form.formState.isSubmitting}>
+              {form.formState.isSubmitting ? 'Saving...' : isEditing ? 'Update Client' : 'Create Client'}
+            </Button>
+          </div>
         </div>
-        <div className="flex gap-3">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => router.push('/clients')}
-          >
-            Cancel
-          </Button>
-          <Button type="submit" disabled={isSubmitting}>
-            {isSubmitting ? 'Saving...' : isEditing ? 'Update Client' : 'Create Client'}
-          </Button>
-        </div>
-      </div>
-    </form>
+      </form>
+    </Form>
   )
 }
