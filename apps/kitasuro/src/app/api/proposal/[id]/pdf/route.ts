@@ -7,7 +7,6 @@ import { eq, and } from 'drizzle-orm';
 import { addDays, format } from 'date-fns';
 import { auth } from '@/lib/auth';
 import { headers } from 'next/headers';
-import { z } from 'zod';
 
 export async function GET(
   request: NextRequest,
@@ -15,11 +14,6 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-
-    // Validate proposal ID format
-    if (!z.string().uuid().safeParse(id).success) {
-      return NextResponse.json({ error: 'Invalid proposal ID' }, { status: 400 });
-    }
 
     // Check authentication
     const session = await auth.api.getSession({ headers: await headers() });

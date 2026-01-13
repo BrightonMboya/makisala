@@ -14,12 +14,13 @@ import {
   pages,
   organizations,
   clients,
+  accommodations,
 } from '@repo/db/schema';
-import { eq, desc, inArray } from 'drizzle-orm';
+import { eq, desc, inArray, ilike } from 'drizzle-orm';
 import { sendCommentNotificationEmail, sendProposalShareEmail, sendProposalAcceptanceEmail } from '@repo/resend';
 import { auth } from '@/lib/auth';
 import { headers } from 'next/headers';
-import cloudinary from '@/lib/cloudinary';
+import { listStorageFolders, listStorageImages } from '@/lib/storage';
 
 async function getSession() {
   return await auth.api.getSession({
@@ -749,36 +750,102 @@ export async function sendProposalToClient(proposalId: string, message?: string)
   }
 }
 
-// Cloudinary Actions
-export async function getCloudinaryImages(folder?: string) {
+// Storage Actions (Supabase)
+const STORAGE_BUCKET = process.env.SUPABASE_PUBLIC_BUCKET || 'public-assets';
+const ACCOMMODATIONS_BUCKET = 'accomodations';
+const ACCOMMODATIONS_FOLDER = 'accommodations';
+
+// UUID regex pattern
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+export async function getStorageImages(folder?: string, bucket?: string) {
   try {
-    const expression = folder ? `folder:"${folder}"` : 'folder=""';
-
-    const result = await cloudinary.search
-      .expression(expression)
-      .sort_by('created_at', 'desc')
-      .max_results(50)
-      .execute();
-
-    return result.resources.map((r: any) => ({
-      public_id: r.public_id,
-      secure_url: r.secure_url,
+    const targetBucket = bucket || STORAGE_BUCKET;
+    const images = await listStorageImages(targetBucket, folder);
+    return images.map((img) => ({
+      public_id: img.id,
+      secure_url: img.url,
     }));
   } catch (error) {
-    console.error('Error fetching Cloudinary images:', error);
+    console.error('Error fetching storage images:', error);
     return [];
   }
 }
 
-export async function getCloudinaryFolders(parent_folder?: string) {
+export async function getStorageFolders(parent_folder?: string, bucket?: string) {
   try {
-    const result = parent_folder
-      ? await cloudinary.api.sub_folders(parent_folder)
-      : await cloudinary.api.root_folders();
+    const targetBucket = bucket || STORAGE_BUCKET;
+    const folders = await listStorageFolders(targetBucket, parent_folder);
 
-    return result.folders;
+    // If we're in the accommodations folder, map UUIDs to names
+    if (targetBucket === ACCOMMODATIONS_BUCKET && parent_folder === ACCOMMODATIONS_FOLDER) {
+      const uuidFolders = folders.filter((f) => UUID_PATTERN.test(f.name));
+
+      if (uuidFolders.length > 0) {
+        const uuids = uuidFolders.map((f) => f.name);
+        const accommodationData = await db
+          .select({ id: accommodations.id, name: accommodations.name })
+          .from(accommodations)
+          .where(inArray(accommodations.id, uuids));
+
+        const nameMap = new Map(accommodationData.map((a) => [a.id, a.name]));
+
+        return folders.map((folder) => ({
+          ...folder,
+          displayName: nameMap.get(folder.name) || folder.name,
+        }));
+      }
+    }
+
+    return folders.map((folder) => ({
+      ...folder,
+      displayName: folder.name,
+    }));
   } catch (error) {
-    console.error('Error fetching Cloudinary folders:', error);
+    console.error('Error fetching storage folders:', error);
+    return [];
+  }
+}
+
+// Search accommodations and return their storage folders
+export async function searchAccommodationFolders(query: string) {
+  try {
+    if (!query || query.length < 2) {
+      return [];
+    }
+
+    const results = await db
+      .select({ id: accommodations.id, name: accommodations.name })
+      .from(accommodations)
+      .where(ilike(accommodations.name, `%${query}%`))
+      .limit(20);
+
+    return results.map((acc) => ({
+      name: acc.id,
+      path: `${ACCOMMODATIONS_FOLDER}/${acc.id}`,
+      displayName: acc.name,
+    }));
+  } catch (error) {
+    console.error('Error searching accommodations:', error);
+    return [];
+  }
+}
+
+// Get all accommodations for browsing
+export async function getAllAccommodationFolders() {
+  try {
+    const results = await db
+      .select({ id: accommodations.id, name: accommodations.name })
+      .from(accommodations)
+      .orderBy(accommodations.name);
+
+    return results.map((acc) => ({
+      name: acc.id,
+      path: `${ACCOMMODATIONS_FOLDER}/${acc.id}`,
+      displayName: acc.name,
+    }));
+  } catch (error) {
+    console.error('Error fetching all accommodations:', error);
     return [];
   }
 }

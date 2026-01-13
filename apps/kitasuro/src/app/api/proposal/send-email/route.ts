@@ -1,21 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@repo/db';
-import { proposals, proposalDays } from '@repo/db/schema';
-import { eq, and } from 'drizzle-orm';
+import { proposals } from '@repo/db/schema';
+import { and, eq } from 'drizzle-orm';
 import { resend } from '@repo/resend';
 import { auth } from '@/lib/auth';
 import { headers } from 'next/headers';
-import { z } from 'zod';
 
 export async function POST(request: NextRequest) {
   try {
     // Check authentication
     const session = await auth.api.getSession({ headers: await headers() });
     if (!session?.user?.organizationId) {
-      return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
     }
 
     const body = await request.json();
@@ -24,21 +20,16 @@ export async function POST(request: NextRequest) {
     if (!proposalId || !recipientEmail) {
       return NextResponse.json(
         { success: false, error: 'Missing required fields' },
-        { status: 400 }
-      );
-    }
-
-    // Validate proposal ID format
-    if (!z.string().uuid().safeParse(proposalId).success) {
-      return NextResponse.json(
-        { success: false, error: 'Invalid proposal ID' },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     // Fetch proposal data, scoped to user's organization
     const proposal = await db.query.proposals.findFirst({
-      where: and(eq(proposals.id, proposalId), eq(proposals.organizationId, session.user.organizationId)),
+      where: and(
+        eq(proposals.id, proposalId),
+        eq(proposals.organizationId, session.user.organizationId),
+      ),
       with: {
         organization: true,
         days: true,
@@ -46,10 +37,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (!proposal) {
-      return NextResponse.json(
-        { success: false, error: 'Proposal not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ success: false, error: 'Proposal not found' }, { status: 404 });
     }
 
     // Calculate duration
@@ -94,17 +82,14 @@ export async function POST(request: NextRequest) {
       console.error('Resend API error:', result.error);
       return NextResponse.json(
         { success: false, error: result.error.message || 'Failed to send email' },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Error sending proposal email:', error);
-    return NextResponse.json(
-      { success: false, error: 'Failed to send email' },
-      { status: 500 }
-    );
+    return NextResponse.json({ success: false, error: 'Failed to send email' }, { status: 500 });
   }
 }
 
@@ -145,7 +130,9 @@ function renderProposalEmail(props: EmailProps): string {
 
   // Convert message line breaks to HTML
   const formattedMessage = message
-    ? escapeHtml(message).replace(/\n\n/g, '</p><p style="margin-bottom: 16px;">').replace(/\n/g, '<br />')
+    ? escapeHtml(message)
+        .replace(/\n\n/g, '</p><p style="margin-bottom: 16px;">')
+        .replace(/\n/g, '<br />')
     : '';
 
   return `
@@ -157,12 +144,16 @@ function renderProposalEmail(props: EmailProps): string {
   <title>Your Travel Proposal</title>
 </head>
 <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333333; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f5f5f5;">
-  ${isTest ? `
+  ${
+    isTest
+      ? `
   <div style="background-color: #fef3c7; border: 1px solid #f59e0b; border-radius: 8px; padding: 12px 16px; margin-bottom: 20px; text-align: center;">
     <strong style="color: #92400e;">TEST EMAIL</strong>
     <span style="color: #78716c;"> - This is a preview of how your email will look</span>
   </div>
-  ` : ''}
+  `
+      : ''
+  }
 
   <div style="background-color: #ffffff; border-radius: 12px; padding: 40px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
     <!-- Header -->
@@ -181,34 +172,46 @@ function renderProposalEmail(props: EmailProps): string {
     </p>
 
     <!-- Custom Message -->
-    ${formattedMessage ? `
+    ${
+      formattedMessage
+        ? `
     <div style="margin-bottom: 25px;">
       <p style="margin-bottom: 16px;">${formattedMessage}</p>
     </div>
-    ` : `
+    `
+        : `
     <p style="font-size: 16px; margin-bottom: 20px;">
       Thank you for choosing ${escapeHtml(agencyName)} to plan your unforgettable journey! We've carefully crafted this personalized travel proposal based on your preferences and dreams.
     </p>
     <p style="font-size: 16px; margin-bottom: 25px;">
       Inside, you'll find a detailed day-by-day itinerary, handpicked accommodations, exciting activities, and transparent pricing. We've poured our expertise and passion into creating an experience you'll cherish forever.
     </p>
-    `}
+    `
+    }
 
     <!-- Proposal Card -->
     <div style="background-color: #f8f9fa; border-left: 4px solid #15803d; padding: 24px; margin-bottom: 30px; border-radius: 0 8px 8px 0;">
       <h2 style="margin: 0 0 12px 0; font-size: 22px; color: #1a1a1a; font-family: Georgia, serif;">
         ${escapeHtml(proposalTitle)}
       </h2>
-      ${startDate ? `
+      ${
+        startDate
+          ? `
       <p style="margin: 6px 0; font-size: 14px; color: #525252;">
         <strong style="color: #737373;">Start Date:</strong> ${escapeHtml(startDate)}
       </p>
-      ` : ''}
-      ${duration ? `
+      `
+          : ''
+      }
+      ${
+        duration
+          ? `
       <p style="margin: 6px 0; font-size: 14px; color: #525252;">
         <strong style="color: #737373;">Duration:</strong> ${escapeHtml(duration)}
       </p>
-      ` : ''}
+      `
+          : ''
+      }
     </div>
 
     <!-- CTA Button -->
@@ -221,7 +224,7 @@ function renderProposalEmail(props: EmailProps): string {
     <!-- Additional Info -->
     <div style="background-color: #f0fdf4; border-radius: 8px; padding: 16px; margin-bottom: 25px;">
       <p style="font-size: 14px; color: #166534; margin: 0;">
-        <strong>Have questions?</strong> Simply reply to this email or leave a comment directly on your proposal. We're here to make your trip absolutely perfect!
+        <strong>Have questions?</strong> Simply leave a comment directly on your proposal. We're here to make your trip absolutely perfect!
       </p>
     </div>
 
