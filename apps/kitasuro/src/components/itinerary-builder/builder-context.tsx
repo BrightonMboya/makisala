@@ -7,6 +7,7 @@ import type {
   TravelerGroup,
   PricingRow,
   ExtraOption,
+  ThemeType,
 } from '@/types/itinerary-types';
 
 const BuilderContext = createContext<BuilderContextType | undefined>(undefined);
@@ -19,8 +20,9 @@ export function BuilderProvider({
   initialData?: any;
 }) {
   // Tour Details
+  const [tourId, setTourId] = useState<string | null>(null);
   const [tourType, setTourType] = useState('Private Tour');
-  const [clientName, setClientName] = useState('');
+  const [clientId, setClientId] = useState<string | null>(null);
   const [tourTitle, setTourTitle] = useState('');
   const [travelerGroups, setTravelerGroups] = useState<TravelerGroup[]>([
     { id: '1', count: 2, type: 'Adult' },
@@ -30,6 +32,7 @@ export function BuilderProvider({
   const [days, setDays] = useState<BuilderDay[]>([]);
   const [startDate, setStartDate] = useState<Date | undefined>(undefined);
   const [startCity, setStartCity] = useState('');
+  const [endCity, setEndCity] = useState('');
   const [transferIncluded, setTransferIncluded] = useState('included');
   const [pickupPoint, setPickupPoint] = useState('');
 
@@ -58,60 +61,87 @@ export function BuilderProvider({
     'Personal items (souvenirs, etc.)',
   ]);
 
+  // Theme
+  const [selectedTheme, setSelectedTheme] = useState<ThemeType>('minimalistic');
+  const [heroImage, setHeroImage] = useState<string>(
+    'https://images.unsplash.com/photo-1516426122078-c23e76319801?q=80&w=2000&auto=format&fit=crop'
+  );
+
   // Load initial data if provided
   useEffect(() => {
     if (initialData) {
+      if (initialData.tourId) setTourId(initialData.tourId);
       if (initialData.tourType) setTourType(initialData.tourType);
-      if (initialData.clientName) setClientName(initialData.clientName);
+      if (initialData.clientId) setClientId(initialData.clientId);
       if (initialData.tourTitle) setTourTitle(initialData.tourTitle);
       if (initialData.days) setDays(initialData.days);
       if (initialData.startDate) setStartDate(new Date(initialData.startDate));
 
-      // Handle pricing from tour data
-      const tourPrice = initialData.price ? Number(initialData.price) : null;
+      // Handle pricing
+      // If we have explicit pricing rows from a saved proposal, use them
+      if (initialData.pricingRows && initialData.pricingRows.length > 0) {
+        setPricingRows(initialData.pricingRows);
+        // Also ensure traveler groups are set if they exist, otherwise we desync
+        if (initialData.travelerGroups) {
+             setTravelerGroups(initialData.travelerGroups);
+        }
+      } else {
+          // Fallback logic for new tours or when pricingRows are missing
+          const tourPrice = initialData.price ? Number(initialData.price) : null;
 
-      // Handle traveler groups and sync pricing rows
-      if (
-        initialData.travelerGroups &&
-        Array.isArray(initialData.travelerGroups) &&
-        initialData.travelerGroups.length > 0
-      ) {
-        setTravelerGroups(initialData.travelerGroups);
-        // Sync pricing rows with initial traveler groups
-        setPricingRows(
-          initialData.travelerGroups.map((g: TravelerGroup) => ({
-            id: g.id,
-            count: g.count,
-            type: g.type,
-            unitPrice:
-              tourPrice !== null
-                ? tourPrice
-                : pricingRows.find((r) => r.id === g.id)?.unitPrice || 0,
-          })),
-        );
-      } else if (tourPrice !== null) {
-        // If no traveler groups provided but price is, update existing rows with tour price
-        setPricingRows((prev) => {
-          if (prev.length === 0) {
-            // If no rows exist, create one with the tour price based on current traveler groups
-            const defaultGroup = travelerGroups[0] || { id: '1', count: 2, type: 'Adult' };
-            return [
-              {
-                id: defaultGroup.id,
-                count: defaultGroup.count,
-                type: defaultGroup.type,
-                unitPrice: tourPrice,
-              },
-            ];
+          // Handle traveler groups and sync pricing rows
+          if (
+            initialData.travelerGroups &&
+            Array.isArray(initialData.travelerGroups) &&
+            initialData.travelerGroups.length > 0
+          ) {
+            setTravelerGroups(initialData.travelerGroups);
+            // Sync pricing rows with initial traveler groups
+            setPricingRows(
+              initialData.travelerGroups.map((g: TravelerGroup) => ({
+                id: g.id,
+                count: g.count,
+                type: g.type,
+                unitPrice:
+                  tourPrice !== null
+                    ? tourPrice
+                    : pricingRows.find((r) => r.id === g.id)?.unitPrice || 0,
+              })),
+            );
+          } else if (tourPrice !== null) {
+            // If no traveler groups provided but price is, update existing rows with tour price
+            setPricingRows((prev) => {
+              if (prev.length === 0) {
+                // If no rows exist, create one with the tour price based on current traveler groups
+                const defaultGroup = travelerGroups[0] || { id: '1', count: 2, type: 'Adult' };
+                return [
+                  {
+                    id: defaultGroup.id,
+                    count: defaultGroup.count,
+                    type: defaultGroup.type,
+                    unitPrice: tourPrice,
+                  },
+                ];
+              }
+              // Update existing rows with tour price (only if they have zero or default price)
+              return prev.map((row) => ({
+                ...row,
+                unitPrice: row.unitPrice > 0 && row.unitPrice !== 3000 ? row.unitPrice : tourPrice,
+              }));
+            });
           }
-          // Update existing rows with tour price (only if they have zero or default price)
-          return prev.map((row) => ({
-            ...row,
-            unitPrice: row.unitPrice > 0 && row.unitPrice !== 3000 ? row.unitPrice : tourPrice,
-          }));
-        });
       }
+      
+      if (initialData.extras) setExtras(initialData.extras);
+      if (initialData.inclusions) setInclusions(initialData.inclusions);
+      if (initialData.exclusions) setExclusions(initialData.exclusions);
+
       // Add other fields as needed
+      if (initialData.theme) setSelectedTheme(initialData.theme);
+      if (initialData.selectedTheme) setSelectedTheme(initialData.selectedTheme);
+      if (initialData.heroImage) setHeroImage(initialData.heroImage);
+      if (initialData.startCity) setStartCity(initialData.startCity);
+      if (initialData.endCity) setEndCity(initialData.endCity);
     }
   }, [initialData]);
 
@@ -147,10 +177,12 @@ export function BuilderProvider({
   return (
     <BuilderContext.Provider
       value={{
+        tourId,
+        setTourId,
         tourType,
         setTourType,
-        clientName,
-        setClientName,
+        clientId,
+        setClientId,
         tourTitle,
         setTourTitle,
         travelerGroups,
@@ -161,6 +193,8 @@ export function BuilderProvider({
         setStartDate,
         startCity,
         setStartCity,
+        endCity,
+        setEndCity,
         transferIncluded,
         setTransferIncluded,
         pickupPoint,
@@ -173,6 +207,10 @@ export function BuilderProvider({
         setInclusions,
         exclusions,
         setExclusions,
+        selectedTheme,
+        setSelectedTheme,
+        heroImage,
+        setHeroImage,
       }}
     >
       {children}

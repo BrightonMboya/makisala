@@ -7,7 +7,7 @@ import type {
   Accommodation,
   NationalParkInfo,
 } from '@/types/itinerary-types';
-import type { BuilderDay, TravelerGroup, PricingRow, ExtraOption } from '@/types/itinerary-types';
+import type { TravelerGroup, PricingRow, ExtraOption, BuilderDay } from '@/types/itinerary-types';
 import type { Proposal } from '@repo/db/schema';
 
 // GeoJSON data for different countries
@@ -130,6 +130,133 @@ function getMapConfigForCountry(country: string) {
   }
 }
 
+// City coordinates lookup for start/end locations
+const CITY_COORDINATES: Record<string, [number, number]> = {
+  // Rwanda
+  kigali: [30.0619, -1.9441],
+  musanze: [29.6346, -1.4994],
+  ruhengeri: [29.6346, -1.4994], // Same as Musanze (old name)
+  gisenyi: [29.2567, -1.7042],
+  rubavu: [29.2567, -1.7042], // Same as Gisenyi
+  kibuye: [29.3478, -2.0606],
+  karongi: [29.3478, -2.0606], // Same as Kibuye
+  butare: [29.7375, -2.5967],
+  huye: [29.7375, -2.5967], // Same as Butare
+  nyungwe: [29.2500, -2.4833],
+  akagera: [30.7500, -1.9167],
+  // Tanzania
+  arusha: [36.683, -3.367],
+  'dar es salaam': [39.2833, -6.8],
+  kilimanjaro: [37.3556, -3.0674],
+  mwanza: [32.9, -2.5167],
+  moshi: [37.3433, -3.35],
+  karatu: [35.7667, -3.35],
+  ngorongoro: [35.5833, -3.2],
+  seronera: [34.8333, -2.45], // Serengeti central
+  // Botswana
+  maun: [23.4167, -19.9833],
+  kasane: [25.1536, -17.7983],
+  gaborone: [25.9201, -24.6282],
+  // Kenya
+  nairobi: [36.8219, -1.2921],
+  mombasa: [39.6682, -4.0435],
+  // Uganda
+  entebbe: [32.4637, 0.0512],
+  kampala: [32.5825, 0.3476],
+};
+
+// National Park coordinates lookup
+const NATIONAL_PARK_COORDINATES: Record<string, [number, number]> = {
+  // Rwanda
+  volcanoes: [29.5350, -1.4580],
+  'volcanoes national park': [29.5350, -1.4580],
+  'parc national des volcans': [29.5350, -1.4580],
+  nyungwe: [29.2500, -2.4833],
+  'nyungwe forest': [29.2500, -2.4833],
+  'nyungwe national park': [29.2500, -2.4833],
+  akagera: [30.7500, -1.9167],
+  'akagera national park': [30.7500, -1.9167],
+  gishwati: [29.4167, -1.8833],
+  'gishwati-mukura': [29.4167, -1.8833],
+  // Tanzania
+  serengeti: [34.8333, -2.3333],
+  'serengeti national park': [34.8333, -2.3333],
+  ngorongoro: [35.5833, -3.2],
+  'ngorongoro crater': [35.5833, -3.2],
+  'ngorongoro conservation area': [35.5833, -3.2],
+  tarangire: [36.0167, -4.0167],
+  'tarangire national park': [36.0167, -4.0167],
+  'lake manyara': [35.8333, -3.5333],
+  'lake manyara national park': [35.8333, -3.5333],
+  kilimanjaro: [37.3556, -3.0674],
+  'mount kilimanjaro': [37.3556, -3.0674],
+  // Botswana
+  chobe: [25.1500, -18.7667],
+  'chobe national park': [25.1500, -18.7667],
+  okavango: [22.5000, -19.0000],
+  'okavango delta': [22.5000, -19.0000],
+  moremi: [23.0000, -19.2500],
+  'moremi game reserve': [23.0000, -19.2500],
+  // Kenya
+  'maasai mara': [35.1500, -1.5000],
+  'masai mara': [35.1500, -1.5000],
+  amboseli: [37.2500, -2.6500],
+  'amboseli national park': [37.2500, -2.6500],
+  // Uganda
+  'bwindi impenetrable': [29.6667, -1.0500],
+  bwindi: [29.6667, -1.0500],
+  'queen elizabeth': [29.8833, 0.0167],
+  'queen elizabeth national park': [29.8833, 0.0167],
+  'murchison falls': [31.6833, 2.2667],
+};
+
+function getCityCoordinates(city: string | null): Location | undefined {
+  if (!city) return undefined;
+  const cityLower = city.toLowerCase().trim();
+
+  // Try exact match first
+  if (CITY_COORDINATES[cityLower]) {
+    return { name: city, coordinates: CITY_COORDINATES[cityLower] };
+  }
+
+  // Try partial match
+  for (const [key, coords] of Object.entries(CITY_COORDINATES)) {
+    if (cityLower.includes(key) || key.includes(cityLower)) {
+      return { name: city, coordinates: coords };
+    }
+  }
+
+  return undefined;
+}
+
+function getParkCoordinates(parkName: string, fallbackCountry: string): [number, number] {
+  const parkLower = parkName.toLowerCase().trim();
+
+  // Try exact match first
+  if (NATIONAL_PARK_COORDINATES[parkLower]) {
+    return NATIONAL_PARK_COORDINATES[parkLower];
+  }
+
+  // Try partial match - look for key words in the park name
+  for (const [key, coords] of Object.entries(NATIONAL_PARK_COORDINATES)) {
+    if (parkLower.includes(key) || key.includes(parkLower)) {
+      return coords;
+    }
+  }
+
+  // Fallback to country default
+  const countryDefaults: Record<string, [number, number]> = {
+    rwanda: [30.0619, -1.9441],
+    tanzania: [36.683, -3.367],
+    botswana: [23.41, -19.98],
+    kenya: [36.8219, -1.2921],
+    uganda: [32.5825, 0.3476],
+  };
+
+  const defaultCoord: [number, number] = [30.0619, -1.9441]; // Kigali fallback
+  return countryDefaults[fallbackCountry] ?? defaultCoord;
+}
+
 // Convert builder activity to theme activity
 function convertActivity(builderActivity: BuilderDay['activities'][0], index: number): DayActivity {
   const momentToTime: Record<string, string> = {
@@ -171,11 +298,20 @@ function calculatePricing(
 
 export async function transformProposalToItineraryData(
   proposal: Proposal & {
+    organization?: {
+      name: string;
+      logoUrl: string | null;
+      primaryColor: string | null;
+    } | null;
+    client?: {
+      name: string;
+    } | null;
     days?: Array<{
       id: string;
       dayNumber: number;
       title: string | null;
       description: string | null;
+      previewImage?: string | null;
       nationalPark?: {
         id: string;
         name: string;
@@ -215,7 +351,7 @@ export async function transformProposalToItineraryData(
   const inclusions: string[] = proposal.inclusions || [];
   const exclusions: string[] = proposal.exclusions || [];
   const tourTitle = proposal.tourTitle || proposal.name || 'Safari Adventure';
-  const clientName = proposal.clientName || '';
+  const clientName = proposal.client?.name || '';
 
   // Determine country/location from first day's national park or title
   const firstDay = proposalDays[0];
@@ -227,6 +363,17 @@ export async function transformProposalToItineraryData(
     : firstDestination.includes('Rwanda') || country === 'rwanda'
       ? 'Rwanda'
       : firstDestination;
+
+  // Helper to sanitize IDs from location
+  const sanitizeLocation = (loc: string | null | undefined): string | undefined => {
+    if (!loc) return undefined;
+    // Check if it looks like a UUID (standard format: 8-4-4-4-12 hex chars)
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (uuidRegex.test(loc)) return undefined;
+    // Also check for long hex strings or database IDs
+    if (loc.length > 20 && /^[a-z0-9-]+$/i.test(loc) && loc.includes('-')) return undefined;
+    return loc;
+  }
 
   // Convert days from relational data
   const itinerary: ThemeDay[] = proposalDays.map((day, index) => {
@@ -248,7 +395,7 @@ export async function transformProposalToItineraryData(
         time: act.time || momentToTime[act.moment] || '09:00',
         activity: act.name,
         description: act.description || '',
-        location: act.location || undefined,
+        location: sanitizeLocation(act.location),
       };
     });
 
@@ -293,6 +440,7 @@ export async function transformProposalToItineraryData(
       activities,
       accommodation: accommodationName,
       meals: mealsStr,
+      previewImage: day.previewImage || undefined,
     };
   });
 
@@ -322,17 +470,11 @@ export async function transformProposalToItineraryData(
   const mapLocations: Location[] = [];
   const seenParks = new Set<string>();
 
-  // Default coordinates by country (TODO: Add coordinates to nationalParks schema)
-  const defaultCoords: Record<string, [number, number]> = {
-    rwanda: [30.0619, -1.9441], // Kigali
-    tanzania: [36.683, -3.367], // Arusha
-    botswana: [23.41, -19.98], // Maun
-  };
-
   proposalDays.forEach((day) => {
     if (day.nationalPark && !seenParks.has(day.nationalPark.id)) {
       seenParks.add(day.nationalPark.id);
-      const coords = (defaultCoords[country] || defaultCoords['rwanda']) as [number, number];
+      // Get actual coordinates for this park using the lookup
+      const coords = getParkCoordinates(day.nationalPark.name, country);
       mapLocations.push({
         name: day.nationalPark.name,
         coordinates: coords,
@@ -392,10 +534,14 @@ export async function transformProposalToItineraryData(
     });
   }
 
-  // Get hero image from first national park's page or default
+  // Get hero image: first from saved proposal, then from first national park's page, or default
   let heroImage =
     'https://images.unsplash.com/photo-1516426122078-c23e76319801?q=80&w=2000&auto=format&fit=crop';
-  if (firstPark?.overview_page_id) {
+
+  // Use saved hero image from proposal if available
+  if (proposal.heroImage) {
+    heroImage = proposal.heroImage;
+  } else if (firstPark?.overview_page_id) {
     const featuredImage = pagesMap.get(firstPark.overview_page_id);
     if (featuredImage) {
       heroImage = featuredImage;
@@ -445,10 +591,18 @@ export async function transformProposalToItineraryData(
     id: proposal.id,
     title: tourTitle,
     subtitle: subtitle,
+    clientName: clientName,
     duration,
     location,
     heroImage,
-    theme: 'minimalistic', // Default theme, could be configurable
+    theme: (proposal.theme as any) || 'minimalistic',
+    organization: proposal.organization
+      ? {
+          name: proposal.organization.name,
+          logoUrl: proposal.organization.logoUrl,
+          primaryColor: proposal.organization.primaryColor,
+        }
+      : undefined,
     itinerary,
     accommodations,
     nationalParks: Object.keys(nationalParksMap).length > 0 ? nationalParksMap : undefined,
@@ -469,6 +623,8 @@ export async function transformProposalToItineraryData(
       locations: mapLocations,
       scale: mapConfig.scale,
       rotate: mapConfig.rotate as [number, number, number],
+      startLocation: getCityCoordinates(proposal.startCity),
+      endLocation: getCityCoordinates(proposal.endCity),
     },
   };
 }

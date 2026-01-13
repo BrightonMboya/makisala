@@ -1,13 +1,22 @@
 'use client';
 
-import React from 'react';
+import React, { useMemo, useState } from 'react';
 import Image from 'next/image';
-import { motion } from 'framer-motion';
-import { ComposableMap, Geographies, Geography, Line, Marker } from 'react-simple-maps';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+  Map,
+  MapRoute,
+  MapMarker,
+  MarkerContent,
+  MarkerTooltip,
+  AnimatedRouteMarker,
+} from '@repo/ui/map';
 import type { ItineraryData, NationalParkInfo } from '@/types/itinerary-types';
+import { confirmProposal } from '@/app/itineraries/actions';
 
 function TripMap({ data }: { data: ItineraryData['mapData'] }) {
-  const { geojson, locations, scale, rotate } = data;
+  const { locations, startLocation, endLocation } = data;
+
   // Handle empty locations array
   if (!locations || locations.length === 0) {
     return (
@@ -16,109 +25,170 @@ function TripMap({ data }: { data: ItineraryData['mapData'] }) {
       </div>
     );
   }
-  const start = locations[0]?.coordinates!;
+
+  // Build full route including start and end locations
+  const allLocations = useMemo(() => {
+    const locs = [...locations];
+    if (startLocation) locs.unshift(startLocation);
+    if (endLocation) locs.push(endLocation);
+    return locs;
+  }, [locations, startLocation, endLocation]);
+
+  // Calculate center from all locations
+  const center = useMemo(() => {
+    const lngs = allLocations.map((l) => l.coordinates[0]);
+    const lats = allLocations.map((l) => l.coordinates[1]);
+    return [
+      (Math.min(...lngs) + Math.max(...lngs)) / 2,
+      (Math.min(...lats) + Math.max(...lats)) / 2,
+    ] as [number, number];
+  }, [allLocations]);
+
+  // Extract coordinates for the route line
+  const routeCoordinates = useMemo(
+    () => allLocations.map((l) => l.coordinates as [number, number]),
+    [allLocations]
+  );
 
   return (
-    <div className="relative aspect-square w-full overflow-hidden rounded-2xl border border-stone-100/50 bg-stone-50 p-4">
+    <div className="relative aspect-square w-full overflow-hidden rounded-2xl border border-stone-100/50">
       <div className="absolute top-4 left-4 z-10">
         <h3 className="text-[10px] font-bold tracking-[0.2em] text-stone-400 uppercase">
           Route Map
         </h3>
       </div>
-      <ComposableMap
-        projection="geoAzimuthalEqualArea"
-        projectionConfig={{
-          rotate: rotate,
-          scale: scale,
-        }}
-        className="h-full w-full fill-none"
-      >
-        <Geographies geography={geojson}>
-          {({ geographies }) =>
-            geographies.map((geo: any) => (
-              <Geography
-                key={geo.rsmKey}
-                geography={geo}
-                fill="#FFFFFF"
-                stroke="#E7E5E4"
-                strokeWidth={0.5}
-                style={{
-                  default: { outline: 'none' },
-                  hover: { outline: 'none' },
-                  pressed: { outline: 'none' },
-                }}
-              />
-            ))
-          }
-        </Geographies>
+      <Map center={center} zoom={7} minZoom={5} maxZoom={12}>
+        {/* Route Line */}
+        {routeCoordinates.length > 1 && (
+          <MapRoute
+            coordinates={routeCoordinates}
+            color="#A8A29E"
+            width={2}
+            opacity={0.9}
+            dashArray={[4, 4]}
+          />
+        )}
 
-        {/* Route Path */}
-        {locations.map((loc, idx) => {
-          if (idx === 0) return null;
-          const prevLocation = locations[idx - 1];
-          if (!prevLocation) return null;
-          return (
-            <Line
-              key={idx}
-              from={prevLocation.coordinates}
-              to={loc.coordinates}
-              stroke="#A8A29E"
-              strokeWidth={1.5}
-              strokeDasharray="4 4"
-            />
-          );
-        })}
+        {/* Animated Route Marker */}
+        {routeCoordinates.length > 1 && (
+          <AnimatedRouteMarker
+            coordinates={routeCoordinates}
+            color="#16a34a"
+            size={10}
+            duration={8000}
+          />
+        )}
 
-        {/* Markers */}
+        {/* Start Location Marker */}
+        {startLocation && (
+          <MapMarker
+            longitude={startLocation.coordinates[0]}
+            latitude={startLocation.coordinates[1]}
+          >
+            <MarkerContent>
+              <div className="flex h-6 w-6 items-center justify-center rounded-full border-2 border-white bg-green-600 text-[8px] font-bold text-white shadow-md">
+                GO
+              </div>
+            </MarkerContent>
+            <MarkerTooltip>
+              <span className="text-xs font-medium">Start: {startLocation.name}</span>
+            </MarkerTooltip>
+          </MapMarker>
+        )}
+
+        {/* Destination Markers */}
         {locations.map((loc, idx) => (
-          <Marker key={loc.name} coordinates={loc.coordinates}>
-            <motion.circle
-              r={4}
-              fill="#292524"
-              initial={{ scale: 0 }}
-              whileInView={{ scale: 1 }}
-              transition={{ type: 'spring', damping: 10, stiffness: 100, delay: idx * 0.5 }}
-            />
-            <text
-              textAnchor={idx % 2 === 0 ? 'start' : 'end'}
-              y={idx % 2 === 0 ? 20 : -12}
-              x={idx % 2 === 0 ? 10 : -10}
-              className="fill-stone-500 font-sans text-[10px] font-bold italic"
-              style={{ fontSize: '10px' }}
-            >
-              {loc.name}
-            </text>
-          </Marker>
+          <MapMarker
+            key={loc.name}
+            longitude={loc.coordinates[0]}
+            latitude={loc.coordinates[1]}
+          >
+            <MarkerContent>
+              <motion.div
+                className="flex h-5 w-5 items-center justify-center rounded-full border-2 border-white bg-stone-800 text-[9px] font-bold text-white shadow-md"
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{
+                  type: 'spring',
+                  damping: 10,
+                  stiffness: 100,
+                  delay: idx * 0.3,
+                }}
+              >
+                {idx + 1}
+              </motion.div>
+            </MarkerContent>
+            <MarkerTooltip>
+              <span className="text-xs font-medium">{loc.name}</span>
+            </MarkerTooltip>
+          </MapMarker>
         ))}
 
-        {/* Airplane/Progress Marker Animation */}
-        <Marker coordinates={start}>
-          <motion.circle
-            r={3}
-            fill="#292524"
-            initial={{ opacity: 0 }}
-            whileInView={{
-              opacity: [0, 1, 1],
-              x: locations.map((_, i) => i * -15),
-              y: locations.map((_, i) => i * -18),
-            }}
-            transition={{
-              duration: 4,
-              ease: 'easeInOut',
-              delay: 0.5,
-            }}
-          />
-        </Marker>
-      </ComposableMap>
+        {/* End Location Marker */}
+        {endLocation && (
+          <MapMarker
+            longitude={endLocation.coordinates[0]}
+            latitude={endLocation.coordinates[1]}
+          >
+            <MarkerContent>
+              <div className="flex h-6 w-6 items-center justify-center rounded-full border-2 border-white bg-red-600 text-[8px] font-bold text-white shadow-md">
+                END
+              </div>
+            </MarkerContent>
+            <MarkerTooltip>
+              <span className="text-xs font-medium">End: {endLocation.name}</span>
+            </MarkerTooltip>
+          </MapMarker>
+        )}
+      </Map>
     </div>
   );
 }
 
-export default function MinimalisticTheme({ data }: { data: ItineraryData }) {
+interface MinimalisticThemeProps {
+  data: ItineraryData;
+  onHeroImageChange?: (url: string) => void;
+}
+
+export default function MinimalisticTheme({ data, onHeroImageChange }: MinimalisticThemeProps) {
+  const [isHeroHovered, setIsHeroHovered] = React.useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [confirmName, setConfirmName] = useState(data.clientName || '');
+  const [isConfirming, setIsConfirming] = useState(false);
+  const [confirmStatus, setConfirmStatus] = useState<'idle' | 'success' | 'error'>('idle');
+  const [confirmError, setConfirmError] = useState('');
+
+  const handleConfirmProposal = async () => {
+    if (!confirmName.trim()) return;
+
+    setIsConfirming(true);
+    setConfirmError('');
+
+    try {
+      const result = await confirmProposal(data.id, confirmName.trim());
+
+      if (result.success) {
+        setConfirmStatus('success');
+      } else {
+        setConfirmStatus('error');
+        setConfirmError(result.error || 'Failed to confirm proposal');
+      }
+    } catch {
+      setConfirmStatus('error');
+      setConfirmError('An unexpected error occurred');
+    } finally {
+      setIsConfirming(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#FDFCFB] font-light text-stone-800 selection:bg-stone-200">
       {/* Hero Section */}
-      <section className="relative h-[85vh] w-full overflow-hidden">
+      <section
+        className="relative h-[85vh] w-full overflow-hidden"
+        onMouseEnter={() => onHeroImageChange && setIsHeroHovered(true)}
+        onMouseLeave={() => setIsHeroHovered(false)}
+      >
         <Image
           src={data.heroImage}
           alt={data.title}
@@ -129,9 +199,33 @@ export default function MinimalisticTheme({ data }: { data: ItineraryData }) {
         <div className="absolute inset-0 bg-black/30" />
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
 
+        {/* Edit overlay for hero image */}
+        {onHeroImageChange && (
+          <div
+            className={`absolute inset-0 z-30 flex items-center justify-center bg-black/40 transition-opacity duration-200 ${
+              isHeroHovered ? 'opacity-100' : 'opacity-0 pointer-events-none'
+            }`}
+          >
+            <button
+              onClick={() => {
+                // We'll use window to communicate since the picker is complex
+                const event = new CustomEvent('openHeroImagePicker');
+                window.dispatchEvent(event);
+              }}
+              className="flex flex-col items-center gap-3 text-white hover:scale-105 transition-transform"
+            >
+              <svg className="h-12 w-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              <span className="text-sm font-medium uppercase tracking-wider">Change Hero Image</span>
+            </button>
+          </div>
+        )}
+
         <div className="relative flex h-full flex-col items-center justify-center px-6 text-center">
           <span className="animate-fade-in-up mb-4 text-xs tracking-[0.3em] text-white/80 uppercase">
-            Kitasuro Travel • Private Journey
+            {data.clientName ? `Prepared for ${data.clientName} • ` : ''} {data.organization?.name || 'Kitasuro Travel'}
           </span>
           <h1 className="animate-fade-in-up mb-6 max-w-4xl font-serif text-5xl leading-tight text-white [animation-delay:200ms] md:text-7xl">
             {data.title} <br />
@@ -169,8 +263,20 @@ export default function MinimalisticTheme({ data }: { data: ItineraryData }) {
                       ? (data.nationalParks[day.nationalParkId] ?? null)
                       : null;
 
-                  // Only show park info if it's different from the previous day
+                  // Get accommodation details
+                  const accommodation = day.accommodation;
+                  // Find accommodation details from accommodations array by name match or fallback to ID if possible (though we only store name in Day)
+                  // Improved matching: try to find by name since that's what we have in Day
+                  const accommodationDetails = data.accommodations.find(a => a.name === day.accommodation);
+
+                   // Check previous day for redundant info
                   const previousDay = dayIndex > 0 ? data.itinerary[dayIndex - 1] : null;
+                  
+                  // Hide accommodation if it's the same as previous day AND consecutive
+                  const isSameAccommodation = previousDay?.accommodation === day.accommodation;
+                  const shouldHideAccommodation = isSameAccommodation && dayIndex > 0;
+
+                  // Only show park info if it's different from the previous day
                   const previousParkId = previousDay?.nationalParkId;
                   const shouldShowParkInfo =
                     parkInfo !== null && day.nationalParkId !== previousParkId;
@@ -256,6 +362,36 @@ export default function MinimalisticTheme({ data }: { data: ItineraryData }) {
                             </div>
                           )}
 
+                          {/* Accommodation Image Section - Show if different from previous day */}
+                          {!shouldHideAccommodation && accommodation && accommodationDetails && (
+                            <div className="mt-8">
+                                <div className="relative h-64 w-full overflow-hidden rounded-2xl">
+                                    <Image
+                                        src={accommodationDetails.image}
+                                        alt={accommodationDetails.name}
+                                        fill
+                                        className="object-cover"
+                                    />
+                                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                                    <div className="absolute bottom-6 left-6 max-w-2xl text-balance">
+                                        <span className="text-[10px] font-bold tracking-[0.3em] text-white/80 uppercase">
+                                            Your Stay
+                                        </span>
+                                        <h4 className="mt-1 font-serif text-2xl text-white">
+                                            {accommodationDetails.name}
+                                        </h4>
+                                    </div>
+                                </div>
+                                {accommodationDetails.description && (
+                                    <div className="mt-4 px-1">
+                                         <p className="text-sm leading-relaxed text-stone-700">
+                                            {accommodationDetails.description}
+                                        </p>
+                                    </div>
+                                )}
+                            </div>
+                          )}
+
                           <div className="space-y-10 border-l border-stone-200 pl-8">
                             {day.activities.map((activity, idx) => (
                               <div key={idx} className="relative">
@@ -298,8 +434,9 @@ export default function MinimalisticTheme({ data }: { data: ItineraryData }) {
                               <span className="mb-2 block text-[10px] tracking-[0.2em] text-stone-400 uppercase">
                                 Accommodation
                               </span>
-                              <span className="font-serif text-lg text-stone-700 italic">
+                              <span className={`font-serif text-lg text-stone-700 italic ${shouldHideAccommodation ? 'opacity-50' : ''}`}>
                                 {day.accommodation}
+                                {shouldHideAccommodation && <span className="ml-2 text-xs not-italic text-stone-400">(Cont.)</span>}
                               </span>
                             </div>
                             <div className="md:text-right">
@@ -317,40 +454,7 @@ export default function MinimalisticTheme({ data }: { data: ItineraryData }) {
               </div>
             </div>
 
-            {/* Your Stays Section */}
-            <div className="space-y-16">
-              <h2 className="text-sm tracking-[0.2em] text-stone-400 uppercase">Your Stays</h2>
-              <div className="space-y-16">
-                {data.accommodations.map((lodge) => (
-                  <div key={lodge.id} className="group space-y-8">
-                    <div className="relative h-[500px] w-full overflow-hidden rounded-3xl shadow-2xl shadow-stone-200/50">
-                      <Image
-                        src={lodge.image}
-                        alt={lodge.name}
-                        fill
-                        className="object-cover transition-transform duration-1000 group-hover:scale-105"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
-                    </div>
-                    <div className="max-w-2xl space-y-4">
-                      <div className="flex items-center gap-3">
-                        <span className="text-[10px] font-bold tracking-[0.3em] text-stone-400 uppercase">
-                          Featured Retreat
-                        </span>
-                        <div className="h-px w-8 bg-stone-200" />
-                        <span className="text-[10px] font-bold tracking-[0.3em] text-stone-400 uppercase">
-                          {lodge.location}
-                        </span>
-                      </div>
-                      <h3 className="font-serif text-3xl text-stone-800">{lodge.name}</h3>
-                      <p className="leading-relaxed text-balance text-stone-600 italic">
-                        "{lodge.description}"
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
+            {/* Your Stays Section - Removed as per request to move images inline */}
           </div>
 
           {/* Right Column: Details & CTA */}
@@ -417,12 +521,133 @@ export default function MinimalisticTheme({ data }: { data: ItineraryData }) {
                   </div>
                 </div>
 
-                <button className="w-full rounded-xl bg-stone-800 px-8 py-5 text-sm font-medium tracking-[0.2em] text-white uppercase transition-colors hover:bg-stone-900">
+                {data.excludedItems && data.excludedItems.length > 0 && (
+                   <div className="mt-8 pt-8 border-t border-stone-100">
+                      <h4 className="mb-4 flex items-center gap-2 text-[11px] font-bold tracking-[0.2em] text-stone-500 uppercase">
+                        <span className="h-1.5 w-1.5 rounded-full bg-stone-300" />
+                        Exclusions
+                      </h4>
+                      <ul className="space-y-3">
+                        {data.excludedItems.map((item, i) => (
+                          <li key={i} className="flex items-start gap-3 text-sm text-stone-700">
+                            <span className="font-bold text-stone-300">-</span>
+                            {item}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                )}
+
+                <button
+                  onClick={() => setShowConfirmModal(true)}
+                  className="w-full cursor-pointer rounded-xl bg-stone-800 px-8 py-5 text-sm font-medium tracking-[0.2em] text-white uppercase transition-colors hover:bg-stone-900"
+                >
                   Confirm Proposal
                 </button>
                 <p className="mt-6 text-center text-[10px] text-stone-400 italic">
                   Validity period: 10 days from receipt
                 </p>
+
+                {/* Confirmation Modal */}
+                <AnimatePresence>
+                  {showConfirmModal && (
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+                      onClick={() => confirmStatus === 'idle' && setShowConfirmModal(false)}
+                    >
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                        onClick={(e) => e.stopPropagation()}
+                        className="mx-4 w-full max-w-md rounded-2xl bg-white p-8 shadow-2xl"
+                      >
+                        {confirmStatus === 'success' ? (
+                          <div className="text-center">
+                            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
+                              <svg className="h-8 w-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                              </svg>
+                            </div>
+                            <h3 className="mb-2 font-serif text-2xl text-stone-900">Proposal Confirmed!</h3>
+                            <p className="mb-6 text-stone-600">
+                              Thank you for confirming. The tour operator has been notified and will contact you shortly to finalize your booking.
+                            </p>
+                            <button
+                              onClick={() => {
+                                setShowConfirmModal(false);
+                                setConfirmStatus('idle');
+                              }}
+                              className="rounded-lg bg-stone-800 px-6 py-3 text-sm font-medium text-white hover:bg-stone-900"
+                            >
+                              Close
+                            </button>
+                          </div>
+                        ) : (
+                          <>
+                            <h3 className="mb-2 font-serif text-2xl text-stone-900">Confirm Your Proposal</h3>
+                            <p className="mb-6 text-sm text-stone-600">
+                              By confirming, you agree to proceed with this trip. The tour operator will be notified and will contact you to finalize the details.
+                            </p>
+
+                            <div className="mb-6">
+                              <label className="mb-2 block text-xs font-semibold uppercase tracking-wide text-stone-500">
+                                Your Name
+                              </label>
+                              <input
+                                type="text"
+                                value={confirmName}
+                                onChange={(e) => setConfirmName(e.target.value)}
+                                placeholder="Enter your full name"
+                                className="w-full rounded-lg border border-stone-200 bg-stone-50 px-4 py-3 text-stone-900 placeholder-stone-400 focus:border-stone-400 focus:outline-none focus:ring-2 focus:ring-stone-200"
+                              />
+                            </div>
+
+                            {confirmStatus === 'error' && (
+                              <div className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-700">
+                                {confirmError}
+                              </div>
+                            )}
+
+                            <div className="flex gap-3">
+                              <button
+                                onClick={() => {
+                                  setShowConfirmModal(false);
+                                  setConfirmStatus('idle');
+                                  setConfirmError('');
+                                }}
+                                disabled={isConfirming}
+                                className="flex-1 rounded-lg border border-stone-200 px-6 py-3 text-sm font-medium text-stone-700 hover:bg-stone-50 disabled:opacity-50"
+                              >
+                                Cancel
+                              </button>
+                              <button
+                                onClick={handleConfirmProposal}
+                                disabled={isConfirming || !confirmName.trim()}
+                                className="flex-1 rounded-lg bg-green-700 px-6 py-3 text-sm font-medium text-white hover:bg-green-800 disabled:opacity-50"
+                              >
+                                {isConfirming ? (
+                                  <span className="flex items-center justify-center gap-2">
+                                    <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24">
+                                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                                    </svg>
+                                    Confirming...
+                                  </span>
+                                ) : (
+                                  'Confirm & Notify'
+                                )}
+                              </button>
+                            </div>
+                          </>
+                        )}
+                      </motion.div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
 
               {/* Extra Info */}
