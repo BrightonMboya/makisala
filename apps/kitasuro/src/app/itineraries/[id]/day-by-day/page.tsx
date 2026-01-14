@@ -4,7 +4,7 @@ import { Button } from '@repo/ui/button';
 import { CheckCircle, ArrowRight } from 'lucide-react';
 import { DayTable } from '@/components/itinerary-builder/day-table';
 import { DatePicker } from '@repo/ui/date-picker';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { addDays, format } from 'date-fns';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
@@ -13,7 +13,8 @@ import { Input } from '@repo/ui/input';
 import { Combobox } from '@repo/ui/combobox';
 import { airports } from '@/lib/data/itinerary-data';
 import { useBuilder } from '@/components/itinerary-builder/builder-context';
-import { getAllAccommodations, getAllNationalParks } from '@/app/itineraries/actions';
+import { getAllNationalParks } from '@/app/itineraries/actions';
+import { useQuery } from '@tanstack/react-query';
 
 export default function DayByDayPage() {
   const params = useParams();
@@ -34,33 +35,34 @@ export default function DayByDayPage() {
     setPickupPoint,
   } = useBuilder();
 
-  const [accommodationsList, setAccommodationsList] = useState<{ value: string; label: string }[]>(
-    [],
+  // Use React Query for caching national parks (accommodations are loaded on-demand via AsyncCombobox)
+  const { data: parksData } = useQuery({
+    queryKey: ['nationalParks'],
+    queryFn: getAllNationalParks,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+
+  // Memoize the transformed destinations list
+  const destinationsList = useMemo(
+    () => (parksData || []).map((p: any) => ({ value: p.id, label: p.name })),
+    [parksData]
   );
-  const [destinationsList, setDestinationsList] = useState<{ value: string; label: string }[]>([]);
 
-  // Fetch data on mount
+  // Track if we've already updated dates for this startDate
+  const lastStartDateRef = useRef<Date | undefined>(undefined);
+
+  // Update dates whenever start date changes (but only once per change)
   useEffect(() => {
-    const fetchData = async () => {
-      const [accs, parks] = await Promise.all([getAllAccommodations(), getAllNationalParks()]);
+    if (!startDate || lastStartDateRef.current === startDate) return;
+    lastStartDateRef.current = startDate;
 
-      setAccommodationsList(accs.map((a: any) => ({ value: a.id, label: a.name })));
-      setDestinationsList(parks.map((p: any) => ({ value: p.id, label: p.name })));
-    };
-    fetchData();
-  }, []); // Remove dependencies that cause re-runs
-
-  // Update dates whenever start date changes
-  useEffect(() => {
-    if (!startDate) return;
-
-    setDays(
-      days.map((day, index) => ({
+    setDays((currentDays) =>
+      currentDays.map((day, index) => ({
         ...day,
         date: format(addDays(startDate, index), 'MMM d'),
       })),
     );
-  }, [startDate]);
+  }, [startDate, setDays]);
 
   return (
     <div className="mx-auto max-w-6xl space-y-8 px-6 pb-20">
@@ -197,7 +199,6 @@ export default function DayByDayPage() {
         <DayTable
           days={days}
           setDays={setDays}
-          accommodations={accommodationsList}
           destinations={destinationsList}
           startDate={startDate}
         />

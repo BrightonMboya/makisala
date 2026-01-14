@@ -11,14 +11,17 @@ import { useRouter } from 'next/navigation';
 import { getDashboardData } from '@/app/itineraries/actions';
 import { useQuery } from '@tanstack/react-query';
 import type { RequestItem } from '@/types/dashboard';
+import { authClient } from '@/lib/auth-client';
 
 export default function ItinerariesPage() {
   const router = useRouter();
-  
+  const { data: session } = authClient.useSession();
+
   const { data: dashboardData, isLoading } = useQuery({
-    queryKey: ['dashboardData'],
+    queryKey: ['dashboardData', session?.user?.id],
     queryFn: getDashboardData,
     staleTime: 30 * 1000,
+    enabled: !!session?.user?.id,
   });
 
   const requests: RequestItem[] = (dashboardData?.proposals || []).map((p: any) => ({

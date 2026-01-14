@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import Image from 'next/image';
 import { Check, Search, Image as ImageIcon } from 'lucide-react';
 import { Button } from '@repo/ui/button';
 import { Input } from '@repo/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@repo/ui/tabs';
+import { useQuery } from '@tanstack/react-query';
 
 import { getAllNationalParks, getAllAccommodations, getPageImages } from '@/app/itineraries/actions';
 import { cn } from '@/lib/utils';
@@ -18,49 +19,68 @@ interface ImagePickerProps {
 export function ImagePicker({ value, onChange }: ImagePickerProps) {
   const [search, setSearch] = useState('');
   const [customUrl, setCustomUrl] = useState('');
-  const [images, setImages] = useState<Array<{ category: string; name: string; url: string }>>([]);
 
-  useEffect(() => {
-    const fetchImages = async () => {
-      const [parks, accs] = await Promise.all([getAllNationalParks(), getAllAccommodations()]);
+  // Use React Query for caching - shares cache with other components
+  const { data: parksData } = useQuery({
+    queryKey: ['nationalParks'],
+    queryFn: getAllNationalParks,
+    staleTime: 5 * 60 * 1000,
+  });
 
-      const imageList: Array<{ category: string; name: string; url: string }> = [];
+  const { data: accommodationsData } = useQuery({
+    queryKey: ['accommodations'],
+    queryFn: getAllAccommodations,
+    staleTime: 5 * 60 * 1000,
+  });
 
-      // Fetch pages for national park images
-      const parkPageIds = parks.filter((p) => p.overview_page_id).map((p) => p.overview_page_id!);
-      if (parkPageIds.length > 0) {
-        const pagesData = await getPageImages(parkPageIds);
-        const pageMap = new Map(pagesData.map((p) => [p.id, p.featured_image_url]));
+  // Get page IDs for parks that have them
+  const parkPageIds = useMemo(
+    () => (parksData || []).filter((p) => p.overview_page_id).map((p) => p.overview_page_id!),
+    [parksData]
+  );
 
-        parks.forEach((park) => {
-          const imageUrl = park.overview_page_id ? pageMap.get(park.overview_page_id) : null;
-          if (imageUrl) {
-            imageList.push({
-              category: 'Destinations',
-              name: park.name,
-              url: imageUrl,
-            });
-          }
-        });
-      }
+  // Fetch page images only when we have park page IDs
+  const { data: pagesData } = useQuery({
+    queryKey: ['pageImages', parkPageIds],
+    queryFn: () => getPageImages(parkPageIds),
+    enabled: parkPageIds.length > 0,
+    staleTime: 5 * 60 * 1000,
+  });
 
-      // Add accommodation images
-      accs.forEach((acc: any) => {
-        if (acc.images && acc.images.length > 0) {
-          acc.images.forEach((img: any) => {
-            imageList.push({
-              category: 'Accommodations',
-              name: acc.name,
-              url: img.imageUrl,
-            });
+  // Build the images list from cached data
+  const images = useMemo(() => {
+    const imageList: Array<{ category: string; name: string; url: string }> = [];
+
+    // Add national park images
+    if (parksData && pagesData) {
+      const pageMap = new Map(pagesData.map((p) => [p.id, p.featured_image_url]));
+      parksData.forEach((park) => {
+        const imageUrl = park.overview_page_id ? pageMap.get(park.overview_page_id) : null;
+        if (imageUrl) {
+          imageList.push({
+            category: 'Destinations',
+            name: park.name,
+            url: imageUrl,
           });
         }
       });
+    }
 
-      setImages(imageList);
-    };
-    fetchImages();
-  }, []);
+    // Add accommodation images
+    (accommodationsData || []).forEach((acc: any) => {
+      if (acc.images && acc.images.length > 0) {
+        acc.images.forEach((img: any) => {
+          imageList.push({
+            category: 'Accommodations',
+            name: acc.name,
+            url: img.imageUrl,
+          });
+        });
+      }
+    });
+
+    return imageList;
+  }, [parksData, pagesData, accommodationsData]);
 
   const filteredImages = images.filter((img) =>
     img.name.toLowerCase().includes(search.toLowerCase()),

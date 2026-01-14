@@ -26,11 +26,13 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Copy, GripVertical, MoreVertical, Plus, Trash2, FileText } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { ActivityModal } from './activity-modal';
 import { Combobox } from '@repo/ui/combobox';
+import { AsyncCombobox } from './async-combobox';
 import { Textarea } from '@repo/ui/textarea';
 import { addDays, format } from 'date-fns';
+import { searchAccommodations, getAccommodationById } from '@/app/itineraries/actions';
 
 import type { BuilderDay, BuilderActivity } from '@/types/itinerary-types';
 
@@ -40,13 +42,11 @@ type Activity = BuilderActivity;
 export function DayTable({
   days,
   setDays,
-  accommodations = [],
   destinations = [],
   startDate,
 }: {
   days: Day[];
   setDays: React.Dispatch<React.SetStateAction<Day[]>>;
-  accommodations?: { value: string; label: string }[];
   destinations?: { value: string; label: string }[];
   startDate?: Date;
 }) {
@@ -179,7 +179,6 @@ export function DayTable({
                 onDelete={handleDeleteDay}
                 onDuplicate={handleDuplicateDay}
                 onUpdate={handleUpdateDay}
-                accommodations={accommodations}
                 destinations={destinations}
               />
             ))}
@@ -234,7 +233,6 @@ function SortableDayRow({
   onDelete,
   onDuplicate,
   onUpdate,
-  accommodations,
   destinations,
 }: {
   day: Day;
@@ -243,9 +241,18 @@ function SortableDayRow({
   onDelete: (id: string) => void;
   onDuplicate: (id: string) => void;
   onUpdate: (id: string, field: keyof Day, value: any) => void;
-  accommodations: { value: string; label: string }[];
   destinations: { value: string; label: string }[];
 }) {
+  // Callbacks for async accommodation search
+  const handleAccommodationSearch = useCallback(
+    (query: string) => searchAccommodations(query, 10),
+    []
+  );
+
+  const handleGetAccommodationLabel = useCallback(async (id: string) => {
+    const acc = await getAccommodationById(id);
+    return acc?.name || null;
+  }, []);
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: day.id,
   });
@@ -284,11 +291,12 @@ function SortableDayRow({
         {/* Accommodation Column */}
         <div className="col-span-3">
           <div className="space-y-2">
-            <Combobox
-              items={accommodations}
+            <AsyncCombobox
               value={day.accommodation}
               onChange={(val) => onUpdate(day.id, 'accommodation', val)}
-              placeholder="Select accommodation"
+              onSearch={handleAccommodationSearch}
+              onGetLabel={handleGetAccommodationLabel}
+              placeholder="Search accommodation..."
             />
             <div className="flex items-center justify-between">
               <Select defaultValue="1 night">

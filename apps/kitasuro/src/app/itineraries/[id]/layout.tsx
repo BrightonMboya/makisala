@@ -404,11 +404,14 @@ export default function BuilderLayout({ children }: { children: React.ReactNode 
   const tourTitleParam = searchParams.get('tourTitle');
   const tourTypeParam = searchParams.get('tourType');
   const travelersParam = searchParams.get('travelers');
-  const [initialData, setInitialData] = useState<any>(null);
-  const [loading, setLoading] = useState(!!tourId);
-
   const params = useParams();
   const id = params.id as string;
+
+  const [initialData, setInitialData] = useState<any>(null);
+  // Set loading true if we have an existing proposal to load OR if we're creating from a tour template
+  const [loading, setLoading] = useState(() => {
+    return (id && id !== 'new') || !!tourId;
+  });
 
   useEffect(() => {
     const loadData = async () => {
@@ -437,9 +440,9 @@ export default function BuilderLayout({ children }: { children: React.ReactNode 
       // 1. Try to fetch existing proposal first if we have an ID
       if (id && id !== 'new') {
         try {
-          // Dynamically import to avoid circular dep issues if any, though import at top is fine
-          const { getProposal } = await import('@/app/itineraries/actions');
-          const proposal = await getProposal(id);
+          // Use optimized query for builder (only fetches needed fields)
+          const { getProposalForBuilder } = await import('@/app/itineraries/actions');
+          const proposal = await getProposalForBuilder(id);
 
           if (proposal) {
             // Map proposal data to builder state
@@ -466,7 +469,7 @@ export default function BuilderLayout({ children }: { children: React.ReactNode 
                 id: day.id,
                 dayNumber: day.dayNumber,
                 date: undefined, // Recalculated by context
-                destination: day.nationalPark?.id || null, // Use ID
+                destination: day.nationalParkId || null, // Use ID directly from the day
                 accommodation: day.accommodations?.[0]?.accommodationId || null, // Use ID
                 description: day.description || '',
                 previewImage: day.previewImage || undefined,
@@ -476,15 +479,15 @@ export default function BuilderLayout({ children }: { children: React.ReactNode 
                   dinner: day.meals?.dinner || false,
                 },
                 activities: (day.activities || []).map((act: any) => ({
-                    id: act.id,
-                    name: act.name,
-                    description: act.description,
-                    location: act.location,
-                    moment: act.moment,
-                    isOptional: act.isOptional,
-                    imageUrl: act.imageUrl,
-                    time: act.time
-                }))
+                  id: act.id,
+                  name: act.name,
+                  description: act.description,
+                  location: act.location,
+                  moment: act.moment,
+                  isOptional: act.isOptional,
+                  imageUrl: act.imageUrl,
+                  time: act.time,
+                })),
               })),
             };
             
@@ -529,8 +532,11 @@ export default function BuilderLayout({ children }: { children: React.ReactNode 
 
   if (loading) {
     return (
-      <div className="flex h-screen items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-green-600 border-t-transparent"></div>
+      <div className="flex h-screen flex-col items-center justify-center bg-stone-50">
+        <div className="flex flex-col items-center gap-4">
+          <div className="h-10 w-10 animate-spin rounded-full border-4 border-green-600 border-t-transparent"></div>
+          <p className="text-sm font-medium text-stone-600">Loading proposal...</p>
+        </div>
       </div>
     );
   }
