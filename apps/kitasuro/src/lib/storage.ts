@@ -128,7 +128,9 @@ export async function listStorageImages(
   const images = (data || [])
     .filter((item) => {
       if (item.id === null) return false // Skip folders
-      const ext = item.name.toLowerCase().slice(item.name.lastIndexOf('.'))
+      const dotIndex = item.name.lastIndexOf('.')
+      if (dotIndex === -1) return false // No extension
+      const ext = item.name.toLowerCase().slice(dotIndex)
       return imageExtensions.includes(ext)
     })
     .map((item) => {

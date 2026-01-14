@@ -7,6 +7,7 @@ import { eq, and } from 'drizzle-orm';
 import { addDays, format } from 'date-fns';
 import { auth } from '@/lib/auth';
 import { headers } from 'next/headers';
+import { z } from 'zod';
 
 export async function GET(
   request: NextRequest,
@@ -14,6 +15,11 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
+
+    // Validate proposal ID format
+    if (!z.string().uuid().safeParse(id).success) {
+      return NextResponse.json({ error: 'Invalid proposal ID' }, { status: 400 });
+    }
 
     // Check authentication
     const session = await auth.api.getSession({ headers: await headers() });
@@ -87,8 +93,8 @@ export async function GET(
       ProposalPDF({ proposal: pdfData }) as any
     );
 
-    // Return PDF as response
-    return new NextResponse(pdfBuffer, {
+    // Return PDF as response (convert Buffer to Uint8Array for BodyInit compatibility)
+    return new NextResponse(new Uint8Array(pdfBuffer), {
       headers: {
         'Content-Type': 'application/pdf',
         'Content-Disposition': `attachment; filename="${proposal.tourTitle || 'proposal'}-${id}.pdf"`,

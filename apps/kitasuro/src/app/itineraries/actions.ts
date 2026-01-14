@@ -2,22 +2,26 @@
 
 import { db } from '@repo/db';
 import {
-  tours,
+  accommodations,
+  clients,
+  commentReplies,
+  comments,
   nationalParks,
-  proposals,
-  proposalDays,
+  organizations,
+  pages,
   proposalAccommodations,
   proposalActivities,
+  proposalDays,
   proposalMeals,
-  comments,
-  commentReplies,
-  pages,
-  organizations,
-  clients,
-  accommodations,
+  proposals,
+  tours,
 } from '@repo/db/schema';
-import { eq, desc, inArray, ilike } from 'drizzle-orm';
-import { sendCommentNotificationEmail, sendProposalShareEmail, sendProposalAcceptanceEmail } from '@repo/resend';
+import { desc, eq, ilike, inArray } from 'drizzle-orm';
+import {
+  sendCommentNotificationEmail,
+  sendProposalAcceptanceEmail,
+  sendProposalShareEmail,
+} from '@repo/resend';
 import { auth } from '@/lib/auth';
 import { headers } from 'next/headers';
 import { listStorageFolders, listStorageImages } from '@/lib/storage';
@@ -752,7 +756,7 @@ export async function sendProposalToClient(proposalId: string, message?: string)
 
 // Storage Actions (Supabase)
 const STORAGE_BUCKET = process.env.SUPABASE_PUBLIC_BUCKET || 'public-assets';
-const ACCOMMODATIONS_BUCKET = 'accomodations';
+const ACCOMMODATIONS_BUCKET = 'accommodations';
 const ACCOMMODATIONS_FOLDER = 'accommodations';
 
 // UUID regex pattern
@@ -760,6 +764,11 @@ const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{
 
 export async function getStorageImages(folder?: string, bucket?: string) {
   try {
+    const session = await getSession();
+    if (!session?.user) {
+      return [];
+    }
+
     const targetBucket = bucket || STORAGE_BUCKET;
     const images = await listStorageImages(targetBucket, folder);
     return images.map((img) => ({
@@ -774,6 +783,11 @@ export async function getStorageImages(folder?: string, bucket?: string) {
 
 export async function getStorageFolders(parent_folder?: string, bucket?: string) {
   try {
+    const session = await getSession();
+    if (!session?.user) {
+      return [];
+    }
+
     const targetBucket = bucket || STORAGE_BUCKET;
     const folders = await listStorageFolders(targetBucket, parent_folder);
 
@@ -810,6 +824,11 @@ export async function getStorageFolders(parent_folder?: string, bucket?: string)
 // Search accommodations and return their storage folders
 export async function searchAccommodationFolders(query: string) {
   try {
+    const session = await getSession();
+    if (!session?.user) {
+      return [];
+    }
+
     if (!query || query.length < 2) {
       return [];
     }
@@ -834,10 +853,16 @@ export async function searchAccommodationFolders(query: string) {
 // Get all accommodations for browsing
 export async function getAllAccommodationFolders() {
   try {
+    const session = await getSession();
+    if (!session?.user) {
+      return [];
+    }
+
     const results = await db
       .select({ id: accommodations.id, name: accommodations.name })
       .from(accommodations)
-      .orderBy(accommodations.name);
+      .orderBy(accommodations.name)
+      .limit(10);
 
     return results.map((acc) => ({
       name: acc.id,
