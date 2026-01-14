@@ -67,8 +67,7 @@ export async function sendCommentNotificationEmail(
 
     // Generate the full proposal URL if not provided
     const proposalUrl =
-      data.proposalUrl ||
-      `${env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/proposal/${data.proposalId}`;
+      data.proposalUrl || `${env.NEXT_PUBLIC_APP_URL}/proposal/${data.proposalId}`;
 
     // Determine comment location description with meaningful context
     let locationDescription = 'on the proposal';
@@ -117,7 +116,11 @@ export async function sendCommentNotificationEmail(
                 locationDescription = `on Day ${day.dayNumber}`;
                 commentedSection = `Day ${day.dayNumber}`;
               }
-            } else if (day.accommodations && day.accommodations.length > 0 && day.accommodations[0]?.accommodation) {
+            } else if (
+              day.accommodations &&
+              day.accommodations.length > 0 &&
+              day.accommodations[0]?.accommodation
+            ) {
               // Accommodation is typically in the last 40% of a day section
               const accommodation = day.accommodations[0].accommodation;
               locationDescription = `on Day ${day.dayNumber}: Accommodation - ${accommodation.name}`;
