@@ -5,6 +5,7 @@ import { and, eq } from 'drizzle-orm';
 import { resend } from '@repo/resend';
 import { auth } from '@/lib/auth';
 import { headers } from 'next/headers';
+import { env } from '@/lib/env';
 
 export async function POST(request: NextRequest) {
   try {
@@ -53,7 +54,7 @@ export async function POST(request: NextRequest) {
         })
       : undefined;
 
-    const proposalUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/proposal/${proposalId}`;
+    const proposalUrl = `${env.NEXT_PUBLIC_APP_URL}/proposal/${proposalId}`;
     const agencyName = proposal.organization?.name || 'Your Travel Agency';
 
     // Render email HTML
@@ -69,7 +70,7 @@ export async function POST(request: NextRequest) {
     });
 
     // Send email
-    const fromEmail = process.env.RESEND_FROM_EMAIL || 'notifications@makisala.com';
+    const fromEmail = env.RESEND_FROM_EMAIL;
 
     const result = await resend.emails.send({
       from: fromEmail,

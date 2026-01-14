@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
-
+import { env } from './env'
 
 export type StorageVisibility = 'public' | 'private'
 
@@ -10,8 +10,8 @@ export interface UploadResult {
 }
 
 export const supabase = createClient(
-  process.env.SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_KEY! // Use a service key for server-side uploads
+  env.SUPABASE_URL,
+  env.SUPABASE_SERVICE_KEY
 )
 
 
@@ -30,8 +30,8 @@ export async function uploadToStorage({
 }: UploadToStorageParams): Promise<UploadResult> {
   const bucket =
     visibility === 'public'
-      ? process.env.SUPABASE_PUBLIC_BUCKET || 'public-assets'
-      : process.env.SUPABASE_PRIVATE_BUCKET || 'private-assets'
+      ? env.SUPABASE_PUBLIC_BUCKET
+      : env.SUPABASE_PRIVATE_BUCKET
 
   const { data, error } = await supabase.storage
     .from(bucket)

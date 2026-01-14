@@ -25,6 +25,7 @@ import {
 import { auth } from '@/lib/auth';
 import { headers } from 'next/headers';
 import { listStorageFolders, listStorageImages } from '@/lib/storage';
+import { env } from '@/lib/env';
 
 async function getSession() {
   return await auth.api.getSession({
@@ -730,7 +731,7 @@ export async function sendProposalToClient(proposalId: string, message?: string)
         })
       : undefined;
 
-    const proposalUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/proposal/${proposalId}`;
+    const proposalUrl = `${env.NEXT_PUBLIC_APP_URL}/proposal/${proposalId}`;
 
     const result = await sendProposalShareEmail({
       clientEmail: proposal.client.email,
@@ -755,7 +756,7 @@ export async function sendProposalToClient(proposalId: string, message?: string)
 }
 
 // Storage Actions (Supabase)
-const STORAGE_BUCKET = process.env.SUPABASE_PUBLIC_BUCKET || 'public-assets';
+const STORAGE_BUCKET = env.SUPABASE_PUBLIC_BUCKET;
 const ACCOMMODATIONS_BUCKET = 'accommodations';
 const ACCOMMODATIONS_FOLDER = 'accommodations';
 
@@ -918,7 +919,7 @@ export async function confirmProposal(proposalId: string, clientName: string) {
       }
     }
 
-    const proposalUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/proposal/${proposalId}`;
+    const proposalUrl = `${env.NEXT_PUBLIC_APP_URL}/proposal/${proposalId}`;
 
     // Send the acceptance email
     const result = await sendProposalAcceptanceEmail({

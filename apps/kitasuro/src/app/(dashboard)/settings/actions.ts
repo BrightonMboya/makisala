@@ -7,6 +7,7 @@ import { headers } from 'next/headers';
 import { revalidatePath } from 'next/cache';
 import { sendTeamInvitationEmail } from '@repo/resend';
 import { randomBytes } from 'crypto';
+import { env } from '@/lib/env';
 
 // Helper: Get authenticated session
 async function getSession() {
@@ -180,7 +181,7 @@ export async function inviteTeamMember(data: { email: string; role: 'admin' | 'm
     .limit(1);
 
   // Send invitation email
-  const inviteUrl = `${process.env.NEXT_PUBLIC_APP_URL}/invite/${token}`;
+  const inviteUrl = `${env.NEXT_PUBLIC_APP_URL}/invite/${token}`;
 
   await sendTeamInvitationEmail({
     recipientEmail: data.email,
