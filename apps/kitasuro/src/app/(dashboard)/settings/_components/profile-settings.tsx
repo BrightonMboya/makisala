@@ -17,7 +17,7 @@ import { z } from 'zod';
 import { useState } from 'react';
 import { updateUserProfile } from '../actions';
 import { toast } from '@repo/ui/toast';
-import { CloudinaryImagePicker } from '@/components/cloudinary-image-picker';
+import { ImagePicker } from '@/components/image-picker';
 import { Badge } from '@repo/ui/badge';
 
 const schema = z.object({
@@ -105,7 +105,7 @@ export function ProfileSettings({ user }: Props) {
                   <FormLabel>Profile Picture</FormLabel>
                   <FormControl>
                     <div className="space-y-3">
-                      <CloudinaryImagePicker
+                      <ImagePicker
                         value={field.value}
                         onSelect={(url) => field.onChange(url)}
                         triggerLabel="Change Picture"

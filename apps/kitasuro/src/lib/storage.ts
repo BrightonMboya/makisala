@@ -82,7 +82,7 @@ export async function listStorageFolders(
   const { data, error } = await supabase.storage
     .from(bucket)
     .list(path, {
-      limit: 1000,
+      limit: 100,
       sortBy: { column: 'name', order: 'asc' },
     })
 

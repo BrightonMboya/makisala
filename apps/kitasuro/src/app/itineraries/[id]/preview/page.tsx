@@ -25,7 +25,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@repo/ui/dialog';
-import { CloudinaryImagePicker } from '@/components/cloudinary-image-picker';
+import { ImagePicker } from '@/components/image-picker';
 import type { ThemeType } from '@/types/itinerary-types';
 
 const THEME_OPTIONS: { value: ThemeType; label: string; description: string }[] = [
@@ -289,7 +289,7 @@ export default function PreviewPage() {
           <DialogHeader>
             <DialogTitle>Select Hero Image</DialogTitle>
           </DialogHeader>
-          <CloudinaryImagePicker
+          <ImagePicker
             value={heroImage}
             onSelect={(url) => {
               handleHeroImageSelect(url);
@@ -305,7 +305,7 @@ export default function PreviewPage() {
           <DialogHeader>
             <DialogTitle>Select Image for Day {dayPickerOpen}</DialogTitle>
           </DialogHeader>
-          <CloudinaryImagePicker
+          <ImagePicker
             value={days.find(d => d.dayNumber === dayPickerOpen)?.previewImage || ''}
             onSelect={(url) => {
               if (dayPickerOpen !== null) {

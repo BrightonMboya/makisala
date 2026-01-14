@@ -2,23 +2,19 @@
 
 import { Button } from '@repo/ui/button';
 import { Input } from '@repo/ui/input';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@repo/ui/dialog';
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@repo/ui/dialog';
-import {
+  getAllAccommodationFolders,
   getStorageFolders,
   getStorageImages,
   searchAccommodationFolders,
-  getAllAccommodationFolders,
 } from '@/app/itineraries/actions';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import Image from 'next/image';
 import { ChevronRight, Folder, Home, Image as ImageIcon, Loader2, Search } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useQuery } from '@tanstack/react-query';
+import { useDebouncedValue } from '@/hooks/use-debounced-value';
 
 interface StorageFolder {
   name: string;
@@ -26,7 +22,7 @@ interface StorageFolder {
   displayName?: string;
 }
 
-interface CloudinaryImagePickerProps {
+interface ImagePickerProps {
   onSelect: (url: string) => void;
   value?: string;
   triggerLabel?: string;
@@ -35,80 +31,53 @@ interface CloudinaryImagePickerProps {
 
 const ACCOMMODATIONS_BUCKET = 'accomodations';
 
-export function CloudinaryImagePicker({
+export function ImagePicker({
   onSelect,
   value,
   triggerLabel,
   bucket = ACCOMMODATIONS_BUCKET,
-}: CloudinaryImagePickerProps) {
-  const [images, setImages] = useState<{ public_id: string; secure_url: string }[]>([]);
-  const [folders, setFolders] = useState<StorageFolder[]>([]);
+}: ImagePickerProps) {
   const [currentPath, setCurrentPath] = useState<string[]>([]);
   const [pathDisplayNames, setPathDisplayNames] = useState<Map<string, string>>(new Map());
-  const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState<StorageFolder[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
 
   const isAccommodationsBucket = bucket === ACCOMMODATIONS_BUCKET;
+  const debouncedSearchQuery = useDebouncedValue(searchQuery, 300);
 
   const getCurrentFolderPath = () => {
     return currentPath.length > 0 ? currentPath.join('/') : undefined;
   };
 
-  // Debounced search
-  useEffect(() => {
-    if (!isAccommodationsBucket || !searchQuery || searchQuery.length < 2) {
-      setSearchResults([]);
-      return;
-    }
+  const path = getCurrentFolderPath();
+  const isAccommodationsRoot = isAccommodationsBucket && path === 'accommodations';
 
-    const timer = setTimeout(async () => {
-      setIsSearching(true);
-      try {
-        const results = await searchAccommodationFolders(searchQuery);
-        setSearchResults(results);
-      } catch (error) {
-        console.error('Error searching:', error);
-        setSearchResults([]);
-      } finally {
-        setIsSearching(false);
-      }
-    }, 300);
+  // Query for folders - uses DB for accommodations root, storage for others
+  const { data: folders = [], isLoading: foldersLoading } = useQuery({
+    queryKey: ['storageFolders', bucket, path, isAccommodationsRoot],
+    queryFn: () =>
+      isAccommodationsRoot ? getAllAccommodationFolders() : getStorageFolders(path, bucket),
+    enabled: open,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
 
-    return () => clearTimeout(timer);
-  }, [searchQuery, isAccommodationsBucket]);
+  // Query for images
+  const { data: images = [], isLoading: imagesLoading } = useQuery({
+    queryKey: ['storageImages', bucket, path],
+    queryFn: () => getStorageImages(path, bucket),
+    enabled: open && !isAccommodationsRoot,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
 
-  useEffect(() => {
-    if (open) {
-      fetchContent();
-    }
-  }, [open, currentPath]);
+  // Query for search results
+  const { data: searchResults = [], isLoading: isSearching } = useQuery({
+    queryKey: ['accommodationSearch', debouncedSearchQuery],
+    queryFn: () => searchAccommodationFolders(debouncedSearchQuery),
+    enabled: isAccommodationsBucket && debouncedSearchQuery.length >= 2,
+    staleTime: 2 * 60 * 1000, // 2 minutes
+  });
 
-  async function fetchContent() {
-    setLoading(true);
-    try {
-      const path = getCurrentFolderPath();
-
-      // For accommodations bucket at root, fetch all accommodations from DB
-      if (isAccommodationsBucket && path === 'accommodations') {
-        const allAccommodations = await getAllAccommodationFolders();
-        setFolders(allAccommodations);
-        setImages([]);
-      } else {
-        const fetchedFolders = await getStorageFolders(path, bucket);
-        setFolders(fetchedFolders);
-
-        const fetchedImages = await getStorageImages(path, bucket);
-        setImages(fetchedImages);
-      }
-    } catch (error) {
-      console.error('Error fetching content', error);
-    } finally {
-      setLoading(false);
-    }
-  }
+  const loading = foldersLoading || imagesLoading;
 
   const handleFolderClick = (folder: StorageFolder) => {
     const pathParts = folder.path.split('/');
@@ -125,7 +94,6 @@ export function CloudinaryImagePicker({
 
     // Clear search when navigating
     setSearchQuery('');
-    setSearchResults([]);
   };
 
   const handleBreadcrumbClick = (index: number) => {
@@ -136,7 +104,6 @@ export function CloudinaryImagePicker({
     }
     // Clear search when navigating
     setSearchQuery('');
-    setSearchResults([]);
   };
 
   const handleSelect = (url: string) => {
@@ -149,7 +116,7 @@ export function CloudinaryImagePicker({
   };
 
   // Show search results if searching, otherwise show folders
-  const displayFolders = searchQuery.length >= 2 ? searchResults : folders;
+  const displayFolders = debouncedSearchQuery.length >= 2 ? searchResults : folders;
 
   return (
     <div className="flex items-center gap-4">
@@ -173,7 +140,7 @@ export function CloudinaryImagePicker({
           {/* Search Input - Only for accommodations bucket */}
           {isAccommodationsBucket && (
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
               <Input
                 placeholder="Search accommodations..."
                 value={searchQuery}
@@ -219,7 +186,7 @@ export function CloudinaryImagePicker({
                 {displayFolders.length > 0 && (
                   <div>
                     <h3 className="text-muted-foreground mb-2 text-sm font-medium">
-                      {searchQuery.length >= 2 ? 'Search Results' : 'Folders'}
+                      {debouncedSearchQuery.length >= 2 ? 'Search Results' : 'Folders'}
                     </h3>
                     <div className="flex flex-col gap-1">
                       {displayFolders.map((folder) => (
@@ -238,11 +205,13 @@ export function CloudinaryImagePicker({
                 )}
 
                 {/* No search results message */}
-                {searchQuery.length >= 2 && displayFolders.length === 0 && !isSearching && (
-                  <div className="text-muted-foreground text-sm">
-                    No accommodations found matching "{searchQuery}"
-                  </div>
-                )}
+                {debouncedSearchQuery.length >= 2 &&
+                  displayFolders.length === 0 &&
+                  !isSearching && (
+                    <div className="text-muted-foreground text-sm">
+                      No accommodations found matching "{debouncedSearchQuery}"
+                    </div>
+                  )}
 
                 {/* Images */}
                 {!searchQuery && (

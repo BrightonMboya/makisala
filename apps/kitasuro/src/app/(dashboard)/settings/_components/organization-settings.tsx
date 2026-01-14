@@ -17,7 +17,7 @@ import { z } from 'zod';
 import { useState } from 'react';
 import { updateOrganizationSettings } from '../actions';
 import { toast } from '@repo/ui/toast';
-import { CloudinaryImagePicker } from '@/components/cloudinary-image-picker';
+import { ImagePicker } from '@/components/image-picker';
 
 const schema = z.object({
   name: z.string().min(1, 'Organization name is required'),
@@ -93,7 +93,7 @@ export function OrganizationSettings({ organization }: Props) {
                   <FormLabel>Logo</FormLabel>
                   <FormControl>
                     <div className="space-y-3">
-                      <CloudinaryImagePicker
+                      <ImagePicker
                         value={field.value}
                         onSelect={(url) => field.onChange(url)}
                         triggerLabel="Select Logo"

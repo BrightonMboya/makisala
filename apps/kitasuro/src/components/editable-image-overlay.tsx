@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Camera } from 'lucide-react';
-import { CloudinaryImagePicker } from './cloudinary-image-picker';
+import { ImagePicker } from './image-picker';
 
 interface EditableImageOverlayProps {
   currentImage: string;
@@ -36,7 +36,7 @@ export function EditableImageOverlay({
           isHovered ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2'
         }`}
       >
-        <CloudinaryImagePicker
+        <ImagePicker
           value={currentImage}
           onSelect={onImageChange}
           triggerLabel={label}
