@@ -190,7 +190,7 @@ export default function SafariPortalTheme({ data }: { data: ItineraryData }) {
                   day.accommodation.toLowerCase().includes(acc.name.toLowerCase()) ||
                   acc.name.toLowerCase().includes(day.accommodation.toLowerCase()),
               );
-              const imageSrc = accommodation?.image || data.heroImage;
+              const imageSrc = day.previewImage || accommodation?.image || data.heroImage;
               const locationName =
                 accommodation?.location || day.accommodation.split(',')[0] || data.location;
 
@@ -365,6 +365,10 @@ export default function SafariPortalTheme({ data }: { data: ItineraryData }) {
                 const shouldShowParkInfo =
                   parkInfo !== null && day.nationalParkId !== previousParkId;
 
+                // Hide accommodation if it's the same as previous day
+                const isSameAccommodation = previousDay?.accommodation === day.accommodation;
+                const shouldHideAccommodation = isSameAccommodation && dayIndex > 0;
+
                 return (
                   <div
                     key={day.day}
@@ -377,7 +381,7 @@ export default function SafariPortalTheme({ data }: { data: ItineraryData }) {
                     <div className="flex items-start gap-6">
                       <div className="relative flex-shrink-0">
                         <Image
-                          src={accommodation?.image || data.heroImage}
+                          src={day.previewImage || accommodation?.image || data.heroImage}
                           alt={day.title}
                           width={100}
                           height={100}
@@ -486,10 +490,39 @@ export default function SafariPortalTheme({ data }: { data: ItineraryData }) {
                         </div>
                       )}
 
+                      {/* Accommodation Image Section - Show if different from previous day */}
+                      {!shouldHideAccommodation && day.accommodation && day.accommodation !== 'N/A' && accommodation && (
+                        <div className="mt-6">
+                          <div className="relative h-48 w-full overflow-hidden rounded-xl">
+                            <Image
+                              src={day.previewImage || accommodation.image}
+                              alt={accommodation.name}
+                              fill
+                              className="object-cover"
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                            <div className="absolute bottom-4 left-4">
+                              <span className="text-[10px] font-bold tracking-[0.2em] text-white/80 uppercase">
+                                Your Stay
+                              </span>
+                              <h4 className="mt-1 font-serif text-lg text-white">
+                                {accommodation.name}
+                              </h4>
+                            </div>
+                          </div>
+                          {accommodation.description && (
+                            <p className="mt-3 text-sm leading-relaxed text-stone-500">
+                              {accommodation.description}
+                            </p>
+                          )}
+                        </div>
+                      )}
+
                       {day.accommodation && day.accommodation !== 'N/A' && (
                         <div className="border-t border-stone-100 pt-4">
-                          <div className="text-sm text-stone-500 italic">
+                          <div className={`text-sm text-stone-500 italic ${shouldHideAccommodation ? 'opacity-50' : ''}`}>
                             Overnight {day.accommodation}
+                            {shouldHideAccommodation && <span className="ml-2 text-xs not-italic text-stone-400">(Cont.)</span>}
                           </div>
                         </div>
                       )}
