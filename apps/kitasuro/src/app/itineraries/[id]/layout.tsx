@@ -1,19 +1,21 @@
 'use client';
 
 import { Button } from '@repo/ui/button';
-import { ChevronLeft, ChevronRight, Plus, Users, Info, Check, X, Loader2 } from 'lucide-react';
+import { ChevronRight, Plus, Users, Info, Check, X, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams, useParams } from 'next/navigation';
 import { Popover, PopoverContent, PopoverTrigger } from '@repo/ui/popover';
 import { Input } from '@repo/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@repo/ui/select';
 import { BuilderProvider, useBuilder } from '@/components/itinerary-builder/builder-context';
+import { SidebarProvider, SidebarInset, SidebarTrigger } from '@repo/ui/sidebar';
+import { AppSidebar } from '@/components/app-sidebar';
 import type { TravelerGroup } from '@/types/itinerary-types';
-import { useState, useEffect } from 'react';
-import { getTourDetails, saveProposal } from '@/app/itineraries/actions';
-import { getClientById } from '@/app/(dashboard)/clients/actions';
+import { useMemo } from 'react';
+import { saveProposal } from '@/app/itineraries/actions';
 import { useMutation } from '@tanstack/react-query';
 import { toast } from '@repo/ui/toast';
+import { useProposalData, useClientData } from '@/lib/hooks/use-proposal-data';
 
 function Header() {
   const pathname = usePathname();
@@ -39,19 +41,13 @@ function Header() {
     selectedTheme,
     heroImage,
   } = useBuilder();
-  const [clientName, setClientName] = useState<string>('');
 
   const params = useParams();
   const id = params.id as string;
 
-  // Fetch client name when clientId changes
-  useEffect(() => {
-    if (clientId) {
-      getClientById(clientId).then((client) => {
-        if (client) setClientName(client.name);
-      });
-    }
-  }, [clientId]);
+  // Fetch client name using React Query (cached)
+  const { data: clientData } = useClientData(clientId);
+  const clientName = clientData?.name || '';
 
   // Save Draft Mutation
   const saveDraftMutation = useMutation({
@@ -201,17 +197,11 @@ function Header() {
   const currentStepIndex = steps.findIndex((step) => pathname.includes(step.id));
 
   return (
-    <header className="fixed top-0 z-50 w-full border-b border-stone-200 bg-white/80 backdrop-blur-md">
-      <div className="mx-auto flex h-16 max-w-screen-2xl items-center justify-between px-6">
-        <div className="flex items-center gap-4">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => router.back()}
-            className="text-stone-500 hover:bg-stone-100 hover:text-stone-900"
-          >
-            <ChevronLeft className="h-5 w-5" />
-          </Button>
+    <header className="sticky top-0 z-30 border-b border-stone-200 bg-white/80 backdrop-blur-md">
+      <div className="flex h-16 items-center justify-between px-6">
+        <div className="flex items-center gap-3">
+          <SidebarTrigger className="-ml-1" />
+          <div className="h-6 w-px bg-stone-200" />
           <div className="flex flex-col">
             <div className="flex items-center gap-2 font-serif font-bold text-stone-900">
               <span className="text-lg">{clientName || 'New Client'}</span>
@@ -389,10 +379,13 @@ function Header() {
 
 function BuilderLayoutContent({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-gray-50 pt-32">
-      <Header />
-      <main>{children}</main>
-    </div>
+    <>
+      <AppSidebar />
+      <SidebarInset className="bg-gray-50">
+        <Header />
+        <main>{children}</main>
+      </SidebarInset>
+    </>
   );
 }
 
@@ -404,140 +397,114 @@ export default function BuilderLayout({ children }: { children: React.ReactNode 
   const tourTitleParam = searchParams.get('tourTitle');
   const tourTypeParam = searchParams.get('tourType');
   const travelersParam = searchParams.get('travelers');
-  const [initialData, setInitialData] = useState<any>(null);
-  const [loading, setLoading] = useState(!!tourId);
-
   const params = useParams();
   const id = params.id as string;
 
-  useEffect(() => {
-    const loadData = async () => {
-      let data: any = {
-        tourId: tourId,
-        startDate: startDateParam ? new Date(startDateParam) : undefined,
-        clientId: clientIdParam,
-        tourTitle: tourTitleParam,
-        tourType: tourTypeParam,
-      };
+  const isNewProposal = !id || id === 'new';
 
-      // Convert travelers count to travelerGroups if provided
-      if (travelersParam) {
+  // Use React Query for data fetching (cached, deduped)
+  const { proposal, tourTemplate, isLoading } = useProposalData({
+    proposalId: id,
+    tourId,
+    isNewProposal,
+  });
+
+  // Transform data into initialData format (memoized)
+  const initialData = useMemo(() => {
+    // Base data from URL params
+    let data: any = {
+      tourId: tourId,
+      startDate: startDateParam ? new Date(startDateParam) : undefined,
+      clientId: clientIdParam,
+      tourTitle: tourTitleParam,
+      tourType: tourTypeParam,
+    };
+
+    // Convert travelers count to travelerGroups if provided
+    if (travelersParam) {
+      const travelersCount = parseInt(travelersParam, 10);
+      if (!isNaN(travelersCount) && travelersCount > 0) {
+        data.travelerGroups = [{ id: '1', count: travelersCount, type: 'Adult' }];
+      }
+    }
+
+    // If we have proposal data, use it
+    if (proposal) {
+      data = {
+        ...data,
+        tourId: proposal.tourId || tourId,
+        tourTitle: proposal.tourTitle || proposal.name,
+        tourType: proposal.tourType || data.tourType,
+        clientId: proposal.clientId || data.clientId,
+        startDate: proposal.startDate ? new Date(proposal.startDate) : data.startDate,
+        startCity: proposal.startCity || '',
+        endCity: proposal.endCity || '',
+        pickupPoint: proposal.pickupPoint || '',
+        transferIncluded: proposal.transferIncluded || 'excluded',
+        travelerGroups: (proposal.travelerGroups as any) || data.travelerGroups,
+        pricingRows: (proposal.pricingRows as any) || [],
+        extras: (proposal.extras as any) || [],
+        inclusions: proposal.inclusions || [],
+        exclusions: proposal.exclusions || [],
+        selectedTheme: proposal.theme || 'minimalistic',
+        heroImage: proposal.heroImage || null,
+        days: (proposal.days || []).map((day: any) => ({
+          id: day.id,
+          dayNumber: day.dayNumber,
+          date: undefined,
+          destination: day.nationalParkId || null,
+          accommodation: day.accommodations?.[0]?.accommodationId || null,
+          accommodationName: day.accommodations?.[0]?.accommodation?.name || null,
+          description: day.description || '',
+          previewImage: day.previewImage || undefined,
+          meals: {
+            breakfast: day.meals?.breakfast || false,
+            lunch: day.meals?.lunch || false,
+            dinner: day.meals?.dinner || false,
+          },
+          activities: (day.activities || []).map((act: any) => ({
+            id: act.id,
+            name: act.name,
+            description: act.description,
+            location: act.location,
+            moment: act.moment,
+            isOptional: act.isOptional,
+            imageUrl: act.imageUrl,
+            time: act.time,
+          })),
+        })),
+      };
+    } else if (tourTemplate) {
+      // Fallback to tour template data
+      data = { ...data, ...tourTemplate };
+      if (!data.travelerGroups && travelersParam) {
         const travelersCount = parseInt(travelersParam, 10);
         if (!isNaN(travelersCount) && travelersCount > 0) {
-          data.travelerGroups = [
-            {
-              id: '1',
-              count: travelersCount,
-              type: 'Adult',
-            },
-          ];
+          data.travelerGroups = [{ id: '1', count: travelersCount, type: 'Adult' }];
         }
       }
+    }
 
-      // 1. Try to fetch existing proposal first if we have an ID
-      if (id && id !== 'new') {
-        try {
-          // Dynamically import to avoid circular dep issues if any, though import at top is fine
-          const { getProposal } = await import('@/app/itineraries/actions');
-          const proposal = await getProposal(id);
+    return data;
+  }, [proposal, tourTemplate, tourId, startDateParam, clientIdParam, tourTitleParam, tourTypeParam, travelersParam]);
 
-          if (proposal) {
-            // Map proposal data to builder state
-            data = {
-              ...data,
-              tourId: proposal.tourId || tourId, // Use proposal's tourId if available
-              tourTitle: proposal.tourTitle || proposal.name,
-              tourType: proposal.tourType || data.tourType,
-              clientId: proposal.clientId || data.clientId,
-              startDate: proposal.startDate ? new Date(proposal.startDate) : data.startDate,
-              startCity: proposal.startCity || '',
-              endCity: proposal.endCity || '',
-              pickupPoint: proposal.pickupPoint || '',
-              transferIncluded: proposal.transferIncluded || 'excluded',
-              travelerGroups: (proposal.travelerGroups as any) || data.travelerGroups,
-              pricingRows: (proposal.pricingRows as any) || [],
-              extras: (proposal.extras as any) || [],
-              inclusions: proposal.inclusions || [],
-              exclusions: proposal.exclusions || [],
-              selectedTheme: proposal.theme || 'minimalistic',
-              heroImage: proposal.heroImage || null,
-              // Map days
-              days: (proposal.days || []).map((day: any) => ({
-                id: day.id,
-                dayNumber: day.dayNumber,
-                date: undefined, // Recalculated by context
-                destination: day.nationalPark?.id || null, // Use ID
-                accommodation: day.accommodations?.[0]?.accommodationId || null, // Use ID
-                description: day.description || '',
-                previewImage: day.previewImage || undefined,
-                meals: {
-                  breakfast: day.meals?.breakfast || false,
-                  lunch: day.meals?.lunch || false,
-                  dinner: day.meals?.dinner || false,
-                },
-                activities: (day.activities || []).map((act: any) => ({
-                    id: act.id,
-                    name: act.name,
-                    description: act.description,
-                    location: act.location,
-                    moment: act.moment,
-                    isOptional: act.isOptional,
-                    imageUrl: act.imageUrl,
-                    time: act.time
-                }))
-              })),
-            };
-            
-            setInitialData(data);
-            setLoading(false);
-            return; // Exit if proposal loaded successfully
-          }
-        } catch (e) {
-          console.error("Failed to load proposal", e);
-        }
-      }
-
-      // 2. Fallback to existing logic (Tour Template) if no proposal found
-      if (tourId) {
-        const tourData = await getTourDetails(tourId);
-        if (tourData) {
-          data = {
-            ...data,
-            ...tourData,
-          };
-          // If travelerGroups weren't set from query param but we have tour data,
-          // preserve any existing travelerGroups or use the query param
-          if (!data.travelerGroups && travelersParam) {
-            const travelersCount = parseInt(travelersParam, 10);
-            if (!isNaN(travelersCount) && travelersCount > 0) {
-              data.travelerGroups = [
-                {
-                  id: '1',
-                  count: travelersCount,
-                  type: 'Adult',
-                },
-              ];
-            }
-          }
-        }
-      }
-      setInitialData(data);
-      setLoading(false);
-    };
-    loadData();
-  }, [tourId, startDateParam, clientIdParam, tourTitleParam, tourTypeParam, travelersParam, id]);
-
-  if (loading) {
+  // Show loading state
+  if (isLoading) {
     return (
-      <div className="flex h-screen items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-green-600 border-t-transparent"></div>
+      <div className="flex h-screen flex-col items-center justify-center bg-stone-50">
+        <div className="flex flex-col items-center gap-4">
+          <div className="h-10 w-10 animate-spin rounded-full border-4 border-green-600 border-t-transparent"></div>
+          <p className="text-sm font-medium text-stone-600">Loading proposal...</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <BuilderProvider initialData={initialData}>
-      <BuilderLayoutContent>{children}</BuilderLayoutContent>
-    </BuilderProvider>
+    <SidebarProvider defaultOpen={false}>
+      <BuilderProvider initialData={initialData}>
+        <BuilderLayoutContent>{children}</BuilderLayoutContent>
+      </BuilderProvider>
+    </SidebarProvider>
   );
 }

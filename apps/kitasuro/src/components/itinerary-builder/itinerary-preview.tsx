@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useMemo } from 'react';
 import Image from 'next/image';
 import { format, addDays } from 'date-fns';
 import {
@@ -25,6 +25,8 @@ import type {
 } from '@/types/itinerary-types';
 import { getAllNationalParks, getAllAccommodations } from '@/app/itineraries/actions';
 import { cn } from '@/lib/utils';
+import { useQuery } from '@tanstack/react-query';
+import { queryKeys, staleTimes } from '@/lib/query-keys';
 
 export function ItineraryPreview({
   days,
@@ -61,35 +63,38 @@ export function ItineraryPreview({
     pricingRows.reduce((acc, row) => acc + row.unitPrice * row.count, 0) +
     extras.filter((e) => e.selected).reduce((acc, e) => acc + e.price, 0);
 
-  const [nationalParksMap, setNationalParksMap] = useState<
-    Record<string, { name: string; image?: string }>
-  >({});
-  const [accommodationsMap, setAccommodationsMap] = useState<
-    Record<string, { name: string; image?: string; description?: string }>
-  >({});
+  // Use React Query for caching - shares cache with day-by-day page
+  const { data: parksData } = useQuery({
+    queryKey: queryKeys.nationalParks,
+    queryFn: getAllNationalParks,
+    staleTime: staleTimes.nationalParks,
+  });
 
-  useEffect(() => {
-    const fetchData = async () => {
-      const [parks, accs] = await Promise.all([getAllNationalParks(), getAllAccommodations()]);
+  const { data: accommodationsData } = useQuery({
+    queryKey: queryKeys.accommodations.all,
+    queryFn: getAllAccommodations,
+    staleTime: staleTimes.accommodations,
+  });
 
-      const parksMap: Record<string, { name: string; image?: string }> = {};
-      parks.forEach((p) => {
-        parksMap[p.id] = { name: p.name };
-      });
-      setNationalParksMap(parksMap);
+  const nationalParksMap = useMemo(() => {
+    const parksMap: Record<string, { name: string; image?: string }> = {};
+    (parksData || []).forEach((p) => {
+      parksMap[p.id] = { name: p.name };
+    });
+    return parksMap;
+  }, [parksData]);
 
-      const accsMap: Record<string, { name: string; image?: string; description?: string }> = {};
-      accs.forEach((a: any) => {
-        accsMap[a.id] = {
-          name: a.name,
-          description: a.overview || undefined,
-          image: a.images?.[0]?.imageUrl || undefined,
-        };
-      });
-      setAccommodationsMap(accsMap);
-    };
-    fetchData();
-  }, []);
+  const accommodationsMap = useMemo(() => {
+    const accsMap: Record<string, { name: string; image?: string; description?: string }> = {};
+    (accommodationsData || []).forEach((a: any) => {
+      accsMap[a.id] = {
+        name: a.name,
+        description: a.overview || undefined,
+        image: a.images?.[0]?.imageUrl || undefined,
+      };
+    });
+    return accsMap;
+  }, [accommodationsData]);
 
   const heroImage =
     'https://images.unsplash.com/photo-1516426122078-c23e76319801?q=80&w=2000&auto=format&fit=crop';

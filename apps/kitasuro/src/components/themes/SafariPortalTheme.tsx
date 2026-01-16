@@ -190,7 +190,7 @@ export default function SafariPortalTheme({ data }: { data: ItineraryData }) {
                   day.accommodation.toLowerCase().includes(acc.name.toLowerCase()) ||
                   acc.name.toLowerCase().includes(day.accommodation.toLowerCase()),
               );
-              const imageSrc = accommodation?.image || data.heroImage;
+              const imageSrc = day.previewImage || accommodation?.image || data.heroImage;
               const locationName =
                 accommodation?.location || day.accommodation.split(',')[0] || data.location;
 
@@ -365,6 +365,10 @@ export default function SafariPortalTheme({ data }: { data: ItineraryData }) {
                 const shouldShowParkInfo =
                   parkInfo !== null && day.nationalParkId !== previousParkId;
 
+                // Hide accommodation if it's the same as previous day
+                const isSameAccommodation = previousDay?.accommodation === day.accommodation;
+                const shouldHideAccommodation = isSameAccommodation && dayIndex > 0;
+
                 return (
                   <div
                     key={day.day}
@@ -377,7 +381,7 @@ export default function SafariPortalTheme({ data }: { data: ItineraryData }) {
                     <div className="flex items-start gap-6">
                       <div className="relative flex-shrink-0">
                         <Image
-                          src={accommodation?.image || data.heroImage}
+                          src={day.previewImage || accommodation?.image || data.heroImage}
                           alt={day.title}
                           width={100}
                           height={100}
@@ -486,10 +490,39 @@ export default function SafariPortalTheme({ data }: { data: ItineraryData }) {
                         </div>
                       )}
 
+                      {/* Accommodation Image Section - Show if different from previous day */}
+                      {!shouldHideAccommodation && day.accommodation && day.accommodation !== 'N/A' && accommodation && (
+                        <div className="mt-6">
+                          <div className="relative h-48 w-full overflow-hidden rounded-xl">
+                            <Image
+                              src={day.previewImage || accommodation.image}
+                              alt={accommodation.name}
+                              fill
+                              className="object-cover"
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                            <div className="absolute bottom-4 left-4">
+                              <span className="text-[10px] font-bold tracking-[0.2em] text-white/80 uppercase">
+                                Your Stay
+                              </span>
+                              <h4 className="mt-1 font-serif text-lg text-white">
+                                {accommodation.name}
+                              </h4>
+                            </div>
+                          </div>
+                          {accommodation.description && (
+                            <p className="mt-3 text-sm leading-relaxed text-stone-500">
+                              {accommodation.description}
+                            </p>
+                          )}
+                        </div>
+                      )}
+
                       {day.accommodation && day.accommodation !== 'N/A' && (
                         <div className="border-t border-stone-100 pt-4">
-                          <div className="text-sm text-stone-500 italic">
+                          <div className={`text-sm text-stone-500 italic ${shouldHideAccommodation ? 'opacity-50' : ''}`}>
                             Overnight {day.accommodation}
+                            {shouldHideAccommodation && <span className="ml-2 text-xs not-italic text-stone-400">(Cont.)</span>}
                           </div>
                         </div>
                       )}
@@ -567,22 +600,19 @@ export default function SafariPortalTheme({ data }: { data: ItineraryData }) {
                     Final Confirmation
                   </span>
                   <h2 className="font-serif text-4xl leading-tight">
-                    Your Private Safari Proposal
+                    {data.title}
                   </h2>
                 </div>
 
-                <div className="grid grid-cols-2 gap-8 border-y border-white/10 py-8">
+                <div className="border-y border-white/10 py-8">
                   <div className="space-y-1">
                     <span className="text-[10px] tracking-widest text-stone-500 uppercase">
                       Total Investment
                     </span>
                     <p className="font-serif text-3xl">{data.pricing.total}</p>
-                  </div>
-                  <div className="space-y-1">
-                    <span className="text-[10px] tracking-widest text-stone-500 uppercase">
-                      Deposit Required
-                    </span>
-                    <p className="font-serif text-3xl">25%</p>
+                    {data.pricing.perPerson && (
+                      <p className="text-sm text-stone-400">{data.pricing.perPerson} per person</p>
+                    )}
                   </div>
                 </div>
 
@@ -606,23 +636,14 @@ export default function SafariPortalTheme({ data }: { data: ItineraryData }) {
               </div>
             </div>
 
-            <footer className="space-y-6 border-t border-stone-200 pt-12 text-center">
-              <div className="font-serif text-2xl text-stone-300 italic">{data.organization?.name || 'Kitasuro Travel'}</div>
-              <div className="flex justify-center gap-8 text-[10px] font-bold tracking-[0.3em] text-stone-400 uppercase">
-                <a href="#" className="transition-colors hover:text-stone-900">
-                  Instagram
-                </a>
-                <a href="#" className="transition-colors hover:text-stone-900">
-                  WhatsApp
-                </a>
-                <a href="#" className="transition-colors hover:text-stone-900">
-                  Contact
-                </a>
-              </div>
-              <div className="text-[9px] tracking-widest text-stone-300 uppercase">
-                © 2025 Kitasuro • Private & Confidential
-              </div>
-            </footer>
+            {data.organization?.name && (
+              <footer className="space-y-6 border-t border-stone-200 pt-12 text-center">
+                <div className="font-serif text-2xl text-stone-300 italic">{data.organization.name}</div>
+                <div className="text-[9px] tracking-widest text-stone-300 uppercase">
+                  © {new Date().getFullYear()} {data.organization.name} • Private & Confidential
+                </div>
+              </footer>
+            )}
           </section>
         </div>
       </div>

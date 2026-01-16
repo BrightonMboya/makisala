@@ -9,17 +9,35 @@ import {
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { getDashboardData } from '@/app/itineraries/actions';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { queryKeys, staleTimes } from '@/lib/query-keys';
 import type { RequestItem } from '@/types/dashboard';
+import { checkOnboardingStatus } from '@/lib/onboarding';
+import { Onboarding } from '../_components/onboarding';
+import { authClient } from '@/lib/auth-client';
 
 export default function DashboardPage() {
   const router = useRouter();
-  
+  const queryClient = useQueryClient();
+  const { data: session } = authClient.useSession();
+
   const { data: dashboardData, isLoading } = useQuery({
-    queryKey: ['dashboardData'],
+    queryKey: queryKeys.dashboardData(session?.user?.id),
     queryFn: getDashboardData,
-    staleTime: 30 * 1000,
+    staleTime: staleTimes.dashboardData,
+    enabled: !!session?.user?.id,
   });
+
+  // Callback to refetch dashboard data when tours are updated
+  const handleToursUpdated = () => {
+    queryClient.invalidateQueries({ queryKey: queryKeys.dashboardData(session?.user?.id) });
+  };
+
+  // Check onboarding status - tours are now properly scoped to organization
+  const onboardingStatus = checkOnboardingStatus(
+    dashboardData?.organization,
+    dashboardData?.tours?.length || 0
+  );
 
   const requests: RequestItem[] = (dashboardData?.proposals || []).map((p: any) => ({
     id: p.id,
@@ -33,6 +51,27 @@ export default function DashboardPage() {
     status: p.status === 'shared' ? 'shared' : 'draft',
   }));
 
+  // Show loading state
+  if (isLoading) {
+    return (
+      <div className="flex h-full items-center justify-center bg-stone-50">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-green-600 border-t-transparent"></div>
+      </div>
+    );
+  }
+
+  // Show onboarding if not complete
+  if (!onboardingStatus.isComplete) {
+    return (
+      <Onboarding
+        status={onboardingStatus}
+        organizationName={dashboardData?.organization?.name}
+        onToursUpdated={handleToursUpdated}
+      />
+    );
+  }
+
+  // Show regular dashboard
   return (
     <div className="flex flex-col h-full bg-stone-50">
         <header className="flex items-center justify-between border-b border-stone-200 bg-white px-8 py-4">
@@ -46,11 +85,7 @@ export default function DashboardPage() {
         </header>
 
         <div className="p-8">
-          {isLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <div className="h-8 w-8 animate-spin rounded-full border-4 border-green-600 border-t-transparent"></div>
-            </div>
-          ) : requests.length === 0 ? (
+          {requests.length === 0 ? (
             <div className="py-24 text-center">
               <div className="mx-auto h-12 w-12 text-stone-300 mb-4">
                 <FileText className="h-full w-full" />

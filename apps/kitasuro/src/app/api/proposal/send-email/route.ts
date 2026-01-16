@@ -157,16 +157,6 @@ function renderProposalEmail(props: EmailProps): string {
   }
 
   <div style="background-color: #ffffff; border-radius: 12px; padding: 40px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-    <!-- Header -->
-    <div style="text-align: center; margin-bottom: 30px; padding-bottom: 25px; border-bottom: 1px solid #e5e5e5;">
-      <h1 style="color: #15803d; font-size: 28px; margin: 0 0 8px 0; font-family: Georgia, serif;">
-        Your Safari Adventure Awaits
-      </h1>
-      <p style="font-size: 14px; color: #78716c; margin: 0;">
-        Your personalized travel proposal is ready to explore
-      </p>
-    </div>
-
     <!-- Greeting -->
     <p style="font-size: 16px; margin-bottom: 20px;">
       Dear <strong>${escapeHtml(clientName)}</strong>,

@@ -16,6 +16,7 @@ export type BuilderDay = {
   dayNumber: number;
   date: string;
   accommodation: string | null;
+  accommodationName?: string | null; // Cached name to avoid re-fetching
   destination: string | null;
   activities: BuilderActivity[];
   meals: {

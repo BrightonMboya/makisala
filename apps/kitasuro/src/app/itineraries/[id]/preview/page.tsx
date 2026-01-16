@@ -14,6 +14,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { transformBuilderToItineraryData } from '@/lib/builder-transform';
 import { useMutation, useQuery } from '@tanstack/react-query';
+import { queryKeys, staleTimes } from '@/lib/query-keys';
 import {
   Popover,
   PopoverContent,
@@ -62,6 +63,7 @@ export default function PreviewPage() {
   const [isProposalSaved, setIsProposalSaved] = useState(false);
   const [isHeroPickerOpen, setIsHeroPickerOpen] = useState(false);
   const [dayPickerOpen, setDayPickerOpen] = useState<number | null>(null);
+  const [isThemePopoverOpen, setIsThemePopoverOpen] = useState(false);
 
   // Listen for hero image picker event from themes
   useEffect(() => {
@@ -81,9 +83,10 @@ export default function PreviewPage() {
 
   // Fetch client info
   const { data: clientData } = useQuery({
-    queryKey: ['client', clientId],
+    queryKey: queryKeys.clients.detail(clientId || ''),
     queryFn: () => clientId ? getClientById(clientId) : null,
     enabled: !!clientId,
+    staleTime: staleTimes.clients,
   });
 
   const clientName = clientData?.name || '';
@@ -91,13 +94,15 @@ export default function PreviewPage() {
 
   // Fetch national parks and accommodations for transform
   const { data: parksData } = useQuery({
-    queryKey: ['nationalParks'],
+    queryKey: queryKeys.nationalParks,
     queryFn: getAllNationalParks,
+    staleTime: staleTimes.nationalParks,
   });
 
   const { data: accommodationsData } = useQuery({
-    queryKey: ['accommodations'],
+    queryKey: queryKeys.accommodations.all,
     queryFn: getAllAccommodations,
+    staleTime: staleTimes.accommodations,
   });
 
   const nationalParksMap = useMemo(() => {
@@ -336,7 +341,7 @@ export default function PreviewPage() {
             </div>
 
             {/* Theme Selector */}
-            <Popover>
+            <Popover open={isThemePopoverOpen} onOpenChange={setIsThemePopoverOpen}>
               <PopoverTrigger asChild>
                 <Button variant="outline" size="sm" className="gap-2">
                   <Palette className="h-4 w-4" />
@@ -350,7 +355,10 @@ export default function PreviewPage() {
                     {THEME_OPTIONS.map((theme) => (
                       <button
                         key={theme.value}
-                        onClick={() => setSelectedTheme(theme.value)}
+                        onClick={() => {
+                          setSelectedTheme(theme.value);
+                          setIsThemePopoverOpen(false);
+                        }}
                         className={`w-full text-left p-3 rounded-lg border transition-colors ${
                           selectedTheme === theme.value
                             ? 'border-green-600 bg-green-50'

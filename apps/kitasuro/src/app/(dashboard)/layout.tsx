@@ -1,9 +1,10 @@
 'use client';
 
-import { Sidebar } from './_components/sidebar';
 import { authClient } from '@/lib/auth-client';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
+import { SidebarProvider, SidebarInset, SidebarTrigger } from '@repo/ui/sidebar';
+import { AppSidebar } from '@/components/app-sidebar';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -18,11 +19,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   if (isSessionPending) return null;
 
   return (
-    <div className="flex min-h-screen bg-stone-50">
-      <Sidebar />
-      <div className="flex-1 ml-64 min-h-screen">
+    <SidebarProvider defaultOpen={true}>
+      <AppSidebar />
+      <SidebarInset className="bg-stone-50">
+        <header className="sticky top-0 z-10 flex h-14 items-center gap-4 border-b border-stone-200 bg-white/80 px-6 backdrop-blur-md">
+          <SidebarTrigger className="-ml-1" />
+        </header>
+        <div className="min-h-screen">
           {children}
-      </div>
-    </div>
+        </div>
+      </SidebarInset>
+    </SidebarProvider>
   );
 }

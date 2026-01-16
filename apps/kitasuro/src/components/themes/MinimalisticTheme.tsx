@@ -224,19 +224,18 @@ export default function MinimalisticTheme({ data, onHeroImageChange }: Minimalis
         )}
 
         <div className="relative flex h-full flex-col items-center justify-center px-6 text-center">
-          <span className="animate-fade-in-up mb-4 text-xs tracking-[0.3em] text-white/80 uppercase">
-            {data.clientName ? `Prepared for ${data.clientName} • ` : ''} {data.organization?.name || 'Kitasuro Travel'}
-          </span>
+          {data.clientName && (
+            <span className="animate-fade-in-up mb-4 text-xs tracking-[0.3em] text-white/80 uppercase">
+              Prepared for {data.clientName}
+            </span>
+          )}
           <h1 className="animate-fade-in-up mb-6 max-w-4xl font-serif text-5xl leading-tight text-white [animation-delay:200ms] md:text-7xl">
-            {data.title} <br />
-            {/* <span className="italic">{data.subtitle}</span> */}
+            {data.title}
           </h1>
           <div className="animate-fade-in-up flex items-center gap-8 text-sm tracking-widest text-white/90 uppercase [animation-delay:400ms]">
             <span>{data.duration}</span>
             <span className="h-8 w-px bg-white/30" />
             <span>{data.location}</span>
-            <span className="h-8 w-px bg-white/30" />
-            <span>All Inclusive</span>
           </div>
         </div>
 
@@ -367,7 +366,7 @@ export default function MinimalisticTheme({ data, onHeroImageChange }: Minimalis
                             <div className="mt-8">
                                 <div className="relative h-64 w-full overflow-hidden rounded-2xl">
                                     <Image
-                                        src={accommodationDetails.image}
+                                        src={day.previewImage || accommodationDetails.image}
                                         alt={accommodationDetails.name}
                                         fill
                                         className="object-cover"
@@ -479,10 +478,6 @@ export default function MinimalisticTheme({ data, onHeroImageChange }: Minimalis
                       <span className="text-stone-400">Destination</span>
                       <span className="font-medium italic">{data.location}</span>
                     </div>
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-stone-400">Pace</span>
-                      <span className="font-medium">Curated</span>
-                    </div>
                   </div>
                 </div>
 
@@ -544,9 +539,6 @@ export default function MinimalisticTheme({ data, onHeroImageChange }: Minimalis
                 >
                   Confirm Proposal
                 </button>
-                <p className="mt-6 text-center text-[10px] text-stone-400 italic">
-                  Validity period: 10 days from receipt
-                </p>
 
                 {/* Confirmation Modal */}
                 <AnimatePresence>

@@ -9,7 +9,7 @@ import {
   ChevronUp,
   Image as ImageIcon,
 } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import type { BuilderActivity as Activity } from '@/types/itinerary-types';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@repo/ui/select';
 import { Input } from '@repo/ui/input';
@@ -36,6 +36,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { Combobox } from '@repo/ui/combobox';
 import { commonActivities } from '@/lib/data/itinerary-data';
 import { getAllNationalParks } from '@/app/itineraries/actions';
+import { useQuery } from '@tanstack/react-query';
 
 const moments = ['Morning', 'Afternoon', 'Evening', 'Half Day', 'Full Day', 'Night'] as const;
 
@@ -53,16 +54,22 @@ export function ActivityModal({
   onSave: (activities: Activity[]) => void;
 }) {
   const [activities, setActivities] = useState<Activity[]>([]);
-  const [nationalParksList, setNationalParksList] = useState<{ value: string; label: string }[]>(
-    [],
+
+  // Use React Query for caching - shares cache with other components
+  const { data: parksData } = useQuery({
+    queryKey: ['nationalParks'],
+    queryFn: getAllNationalParks,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const nationalParksList = useMemo(
+    () => (parksData || []).map((p) => ({ value: p.id, label: p.name })),
+    [parksData]
   );
 
   useEffect(() => {
     if (isOpen) {
       setActivities(initialActivities);
-      getAllNationalParks().then((parks) => {
-        setNationalParksList(parks.map((p) => ({ value: p.id, label: p.name })));
-      });
     }
   }, [isOpen, initialActivities]);
 
