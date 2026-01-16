@@ -4,13 +4,15 @@ import { Button } from '@repo/ui/button';
 import { CheckCircle, ArrowRight } from 'lucide-react';
 import { DayTable } from '@/components/itinerary-builder/day-table';
 import { DatePicker } from '@repo/ui/date-picker';
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { addDays, format } from 'date-fns';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@repo/ui/select';
 import { Input } from '@repo/ui/input';
 import { Combobox } from '@repo/ui/combobox';
+import { Checkbox } from '@repo/ui/checkbox';
+import { Label } from '@repo/ui/label';
 import { airports } from '@/lib/data/itinerary-data';
 import { useBuilder } from '@/components/itinerary-builder/builder-context';
 import { getAllNationalParks } from '@/app/itineraries/actions';
@@ -145,9 +147,9 @@ export default function DayByDayPage() {
               <label className="text-xs font-semibold tracking-wide text-stone-500 uppercase">
                 Arrival Transfer
               </label>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="flex items-center gap-3">
                 <Select value={transferIncluded} onValueChange={setTransferIncluded}>
-                  <SelectTrigger className="border-stone-200 bg-stone-50">
+                  <SelectTrigger className="w-[140px] border-stone-200 bg-stone-50">
                     <SelectValue placeholder="Select option" />
                   </SelectTrigger>
                   <SelectContent>
@@ -161,31 +163,25 @@ export default function DayByDayPage() {
                     value={pickupPoint}
                     onChange={setPickupPoint}
                     placeholder="Select airport"
-                    className="border-stone-200 bg-stone-50"
+                    className="flex-1 border-stone-200 bg-stone-50"
                   />
                 )}
               </div>
             </div>
 
             <div className="space-y-3 pt-2">
-              <label className="flex cursor-pointer items-center gap-3 rounded-lg border border-stone-200 p-3 transition-colors hover:bg-stone-50">
-                <input
-                  type="checkbox"
-                  className="h-4 w-4 rounded border-stone-300 text-green-700 focus:ring-green-600/20"
-                />
+              <Label className="flex cursor-pointer items-center gap-3 rounded-lg border border-stone-200 p-3 transition-colors hover:bg-stone-50">
+                <Checkbox id="arrange-accommodation" />
                 <span className="text-sm font-medium text-stone-700">
                   Arrange accommodation before tour start
                 </span>
-              </label>
-              <label className="flex cursor-pointer items-center gap-3 rounded-lg border border-stone-200 p-3 transition-colors hover:bg-stone-50">
-                <input
-                  type="checkbox"
-                  className="h-4 w-4 rounded border-stone-300 text-green-700 focus:ring-green-600/20"
-                />
+              </Label>
+              <Label className="flex cursor-pointer items-center gap-3 rounded-lg border border-stone-200 p-3 transition-colors hover:bg-stone-50">
+                <Checkbox id="client-arrives-early" />
                 <span className="text-sm font-medium text-stone-700">
                   Client arrives days before tour start
                 </span>
-              </label>
+              </Label>
             </div>
           </div>
         </div>

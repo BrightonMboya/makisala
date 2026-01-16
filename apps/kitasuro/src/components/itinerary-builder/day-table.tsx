@@ -245,7 +245,10 @@ function SortableDayRow({
 }) {
   // Callbacks for async accommodation search
   const handleAccommodationSearch = useCallback(
-    (query: string) => searchAccommodations(query, 10),
+    async (query: string) => {
+      const results = await searchAccommodations(query, 10);
+      return results.map((acc) => ({ value: acc.id, label: acc.name }));
+    },
     []
   );
 
@@ -289,14 +292,16 @@ function SortableDayRow({
         </div>
 
         {/* Accommodation Column */}
-        <div className="col-span-3">
+        <div className="col-span-3 min-w-0">
           <div className="space-y-2">
             <AsyncCombobox
               value={day.accommodation}
               onChange={(val) => onUpdate(day.id, 'accommodation', val)}
               onSearch={handleAccommodationSearch}
               onGetLabel={handleGetAccommodationLabel}
+              initialLabel={day.accommodationName}
               placeholder="Search accommodation..."
+              className="w-full"
             />
             <div className="flex items-center justify-between">
               <Select defaultValue="1 night">
@@ -316,12 +321,12 @@ function SortableDayRow({
         </div>
 
         {/* Destination Column */}
-        <div className="col-span-3">
+        <div className="col-span-3 min-w-0">
           <Combobox
             items={destinations}
             value={day.destination}
             onChange={(val) => onUpdate(day.id, 'destination', val)}
-            placeholder="Select destination"
+            placeholder="Select Destination"
           />
         </div>
 

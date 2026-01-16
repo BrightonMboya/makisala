@@ -6,6 +6,8 @@ import {
   clients,
   commentReplies,
   comments,
+  itineraryAccommodations,
+  itineraryDays,
   nationalParks,
   organizations,
   pages,
@@ -16,7 +18,7 @@ import {
   proposals,
   tours,
 } from '@repo/db/schema';
-import { desc, eq, ilike, inArray } from 'drizzle-orm';
+import { desc, eq, ilike, inArray, isNull } from 'drizzle-orm';
 import {
   sendCommentNotificationEmail,
   sendProposalAcceptanceEmail,
@@ -52,6 +54,29 @@ export async function getToursList(country?: string) {
     return result;
   } catch (error) {
     console.error('Error fetching tours:', error);
+    return [];
+  }
+}
+
+// Get tours belonging to the user's organization
+export async function getToursByOrganization() {
+  try {
+    const session = await getSession();
+    if (!session?.user?.organizationId) return [];
+
+    const result = await db
+      .select({
+        id: tours.id,
+        name: tours.tourName,
+        days: tours.number_of_days,
+      })
+      .from(tours)
+      .where(eq(tours.organizationId, session.user.organizationId))
+      .orderBy(tours.tourName);
+
+    return result;
+  } catch (error) {
+    console.error('Error fetching organization tours:', error);
     return [];
   }
 }
@@ -152,6 +177,49 @@ export async function getAllAccommodations() {
   }
 }
 
+export async function searchAccommodations(query: string, limit: number = 20) {
+  try {
+    if (!query.trim()) {
+      return await db.query.accommodations.findMany({
+        limit,
+        with: {
+          images: {
+            limit: 1,
+          },
+        },
+      });
+    }
+    return await db.query.accommodations.findMany({
+      where: ilike(accommodations.name, `%${query}%`),
+      limit,
+      with: {
+        images: {
+          limit: 1,
+        },
+      },
+    });
+  } catch (error) {
+    console.error('Error searching accommodations:', error);
+    return [];
+  }
+}
+
+export async function getAccommodationById(id: string) {
+  try {
+    return await db.query.accommodations.findFirst({
+      where: eq(accommodations.id, id),
+      with: {
+        images: {
+          limit: 1,
+        },
+      },
+    });
+  } catch (error) {
+    console.error('Error fetching accommodation by id:', error);
+    return null;
+  }
+}
+
 export async function getAllNationalParks() {
   try {
     return await db
@@ -213,17 +281,34 @@ export async function getAllProposals() {
 }
 
 // Combined dashboard data fetch - single session call
+// Fetches essential data for sidebar and dashboard (clients, org tours, proposals)
 export async function getDashboardData() {
   try {
     const session = await getSession();
     if (!session?.user?.organizationId) {
-      return { proposals: [], clients: [], tours: [], organization: null };
+      return { clients: [], tours: [], proposals: [], organization: null };
     }
 
     const orgId = session.user.organizationId;
 
-    // Fetch all data in parallel with single session
-    const [proposalsData, clientsData, toursData, orgData] = await Promise.all([
+    // Fetch essential data in parallel
+    const [clientsData, orgToursData, proposalsData, orgData] = await Promise.all([
+      db
+        .select({ id: clients.id, name: clients.name })
+        .from(clients)
+        .where(eq(clients.organizationId, orgId))
+        .orderBy(clients.name),
+      // Organization's tours only (properly scoped)
+      db
+        .select({
+          id: tours.id,
+          name: tours.tourName,
+          days: tours.number_of_days,
+        })
+        .from(tours)
+        .where(eq(tours.organizationId, orgId))
+        .orderBy(tours.tourName),
+      // Proposals for dashboard display
       db.query.proposals.findMany({
         where: eq(proposals.organizationId, orgId),
         orderBy: desc(proposals.updatedAt),
@@ -239,19 +324,6 @@ export async function getDashboardData() {
           travelerGroups: true,
         },
       }),
-      db
-        .select({ id: clients.id, name: clients.name })
-        .from(clients)
-        .where(eq(clients.organizationId, orgId))
-        .orderBy(clients.name),
-      // TODO: the tours here needs to be filtered by organizationId
-      db
-        .select({
-          id: tours.id,
-          name: tours.tourName,
-          days: tours.number_of_days,
-        })
-        .from(tours),
       db.query.organizations.findFirst({
         where: eq(organizations.id, orgId),
         columns: {
@@ -265,14 +337,14 @@ export async function getDashboardData() {
     ]);
 
     return {
-      proposals: proposalsData,
       clients: clientsData,
-      tours: toursData,
+      tours: orgToursData,
+      proposals: proposalsData,
       organization: orgData,
     };
   } catch (error) {
     console.error('Error fetching dashboard data:', error);
-    return { proposals: [], clients: [], tours: [], organization: null };
+    return { clients: [], tours: [], proposals: [], organization: null };
   }
 }
 
@@ -311,6 +383,83 @@ export async function getProposal(id: string) {
     return result;
   } catch (error) {
     console.error('Error fetching proposal:', error);
+    return null;
+  }
+}
+
+// Optimized query for builder - only fetches needed fields, no heavy relations
+export async function getProposalForBuilder(id: string) {
+  try {
+    const result = await db.query.proposals.findFirst({
+      where: eq(proposals.id, id),
+      columns: {
+        id: true,
+        name: true,
+        tourId: true,
+        tourTitle: true,
+        tourType: true,
+        clientId: true,
+        startDate: true,
+        startCity: true,
+        endCity: true,
+        pickupPoint: true,
+        transferIncluded: true,
+        travelerGroups: true,
+        pricingRows: true,
+        extras: true,
+        inclusions: true,
+        exclusions: true,
+        theme: true,
+        heroImage: true,
+      },
+      with: {
+        days: {
+          columns: {
+            id: true,
+            dayNumber: true,
+            nationalParkId: true,
+            description: true,
+            previewImage: true,
+          },
+          with: {
+            accommodations: {
+              columns: {
+                accommodationId: true,
+              },
+              with: {
+                accommodation: {
+                  columns: {
+                    id: true,
+                    name: true,
+                  },
+                },
+              },
+            },
+            meals: {
+              columns: {
+                breakfast: true,
+                lunch: true,
+                dinner: true,
+              },
+            },
+            activities: {
+              columns: {
+                id: true,
+                name: true,
+                description: true,
+                duration: true,
+                sortOrder: true,
+              },
+            },
+          },
+          orderBy: (days, { asc }) => [asc(days.dayNumber)],
+        },
+      },
+    });
+
+    return result;
+  } catch (error) {
+    console.error('Error fetching proposal for builder:', error);
     return null;
   }
 }
@@ -945,5 +1094,107 @@ export async function confirmProposal(proposalId: string, clientName: string) {
   } catch (error) {
     console.error('Error confirming proposal:', error);
     return { success: false, error: 'Failed to confirm proposal' };
+  }
+}
+
+// Get shared templates (tours with no organizationId)
+export async function getSharedTemplates() {
+  try {
+    const templates = await db
+      .select({
+        id: tours.id,
+        name: tours.tourName,
+        overview: tours.overview,
+        days: tours.number_of_days,
+        country: tours.country,
+        imageUrl: tours.img_url,
+        tags: tours.tags,
+      })
+      .from(tours)
+      .where(isNull(tours.organizationId))
+      .orderBy(tours.tourName);
+
+    return templates;
+  } catch (error) {
+    console.error('Error fetching shared templates:', error);
+    return [];
+  }
+}
+
+// Clone a template to the user's organization
+export async function cloneTemplate(templateId: string) {
+  try {
+    const session = await getSession();
+    if (!session?.user?.organizationId) {
+      return { success: false, error: 'Unauthorized' };
+    }
+
+    // Get the template to clone
+    const template = await db.query.tours.findFirst({
+      where: eq(tours.id, templateId),
+      with: {
+        days: {
+          with: {
+            itineraryAccommodations: true,
+          },
+        },
+      },
+    });
+
+    if (!template) {
+      return { success: false, error: 'Template not found' };
+    }
+
+    // Create a new tour for the organization
+    const [newTour] = await db
+      .insert(tours)
+      .values({
+        tourName: template.tourName,
+        slug: template.slug,
+        overview: template.overview,
+        pricing: template.pricing,
+        country: template.country,
+        sourceUrl: template.sourceUrl,
+        activities: template.activities,
+        topFeatures: template.topFeatures,
+        img_url: template.img_url,
+        number_of_days: template.number_of_days,
+        tags: template.tags,
+        organizationId: session.user.organizationId,
+        clonedFromId: template.id,
+      })
+      .returning({ id: tours.id });
+
+    // Clone the itinerary days if they exist
+    if (template.days && template.days.length > 0) {
+      for (const day of template.days) {
+        const [newDay] = await db
+          .insert(itineraryDays)
+          .values({
+            tourId: newTour.id,
+            dayNumber: day.dayNumber,
+            title: day.title,
+            description: day.description,
+            nationalParkId: day.nationalParkId,
+          })
+          .returning({ id: itineraryDays.id });
+
+        // Clone accommodations for this day
+        if (day.itineraryAccommodations && day.itineraryAccommodations.length > 0) {
+          await db.insert(itineraryAccommodations).values(
+            day.itineraryAccommodations.map((acc: any) => ({
+              itineraryDayId: newDay.id,
+              accommodationId: acc.accommodationId,
+              nights: acc.nights,
+            }))
+          );
+        }
+      }
+    }
+
+    return { success: true, tourId: newTour.id };
+  } catch (error) {
+    console.error('Error cloning template:', error);
+    return { success: false, error: 'Failed to clone template' };
   }
 }

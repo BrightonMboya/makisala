@@ -32,10 +32,10 @@ export default function DashboardPage() {
     queryClient.invalidateQueries({ queryKey: ['dashboardData', session?.user?.id] });
   };
 
-  // Check onboarding status - use orgTourCount (only org-specific tours, not shared templates)
+  // Check onboarding status - tours are now properly scoped to organization
   const onboardingStatus = checkOnboardingStatus(
     dashboardData?.organization,
-    dashboardData?.orgTourCount || 0
+    dashboardData?.tours?.length || 0
   );
 
   const requests: RequestItem[] = (dashboardData?.proposals || []).map((p: any) => ({

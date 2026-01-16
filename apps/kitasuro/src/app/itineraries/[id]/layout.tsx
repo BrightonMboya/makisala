@@ -8,6 +8,8 @@ import { Popover, PopoverContent, PopoverTrigger } from '@repo/ui/popover';
 import { Input } from '@repo/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@repo/ui/select';
 import { BuilderProvider, useBuilder } from '@/components/itinerary-builder/builder-context';
+import { SidebarProvider, SidebarInset, SidebarTrigger } from '@repo/ui/sidebar';
+import { AppSidebar } from '@/components/app-sidebar';
 import type { TravelerGroup } from '@/types/itinerary-types';
 import { useState, useEffect } from 'react';
 import { getTourDetails, saveProposal } from '@/app/itineraries/actions';
@@ -201,17 +203,11 @@ function Header() {
   const currentStepIndex = steps.findIndex((step) => pathname.includes(step.id));
 
   return (
-    <header className="fixed top-0 z-50 w-full border-b border-stone-200 bg-white/80 backdrop-blur-md">
-      <div className="mx-auto flex h-16 max-w-screen-2xl items-center justify-between px-6">
-        <div className="flex items-center gap-4">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => router.back()}
-            className="text-stone-500 hover:bg-stone-100 hover:text-stone-900"
-          >
-            <ChevronLeft className="h-5 w-5" />
-          </Button>
+    <header className="sticky top-0 z-30 border-b border-stone-200 bg-white/80 backdrop-blur-md">
+      <div className="flex h-16 items-center justify-between px-6">
+        <div className="flex items-center gap-3">
+          <SidebarTrigger className="-ml-1" />
+          <div className="h-6 w-px bg-stone-200" />
           <div className="flex flex-col">
             <div className="flex items-center gap-2 font-serif font-bold text-stone-900">
               <span className="text-lg">{clientName || 'New Client'}</span>
@@ -389,10 +385,13 @@ function Header() {
 
 function BuilderLayoutContent({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-gray-50 pt-32">
-      <Header />
-      <main>{children}</main>
-    </div>
+    <>
+      <AppSidebar />
+      <SidebarInset className="bg-gray-50">
+        <Header />
+        <main>{children}</main>
+      </SidebarInset>
+    </>
   );
 }
 
@@ -471,6 +470,7 @@ export default function BuilderLayout({ children }: { children: React.ReactNode 
                 date: undefined, // Recalculated by context
                 destination: day.nationalParkId || null, // Use ID directly from the day
                 accommodation: day.accommodations?.[0]?.accommodationId || null, // Use ID
+                accommodationName: day.accommodations?.[0]?.accommodation?.name || null, // Include name to avoid flash
                 description: day.description || '',
                 previewImage: day.previewImage || undefined,
                 meals: {
@@ -542,8 +542,10 @@ export default function BuilderLayout({ children }: { children: React.ReactNode 
   }
 
   return (
-    <BuilderProvider initialData={initialData}>
-      <BuilderLayoutContent>{children}</BuilderLayoutContent>
-    </BuilderProvider>
+    <SidebarProvider defaultOpen={false}>
+      <BuilderProvider initialData={initialData}>
+        <BuilderLayoutContent>{children}</BuilderLayoutContent>
+      </BuilderProvider>
+    </SidebarProvider>
   );
 }

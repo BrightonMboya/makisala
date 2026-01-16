@@ -19,6 +19,7 @@ interface AsyncComboboxProps {
   onChange: (value: string) => void;
   onSearch: (query: string) => Promise<{ value: string; label: string }[]>;
   onGetLabel?: (value: string) => Promise<string | null>;
+  initialLabel?: string | null;
   placeholder?: string;
   className?: string;
   debounceMs?: number;
@@ -29,6 +30,7 @@ export function AsyncCombobox({
   onChange,
   onSearch,
   onGetLabel,
+  initialLabel,
   placeholder = 'Select item...',
   className,
   debounceMs = 300,
@@ -37,23 +39,16 @@ export function AsyncCombobox({
   const [searchValue, setSearchValue] = React.useState('');
   const [items, setItems] = React.useState<{ value: string; label: string }[]>([]);
   const [isLoading, setIsLoading] = React.useState(false);
-  const [displayLabel, setDisplayLabel] = React.useState<string | null>(null);
+  const [displayLabel, setDisplayLabel] = React.useState<string | null>(initialLabel ?? null);
   const debounceRef = React.useRef<NodeJS.Timeout | null>(null);
 
-  // Fetch initial suggestions when opening
-  React.useEffect(() => {
-    if (open && items.length === 0) {
-      setIsLoading(true);
-      onSearch('').then((results) => {
-        setItems(results);
-        setIsLoading(false);
-      });
-    }
-  }, [open]);
+  // Don't fetch on open - let user search instead
 
-  // Fetch label for selected value
+  // Fetch label for selected value (skip if we already have a display label or initialLabel)
   React.useEffect(() => {
     if (value && onGetLabel) {
+      // Skip if we already have the correct label
+      if (displayLabel) return;
       // Check if value is in current items
       const found = items.find((item) => item.value === value);
       if (found) {
@@ -67,7 +62,7 @@ export function AsyncCombobox({
     } else if (!value) {
       setDisplayLabel(null);
     }
-  }, [value, items, onGetLabel]);
+  }, [value, items, onGetLabel, displayLabel]);
 
   // Handle search with debounce
   const handleSearch = React.useCallback(
@@ -123,7 +118,9 @@ export function AsyncCombobox({
                 <Loader2 className="h-4 w-4 animate-spin text-stone-400" />
               </div>
             ) : items.length === 0 ? (
-              <CommandEmpty>No results found.</CommandEmpty>
+              <CommandEmpty>
+                {searchValue ? 'No results found.' : 'Type to search...'}
+              </CommandEmpty>
             ) : (
               <CommandGroup>
                 {items.map((item) => (

@@ -165,7 +165,7 @@ export default function SharePage() {
         body: JSON.stringify({
           proposalId,
           recipientEmail: targetEmail,
-          recipientName: isTest ? 'Test User' : clientName,
+          recipientName: clientName, // Always use actual client name so test shows real preview
           subject: emailSubject,
           message: emailMessage,
           isTest,

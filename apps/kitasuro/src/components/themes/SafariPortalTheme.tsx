@@ -567,22 +567,19 @@ export default function SafariPortalTheme({ data }: { data: ItineraryData }) {
                     Final Confirmation
                   </span>
                   <h2 className="font-serif text-4xl leading-tight">
-                    Your Private Safari Proposal
+                    {data.title}
                   </h2>
                 </div>
 
-                <div className="grid grid-cols-2 gap-8 border-y border-white/10 py-8">
+                <div className="border-y border-white/10 py-8">
                   <div className="space-y-1">
                     <span className="text-[10px] tracking-widest text-stone-500 uppercase">
                       Total Investment
                     </span>
                     <p className="font-serif text-3xl">{data.pricing.total}</p>
-                  </div>
-                  <div className="space-y-1">
-                    <span className="text-[10px] tracking-widest text-stone-500 uppercase">
-                      Deposit Required
-                    </span>
-                    <p className="font-serif text-3xl">25%</p>
+                    {data.pricing.perPerson && (
+                      <p className="text-sm text-stone-400">{data.pricing.perPerson} per person</p>
+                    )}
                   </div>
                 </div>
 
@@ -606,23 +603,14 @@ export default function SafariPortalTheme({ data }: { data: ItineraryData }) {
               </div>
             </div>
 
-            <footer className="space-y-6 border-t border-stone-200 pt-12 text-center">
-              <div className="font-serif text-2xl text-stone-300 italic">{data.organization?.name || 'Kitasuro Travel'}</div>
-              <div className="flex justify-center gap-8 text-[10px] font-bold tracking-[0.3em] text-stone-400 uppercase">
-                <a href="#" className="transition-colors hover:text-stone-900">
-                  Instagram
-                </a>
-                <a href="#" className="transition-colors hover:text-stone-900">
-                  WhatsApp
-                </a>
-                <a href="#" className="transition-colors hover:text-stone-900">
-                  Contact
-                </a>
-              </div>
-              <div className="text-[9px] tracking-widest text-stone-300 uppercase">
-                © 2025 Kitasuro • Private & Confidential
-              </div>
-            </footer>
+            {data.organization?.name && (
+              <footer className="space-y-6 border-t border-stone-200 pt-12 text-center">
+                <div className="font-serif text-2xl text-stone-300 italic">{data.organization.name}</div>
+                <div className="text-[9px] tracking-widest text-stone-300 uppercase">
+                  © {new Date().getFullYear()} {data.organization.name} • Private & Confidential
+                </div>
+              </footer>
+            )}
           </section>
         </div>
       </div>

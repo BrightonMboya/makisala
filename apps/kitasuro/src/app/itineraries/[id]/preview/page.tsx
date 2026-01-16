@@ -62,6 +62,7 @@ export default function PreviewPage() {
   const [isProposalSaved, setIsProposalSaved] = useState(false);
   const [isHeroPickerOpen, setIsHeroPickerOpen] = useState(false);
   const [dayPickerOpen, setDayPickerOpen] = useState<number | null>(null);
+  const [isThemePopoverOpen, setIsThemePopoverOpen] = useState(false);
 
   // Listen for hero image picker event from themes
   useEffect(() => {
@@ -336,7 +337,7 @@ export default function PreviewPage() {
             </div>
 
             {/* Theme Selector */}
-            <Popover>
+            <Popover open={isThemePopoverOpen} onOpenChange={setIsThemePopoverOpen}>
               <PopoverTrigger asChild>
                 <Button variant="outline" size="sm" className="gap-2">
                   <Palette className="h-4 w-4" />
@@ -350,7 +351,10 @@ export default function PreviewPage() {
                     {THEME_OPTIONS.map((theme) => (
                       <button
                         key={theme.value}
-                        onClick={() => setSelectedTheme(theme.value)}
+                        onClick={() => {
+                          setSelectedTheme(theme.value);
+                          setIsThemePopoverOpen(false);
+                        }}
                         className={`w-full text-left p-3 rounded-lg border transition-colors ${
                           selectedTheme === theme.value
                             ? 'border-green-600 bg-green-50'
