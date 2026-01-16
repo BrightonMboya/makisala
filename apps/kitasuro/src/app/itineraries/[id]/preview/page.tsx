@@ -14,6 +14,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { transformBuilderToItineraryData } from '@/lib/builder-transform';
 import { useMutation, useQuery } from '@tanstack/react-query';
+import { queryKeys, staleTimes } from '@/lib/query-keys';
 import {
   Popover,
   PopoverContent,
@@ -82,9 +83,10 @@ export default function PreviewPage() {
 
   // Fetch client info
   const { data: clientData } = useQuery({
-    queryKey: ['client', clientId],
+    queryKey: queryKeys.clients.detail(clientId || ''),
     queryFn: () => clientId ? getClientById(clientId) : null,
     enabled: !!clientId,
+    staleTime: staleTimes.clients,
   });
 
   const clientName = clientData?.name || '';
@@ -92,13 +94,15 @@ export default function PreviewPage() {
 
   // Fetch national parks and accommodations for transform
   const { data: parksData } = useQuery({
-    queryKey: ['nationalParks'],
+    queryKey: queryKeys.nationalParks,
     queryFn: getAllNationalParks,
+    staleTime: staleTimes.nationalParks,
   });
 
   const { data: accommodationsData } = useQuery({
-    queryKey: ['accommodations'],
+    queryKey: queryKeys.accommodations.all,
     queryFn: getAllAccommodations,
+    staleTime: staleTimes.accommodations,
   });
 
   const nationalParksMap = useMemo(() => {

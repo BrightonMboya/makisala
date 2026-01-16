@@ -10,6 +10,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { getDashboardData } from '@/app/itineraries/actions';
 import { useQuery } from '@tanstack/react-query';
+import { queryKeys, staleTimes } from '@/lib/query-keys';
 import type { RequestItem } from '@/types/dashboard';
 import { authClient } from '@/lib/auth-client';
 
@@ -18,9 +19,9 @@ export default function ItinerariesPage() {
   const { data: session } = authClient.useSession();
 
   const { data: dashboardData, isLoading } = useQuery({
-    queryKey: ['dashboardData', session?.user?.id],
+    queryKey: queryKeys.dashboardData(session?.user?.id),
     queryFn: getDashboardData,
-    staleTime: 30 * 1000,
+    staleTime: staleTimes.dashboardData,
     enabled: !!session?.user?.id,
   });
 

@@ -1,7 +1,9 @@
 "use client";
 
-import React, { createContext, useContext, useState, useCallback, useEffect } from "react";
+import React, { createContext, useContext, useState, useCallback } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getComments, createComment, createCommentReply, resolveComment as resolveCommentAction } from "@/app/itineraries/actions";
+import { queryKeys, staleTimes } from "@/lib/query-keys";
 
 export type Comment = {
   id: string;
@@ -42,32 +44,42 @@ interface CommentsProviderProps {
 }
 
 export function CommentsProvider({ children, proposalId }: CommentsProviderProps) {
+  const queryClient = useQueryClient();
   const [isCommenting, setIsCommenting] = useState(false);
   const [activeCommentId, setActiveCommentId] = useState<string | null>(null);
-  const [comments, setComments] = useState<Comment[]>([]);
-  const [isLoaded, setIsLoaded] = useState(false);
 
-  // Load comments from database on mount
-  useEffect(() => {
-    const loadComments = async () => {
-      try {
-        const fetchedComments = await getComments(proposalId);
-        setComments(fetchedComments);
-      } catch (e) {
-        console.error("Failed to load comments", e);
-      } finally {
-        setIsLoaded(true);
-      }
-    };
-    
-    loadComments();
-  }, [proposalId]);
+  // Use React Query for comments with caching
+  const { data: comments = [], isLoading } = useQuery({
+    queryKey: queryKeys.comments(proposalId),
+    queryFn: () => getComments(proposalId),
+    staleTime: staleTimes.comments,
+  });
 
   const addComment = useCallback(async (posX: number, posY: number, content: string, width?: number, height?: number) => {
+    // Create optimistic comment
+    const optimisticComment: Comment = {
+      id: `temp-${Date.now()}`,
+      posX,
+      posY,
+      width,
+      height,
+      content,
+      userName: "Guest User",
+      createdAt: new Date(),
+      status: "open",
+      replies: [],
+    };
+
+    // Optimistically add the comment
+    queryClient.setQueryData<Comment[]>(queryKeys.comments(proposalId), (old = []) => [
+      optimisticComment,
+      ...old,
+    ]);
+
     try {
       const result = await createComment({
         proposalId,
-        authorName: "Guest User", // TODO: Get from auth context
+        authorName: "Guest User",
         content,
         posX,
         posY,
@@ -76,59 +88,121 @@ export function CommentsProvider({ children, proposalId }: CommentsProviderProps
       });
 
       if (result.success && result.comment) {
-        // Reload comments to get the new one with proper ID
-        const fetchedComments = await getComments(proposalId);
-        setComments(fetchedComments);
-        
-        // Set the new comment as active
-        if (result.comment.id) {
-          setActiveCommentId(result.comment.id);
-        }
+        // Replace optimistic comment with real one
+        queryClient.setQueryData<Comment[]>(queryKeys.comments(proposalId), (old = []) =>
+          old.map((c) =>
+            c.id === optimisticComment.id
+              ? { ...optimisticComment, id: result.comment!.id }
+              : c
+          )
+        );
+        setActiveCommentId(result.comment.id);
+      } else {
+        // Rollback on failure
+        queryClient.setQueryData<Comment[]>(queryKeys.comments(proposalId), (old = []) =>
+          old.filter((c) => c.id !== optimisticComment.id)
+        );
       }
     } catch (error) {
       console.error("Failed to create comment", error);
+      // Rollback on error
+      queryClient.setQueryData<Comment[]>(queryKeys.comments(proposalId), (old = []) =>
+        old.filter((c) => c.id !== optimisticComment.id)
+      );
     }
-  }, [proposalId]);
+  }, [proposalId, queryClient]);
 
   const addReply = useCallback(async (commentId: string, content: string) => {
+    // Create optimistic reply
+    const optimisticReply: Reply = {
+      id: `temp-reply-${Date.now()}`,
+      content,
+      userName: "Guest User",
+      createdAt: new Date(),
+    };
+
+    // Optimistically add the reply
+    queryClient.setQueryData<Comment[]>(queryKeys.comments(proposalId), (old = []) =>
+      old.map((c) =>
+        c.id === commentId
+          ? { ...c, replies: [...c.replies, optimisticReply] }
+          : c
+      )
+    );
+
     try {
       const result = await createCommentReply({
         commentId,
-        authorName: "Guest User", // TODO: Get from auth context
+        authorName: "Guest User",
         content,
       });
 
-      if (result.success) {
-        // Reload comments to get the updated comment with reply
-        const fetchedComments = await getComments(proposalId);
-        setComments(fetchedComments);
+      if (result.success && result.reply) {
+        // Replace optimistic reply with real one
+        queryClient.setQueryData<Comment[]>(queryKeys.comments(proposalId), (old = []) =>
+          old.map((c) =>
+            c.id === commentId
+              ? {
+                  ...c,
+                  replies: c.replies.map((r) =>
+                    r.id === optimisticReply.id ? { ...r, id: result.reply!.id } : r
+                  ),
+                }
+              : c
+          )
+        );
+      } else {
+        // Rollback on failure
+        queryClient.setQueryData<Comment[]>(queryKeys.comments(proposalId), (old = []) =>
+          old.map((c) =>
+            c.id === commentId
+              ? { ...c, replies: c.replies.filter((r) => r.id !== optimisticReply.id) }
+              : c
+          )
+        );
       }
     } catch (error) {
       console.error("Failed to create reply", error);
+      // Rollback on error
+      queryClient.setQueryData<Comment[]>(queryKeys.comments(proposalId), (old = []) =>
+        old.map((c) =>
+          c.id === commentId
+            ? { ...c, replies: c.replies.filter((r) => r.id !== optimisticReply.id) }
+            : c
+        )
+      );
     }
-  }, [proposalId]);
+  }, [proposalId, queryClient]);
 
   const resolveComment = useCallback(async (commentId: string) => {
+    // Optimistically update
+    queryClient.setQueryData<Comment[]>(queryKeys.comments(proposalId), (old = []) =>
+      old.map((c) => (c.id === commentId ? { ...c, status: "resolved" } : c))
+    );
+
+    if (activeCommentId === commentId) {
+      setActiveCommentId(null);
+    }
+
     try {
       const result = await resolveCommentAction(commentId);
-      
-      if (result.success) {
-        // Update local state optimistically
-        setComments((prev) =>
-          prev.map((c) => (c.id === commentId ? { ...c, status: "resolved" } : c))
+      if (!result.success) {
+        // Rollback on failure
+        queryClient.setQueryData<Comment[]>(queryKeys.comments(proposalId), (old = []) =>
+          old.map((c) => (c.id === commentId ? { ...c, status: "open" } : c))
         );
-        
-        if (activeCommentId === commentId) {
-          setActiveCommentId(null);
-        }
       }
     } catch (error) {
       console.error("Failed to resolve comment", error);
+      // Rollback on error
+      queryClient.setQueryData<Comment[]>(queryKeys.comments(proposalId), (old = []) =>
+        old.map((c) => (c.id === commentId ? { ...c, status: "open" } : c))
+      );
     }
-  }, [activeCommentId]);
+  }, [proposalId, queryClient, activeCommentId]);
 
-  // Don't render children until loaded to avoid hydration mismatch/flash of empty state
-  if (!isLoaded) return null;
+  // Don't render children until loaded to avoid hydration mismatch
+  if (isLoading) return null;
 
   return (
     <CommentsContext.Provider

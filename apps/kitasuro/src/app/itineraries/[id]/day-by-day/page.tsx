@@ -17,6 +17,7 @@ import { airports } from '@/lib/data/itinerary-data';
 import { useBuilder } from '@/components/itinerary-builder/builder-context';
 import { getAllNationalParks } from '@/app/itineraries/actions';
 import { useQuery } from '@tanstack/react-query';
+import { queryKeys, staleTimes } from '@/lib/query-keys';
 
 export default function DayByDayPage() {
   const params = useParams();
@@ -39,9 +40,9 @@ export default function DayByDayPage() {
 
   // Use React Query for caching national parks (accommodations are loaded on-demand via AsyncCombobox)
   const { data: parksData } = useQuery({
-    queryKey: ['nationalParks'],
+    queryKey: queryKeys.nationalParks,
     queryFn: getAllNationalParks,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: staleTimes.nationalParks,
   });
 
   // Memoize the transformed destinations list

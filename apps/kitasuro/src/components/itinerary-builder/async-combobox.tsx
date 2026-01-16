@@ -39,28 +39,43 @@ export function AsyncCombobox({
   const [searchValue, setSearchValue] = React.useState('');
   const [items, setItems] = React.useState<{ value: string; label: string }[]>([]);
   const [isLoading, setIsLoading] = React.useState(false);
+  const [hasSearched, setHasSearched] = React.useState(false); // Track if a search has completed
   const [displayLabel, setDisplayLabel] = React.useState<string | null>(initialLabel ?? null);
   const debounceRef = React.useRef<NodeJS.Timeout | null>(null);
 
   // Don't fetch on open - let user search instead
 
-  // Fetch label for selected value (skip if we already have a display label or initialLabel)
+  // Track if we've already fetched the label for this value
+  const fetchedValueRef = React.useRef<string | null>(null);
+
+  // Fetch label for selected value (skip if we already have a display label)
   React.useEffect(() => {
-    if (value && onGetLabel) {
-      // Skip if we already have the correct label
-      if (displayLabel) return;
-      // Check if value is in current items
-      const found = items.find((item) => item.value === value);
-      if (found) {
-        setDisplayLabel(found.label);
-      } else {
-        // Fetch from server
-        onGetLabel(value).then((label) => {
-          setDisplayLabel(label);
-        });
-      }
-    } else if (!value) {
+    if (!value) {
       setDisplayLabel(null);
+      fetchedValueRef.current = null;
+      return;
+    }
+
+    // Skip if we already have the correct label
+    if (displayLabel) {
+      fetchedValueRef.current = value;
+      return;
+    }
+
+    // Skip if we already fetched for this value
+    if (fetchedValueRef.current === value) return;
+
+    // Check if value is in current items
+    const found = items.find((item) => item.value === value);
+    if (found) {
+      setDisplayLabel(found.label);
+      fetchedValueRef.current = value;
+    } else if (onGetLabel) {
+      // Fetch from server only if not already fetched
+      fetchedValueRef.current = value;
+      onGetLabel(value).then((label) => {
+        if (label) setDisplayLabel(label);
+      });
     }
   }, [value, items, onGetLabel, displayLabel]);
 
@@ -69,15 +84,28 @@ export function AsyncCombobox({
     (query: string) => {
       setSearchValue(query);
 
+      // Show loading immediately when user types
+      if (query) {
+        setIsLoading(true);
+        setHasSearched(false);
+      } else {
+        // Clear results when search is empty
+        setItems([]);
+        setIsLoading(false);
+        setHasSearched(false);
+      }
+
       if (debounceRef.current) {
         clearTimeout(debounceRef.current);
       }
 
+      if (!query) return; // Don't search if empty
+
       debounceRef.current = setTimeout(async () => {
-        setIsLoading(true);
         const results = await onSearch(query);
         setItems(results);
         setIsLoading(false);
+        setHasSearched(true);
       }, debounceMs);
     },
     [onSearch, debounceMs]
@@ -92,8 +120,19 @@ export function AsyncCombobox({
     };
   }, []);
 
+  // Reset state when popover closes
+  const handleOpenChange = React.useCallback((isOpen: boolean) => {
+    setOpen(isOpen);
+    if (!isOpen) {
+      setSearchValue('');
+      setItems([]);
+      setHasSearched(false);
+      setIsLoading(false);
+    }
+  }, []);
+
   return (
-    <Popover open={open} onOpenChange={setOpen} modal={false}>
+    <Popover open={open} onOpenChange={handleOpenChange} modal={false}>
       <PopoverTrigger asChild>
         <Button
           variant="outline"
@@ -119,7 +158,7 @@ export function AsyncCombobox({
               </div>
             ) : items.length === 0 ? (
               <CommandEmpty>
-                {searchValue ? 'No results found.' : 'Type to search...'}
+                {hasSearched && searchValue ? 'No results found.' : 'Type to search...'}
               </CommandEmpty>
             ) : (
               <CommandGroup>
@@ -131,7 +170,6 @@ export function AsyncCombobox({
                       onChange(currentValue === value ? '' : currentValue);
                       setDisplayLabel(item.label);
                       setOpen(false);
-                      setSearchValue('');
                     }}
                   >
                     <Check

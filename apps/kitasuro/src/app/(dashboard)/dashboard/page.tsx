@@ -10,6 +10,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { getDashboardData } from '@/app/itineraries/actions';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { queryKeys, staleTimes } from '@/lib/query-keys';
 import type { RequestItem } from '@/types/dashboard';
 import { checkOnboardingStatus } from '@/lib/onboarding';
 import { Onboarding } from '../_components/onboarding';
@@ -21,15 +22,15 @@ export default function DashboardPage() {
   const { data: session } = authClient.useSession();
 
   const { data: dashboardData, isLoading } = useQuery({
-    queryKey: ['dashboardData', session?.user?.id],
+    queryKey: queryKeys.dashboardData(session?.user?.id),
     queryFn: getDashboardData,
-    staleTime: 30 * 1000,
+    staleTime: staleTimes.dashboardData,
     enabled: !!session?.user?.id,
   });
 
   // Callback to refetch dashboard data when tours are updated
   const handleToursUpdated = () => {
-    queryClient.invalidateQueries({ queryKey: ['dashboardData', session?.user?.id] });
+    queryClient.invalidateQueries({ queryKey: queryKeys.dashboardData(session?.user?.id) });
   };
 
   // Check onboarding status - tours are now properly scoped to organization

@@ -13,6 +13,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { getDashboardData, getSharedTemplates, cloneTemplate } from '@/app/itineraries/actions';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { queryKeys, staleTimes } from '@/lib/query-keys';
 import { authClient } from '@/lib/auth-client';
 import { useToast } from '@/lib/hooks/use-toast';
 import { useState } from 'react';
@@ -33,14 +34,14 @@ export default function ToursPage() {
   const [cloningId, setCloningId] = useState<string | null>(null);
 
   const { data: dashboardData, isLoading } = useQuery({
-    queryKey: ['dashboardData', session?.user?.id],
+    queryKey: queryKeys.dashboardData(session?.user?.id),
     queryFn: getDashboardData,
-    staleTime: 30 * 1000,
+    staleTime: staleTimes.dashboardData,
     enabled: !!session?.user?.id,
   });
 
   const { data: sharedTemplates } = useQuery({
-    queryKey: ['sharedTemplates'],
+    queryKey: queryKeys.tours.shared,
     queryFn: getSharedTemplates,
     staleTime: 60 * 1000,
     enabled: isTemplateDialogOpen,
@@ -54,7 +55,7 @@ export default function ToursPage() {
       const result = await cloneTemplate(templateId);
       if (result.success) {
         toast({ title: 'Template added to your tours!' });
-        queryClient.invalidateQueries({ queryKey: ['dashboardData', session?.user?.id] });
+        queryClient.invalidateQueries({ queryKey: queryKeys.dashboardData(session?.user?.id) });
         setIsTemplateDialogOpen(false);
       } else {
         toast({ title: result.error || 'Failed to add template', variant: 'destructive' });

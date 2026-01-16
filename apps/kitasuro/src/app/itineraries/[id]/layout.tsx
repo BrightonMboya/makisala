@@ -1,7 +1,7 @@
 'use client';
 
 import { Button } from '@repo/ui/button';
-import { ChevronLeft, ChevronRight, Plus, Users, Info, Check, X, Loader2 } from 'lucide-react';
+import { ChevronRight, Plus, Users, Info, Check, X, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams, useParams } from 'next/navigation';
 import { Popover, PopoverContent, PopoverTrigger } from '@repo/ui/popover';
@@ -11,11 +11,11 @@ import { BuilderProvider, useBuilder } from '@/components/itinerary-builder/buil
 import { SidebarProvider, SidebarInset, SidebarTrigger } from '@repo/ui/sidebar';
 import { AppSidebar } from '@/components/app-sidebar';
 import type { TravelerGroup } from '@/types/itinerary-types';
-import { useState, useEffect } from 'react';
-import { getTourDetails, saveProposal } from '@/app/itineraries/actions';
-import { getClientById } from '@/app/(dashboard)/clients/actions';
+import { useMemo } from 'react';
+import { saveProposal } from '@/app/itineraries/actions';
 import { useMutation } from '@tanstack/react-query';
 import { toast } from '@repo/ui/toast';
+import { useProposalData, useClientData } from '@/lib/hooks/use-proposal-data';
 
 function Header() {
   const pathname = usePathname();
@@ -41,19 +41,13 @@ function Header() {
     selectedTheme,
     heroImage,
   } = useBuilder();
-  const [clientName, setClientName] = useState<string>('');
 
   const params = useParams();
   const id = params.id as string;
 
-  // Fetch client name when clientId changes
-  useEffect(() => {
-    if (clientId) {
-      getClientById(clientId).then((client) => {
-        if (client) setClientName(client.name);
-      });
-    }
-  }, [clientId]);
+  // Fetch client name using React Query (cached)
+  const { data: clientData } = useClientData(clientId);
+  const clientName = clientData?.name || '';
 
   // Save Draft Mutation
   const saveDraftMutation = useMutation({
@@ -406,131 +400,96 @@ export default function BuilderLayout({ children }: { children: React.ReactNode 
   const params = useParams();
   const id = params.id as string;
 
-  const [initialData, setInitialData] = useState<any>(null);
-  // Set loading true if we have an existing proposal to load OR if we're creating from a tour template
-  const [loading, setLoading] = useState(() => {
-    return (id && id !== 'new') || !!tourId;
+  const isNewProposal = !id || id === 'new';
+
+  // Use React Query for data fetching (cached, deduped)
+  const { proposal, tourTemplate, isLoading } = useProposalData({
+    proposalId: id,
+    tourId,
+    isNewProposal,
   });
 
-  useEffect(() => {
-    const loadData = async () => {
-      let data: any = {
-        tourId: tourId,
-        startDate: startDateParam ? new Date(startDateParam) : undefined,
-        clientId: clientIdParam,
-        tourTitle: tourTitleParam,
-        tourType: tourTypeParam,
-      };
+  // Transform data into initialData format (memoized)
+  const initialData = useMemo(() => {
+    // Base data from URL params
+    let data: any = {
+      tourId: tourId,
+      startDate: startDateParam ? new Date(startDateParam) : undefined,
+      clientId: clientIdParam,
+      tourTitle: tourTitleParam,
+      tourType: tourTypeParam,
+    };
 
-      // Convert travelers count to travelerGroups if provided
-      if (travelersParam) {
+    // Convert travelers count to travelerGroups if provided
+    if (travelersParam) {
+      const travelersCount = parseInt(travelersParam, 10);
+      if (!isNaN(travelersCount) && travelersCount > 0) {
+        data.travelerGroups = [{ id: '1', count: travelersCount, type: 'Adult' }];
+      }
+    }
+
+    // If we have proposal data, use it
+    if (proposal) {
+      data = {
+        ...data,
+        tourId: proposal.tourId || tourId,
+        tourTitle: proposal.tourTitle || proposal.name,
+        tourType: proposal.tourType || data.tourType,
+        clientId: proposal.clientId || data.clientId,
+        startDate: proposal.startDate ? new Date(proposal.startDate) : data.startDate,
+        startCity: proposal.startCity || '',
+        endCity: proposal.endCity || '',
+        pickupPoint: proposal.pickupPoint || '',
+        transferIncluded: proposal.transferIncluded || 'excluded',
+        travelerGroups: (proposal.travelerGroups as any) || data.travelerGroups,
+        pricingRows: (proposal.pricingRows as any) || [],
+        extras: (proposal.extras as any) || [],
+        inclusions: proposal.inclusions || [],
+        exclusions: proposal.exclusions || [],
+        selectedTheme: proposal.theme || 'minimalistic',
+        heroImage: proposal.heroImage || null,
+        days: (proposal.days || []).map((day: any) => ({
+          id: day.id,
+          dayNumber: day.dayNumber,
+          date: undefined,
+          destination: day.nationalParkId || null,
+          accommodation: day.accommodations?.[0]?.accommodationId || null,
+          accommodationName: day.accommodations?.[0]?.accommodation?.name || null,
+          description: day.description || '',
+          previewImage: day.previewImage || undefined,
+          meals: {
+            breakfast: day.meals?.breakfast || false,
+            lunch: day.meals?.lunch || false,
+            dinner: day.meals?.dinner || false,
+          },
+          activities: (day.activities || []).map((act: any) => ({
+            id: act.id,
+            name: act.name,
+            description: act.description,
+            location: act.location,
+            moment: act.moment,
+            isOptional: act.isOptional,
+            imageUrl: act.imageUrl,
+            time: act.time,
+          })),
+        })),
+      };
+    } else if (tourTemplate) {
+      // Fallback to tour template data
+      data = { ...data, ...tourTemplate };
+      if (!data.travelerGroups && travelersParam) {
         const travelersCount = parseInt(travelersParam, 10);
         if (!isNaN(travelersCount) && travelersCount > 0) {
-          data.travelerGroups = [
-            {
-              id: '1',
-              count: travelersCount,
-              type: 'Adult',
-            },
-          ];
+          data.travelerGroups = [{ id: '1', count: travelersCount, type: 'Adult' }];
         }
       }
+    }
 
-      // 1. Try to fetch existing proposal first if we have an ID
-      if (id && id !== 'new') {
-        try {
-          // Use optimized query for builder (only fetches needed fields)
-          const { getProposalForBuilder } = await import('@/app/itineraries/actions');
-          const proposal = await getProposalForBuilder(id);
+    return data;
+  }, [proposal, tourTemplate, tourId, startDateParam, clientIdParam, tourTitleParam, tourTypeParam, travelersParam]);
 
-          if (proposal) {
-            // Map proposal data to builder state
-            data = {
-              ...data,
-              tourId: proposal.tourId || tourId, // Use proposal's tourId if available
-              tourTitle: proposal.tourTitle || proposal.name,
-              tourType: proposal.tourType || data.tourType,
-              clientId: proposal.clientId || data.clientId,
-              startDate: proposal.startDate ? new Date(proposal.startDate) : data.startDate,
-              startCity: proposal.startCity || '',
-              endCity: proposal.endCity || '',
-              pickupPoint: proposal.pickupPoint || '',
-              transferIncluded: proposal.transferIncluded || 'excluded',
-              travelerGroups: (proposal.travelerGroups as any) || data.travelerGroups,
-              pricingRows: (proposal.pricingRows as any) || [],
-              extras: (proposal.extras as any) || [],
-              inclusions: proposal.inclusions || [],
-              exclusions: proposal.exclusions || [],
-              selectedTheme: proposal.theme || 'minimalistic',
-              heroImage: proposal.heroImage || null,
-              // Map days
-              days: (proposal.days || []).map((day: any) => ({
-                id: day.id,
-                dayNumber: day.dayNumber,
-                date: undefined, // Recalculated by context
-                destination: day.nationalParkId || null, // Use ID directly from the day
-                accommodation: day.accommodations?.[0]?.accommodationId || null, // Use ID
-                accommodationName: day.accommodations?.[0]?.accommodation?.name || null, // Include name to avoid flash
-                description: day.description || '',
-                previewImage: day.previewImage || undefined,
-                meals: {
-                  breakfast: day.meals?.breakfast || false,
-                  lunch: day.meals?.lunch || false,
-                  dinner: day.meals?.dinner || false,
-                },
-                activities: (day.activities || []).map((act: any) => ({
-                  id: act.id,
-                  name: act.name,
-                  description: act.description,
-                  location: act.location,
-                  moment: act.moment,
-                  isOptional: act.isOptional,
-                  imageUrl: act.imageUrl,
-                  time: act.time,
-                })),
-              })),
-            };
-            
-            setInitialData(data);
-            setLoading(false);
-            return; // Exit if proposal loaded successfully
-          }
-        } catch (e) {
-          console.error("Failed to load proposal", e);
-        }
-      }
-
-      // 2. Fallback to existing logic (Tour Template) if no proposal found
-      if (tourId) {
-        const tourData = await getTourDetails(tourId);
-        if (tourData) {
-          data = {
-            ...data,
-            ...tourData,
-          };
-          // If travelerGroups weren't set from query param but we have tour data,
-          // preserve any existing travelerGroups or use the query param
-          if (!data.travelerGroups && travelersParam) {
-            const travelersCount = parseInt(travelersParam, 10);
-            if (!isNaN(travelersCount) && travelersCount > 0) {
-              data.travelerGroups = [
-                {
-                  id: '1',
-                  count: travelersCount,
-                  type: 'Adult',
-                },
-              ];
-            }
-          }
-        }
-      }
-      setInitialData(data);
-      setLoading(false);
-    };
-    loadData();
-  }, [tourId, startDateParam, clientIdParam, tourTitleParam, tourTypeParam, travelersParam, id]);
-
-  if (loading) {
+  // Show loading state
+  if (isLoading) {
     return (
       <div className="flex h-screen flex-col items-center justify-center bg-stone-50">
         <div className="flex flex-col items-center gap-4">

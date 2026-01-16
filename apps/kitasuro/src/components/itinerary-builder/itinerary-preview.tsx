@@ -26,6 +26,7 @@ import type {
 import { getAllNationalParks, getAllAccommodations } from '@/app/itineraries/actions';
 import { cn } from '@/lib/utils';
 import { useQuery } from '@tanstack/react-query';
+import { queryKeys, staleTimes } from '@/lib/query-keys';
 
 export function ItineraryPreview({
   days,
@@ -64,15 +65,15 @@ export function ItineraryPreview({
 
   // Use React Query for caching - shares cache with day-by-day page
   const { data: parksData } = useQuery({
-    queryKey: ['nationalParks'],
+    queryKey: queryKeys.nationalParks,
     queryFn: getAllNationalParks,
-    staleTime: 5 * 60 * 1000,
+    staleTime: staleTimes.nationalParks,
   });
 
   const { data: accommodationsData } = useQuery({
-    queryKey: ['accommodations'],
+    queryKey: queryKeys.accommodations.all,
     queryFn: getAllAccommodations,
-    staleTime: 5 * 60 * 1000,
+    staleTime: staleTimes.accommodations,
   });
 
   const nationalParksMap = useMemo(() => {

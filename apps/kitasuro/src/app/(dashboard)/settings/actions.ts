@@ -299,18 +299,19 @@ export async function getInvitationByToken(token: string) {
     return null;
   }
 
-  // Get organization and inviter details
-  const [org] = await db
-    .select({ name: organizations.name, logoUrl: organizations.logoUrl })
-    .from(organizations)
-    .where(eq(organizations.id, invitation.organizationId))
-    .limit(1);
-
-  const [inviter] = await db
-    .select({ name: user.name })
-    .from(user)
-    .where(eq(user.id, invitation.invitedBy))
-    .limit(1);
+  // Get organization and inviter details in parallel
+  const [[org], [inviter]] = await Promise.all([
+    db
+      .select({ name: organizations.name, logoUrl: organizations.logoUrl })
+      .from(organizations)
+      .where(eq(organizations.id, invitation.organizationId))
+      .limit(1),
+    db
+      .select({ name: user.name })
+      .from(user)
+      .where(eq(user.id, invitation.invitedBy))
+      .limit(1),
+  ]);
 
   return {
     ...invitation,

@@ -21,6 +21,7 @@ import { getClientById } from '@/app/(dashboard)/clients/actions';
 import { saveProposal } from '@/app/itineraries/actions';
 import { toast } from '@repo/ui/toast';
 import { useMutation, useQuery } from '@tanstack/react-query';
+import { queryKeys, staleTimes } from '@/lib/query-keys';
 import Link from 'next/link';
 
 const DEFAULT_MESSAGE = `Thank you for choosing us to plan your unforgettable journey! We've carefully crafted this personalized travel proposal based on your preferences and dreams.
@@ -65,9 +66,10 @@ export default function SharePage() {
 
   // Fetch client info
   const { data: clientData } = useQuery({
-    queryKey: ['client', clientId],
+    queryKey: queryKeys.clients.detail(clientId || ''),
     queryFn: () => (clientId ? getClientById(clientId) : null),
     enabled: !!clientId,
+    staleTime: staleTimes.clients,
   });
 
   // Set default values when client data loads

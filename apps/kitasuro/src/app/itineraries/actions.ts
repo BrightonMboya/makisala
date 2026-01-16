@@ -18,7 +18,7 @@ import {
   proposals,
   tours,
 } from '@repo/db/schema';
-import { desc, eq, ilike, inArray, isNull } from 'drizzle-orm';
+import { desc, eq, ilike, inArray, isNull, sql } from 'drizzle-orm';
 import {
   sendCommentNotificationEmail,
   sendProposalAcceptanceEmail,
@@ -217,6 +217,24 @@ export async function getAccommodationById(id: string) {
   } catch (error) {
     console.error('Error fetching accommodation by id:', error);
     return null;
+  }
+}
+
+// Batch fetch accommodations by IDs to avoid N+1 queries
+export async function getAccommodationsByIds(ids: string[]) {
+  try {
+    if (ids.length === 0) return [];
+
+    const validIds = ids.filter(id => id && id.trim() !== '');
+    if (validIds.length === 0) return [];
+
+    return await db
+      .select({ id: accommodations.id, name: accommodations.name })
+      .from(accommodations)
+      .where(inArray(accommodations.id, validIds));
+  } catch (error) {
+    console.error('Error fetching accommodations by ids:', error);
+    return [];
   }
 }
 
@@ -680,21 +698,20 @@ export async function createComment(data: {
       })
       .returning();
 
-    // Trigger email notification
+    // Trigger email notification - fetch only required fields
     if (comment) {
       try {
         const proposal = await db.query.proposals.findFirst({
           where: eq(proposals.id, data.proposalId),
+          columns: {
+            id: true,
+            name: true,
+            tourTitle: true,
+          },
           with: {
-            organization: true,
-            days: {
-              with: {
-                activities: true,
-                accommodations: {
-                  with: {
-                    accommodation: true,
-                  },
-                },
+            organization: {
+              columns: {
+                notificationEmail: true,
               },
             },
           },
@@ -713,14 +730,6 @@ export async function createComment(data: {
               posY: data.posY,
               width: data.width,
               height: data.height,
-            },
-            proposalData: {
-              days: (proposal.days as any[]).map((d) => ({
-                dayNumber: d.dayNumber,
-                title: d.title,
-                activities: d.activities,
-                accommodations: d.accommodations,
-              })),
             },
           });
         }
@@ -797,36 +806,48 @@ export async function createCommentReply(data: {
       })
       .returning();
 
-    // Trigger email notification for reply
+    // Trigger email notification for reply - fetch comment with proposal in one query
     if (reply) {
       try {
         const comment = await db.query.comments.findFirst({
           where: eq(comments.id, data.commentId),
+          columns: {
+            content: true,
+            userName: true,
+            proposalId: true,
+          },
+          with: {
+            proposal: {
+              columns: {
+                id: true,
+                name: true,
+                tourTitle: true,
+              },
+              with: {
+                organization: {
+                  columns: {
+                    notificationEmail: true,
+                  },
+                },
+              },
+            },
+          },
         });
 
-        if (comment) {
-          const proposal = await db.query.proposals.findFirst({
-            where: eq(proposals.id, comment.proposalId),
-            with: {
-              organization: true,
+        if (comment?.proposal?.organization?.notificationEmail) {
+          await sendCommentNotificationEmail({
+            proposalId: comment.proposal.id,
+            clientName: data.authorName,
+            proposalTitle: comment.proposal.tourTitle || comment.proposal.name,
+            commentContent: data.content,
+            commentAuthor: data.authorName,
+            recipientEmail: comment.proposal.organization.notificationEmail,
+            isReply: true,
+            parentComment: {
+              content: comment.content,
+              author: comment.userName || 'Unknown',
             },
           });
-
-          if (proposal?.organization?.notificationEmail) {
-            await sendCommentNotificationEmail({
-              proposalId: proposal.id,
-              clientName: data.authorName,
-              proposalTitle: proposal.tourTitle || proposal.name,
-              commentContent: data.content,
-              commentAuthor: data.authorName,
-              recipientEmail: proposal.organization.notificationEmail,
-              isReply: true,
-              parentComment: {
-                content: comment.content,
-                author: comment.userName || 'Unknown',
-              },
-            });
-          }
         }
       } catch (e) {
         console.error('Failed to send reply notification email:', e);
@@ -864,11 +885,12 @@ export async function sendProposalToClient(proposalId: string, message?: string)
       return { success: false, error: 'Client does not have an email address' };
     }
 
-    // Calculate duration
-    const daysCount = await db.query.proposalDays.findMany({
-      where: eq(proposalDays.proposalId, proposalId),
-    });
-    const duration = daysCount.length > 0 ? `${daysCount.length} days` : undefined;
+    // Calculate duration using SQL count (more efficient than fetching all rows)
+    const [{ count: daysCount }] = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(proposalDays)
+      .where(eq(proposalDays.proposalId, proposalId));
+    const duration = daysCount > 0 ? `${daysCount} days` : undefined;
 
     // Format start date
     const startDate = proposal.startDate
@@ -1027,15 +1049,20 @@ export async function getAllAccommodationFolders() {
 
 export async function confirmProposal(proposalId: string, clientName: string) {
   try {
-    // Fetch the proposal with organization and client data
-    const proposal = await db.query.proposals.findFirst({
-      where: eq(proposals.id, proposalId),
-      with: {
-        organization: true,
-        client: true,
-        days: true,
-      },
-    });
+    // Fetch proposal and day count in parallel (don't fetch full days data)
+    const [proposal, [{ count: daysCount }]] = await Promise.all([
+      db.query.proposals.findFirst({
+        where: eq(proposals.id, proposalId),
+        with: {
+          organization: true,
+          client: true,
+        },
+      }),
+      db
+        .select({ count: sql<number>`count(*)::int` })
+        .from(proposalDays)
+        .where(eq(proposalDays.proposalId, proposalId)),
+    ]);
 
     if (!proposal) {
       return { success: false, error: 'Proposal not found' };
@@ -1045,8 +1072,8 @@ export async function confirmProposal(proposalId: string, clientName: string) {
       return { success: false, error: 'No notification email configured for this organization' };
     }
 
-    // Calculate duration
-    const duration = proposal.days?.length > 0 ? `${proposal.days.length} days` : undefined;
+    // Calculate duration from count
+    const duration = daysCount > 0 ? `${daysCount} days` : undefined;
 
     // Format start date
     const startDate = proposal.startDate

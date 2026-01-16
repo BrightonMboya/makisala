@@ -252,10 +252,16 @@ function SortableDayRow({
     []
   );
 
+  // Only fetch label if we don't already have the accommodation name
+  // This prevents N+1 queries when proposal data already includes names
   const handleGetAccommodationLabel = useCallback(async (id: string) => {
+    // Check if we already have the name from the day data
+    if (day.accommodationName) {
+      return day.accommodationName;
+    }
     const acc = await getAccommodationById(id);
     return acc?.name || null;
-  }, []);
+  }, [day.accommodationName]);
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: day.id,
   });

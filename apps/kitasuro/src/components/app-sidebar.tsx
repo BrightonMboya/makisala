@@ -32,6 +32,7 @@ import { CountryDropdown } from '@repo/ui/country-dropdown';
 import { Combobox } from '@repo/ui/combobox';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { getDashboardData } from '@/app/itineraries/actions';
+import { queryKeys, staleTimes } from '@/lib/query-keys';
 import { createClient } from '@/app/(dashboard)/clients/actions';
 import { useToast } from '@/lib/hooks/use-toast';
 import { authClient } from '@/lib/auth-client';
@@ -110,9 +111,9 @@ export function AppSidebar() {
 
   // Query shared data - only fetch clients and org tours for the New Request form
   const { data: dashboardData } = useQuery({
-    queryKey: ['dashboardData', session?.user?.id],
+    queryKey: queryKeys.dashboardData(session?.user?.id),
     queryFn: getDashboardData,
-    staleTime: 30 * 1000,
+    staleTime: staleTimes.dashboardData,
     enabled: !!session?.user?.id,
   });
 
@@ -159,7 +160,7 @@ export function AppSidebar() {
           countryOfResidence: data.country || undefined,
         });
         clientId = result.id;
-        queryClient.invalidateQueries({ queryKey: ['dashboardData', session?.user?.id] });
+        queryClient.invalidateQueries({ queryKey: queryKeys.dashboardData(session?.user?.id) });
       } catch (error) {
         toast({ title: 'Failed to create client', variant: 'destructive' });
         return;
