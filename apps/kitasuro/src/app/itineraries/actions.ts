@@ -1200,19 +1200,18 @@ export async function cloneTemplate(templateId: string) {
           .values({
             tourId: newTour.id,
             dayNumber: day.dayNumber,
-            title: day.title,
-            description: day.description,
-            nationalParkId: day.nationalParkId,
+            dayTitle: day.dayTitle,
+            overview: day.overview,
+            national_park_id: day.national_park_id,
           })
           .returning({ id: itineraryDays.id });
 
         // Clone accommodations for this day
         if (day.itineraryAccommodations && day.itineraryAccommodations.length > 0) {
           await db.insert(itineraryAccommodations).values(
-            day.itineraryAccommodations.map((acc: any) => ({
+            day.itineraryAccommodations.map((acc) => ({
               itineraryDayId: newDay.id,
               accommodationId: acc.accommodationId,
-              nights: acc.nights,
             }))
           );
         }
