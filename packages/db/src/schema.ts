@@ -257,23 +257,35 @@ export const userRelations = relations(user, ({ one, many }) => ({
 // ---------- TOURS ----------
 export const tours = pgTable('tours', {
   id: uuid('id').defaultRandom().primaryKey(),
-  tourName: text('tour_name').notNull().unique(), // data.tour_name
-  slug: text().unique(),
+  tourName: text('tour_name').notNull(), // data.tour_name (unique per org, not globally)
+  slug: text(),
   overview: text('overview').notNull(), // data.overview
   pricing: numeric('pricing', { precision: 12, scale: 2 }).notNull(), // data.pricing
   country: text('country').notNull(), // if you scrape it
-  sourceUrl: text('source_url').notNull(), // optional: where you scraped from
+  sourceUrl: text('source_url'), // optional: where you scraped from
   activities: json('activities').notNull(), // [{title: "...", activity_name: "..."}]
   topFeatures: json('top_features').notNull(), // [{title: "...", description: "..."}]
   img_url: text('img_url').notNull(),
   number_of_days: integer('number_of_days').notNull(),
   tags: text('tags').array().notNull(), // eg ['family', 'group', 'luxury']
+  organizationId: uuid('organization_id').references(() => organizations.id, { onDelete: 'cascade' }), // null = shared template, uuid = org-specific
+  clonedFromId: uuid('cloned_from_id').references((): any => tours.id, { onDelete: 'set null' }), // reference to template this was cloned from
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
 });
 
-export const toursRelations = relations(tours, ({ many }) => ({
+export const toursRelations = relations(tours, ({ one, many }) => ({
   days: many(itineraryDays),
+  organization: one(organizations, {
+    fields: [tours.organizationId],
+    references: [organizations.id],
+  }),
+  clonedFrom: one(tours, {
+    fields: [tours.clonedFromId],
+    references: [tours.id],
+    relationName: 'clonedFrom',
+  }),
+  clones: many(tours, { relationName: 'clonedFrom' }),
 }));
 
 // ---------- ITINERARY DAYS ----------

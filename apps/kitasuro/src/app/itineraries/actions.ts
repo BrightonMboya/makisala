@@ -6,6 +6,8 @@ import {
   clients,
   commentReplies,
   comments,
+  itineraryAccommodations,
+  itineraryDays,
   nationalParks,
   organizations,
   pages,
@@ -16,7 +18,7 @@ import {
   proposals,
   tours,
 } from '@repo/db/schema';
-import { desc, eq, ilike, inArray } from 'drizzle-orm';
+import { desc, eq, ilike, inArray, isNull, sql } from 'drizzle-orm';
 import {
   sendCommentNotificationEmail,
   sendProposalAcceptanceEmail,
@@ -35,23 +37,41 @@ async function getSession() {
 
 export async function getToursList(country?: string) {
   try {
-    let query = db
+    const result = await db
       .select({
         id: tours.id,
         name: tours.tourName,
         days: tours.number_of_days,
       })
-      .from(tours);
+      .from(tours)
+      .where(country ? eq(tours.country, country) : undefined);
 
-    if (country) {
-      // @ts-ignore - dynamic where clause
-      query = query.where(eq(tours.country, country));
-    }
-
-    const result = await query;
     return result;
   } catch (error) {
     console.error('Error fetching tours:', error);
+    return [];
+  }
+}
+
+// Get tours belonging to the user's organization
+export async function getToursByOrganization() {
+  try {
+    const session = await getSession();
+    if (!session?.user?.organizationId) return [];
+
+    const result = await db
+      .select({
+        id: tours.id,
+        name: tours.tourName,
+        days: tours.number_of_days,
+      })
+      .from(tours)
+      .where(eq(tours.organizationId, session.user.organizationId))
+      .orderBy(tours.tourName);
+
+    return result;
+  } catch (error) {
+    console.error('Error fetching organization tours:', error);
     return [];
   }
 }
@@ -152,6 +172,67 @@ export async function getAllAccommodations() {
   }
 }
 
+export async function searchAccommodations(query: string, limit: number = 20) {
+  try {
+    if (!query.trim()) {
+      return await db.query.accommodations.findMany({
+        limit,
+        with: {
+          images: {
+            limit: 1,
+          },
+        },
+      });
+    }
+    return await db.query.accommodations.findMany({
+      where: ilike(accommodations.name, `%${query}%`),
+      limit,
+      with: {
+        images: {
+          limit: 1,
+        },
+      },
+    });
+  } catch (error) {
+    console.error('Error searching accommodations:', error);
+    return [];
+  }
+}
+
+export async function getAccommodationById(id: string) {
+  try {
+    return await db.query.accommodations.findFirst({
+      where: eq(accommodations.id, id),
+      with: {
+        images: {
+          limit: 1,
+        },
+      },
+    });
+  } catch (error) {
+    console.error('Error fetching accommodation by id:', error);
+    return null;
+  }
+}
+
+// Batch fetch accommodations by IDs to avoid N+1 queries
+export async function getAccommodationsByIds(ids: string[]) {
+  try {
+    if (ids.length === 0) return [];
+
+    const validIds = ids.filter(id => id && id.trim() !== '');
+    if (validIds.length === 0) return [];
+
+    return await db
+      .select({ id: accommodations.id, name: accommodations.name })
+      .from(accommodations)
+      .where(inArray(accommodations.id, validIds));
+  } catch (error) {
+    console.error('Error fetching accommodations by ids:', error);
+    return [];
+  }
+}
+
 export async function getAllNationalParks() {
   try {
     return await db
@@ -213,17 +294,34 @@ export async function getAllProposals() {
 }
 
 // Combined dashboard data fetch - single session call
+// Fetches essential data for sidebar and dashboard (clients, org tours, proposals)
 export async function getDashboardData() {
   try {
     const session = await getSession();
     if (!session?.user?.organizationId) {
-      return { proposals: [], clients: [], tours: [], organization: null };
+      return { clients: [], tours: [], proposals: [], organization: null };
     }
 
     const orgId = session.user.organizationId;
 
-    // Fetch all data in parallel with single session
-    const [proposalsData, clientsData, toursData, orgData] = await Promise.all([
+    // Fetch essential data in parallel
+    const [clientsData, orgToursData, proposalsData, orgData] = await Promise.all([
+      db
+        .select({ id: clients.id, name: clients.name })
+        .from(clients)
+        .where(eq(clients.organizationId, orgId))
+        .orderBy(clients.name),
+      // Organization's tours only (properly scoped)
+      db
+        .select({
+          id: tours.id,
+          name: tours.tourName,
+          days: tours.number_of_days,
+        })
+        .from(tours)
+        .where(eq(tours.organizationId, orgId))
+        .orderBy(tours.tourName),
+      // Proposals for dashboard display
       db.query.proposals.findMany({
         where: eq(proposals.organizationId, orgId),
         orderBy: desc(proposals.updatedAt),
@@ -239,19 +337,6 @@ export async function getDashboardData() {
           travelerGroups: true,
         },
       }),
-      db
-        .select({ id: clients.id, name: clients.name })
-        .from(clients)
-        .where(eq(clients.organizationId, orgId))
-        .orderBy(clients.name),
-      // TODO: the tours here needs to be filtered by organizationId
-      db
-        .select({
-          id: tours.id,
-          name: tours.tourName,
-          days: tours.number_of_days,
-        })
-        .from(tours),
       db.query.organizations.findFirst({
         where: eq(organizations.id, orgId),
         columns: {
@@ -265,14 +350,14 @@ export async function getDashboardData() {
     ]);
 
     return {
-      proposals: proposalsData,
       clients: clientsData,
-      tours: toursData,
+      tours: orgToursData,
+      proposals: proposalsData,
       organization: orgData,
     };
   } catch (error) {
     console.error('Error fetching dashboard data:', error);
-    return { proposals: [], clients: [], tours: [], organization: null };
+    return { clients: [], tours: [], proposals: [], organization: null };
   }
 }
 
@@ -311,6 +396,81 @@ export async function getProposal(id: string) {
     return result;
   } catch (error) {
     console.error('Error fetching proposal:', error);
+    return null;
+  }
+}
+
+// Optimized query for builder - only fetches needed fields, no heavy relations
+export async function getProposalForBuilder(id: string) {
+  try {
+    const result = await db.query.proposals.findFirst({
+      where: eq(proposals.id, id),
+      columns: {
+        id: true,
+        name: true,
+        tourId: true,
+        tourTitle: true,
+        tourType: true,
+        clientId: true,
+        startDate: true,
+        startCity: true,
+        endCity: true,
+        pickupPoint: true,
+        transferIncluded: true,
+        travelerGroups: true,
+        pricingRows: true,
+        extras: true,
+        inclusions: true,
+        exclusions: true,
+        theme: true,
+        heroImage: true,
+      },
+      with: {
+        days: {
+          columns: {
+            id: true,
+            dayNumber: true,
+            nationalParkId: true,
+            description: true,
+            previewImage: true,
+          },
+          with: {
+            accommodations: {
+              columns: {
+                accommodationId: true,
+              },
+              with: {
+                accommodation: {
+                  columns: {
+                    id: true,
+                    name: true,
+                  },
+                },
+              },
+            },
+            meals: {
+              columns: {
+                breakfast: true,
+                lunch: true,
+                dinner: true,
+              },
+            },
+            activities: {
+              columns: {
+                id: true,
+                name: true,
+                description: true,
+              },
+            },
+          },
+          orderBy: (days, { asc }) => [asc(days.dayNumber)],
+        },
+      },
+    });
+
+    return result;
+  } catch (error) {
+    console.error('Error fetching proposal for builder:', error);
     return null;
   }
 }
@@ -531,21 +691,20 @@ export async function createComment(data: {
       })
       .returning();
 
-    // Trigger email notification
+    // Trigger email notification - fetch only required fields
     if (comment) {
       try {
         const proposal = await db.query.proposals.findFirst({
           where: eq(proposals.id, data.proposalId),
+          columns: {
+            id: true,
+            name: true,
+            tourTitle: true,
+          },
           with: {
-            organization: true,
-            days: {
-              with: {
-                activities: true,
-                accommodations: {
-                  with: {
-                    accommodation: true,
-                  },
-                },
+            organization: {
+              columns: {
+                notificationEmail: true,
               },
             },
           },
@@ -564,14 +723,6 @@ export async function createComment(data: {
               posY: data.posY,
               width: data.width,
               height: data.height,
-            },
-            proposalData: {
-              days: (proposal.days as any[]).map((d) => ({
-                dayNumber: d.dayNumber,
-                title: d.title,
-                activities: d.activities,
-                accommodations: d.accommodations,
-              })),
             },
           });
         }
@@ -648,36 +799,48 @@ export async function createCommentReply(data: {
       })
       .returning();
 
-    // Trigger email notification for reply
+    // Trigger email notification for reply - fetch comment with proposal in one query
     if (reply) {
       try {
         const comment = await db.query.comments.findFirst({
           where: eq(comments.id, data.commentId),
+          columns: {
+            content: true,
+            userName: true,
+            proposalId: true,
+          },
+          with: {
+            proposal: {
+              columns: {
+                id: true,
+                name: true,
+                tourTitle: true,
+              },
+              with: {
+                organization: {
+                  columns: {
+                    notificationEmail: true,
+                  },
+                },
+              },
+            },
+          },
         });
 
-        if (comment) {
-          const proposal = await db.query.proposals.findFirst({
-            where: eq(proposals.id, comment.proposalId),
-            with: {
-              organization: true,
+        if (comment?.proposal?.organization?.notificationEmail) {
+          await sendCommentNotificationEmail({
+            proposalId: comment.proposal.id,
+            clientName: data.authorName,
+            proposalTitle: comment.proposal.tourTitle || comment.proposal.name,
+            commentContent: data.content,
+            commentAuthor: data.authorName,
+            recipientEmail: comment.proposal.organization.notificationEmail,
+            isReply: true,
+            parentComment: {
+              content: comment.content,
+              author: comment.userName || 'Unknown',
             },
           });
-
-          if (proposal?.organization?.notificationEmail) {
-            await sendCommentNotificationEmail({
-              proposalId: proposal.id,
-              clientName: data.authorName,
-              proposalTitle: proposal.tourTitle || proposal.name,
-              commentContent: data.content,
-              commentAuthor: data.authorName,
-              recipientEmail: proposal.organization.notificationEmail,
-              isReply: true,
-              parentComment: {
-                content: comment.content,
-                author: comment.userName || 'Unknown',
-              },
-            });
-          }
         }
       } catch (e) {
         console.error('Failed to send reply notification email:', e);
@@ -715,11 +878,12 @@ export async function sendProposalToClient(proposalId: string, message?: string)
       return { success: false, error: 'Client does not have an email address' };
     }
 
-    // Calculate duration
-    const daysCount = await db.query.proposalDays.findMany({
-      where: eq(proposalDays.proposalId, proposalId),
-    });
-    const duration = daysCount.length > 0 ? `${daysCount.length} days` : undefined;
+    // Calculate duration using SQL count (more efficient than fetching all rows)
+    const [{ count: daysCount }] = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(proposalDays)
+      .where(eq(proposalDays.proposalId, proposalId));
+    const duration = daysCount > 0 ? `${daysCount} days` : undefined;
 
     // Format start date
     const startDate = proposal.startDate
@@ -878,15 +1042,20 @@ export async function getAllAccommodationFolders() {
 
 export async function confirmProposal(proposalId: string, clientName: string) {
   try {
-    // Fetch the proposal with organization and client data
-    const proposal = await db.query.proposals.findFirst({
-      where: eq(proposals.id, proposalId),
-      with: {
-        organization: true,
-        client: true,
-        days: true,
-      },
-    });
+    // Fetch proposal and day count in parallel (don't fetch full days data)
+    const [proposal, [{ count: daysCount }]] = await Promise.all([
+      db.query.proposals.findFirst({
+        where: eq(proposals.id, proposalId),
+        with: {
+          organization: true,
+          client: true,
+        },
+      }),
+      db
+        .select({ count: sql<number>`count(*)::int` })
+        .from(proposalDays)
+        .where(eq(proposalDays.proposalId, proposalId)),
+    ]);
 
     if (!proposal) {
       return { success: false, error: 'Proposal not found' };
@@ -896,8 +1065,8 @@ export async function confirmProposal(proposalId: string, clientName: string) {
       return { success: false, error: 'No notification email configured for this organization' };
     }
 
-    // Calculate duration
-    const duration = proposal.days?.length > 0 ? `${proposal.days.length} days` : undefined;
+    // Calculate duration from count
+    const duration = daysCount > 0 ? `${daysCount} days` : undefined;
 
     // Format start date
     const startDate = proposal.startDate
@@ -945,5 +1114,118 @@ export async function confirmProposal(proposalId: string, clientName: string) {
   } catch (error) {
     console.error('Error confirming proposal:', error);
     return { success: false, error: 'Failed to confirm proposal' };
+  }
+}
+
+// Get shared templates (tours with no organizationId)
+export async function getSharedTemplates() {
+  try {
+    const templates = await db
+      .select({
+        id: tours.id,
+        name: tours.tourName,
+        overview: tours.overview,
+        days: tours.number_of_days,
+        country: tours.country,
+        imageUrl: tours.img_url,
+        tags: tours.tags,
+      })
+      .from(tours)
+      .where(isNull(tours.organizationId))
+      .orderBy(tours.tourName)
+      .limit(100);
+
+    return templates;
+  } catch (error) {
+    console.error('Error fetching shared templates:', error);
+    return [];
+  }
+}
+
+// Clone a template to the user's organization
+export async function cloneTemplate(templateId: string) {
+  try {
+    const session = await getSession();
+    if (!session?.user?.organizationId) {
+      return { success: false, error: 'Unauthorized' };
+    }
+
+    // Get the template to clone
+    const template = await db.query.tours.findFirst({
+      where: eq(tours.id, templateId),
+      with: {
+        days: {
+          with: {
+            itineraryAccommodations: true,
+          },
+        },
+      },
+    });
+
+    if (!template) {
+      return { success: false, error: 'Template not found' };
+    }
+
+    // Authorization: Only allow cloning shared templates (null organizationId)
+    // or templates from the user's own organization
+    if (template.organizationId !== null && template.organizationId !== session.user.organizationId) {
+      return { success: false, error: 'Unauthorized to clone this template' };
+    }
+
+    // Use a transaction to ensure data integrity
+    const result = await db.transaction(async (tx) => {
+      // Create a new tour for the organization
+      const [newTour] = await tx
+        .insert(tours)
+        .values({
+          tourName: template.tourName,
+          slug: template.slug,
+          overview: template.overview,
+          pricing: template.pricing,
+          country: template.country,
+          sourceUrl: template.sourceUrl,
+          activities: template.activities,
+          topFeatures: template.topFeatures,
+          img_url: template.img_url,
+          number_of_days: template.number_of_days,
+          tags: template.tags,
+          organizationId: session.user.organizationId,
+          clonedFromId: template.id,
+        })
+        .returning({ id: tours.id });
+
+      // Clone the itinerary days if they exist
+      if (template.days && template.days.length > 0) {
+        for (const day of template.days) {
+          const [newDay] = await tx
+            .insert(itineraryDays)
+            .values({
+              tourId: newTour.id,
+              dayNumber: day.dayNumber,
+              dayTitle: day.dayTitle,
+              overview: day.overview,
+              national_park_id: day.national_park_id,
+            })
+            .returning({ id: itineraryDays.id });
+
+          // Clone accommodations for this day
+          if (day.itineraryAccommodations && day.itineraryAccommodations.length > 0) {
+            await tx.insert(itineraryAccommodations).values(
+              day.itineraryAccommodations.map((acc) => ({
+                itineraryDayId: newDay.id,
+                accommodationId: acc.accommodationId,
+              }))
+            );
+          }
+        }
+      }
+
+      return { tourId: newTour.id };
+    });
+
+    return { success: true, tourId: result.tourId };
+  } catch (error) {
+    console.error('Error cloning template:', error);
+    return { success: false, error: 'Failed to clone template' };
   }
 }

@@ -13,8 +13,13 @@ import {
 } from './actions';
 import { redirect } from 'next/navigation';
 
-export default async function SettingsPage() {
+interface SettingsPageProps {
+  searchParams: Promise<{ tab?: string }>;
+}
+
+export default async function SettingsPage({ searchParams }: SettingsPageProps) {
   const isAdmin = await checkIsAdmin();
+  const params = await searchParams;
 
   const [organization, teamMembers, pendingInvitations, currentUser] = await Promise.all([
     getOrganizationSettings(),
@@ -27,6 +32,13 @@ export default async function SettingsPage() {
     redirect('/login');
   }
 
+  // Determine default tab from URL param or based on admin status
+  const validTabs = ['organization', 'team', 'notifications', 'profile'];
+  const requestedTab = params.tab;
+  const defaultTab = requestedTab && validTabs.includes(requestedTab)
+    ? requestedTab
+    : (isAdmin ? 'organization' : 'profile');
+
   return (
     <div className="p-8">
       <div className="mx-auto max-w-4xl">
@@ -35,7 +47,7 @@ export default async function SettingsPage() {
           <p className="mt-2 text-gray-600">Manage your organization and account settings</p>
         </div>
 
-        <Tabs defaultValue={isAdmin ? 'organization' : 'profile'} className="space-y-6">
+        <Tabs defaultValue={defaultTab} className="space-y-6">
           <TabsList className="grid w-full grid-cols-4 h-auto p-1">
             <TabsTrigger
               value="organization"
