@@ -15,6 +15,7 @@ import { Badge } from '@repo/ui/badge';
 import { Search, MapPin, Calendar, Plus, Check, Loader2 } from 'lucide-react';
 import { getSharedTemplates, cloneTemplate } from '@/app/itineraries/actions';
 import { authClient } from '@/lib/auth-client';
+import { toast } from '@repo/ui/toast';
 import Image from 'next/image';
 
 interface TemplateBrowserProps {
@@ -46,6 +47,7 @@ export function TemplateBrowser({ trigger, onTemplateCloned }: TemplateBrowserPr
     if (!isOpen) {
       setClonedIds(new Set());
       setSearchQuery('');
+      setCloningId(null);
     }
   };
 
@@ -63,7 +65,20 @@ export function TemplateBrowser({ trigger, onTemplateCloned }: TemplateBrowserPr
         // Invalidate dashboard data to refresh tour count (invalidation triggers refetch automatically)
         await queryClient.invalidateQueries({ queryKey: ['dashboardData', session?.user?.id] });
         onTemplateCloned?.();
+      } else {
+        toast({
+          title: 'Failed to add template',
+          description: result.error || 'Please try again',
+          variant: 'destructive',
+        });
       }
+    },
+    onError: (error) => {
+      toast({
+        title: 'Failed to add template',
+        description: error instanceof Error ? error.message : 'Please try again',
+        variant: 'destructive',
+      });
     },
     onSettled: () => {
       setCloningId(null);

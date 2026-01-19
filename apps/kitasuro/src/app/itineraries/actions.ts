@@ -460,8 +460,6 @@ export async function getProposalForBuilder(id: string) {
                 id: true,
                 name: true,
                 description: true,
-                duration: true,
-                sortOrder: true,
               },
             },
           },
@@ -1134,7 +1132,8 @@ export async function getSharedTemplates() {
       })
       .from(tours)
       .where(isNull(tours.organizationId))
-      .orderBy(tours.tourName);
+      .orderBy(tours.tourName)
+      .limit(100);
 
     return templates;
   } catch (error) {

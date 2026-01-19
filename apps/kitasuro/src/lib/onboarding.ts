@@ -24,9 +24,11 @@ interface Organization {
 
 /**
  * Check if organization name is a default auto-generated name
+ * These patterns match auto-generated names during signup (e.g., "John's Agency")
  */
 function isDefaultOrganizationName(name: string | null | undefined): boolean {
-  if (!name) return true;
+  // Treat empty or excessively long names as default (prevents regex performance issues)
+  if (!name || name.length > 255) return true;
 
   // Pattern to detect default organization names:
   // - "John's Agency" (any name followed by 's Agency)
