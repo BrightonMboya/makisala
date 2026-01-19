@@ -37,20 +37,15 @@ async function getSession() {
 
 export async function getToursList(country?: string) {
   try {
-    let query = db
+    const result = await db
       .select({
         id: tours.id,
         name: tours.tourName,
         days: tours.number_of_days,
       })
-      .from(tours);
+      .from(tours)
+      .where(country ? eq(tours.country, country) : undefined);
 
-    if (country) {
-      // @ts-ignore - dynamic where clause
-      query = query.where(eq(tours.country, country));
-    }
-
-    const result = await query;
     return result;
   } catch (error) {
     console.error('Error fetching tours:', error);
@@ -1172,53 +1167,64 @@ export async function cloneTemplate(templateId: string) {
       return { success: false, error: 'Template not found' };
     }
 
-    // Create a new tour for the organization
-    const [newTour] = await db
-      .insert(tours)
-      .values({
-        tourName: template.tourName,
-        slug: template.slug,
-        overview: template.overview,
-        pricing: template.pricing,
-        country: template.country,
-        sourceUrl: template.sourceUrl,
-        activities: template.activities,
-        topFeatures: template.topFeatures,
-        img_url: template.img_url,
-        number_of_days: template.number_of_days,
-        tags: template.tags,
-        organizationId: session.user.organizationId,
-        clonedFromId: template.id,
-      })
-      .returning({ id: tours.id });
-
-    // Clone the itinerary days if they exist
-    if (template.days && template.days.length > 0) {
-      for (const day of template.days) {
-        const [newDay] = await db
-          .insert(itineraryDays)
-          .values({
-            tourId: newTour.id,
-            dayNumber: day.dayNumber,
-            dayTitle: day.dayTitle,
-            overview: day.overview,
-            national_park_id: day.national_park_id,
-          })
-          .returning({ id: itineraryDays.id });
-
-        // Clone accommodations for this day
-        if (day.itineraryAccommodations && day.itineraryAccommodations.length > 0) {
-          await db.insert(itineraryAccommodations).values(
-            day.itineraryAccommodations.map((acc) => ({
-              itineraryDayId: newDay.id,
-              accommodationId: acc.accommodationId,
-            }))
-          );
-        }
-      }
+    // Authorization: Only allow cloning shared templates (null organizationId)
+    // or templates from the user's own organization
+    if (template.organizationId !== null && template.organizationId !== session.user.organizationId) {
+      return { success: false, error: 'Unauthorized to clone this template' };
     }
 
-    return { success: true, tourId: newTour.id };
+    // Use a transaction to ensure data integrity
+    const result = await db.transaction(async (tx) => {
+      // Create a new tour for the organization
+      const [newTour] = await tx
+        .insert(tours)
+        .values({
+          tourName: template.tourName,
+          slug: template.slug,
+          overview: template.overview,
+          pricing: template.pricing,
+          country: template.country,
+          sourceUrl: template.sourceUrl,
+          activities: template.activities,
+          topFeatures: template.topFeatures,
+          img_url: template.img_url,
+          number_of_days: template.number_of_days,
+          tags: template.tags,
+          organizationId: session.user.organizationId,
+          clonedFromId: template.id,
+        })
+        .returning({ id: tours.id });
+
+      // Clone the itinerary days if they exist
+      if (template.days && template.days.length > 0) {
+        for (const day of template.days) {
+          const [newDay] = await tx
+            .insert(itineraryDays)
+            .values({
+              tourId: newTour.id,
+              dayNumber: day.dayNumber,
+              dayTitle: day.dayTitle,
+              overview: day.overview,
+              national_park_id: day.national_park_id,
+            })
+            .returning({ id: itineraryDays.id });
+
+          // Clone accommodations for this day
+          if (day.itineraryAccommodations && day.itineraryAccommodations.length > 0) {
+            await tx.insert(itineraryAccommodations).values(
+              day.itineraryAccommodations.map((acc) => ({
+                itineraryDayId: newDay.id,
+                accommodationId: acc.accommodationId,
+              }))
+            );
+          }
+        }
+      }
+
+      return { tourId: newTour.id };
+    });
+
+    return { success: true, tourId: result.tourId };
   } catch (error) {
     console.error('Error cloning template:', error);
     return { success: false, error: 'Failed to clone template' };

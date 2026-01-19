@@ -40,6 +40,15 @@ export function TemplateBrowser({ trigger, onTemplateCloned }: TemplateBrowserPr
   const queryClient = useQueryClient();
   const { data: session } = authClient.useSession();
 
+  // Reset state when dialog closes to prevent memory leak
+  const handleOpenChange = (isOpen: boolean) => {
+    setOpen(isOpen);
+    if (!isOpen) {
+      setClonedIds(new Set());
+      setSearchQuery('');
+    }
+  };
+
   const { data: templates = [], isLoading } = useQuery<Template[]>({
     queryKey: ['sharedTemplates'],
     queryFn: getSharedTemplates,
@@ -51,9 +60,8 @@ export function TemplateBrowser({ trigger, onTemplateCloned }: TemplateBrowserPr
     onSuccess: async (result, templateId) => {
       if (result.success) {
         setClonedIds((prev) => new Set([...prev, templateId]));
-        // Invalidate and refetch dashboard data to refresh tour count
+        // Invalidate dashboard data to refresh tour count (invalidation triggers refetch automatically)
         await queryClient.invalidateQueries({ queryKey: ['dashboardData', session?.user?.id] });
-        await queryClient.refetchQueries({ queryKey: ['dashboardData', session?.user?.id] });
         onTemplateCloned?.();
       }
     },
@@ -78,7 +86,7 @@ export function TemplateBrowser({ trigger, onTemplateCloned }: TemplateBrowserPr
   });
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>{trigger}</DialogTrigger>
       <DialogContent className="max-w-4xl max-h-[85vh] overflow-hidden flex flex-col">
         <DialogHeader>
@@ -207,7 +215,7 @@ export function TemplateBrowser({ trigger, onTemplateCloned }: TemplateBrowserPr
           <span className="text-stone-500">
             {clonedIds.size > 0 && `${clonedIds.size} template${clonedIds.size > 1 ? 's' : ''} added`}
           </span>
-          <Button variant="outline" onClick={() => setOpen(false)}>
+          <Button variant="outline" onClick={() => handleOpenChange(false)}>
             {clonedIds.size > 0 ? 'Done' : 'Close'}
           </Button>
         </div>
