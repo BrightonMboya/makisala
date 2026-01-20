@@ -18,8 +18,9 @@ export default async function InvitePage({
 }: {
   params: Promise<{ token: string }>;
 }) {
-  const { token } = await params;
-  const invitation = await getInvitationByToken(token);
+  // In Better Auth, the token in the URL is the invitation ID
+  const { token: invitationId } = await params;
+  const invitation = await getInvitationByToken(invitationId);
   const session = await getSession();
 
   if (!invitation) {
@@ -69,8 +70,8 @@ export default async function InvitePage({
       );
     }
 
-    // Accept the invitation
-    const result = await acceptInvitation(token, session.user.id);
+    // Accept the invitation using Better Auth (only needs invitationId)
+    const result = await acceptInvitation(invitationId);
     if (result.success) {
       redirect('/dashboard');
     }
@@ -99,13 +100,13 @@ export default async function InvitePage({
           <div className="space-y-2">
             <Button asChild className="w-full">
               <Link
-                href={`/sign-up?email=${encodeURIComponent(invitation.email)}&invite=${token}`}
+                href={`/sign-up?email=${encodeURIComponent(invitation.email)}&invite=${invitationId}`}
               >
                 Create Account
               </Link>
             </Button>
             <Button asChild variant="outline" className="w-full">
-              <Link href={`/login?invite=${token}`}>Already have an account? Log in</Link>
+              <Link href={`/login?invite=${invitationId}`}>Already have an account? Log in</Link>
             </Button>
           </div>
         </CardContent>

@@ -166,7 +166,7 @@ export function Sidebar() {
     <div className="fixed top-0 left-0 flex h-full min-h-screen w-64 flex-col border-r border-stone-200 bg-white">
       <div className="p-6">
         <Link href="/dashboard">
-          <h1 className="font-serif text-2xl font-bold text-green-800">Makisala.</h1>
+          <h1 className="font-serif text-2xl font-bold text-green-800">Dashboard</h1>
         </Link>
       </div>
       <div className="px-4 py-2">

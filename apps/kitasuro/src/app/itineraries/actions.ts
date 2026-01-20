@@ -8,6 +8,7 @@ import {
   comments,
   itineraryAccommodations,
   itineraryDays,
+  member,
   nationalParks,
   organizations,
   pages,
@@ -35,6 +36,27 @@ async function getSession() {
   });
 }
 
+// Helper to get organization ID from session or member table
+async function getOrganizationId(
+  session: Awaited<ReturnType<typeof getSession>>,
+): Promise<string | null> {
+  if (!session?.user?.id) return null;
+
+  // First try session's activeOrganizationId (set by Better Auth organization plugin)
+  if (session.session?.activeOrganizationId) {
+    return session.session.activeOrganizationId as string;
+  }
+
+  // Fallback: look up user's first organization from member table
+  const [membership] = await db
+    .select({ organizationId: member.organizationId })
+    .from(member)
+    .where(eq(member.userId, session.user.id))
+    .limit(1);
+
+  return membership?.organizationId ?? null;
+}
+
 export async function getToursList(country?: string) {
   try {
     const result = await db
@@ -57,7 +79,8 @@ export async function getToursList(country?: string) {
 export async function getToursByOrganization() {
   try {
     const session = await getSession();
-    if (!session?.user?.organizationId) return [];
+    const orgId = await getOrganizationId(session);
+    if (!orgId) return [];
 
     const result = await db
       .select({
@@ -66,7 +89,7 @@ export async function getToursByOrganization() {
         days: tours.number_of_days,
       })
       .from(tours)
-      .where(eq(tours.organizationId, session.user.organizationId))
+      .where(eq(tours.organizationId, orgId))
       .orderBy(tours.tourName);
 
     return result;
@@ -119,10 +142,11 @@ export async function getTourDetails(id: string) {
 export async function getOrganizationSettings() {
   try {
     const session = await getSession();
-    if (!session?.user?.organizationId) return null;
+    const orgId = await getOrganizationId(session);
+    if (!orgId) return null;
 
     return await db.query.organizations.findFirst({
-      where: eq(organizations.id, session.user.organizationId),
+      where: eq(organizations.id, orgId),
     });
   } catch (error) {
     console.error('Error fetching organization settings:', error);
@@ -138,7 +162,8 @@ export async function updateOrganizationSettings(data: {
 }) {
   try {
     const session = await getSession();
-    if (!session?.user?.organizationId) {
+    const orgId = await getOrganizationId(session);
+    if (!orgId) {
       return { success: false, error: 'User must be associated with an organization' };
     }
 
@@ -148,7 +173,7 @@ export async function updateOrganizationSettings(data: {
         ...data,
         updatedAt: new Date(),
       })
-      .where(eq(organizations.id, session.user.organizationId));
+      .where(eq(organizations.id, orgId));
 
     return { success: true };
   } catch (error) {
@@ -220,7 +245,7 @@ export async function getAccommodationsByIds(ids: string[]) {
   try {
     if (ids.length === 0) return [];
 
-    const validIds = ids.filter(id => id && id.trim() !== '');
+    const validIds = ids.filter((id) => id && id.trim() !== '');
     if (validIds.length === 0) return [];
 
     return await db
@@ -267,10 +292,11 @@ export async function getPageImages(pageIds: string[]) {
 export async function getAllProposals() {
   try {
     const session = await getSession();
-    if (!session?.user?.organizationId) return [];
+    const orgId = await getOrganizationId(session);
+    if (!orgId) return [];
 
     const result = await db.query.proposals.findMany({
-      where: eq(proposals.organizationId, session.user.organizationId),
+      where: eq(proposals.organizationId, orgId),
       orderBy: desc(proposals.updatedAt),
       with: {
         client: true,
@@ -293,16 +319,75 @@ export async function getAllProposals() {
   }
 }
 
+// Lightweight fetch for dashboard proposals only
+export async function getProposalsForDashboard() {
+  try {
+    const session = await getSession();
+    const orgId = await getOrganizationId(session);
+    if (!orgId) return [];
+
+    return await db.query.proposals.findMany({
+      where: eq(proposals.organizationId, orgId),
+      orderBy: desc(proposals.updatedAt),
+      with: {
+        client: true,
+      },
+      columns: {
+        id: true,
+        name: true,
+        status: true,
+        createdAt: true,
+        updatedAt: true,
+        tourTitle: true,
+        startDate: true,
+      },
+    });
+  } catch (error) {
+    console.error('Error fetching proposals:', error);
+    return [];
+  }
+}
+
+// Lightweight onboarding status check (organization + tour count)
+export async function getOnboardingData() {
+  try {
+    const session = await getSession();
+    const orgId = await getOrganizationId(session);
+    if (!orgId) return { organization: null, tourCount: 0 };
+
+    const [orgData, [{ count }]] = await Promise.all([
+      db.query.organizations.findFirst({
+        where: eq(organizations.id, orgId),
+        columns: {
+          id: true,
+          name: true,
+          logoUrl: true,
+          notificationEmail: true,
+        },
+      }),
+      db
+        .select({ count: sql<number>`count(*)::int` })
+        .from(tours)
+        .where(eq(tours.organizationId, orgId)),
+    ]);
+
+    return { organization: orgData, tourCount: count };
+  } catch (error) {
+    console.error('Error fetching onboarding data:', error);
+    return { organization: null, tourCount: 0 };
+  }
+}
+
 // Combined dashboard data fetch - single session call
-// Fetches essential data for sidebar and dashboard (clients, org tours, proposals)
+// Fetches essential data for sidebar (clients, org tours, proposals)
 export async function getDashboardData() {
   try {
     const session = await getSession();
-    if (!session?.user?.organizationId) {
+    const orgId = await getOrganizationId(session);
+
+    if (!orgId) {
       return { clients: [], tours: [], proposals: [], organization: null };
     }
-
-    const orgId = session.user.organizationId;
 
     // Fetch essential data in parallel
     const [clientsData, orgToursData, proposalsData, orgData] = await Promise.all([
@@ -492,7 +577,8 @@ export async function saveProposal(data: {
 
     const builderData = data.data;
     const session = await getSession();
-    if (!session?.user?.organizationId) {
+    const orgId = await getOrganizationId(session);
+    if (!orgId) {
       return { success: false, error: 'User must be associated with an organization' };
     }
 
@@ -501,7 +587,7 @@ export async function saveProposal(data: {
       id: proposalId,
       name: data.name,
       tourId: data.tourId || builderData.tourId, // Required - must be provided
-      organizationId: session.user.organizationId,
+      organizationId: orgId,
       clientId: builderData.clientId || null,
       tourTitle: builderData.tourTitle || data.name,
       tourType: builderData.tourType || null,
@@ -857,7 +943,8 @@ export async function createCommentReply(data: {
 export async function sendProposalToClient(proposalId: string, message?: string) {
   try {
     const session = await getSession();
-    if (!session?.user?.organizationId) {
+    const orgId = await getOrganizationId(session);
+    if (!orgId) {
       return { success: false, error: 'Unauthorized' };
     }
 
@@ -1146,7 +1233,8 @@ export async function getSharedTemplates() {
 export async function cloneTemplate(templateId: string) {
   try {
     const session = await getSession();
-    if (!session?.user?.organizationId) {
+    const orgId = await getOrganizationId(session);
+    if (!orgId) {
       return { success: false, error: 'Unauthorized' };
     }
 
@@ -1168,7 +1256,7 @@ export async function cloneTemplate(templateId: string) {
 
     // Authorization: Only allow cloning shared templates (null organizationId)
     // or templates from the user's own organization
-    if (template.organizationId !== null && template.organizationId !== session.user.organizationId) {
+    if (template.organizationId !== null && template.organizationId !== orgId) {
       return { success: false, error: 'Unauthorized to clone this template' };
     }
 
@@ -1189,7 +1277,7 @@ export async function cloneTemplate(templateId: string) {
           img_url: template.img_url,
           number_of_days: template.number_of_days,
           tags: template.tags,
-          organizationId: session.user.organizationId,
+          organizationId: orgId,
           clonedFromId: template.id,
         })
         .returning({ id: tours.id });
@@ -1214,7 +1302,7 @@ export async function cloneTemplate(templateId: string) {
               day.itineraryAccommodations.map((acc) => ({
                 itineraryDayId: newDay.id,
                 accommodationId: acc.accommodationId,
-              }))
+              })),
             );
           }
         }

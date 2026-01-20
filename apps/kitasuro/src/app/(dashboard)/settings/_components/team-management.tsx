@@ -30,17 +30,19 @@ import { toast } from '@repo/ui/toast';
 import { Mail, UserMinus, Clock, X, Crown, User } from 'lucide-react';
 
 interface TeamMember {
-  id: string;
+  id: string;  // Member ID (from member table)
+  memberId: string;  // Same as id
+  userId: string;  // User ID (from user table)
   name: string;
   email: string;
-  role: 'admin' | 'member';
+  role: string;  // 'admin' | 'member'
   image: string | null;
 }
 
 interface Invitation {
   id: string;
   email: string;
-  role: 'admin' | 'member';
+  role: string;  // 'admin' | 'member'
   expiresAt: Date;
   inviter: { name: string };
 }
@@ -166,7 +168,7 @@ export function TeamManagement({ members, invitations, currentUserId }: Props) {
                   <TableCell className="font-medium">
                     <div className="flex items-center gap-2">
                       {member.name}
-                      {member.id === currentUserId && (
+                      {member.userId === currentUserId && (
                         <Badge variant="outline" className="text-xs">
                           You
                         </Badge>
@@ -178,7 +180,7 @@ export function TeamManagement({ members, invitations, currentUserId }: Props) {
                     <Select
                       value={member.role}
                       onValueChange={(v) => handleRoleChange(member.id, v as 'admin' | 'member')}
-                      disabled={member.id === currentUserId}
+                      disabled={member.userId === currentUserId}
                     >
                       <SelectTrigger className="w-28">
                         <SelectValue />

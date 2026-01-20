@@ -15,8 +15,8 @@ const cormorant = Cormorant_Garamond({
 });
 
 export const metadata: Metadata = {
-  title: "Kitasuro | Makisala Safaris",
-  description: "Itinerary Builder & Proposal Management",
+  title: "Kitasuro | Itinerary Builder",
+  description: "Itinerary Builder & Proposal Management for Tour Operators",
 };
 
 export default function RootLayout({

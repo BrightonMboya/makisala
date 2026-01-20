@@ -119,6 +119,10 @@ export function AppSidebar() {
 
   const availableTours = dashboardData?.tours || [];
   const clients = dashboardData?.clients || [];
+  const organization = dashboardData?.organization;
+
+  // Get first letter for collapsed state - org name or fallback to generic icon
+  const orgInitial = organization?.name?.[0]?.toUpperCase() || '?';
 
   // Form
   const form = useForm<RequestFormValues>({
@@ -188,13 +192,34 @@ export function AppSidebar() {
 
   return (
     <Sidebar collapsible="icon">
-      {/* Logo */}
+      {/* Logo / Organization Name */}
       <SidebarHeader className={`border-b border-stone-200 ${isCollapsed ? 'p-2' : 'p-6'}`}>
         <Link href="/dashboard">
           {isCollapsed ? (
-            <span className="flex items-center justify-center font-serif text-2xl font-bold text-green-800">M</span>
+            organization?.logoUrl ? (
+              <img
+                src={organization.logoUrl}
+                alt={organization.name || 'Organization'}
+                className="h-8 w-8 rounded object-contain"
+              />
+            ) : (
+              <span className="flex items-center justify-center font-serif text-2xl font-bold text-green-800">
+                {orgInitial}
+              </span>
+            )
           ) : (
-            <h1 className="font-serif text-2xl font-bold text-green-800">Makisala.</h1>
+            <div className="flex items-center gap-3">
+              {organization?.logoUrl && (
+                <img
+                  src={organization.logoUrl}
+                  alt={organization.name || 'Organization'}
+                  className="h-8 w-8 rounded object-contain"
+                />
+              )}
+              <h1 className="font-serif text-xl font-bold text-green-800 truncate">
+                {organization?.name || 'Dashboard'}
+              </h1>
+            </div>
           )}
         </Link>
       </SidebarHeader>

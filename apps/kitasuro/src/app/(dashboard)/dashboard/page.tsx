@@ -1,18 +1,19 @@
 'use client';
 
 import { Input } from '@repo/ui/input';
-import {
-  Clock,
-  FileText,
-  Search,
-} from 'lucide-react';
+import { Clock, FileText, Search } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { getDashboardData } from '@/app/itineraries/actions';
+import { useState, useEffect } from 'react';
+import { getProposalsForDashboard, getOnboardingData } from '@/app/itineraries/actions';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { queryKeys, staleTimes } from '@/lib/query-keys';
 import type { RequestItem } from '@/types/dashboard';
-import { checkOnboardingStatus } from '@/lib/onboarding';
+import {
+  checkOnboardingStatus,
+  isOnboardingComplete,
+  setOnboardingComplete,
+} from '@/lib/onboarding';
 import { Onboarding } from '../_components/onboarding';
 import { authClient } from '@/lib/auth-client';
 
@@ -20,26 +21,56 @@ export default function DashboardPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { data: session } = authClient.useSession();
+  const userId = session?.user?.id;
 
-  const { data: dashboardData, isLoading } = useQuery({
-    queryKey: queryKeys.dashboardData(session?.user?.id),
-    queryFn: getDashboardData,
-    staleTime: staleTimes.dashboardData,
-    enabled: !!session?.user?.id,
+  // Check localStorage first to avoid unnecessary fetches
+  const [onboardedFromStorage, setOnboardedFromStorage] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    if (userId) {
+      setOnboardedFromStorage(isOnboardingComplete(userId));
+    }
+  }, [userId]);
+
+  // Lightweight query for proposals only
+  const { data: proposals = [], isLoading: proposalsLoading } = useQuery({
+    queryKey: queryKeys.proposals.list(userId),
+    queryFn: getProposalsForDashboard,
+    staleTime: staleTimes.proposals,
+    enabled: !!userId,
   });
 
-  // Callback to refetch dashboard data when tours are updated
+  // Only fetch onboarding data if not already onboarded (from localStorage)
+  const { data: onboardingData, isLoading: onboardingLoading } = useQuery({
+    queryKey: queryKeys.onboardingData(userId),
+    queryFn: getOnboardingData,
+    staleTime: staleTimes.dashboardData,
+    enabled: !!userId && onboardedFromStorage === false,
+  });
+
+  // Calculate onboarding status from fetched data (only if we fetched it)
+  const onboardingStatus = onboardingData
+    ? checkOnboardingStatus(onboardingData.organization, onboardingData.tourCount)
+    : null;
+
+  // If onboarding is complete (from query), persist to localStorage
+  useEffect(() => {
+    if (userId && onboardingStatus?.isComplete) {
+      setOnboardingComplete(userId);
+      setOnboardedFromStorage(true);
+    }
+  }, [userId, onboardingStatus?.isComplete]);
+
+  // Callback to refetch data when tours are updated during onboarding
   const handleToursUpdated = () => {
-    queryClient.invalidateQueries({ queryKey: queryKeys.dashboardData(session?.user?.id) });
+    queryClient.invalidateQueries({ queryKey: queryKeys.onboardingData(userId) });
   };
 
-  // Check onboarding status - tours are now properly scoped to organization
-  const onboardingStatus = checkOnboardingStatus(
-    dashboardData?.organization,
-    dashboardData?.tours?.length || 0
-  );
+  const isOnboarded = onboardedFromStorage === true || onboardingStatus?.isComplete;
+  const isLoading =
+    proposalsLoading || (onboardedFromStorage === false && onboardingLoading) || onboardedFromStorage === null;
 
-  const requests: RequestItem[] = (dashboardData?.proposals || []).map((p: any) => ({
+  const requests: RequestItem[] = proposals.map((p: any) => ({
     id: p.id,
     client: p.client?.name || 'Unknown',
     travelers: 0,
@@ -61,11 +92,11 @@ export default function DashboardPage() {
   }
 
   // Show onboarding if not complete
-  if (!onboardingStatus.isComplete) {
+  if (!isOnboarded && onboardingStatus) {
     return (
       <Onboarding
         status={onboardingStatus}
-        organizationName={dashboardData?.organization?.name}
+        organizationName={onboardingData?.organization?.name}
         onToursUpdated={handleToursUpdated}
       />
     );
@@ -73,71 +104,79 @@ export default function DashboardPage() {
 
   // Show regular dashboard
   return (
-    <div className="flex flex-col h-full bg-stone-50">
-        <header className="flex items-center justify-between border-b border-stone-200 bg-white px-8 py-4">
-          <h2 className="font-serif text-2xl font-bold text-stone-900">Dashboard</h2>
-          <div className="flex items-center gap-4">
-             <div className="relative w-64">
-              <Search className="absolute top-2.5 left-2.5 h-4 w-4 text-stone-400" />
-              <Input placeholder="Search proposals..." className="pl-9" />
-            </div>
+    <div className="flex h-full flex-col bg-stone-50">
+      <header className="flex items-center justify-between border-b border-stone-200 bg-white px-8 py-4">
+        <h2 className="font-serif text-2xl font-bold text-stone-900">Dashboard</h2>
+        <div className="flex items-center gap-4">
+          <div className="relative w-64">
+            <Search className="absolute top-2.5 left-2.5 h-4 w-4 text-stone-400" />
+            <Input placeholder="Search proposals..." className="pl-9" />
           </div>
-        </header>
-
-        <div className="p-8">
-          {requests.length === 0 ? (
-            <div className="py-24 text-center">
-              <div className="mx-auto h-12 w-12 text-stone-300 mb-4">
-                <FileText className="h-full w-full" />
-              </div>
-              <h3 className="text-lg font-medium text-stone-900">No proposals yet</h3>
-              <p className="text-stone-500 mt-1">Create your first proposal using the sidebar button.</p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {requests.map((req) => (
-                <Link
-                  key={req.id}
-                  href={`/proposal/${req.id}`}
-                  className="group block rounded-xl border border-stone-200 bg-white p-5 shadow-sm transition-all hover:border-green-600/30 hover:shadow-md"
-                >
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <div className="flex items-center gap-3">
-                        <h3 className="font-serif text-lg font-bold text-stone-900 group-hover:text-green-800">{req.client}</h3>
-                        <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                          req.status === 'shared' ? 'bg-green-100 text-green-800' : 'bg-stone-100 text-stone-800'
-                        }`}>
-                          {req.status === 'shared' ? 'Shared' : 'Draft'}
-                        </span>
-                      </div>
-                      <p className="text-sm text-stone-600 mt-1">{req.title}</p>
-                    </div>
-                    <div className="text-right text-sm text-stone-500">
-                      <div className="flex items-center gap-1.5 justify-end">
-                        <Clock className="h-3.5 w-3.5" />
-                        Starts {req.startDate}
-                      </div>
-                      <div className="mt-1">Created {req.received}</div>
-                    </div>
-                  </div>
-                  <div className="mt-4 flex justify-end border-t border-stone-100 pt-3">
-                    <button
-                       className="text-xs font-medium text-green-700 hover:text-green-800 hover:underline"
-                       onClick={(e) => {
-                         e.preventDefault();
-                         e.stopPropagation();
-                         router.push(`/itineraries/${req.id}/day-by-day`);
-                       }}
-                    >
-                      Edit Proposal
-                    </button>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          )}
         </div>
+      </header>
+
+      <div className="p-8">
+        {requests.length === 0 ? (
+          <div className="py-24 text-center">
+            <div className="mx-auto mb-4 h-12 w-12 text-stone-300">
+              <FileText className="h-full w-full" />
+            </div>
+            <h3 className="text-lg font-medium text-stone-900">No proposals yet</h3>
+            <p className="mt-1 text-stone-500">
+              Create your first proposal using the sidebar button.
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {requests.map((req) => (
+              <Link
+                key={req.id}
+                href={`/proposal/${req.id}`}
+                className="group block rounded-xl border border-stone-200 bg-white p-5 shadow-sm transition-all hover:border-green-600/30 hover:shadow-md"
+              >
+                <div className="flex items-start justify-between">
+                  <div>
+                    <div className="flex items-center gap-3">
+                      <h3 className="font-serif text-lg font-bold text-stone-900 group-hover:text-green-800">
+                        {req.client}
+                      </h3>
+                      <span
+                        className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                          req.status === 'shared'
+                            ? 'bg-green-100 text-green-800'
+                            : 'bg-stone-100 text-stone-800'
+                        }`}
+                      >
+                        {req.status === 'shared' ? 'Shared' : 'Draft'}
+                      </span>
+                    </div>
+                    <p className="mt-1 text-sm text-stone-600">{req.title}</p>
+                  </div>
+                  <div className="text-right text-sm text-stone-500">
+                    <div className="flex items-center justify-end gap-1.5">
+                      <Clock className="h-3.5 w-3.5" />
+                      Starts {req.startDate}
+                    </div>
+                    <div className="mt-1">Created {req.received}</div>
+                  </div>
+                </div>
+                <div className="mt-4 flex justify-end border-t border-stone-100 pt-3">
+                  <button
+                    className="text-xs font-medium text-green-700 hover:text-green-800 hover:underline"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      router.push(`/itineraries/${req.id}/day-by-day`);
+                    }}
+                  >
+                    Edit Proposal
+                  </button>
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

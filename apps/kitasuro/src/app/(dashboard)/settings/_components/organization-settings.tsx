@@ -18,6 +18,9 @@ import { useState } from 'react';
 import { updateOrganizationSettings } from '../actions';
 import { toast } from '@repo/ui/toast';
 import { ImagePicker } from '@/components/image-picker';
+import { useQueryClient } from '@tanstack/react-query';
+import { queryKeys } from '@/lib/query-keys';
+import { authClient } from '@/lib/auth-client';
 
 const schema = z.object({
   name: z.string().min(1, 'Organization name is required'),
@@ -38,6 +41,8 @@ interface Props {
 
 export function OrganizationSettings({ organization }: Props) {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const queryClient = useQueryClient();
+  const { data: session } = authClient.useSession();
 
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -53,6 +58,8 @@ export function OrganizationSettings({ organization }: Props) {
     try {
       const result = await updateOrganizationSettings(data);
       if (result.success) {
+        // Invalidate dashboard data to refresh sidebar organization name
+        queryClient.invalidateQueries({ queryKey: queryKeys.dashboardData(session?.user?.id) });
         toast({ title: 'Organization settings updated' });
       }
     } catch {

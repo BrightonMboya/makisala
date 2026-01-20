@@ -1,6 +1,6 @@
 'use server'
 
-import { db, clients } from '@repo/db'
+import { db, clients, member } from '@repo/db'
 import { and, desc, eq, ilike } from 'drizzle-orm'
 import { revalidatePath } from 'next/cache'
 import { auth } from '@/lib/auth'
@@ -12,19 +12,39 @@ async function getSession() {
   })
 }
 
+// Helper to get organization ID from session or member table
+async function getOrganizationId(session: Awaited<ReturnType<typeof getSession>>): Promise<string | null> {
+  if (!session?.user?.id) return null
+
+  // First try session's activeOrganizationId (set by Better Auth organization plugin)
+  if (session.session?.activeOrganizationId) {
+    return session.session.activeOrganizationId as string
+  }
+
+  // Fallback: look up user's first organization from member table
+  const [membership] = await db
+    .select({ organizationId: member.organizationId })
+    .from(member)
+    .where(eq(member.userId, session.user.id))
+    .limit(1)
+
+  return membership?.organizationId ?? null
+}
+
 export async function getClients(options?: {
   query?: string
   page?: number
   limit?: number
 }) {
   const session = await getSession()
-  if (!session?.user?.organizationId) return { clients: [], pagination: { page: 1, limit: 10, hasNextPage: false } }
+  const orgId = await getOrganizationId(session)
+  if (!orgId) return { clients: [], pagination: { page: 1, limit: 10, hasNextPage: false } }
 
   const page = options?.page || 1
   const limit = options?.limit || 10
   const offset = (page - 1) * limit
 
-  const conditions = [eq(clients.organizationId, session.user.organizationId)]
+  const conditions = [eq(clients.organizationId, orgId)]
 
   // Validate and sanitize search input
   const query = options?.query?.trim().slice(0, 100)
@@ -58,14 +78,15 @@ export async function getClients(options?: {
 
 export async function getClientById(id: string) {
   const session = await getSession()
-  if (!session?.user?.organizationId) return null
+  const orgId = await getOrganizationId(session)
+  if (!orgId) return null
 
   const [client] = await db
     .select()
     .from(clients)
     .where(and(
       eq(clients.id, id),
-      eq(clients.organizationId, session.user.organizationId)
+      eq(clients.organizationId, orgId)
     ))
     .limit(1)
 
@@ -80,14 +101,15 @@ export async function createClient(data: {
   notes?: string
 }) {
   const session = await getSession()
-  if (!session?.user?.organizationId) {
+  const orgId = await getOrganizationId(session)
+  if (!orgId) {
     throw new Error('Unauthorized')
   }
 
   const result = await db
     .insert(clients)
     .values({
-      organizationId: session.user.organizationId,
+      organizationId: orgId,
       name: data.name,
       email: data.email || null,
       phone: data.phone || null,
@@ -116,7 +138,8 @@ export async function updateClient(
   }
 ) {
   const session = await getSession()
-  if (!session?.user?.organizationId) {
+  const orgId = await getOrganizationId(session)
+  if (!orgId) {
     throw new Error('Unauthorized')
   }
 
@@ -132,7 +155,7 @@ export async function updateClient(
     })
     .where(and(
       eq(clients.id, id),
-      eq(clients.organizationId, session.user.organizationId)
+      eq(clients.organizationId, orgId)
     ))
 
   revalidatePath('/clients')
@@ -142,7 +165,8 @@ export async function updateClient(
 
 export async function deleteClient(id: string) {
   const session = await getSession()
-  if (!session?.user?.organizationId) {
+  const orgId = await getOrganizationId(session)
+  if (!orgId) {
     throw new Error('Unauthorized')
   }
 
@@ -150,7 +174,7 @@ export async function deleteClient(id: string) {
     .delete(clients)
     .where(and(
       eq(clients.id, id),
-      eq(clients.organizationId, session.user.organizationId)
+      eq(clients.organizationId, orgId)
     ))
 
   revalidatePath('/clients')
@@ -159,12 +183,13 @@ export async function deleteClient(id: string) {
 
 export async function getAllClients() {
   const session = await getSession()
-  if (!session?.user?.organizationId) return []
+  const orgId = await getOrganizationId(session)
+  if (!orgId) return []
 
   const data = await db
     .select({ id: clients.id, name: clients.name })
     .from(clients)
-    .where(eq(clients.organizationId, session.user.organizationId))
+    .where(eq(clients.organizationId, orgId))
     .orderBy(clients.name)
 
   return data

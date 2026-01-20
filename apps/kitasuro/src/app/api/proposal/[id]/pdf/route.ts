@@ -1,13 +1,32 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { renderToBuffer } from '@react-pdf/renderer';
 import { ProposalPDF } from '@/lib/pdf/proposal-pdf';
-import { db } from '@repo/db';
+import { db, member } from '@repo/db';
 import { proposals, proposalDays, proposalActivities, proposalAccommodations, proposalMeals, accommodations, nationalParks } from '@repo/db/schema';
 import { eq, and } from 'drizzle-orm';
 import { addDays, format } from 'date-fns';
 import { auth } from '@/lib/auth';
 import { headers } from 'next/headers';
 import { z } from 'zod';
+
+// Helper to get organization ID from session or member table
+async function getOrganizationId(session: Awaited<ReturnType<typeof auth.api.getSession>>): Promise<string | null> {
+  if (!session?.user?.id) return null;
+
+  // First try session's activeOrganizationId (set by Better Auth organization plugin)
+  if (session.session?.activeOrganizationId) {
+    return session.session.activeOrganizationId as string;
+  }
+
+  // Fallback: look up user's first organization from member table
+  const [membership] = await db
+    .select({ organizationId: member.organizationId })
+    .from(member)
+    .where(eq(member.userId, session.user.id))
+    .limit(1);
+
+  return membership?.organizationId ?? null;
+}
 
 export async function GET(
   request: NextRequest,
@@ -23,13 +42,14 @@ export async function GET(
 
     // Check authentication
     const session = await auth.api.getSession({ headers: await headers() });
-    if (!session?.user?.organizationId) {
+    const orgId = await getOrganizationId(session);
+    if (!orgId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     // Fetch the proposal with all related data, scoped to user's organization
     const proposal = await db.query.proposals.findFirst({
-      where: and(eq(proposals.id, id), eq(proposals.organizationId, session.user.organizationId)),
+      where: and(eq(proposals.id, id), eq(proposals.organizationId, orgId)),
       with: {
         client: true,
         organization: true,

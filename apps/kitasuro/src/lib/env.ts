@@ -4,7 +4,7 @@ import { z } from 'zod';
 export const env = createEnv({
   server: {
     // Supabase
-    SUPABASE_URL: z.string().url(),
+    SUPABASE_URL: z.url(),
     SUPABASE_SERVICE_KEY: z.string().min(1),
     SUPABASE_PUBLIC_BUCKET: z.string().default('public-assets'),
     SUPABASE_PRIVATE_BUCKET: z.string().default('private-assets'),
@@ -14,12 +14,12 @@ export const env = createEnv({
     CLOUDINARY_API_KEY: z.string().optional(),
     CLOUDINARY_API_SECRET: z.string().optional(),
 
-    // Email
-    RESEND_FROM_EMAIL: z.string().email().default('notifications@makisala.com'),
+    // Email (must be configured per deployment)
+    RESEND_FROM_EMAIL: z.email(),
   },
 
   client: {
-    NEXT_PUBLIC_APP_URL: z.string().url(),
+    NEXT_PUBLIC_APP_URL: z.url(),
   },
 
   runtimeEnv: {

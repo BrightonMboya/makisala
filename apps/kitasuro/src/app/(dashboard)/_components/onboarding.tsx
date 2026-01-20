@@ -178,10 +178,7 @@ export function Onboarding({ status, organizationName, onToursUpdated }: Onboard
 
           {/* Help text */}
           <div className="mt-8 text-center text-sm text-stone-500">
-            Need help? Contact us at{' '}
-            <a href="mailto:support@makisala.com" className="text-green-700 hover:underline">
-              support@makisala.com
-            </a>
+            Need help? Contact your system administrator for support.
           </div>
         </div>
       </div>

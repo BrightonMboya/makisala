@@ -2,12 +2,16 @@
 // This ensures consistency across the app and makes invalidation easier
 
 export const queryKeys = {
-  // Dashboard data (clients, tours, proposals, organization)
+  // Dashboard data (clients, tours, proposals, organization) - used by sidebar
   dashboardData: (userId?: string) => ['dashboardData', userId] as const,
+
+  // Onboarding data (organization + tour count) - lightweight check
+  onboardingData: (userId?: string) => ['onboardingData', userId] as const,
 
   // Proposals
   proposals: {
     all: ['proposals'] as const,
+    list: (userId?: string) => ['proposals', userId] as const,
     detail: (id: string) => ['proposals', id] as const,
     forBuilder: (id: string) => ['proposals', 'builder', id] as const,
   },

@@ -64,6 +64,34 @@
       "when": 1767602414968,
       "tag": "0008_overrated_blazing_skull",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1767613000000,
+      "tag": "0009_motionless_turbo",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1767614000000,
+      "tag": "0010_fat_blizzard",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1768852285578,
+      "tag": "0011_better_auth_organization",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1768853000000,
+      "tag": "0012_migrate_legacy_users_to_members",
+      "breakpoints": true
     }
   ]
 }

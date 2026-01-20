@@ -2,21 +2,16 @@
 
 import { authClient } from '@/lib/auth-client';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
-import { SidebarProvider, SidebarInset, SidebarTrigger } from '@repo/ui/sidebar';
+import { SidebarInset, SidebarProvider, SidebarTrigger } from '@repo/ui/sidebar';
 import { AppSidebar } from '@/components/app-sidebar';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
-  const { data: session, isPending: isSessionPending } = authClient.useSession();
+  const { data: session, isPending } = authClient.useSession();
 
-  useEffect(() => {
-    if (!isSessionPending && !session) {
-      router.push('/login');
-    }
-  }, [session, isSessionPending, router]);
-
-  if (isSessionPending) return null;
+  if (!session && !isPending) {
+    router.push('/login');
+  }
 
   return (
     <SidebarProvider defaultOpen={true}>
@@ -25,9 +20,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <header className="sticky top-0 z-10 flex h-14 items-center gap-4 border-b border-stone-200 bg-white/80 px-6 backdrop-blur-md">
           <SidebarTrigger className="-ml-1" />
         </header>
-        <div className="min-h-screen">
-          {children}
-        </div>
+        <div className="min-h-screen">{children}</div>
       </SidebarInset>
     </SidebarProvider>
   );

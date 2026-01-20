@@ -1,33 +1,61 @@
 'use server';
 
-import { db, organizations, user, teamInvitations } from '@repo/db';
+import { db, organizations, user, member, invitation } from '@repo/db';
 import { and, desc, eq, inArray } from 'drizzle-orm';
 import { auth } from '@/lib/auth';
 import { headers } from 'next/headers';
 import { revalidatePath } from 'next/cache';
-import { sendTeamInvitationEmail } from '@repo/resend';
-import { randomBytes } from 'crypto';
-import { env } from '@/lib/env';
 
-// Helper: Get authenticated session
-async function getSession() {
-  return await auth.api.getSession({ headers: await headers() });
-}
-
-// Helper: Check if user is admin
-async function requireAdmin() {
-  const session = await getSession();
-  if (!session?.user?.organizationId) {
-    throw new Error('Unauthorized: Not logged in');
+// Helper: Get authenticated session with active organization
+async function getSessionWithOrg() {
+  const session = await auth.api.getSession({ headers: await headers() });
+  if (!session?.user) {
+    return null;
   }
 
-  const [userData] = await db
-    .select({ role: user.role })
-    .from(user)
-    .where(eq(user.id, session.user.id))
+  // First try session's activeOrganizationId (set by Better Auth organization plugin)
+  let orgId = session.session?.activeOrganizationId as string | undefined;
+
+  // Fallback: look up user's first organization from member table
+  if (!orgId) {
+    const [membership] = await db
+      .select({ organizationId: member.organizationId })
+      .from(member)
+      .where(eq(member.userId, session.user.id))
+      .limit(1);
+
+    orgId = membership?.organizationId ?? undefined;
+  }
+
+  if (!orgId) {
+    return null;
+  }
+
+  return {
+    user: session.user,
+    orgId,
+  };
+}
+
+// Helper: Check if user is admin in the active organization
+async function requireAdmin() {
+  const session = await getSessionWithOrg();
+  if (!session) {
+    throw new Error('Unauthorized: Not logged in or no active organization');
+  }
+
+  const [membership] = await db
+    .select({ role: member.role })
+    .from(member)
+    .where(
+      and(
+        eq(member.userId, session.user.id),
+        eq(member.organizationId, session.orgId)
+      )
+    )
     .limit(1);
 
-  if (userData?.role !== 'admin') {
+  if (membership?.role !== 'admin') {
     throw new Error('Unauthorized: Admin access required');
   }
 
@@ -37,13 +65,13 @@ async function requireAdmin() {
 // === ORGANIZATION SETTINGS ===
 
 export async function getOrganizationSettings() {
-  const session = await getSession();
-  if (!session?.user?.organizationId) return null;
+  const session = await getSessionWithOrg();
+  if (!session) return null;
 
   const [org] = await db
     .select()
     .from(organizations)
-    .where(eq(organizations.id, session.user.organizationId))
+    .where(eq(organizations.id, session.orgId))
     .limit(1);
 
   return org || null;
@@ -60,7 +88,7 @@ export async function updateOrganizationSettings(data: {
   await db
     .update(organizations)
     .set({ ...data, updatedAt: new Date() })
-    .where(eq(organizations.id, session.user.organizationId));
+    .where(eq(organizations.id, session.orgId));
 
   revalidatePath('/settings');
   return { success: true };
@@ -69,196 +97,195 @@ export async function updateOrganizationSettings(data: {
 // === TEAM MANAGEMENT ===
 
 export async function getTeamMembers() {
-  const session = await getSession();
-  if (!session?.user?.organizationId) return [];
+  const session = await getSessionWithOrg();
+  if (!session) return [];
 
-  return await db
+  // Join member table with user table to get member details
+  const members = await db
     .select({
-      id: user.id,
+      id: member.id,
+      memberId: member.id,
+      userId: member.userId,
       name: user.name,
       email: user.email,
-      role: user.role,
+      role: member.role,
       image: user.image,
-      createdAt: user.createdAt,
+      createdAt: member.createdAt,
     })
-    .from(user)
-    .where(eq(user.organizationId, session.user.organizationId))
-    .orderBy(desc(user.createdAt));
+    .from(member)
+    .innerJoin(user, eq(member.userId, user.id))
+    .where(eq(member.organizationId, session.orgId))
+    .orderBy(desc(member.createdAt));
+
+  return members;
 }
 
 export async function getPendingInvitations() {
-  const session = await getSession();
-  if (!session?.user?.organizationId) return [];
+  const session = await getSessionWithOrg();
+  if (!session) return [];
 
   const invitations = await db
     .select({
-      id: teamInvitations.id,
-      email: teamInvitations.email,
-      role: teamInvitations.role,
-      expiresAt: teamInvitations.expiresAt,
-      createdAt: teamInvitations.createdAt,
-      invitedBy: teamInvitations.invitedBy,
+      id: invitation.id,
+      email: invitation.email,
+      role: invitation.role,
+      expiresAt: invitation.expiresAt,
+      createdAt: invitation.createdAt,
+      inviterId: invitation.inviterId,
     })
-    .from(teamInvitations)
+    .from(invitation)
     .where(
       and(
-        eq(teamInvitations.organizationId, session.user.organizationId),
-        eq(teamInvitations.status, 'pending')
+        eq(invitation.organizationId, session.orgId),
+        eq(invitation.status, 'pending')
       )
     )
-    .orderBy(desc(teamInvitations.createdAt));
+    .orderBy(desc(invitation.createdAt));
 
   // Get inviter names
-  const inviterIds = [...new Set(invitations.map((inv) => inv.invitedBy))];
-  const inviters = inviterIds.length > 0
-    ? await db
-        .select({ id: user.id, name: user.name })
-        .from(user)
-        .where(inArray(user.id, inviterIds))
-    : [];
+  const inviterIds = invitations
+    .map((inv) => inv.inviterId)
+    .filter((id): id is string => id !== null);
+
+  const uniqueInviterIds = [...new Set(inviterIds)];
+  const inviters =
+    uniqueInviterIds.length > 0
+      ? await db
+          .select({ id: user.id, name: user.name })
+          .from(user)
+          .where(inArray(user.id, uniqueInviterIds))
+      : [];
 
   const inviterMap = new Map(inviters.map((u) => [u.id, u.name]));
 
   return invitations.map((inv) => ({
     ...inv,
-    inviter: { name: inviterMap.get(inv.invitedBy) || 'Unknown' },
+    inviter: { name: inv.inviterId ? inviterMap.get(inv.inviterId) || 'Unknown' : 'Unknown' },
   }));
 }
 
 export async function inviteTeamMember(data: { email: string; role: 'admin' | 'member' }) {
   const session = await requireAdmin();
+  const hdrs = await headers();
 
-  // Check if user already exists in organization
-  const existingUser = await db
-    .select()
-    .from(user)
-    .where(and(eq(user.email, data.email), eq(user.organizationId, session.user.organizationId)))
-    .limit(1);
+  try {
+    // Use Better Auth's organization invite API
+    const result = await auth.api.createInvitation({
+      body: {
+        email: data.email,
+        role: data.role,
+        organizationId: session.orgId,
+      },
+      headers: hdrs,
+    });
 
-  if (existingUser.length > 0) {
-    return { success: false, error: 'User is already a team member' };
+    revalidatePath('/settings');
+    return { success: true, invitation: result };
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Failed to send invitation';
+    return { success: false, error: message };
   }
-
-  // Check for existing pending invitation
-  const existingInvitation = await db
-    .select()
-    .from(teamInvitations)
-    .where(
-      and(
-        eq(teamInvitations.email, data.email),
-        eq(teamInvitations.organizationId, session.user.organizationId),
-        eq(teamInvitations.status, 'pending')
-      )
-    )
-    .limit(1);
-
-  if (existingInvitation.length > 0) {
-    return { success: false, error: 'An invitation is already pending for this email' };
-  }
-
-  // Generate unique token
-  const token = randomBytes(32).toString('hex');
-  const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
-
-  // Create invitation
-  const [invitation] = await db
-    .insert(teamInvitations)
-    .values({
-      organizationId: session.user.organizationId,
-      email: data.email,
-      role: data.role,
-      token,
-      invitedBy: session.user.id,
-      expiresAt,
-    })
-    .returning();
-
-  // Get organization details for email
-  const [org] = await db
-    .select()
-    .from(organizations)
-    .where(eq(organizations.id, session.user.organizationId))
-    .limit(1);
-
-  // Send invitation email
-  const inviteUrl = `${env.NEXT_PUBLIC_APP_URL}/invite/${token}`;
-
-  await sendTeamInvitationEmail({
-    recipientEmail: data.email,
-    inviterName: session.user.name,
-    organizationName: org?.name || 'Your Organization',
-    role: data.role,
-    inviteUrl,
-    expiresAt: expiresAt.toLocaleDateString(),
-  });
-
-  revalidatePath('/settings');
-  return { success: true, invitation };
 }
 
 export async function revokeInvitation(invitationId: string) {
   const session = await requireAdmin();
+  const hdrs = await headers();
 
-  await db
-    .update(teamInvitations)
-    .set({ status: 'revoked' })
-    .where(
-      and(
-        eq(teamInvitations.id, invitationId),
-        eq(teamInvitations.organizationId, session.user.organizationId)
-      )
-    );
+  try {
+    await auth.api.cancelInvitation({
+      body: { invitationId },
+      headers: hdrs,
+    });
 
-  revalidatePath('/settings');
-  return { success: true };
+    revalidatePath('/settings');
+    return { success: true };
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Failed to revoke invitation';
+    return { success: false, error: message };
+  }
 }
 
 export async function removeTeamMember(memberId: string) {
   const session = await requireAdmin();
+  const hdrs = await headers();
 
-  // Prevent removing yourself
-  if (memberId === session.user.id) {
+  // Get the member to check if it's the current user
+  const [memberData] = await db
+    .select({ userId: member.userId })
+    .from(member)
+    .where(eq(member.id, memberId))
+    .limit(1);
+
+  if (memberData?.userId === session.user.id) {
     return { success: false, error: 'You cannot remove yourself from the team' };
   }
 
-  // Remove user from organization (set organizationId to null)
-  await db
-    .update(user)
-    .set({ organizationId: null, role: 'member' })
-    .where(and(eq(user.id, memberId), eq(user.organizationId, session.user.organizationId)));
+  try {
+    await auth.api.removeMember({
+      body: {
+        memberIdOrEmail: memberId,
+        organizationId: session.orgId,
+      },
+      headers: hdrs,
+    });
 
-  revalidatePath('/settings');
-  return { success: true };
+    revalidatePath('/settings');
+    return { success: true };
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Failed to remove member';
+    return { success: false, error: message };
+  }
 }
 
 export async function updateMemberRole(memberId: string, role: 'admin' | 'member') {
   const session = await requireAdmin();
+  const hdrs = await headers();
 
-  // Prevent demoting yourself if you're the only admin
-  if (memberId === session.user.id && role === 'member') {
+  // Get the member to check if it's the current user and count admins
+  const [memberData] = await db
+    .select({ userId: member.userId })
+    .from(member)
+    .where(eq(member.id, memberId))
+    .limit(1);
+
+  if (memberData?.userId === session.user.id && role === 'member') {
     const adminCount = await db
       .select()
-      .from(user)
-      .where(and(eq(user.organizationId, session.user.organizationId), eq(user.role, 'admin')));
+      .from(member)
+      .where(
+        and(
+          eq(member.organizationId, session.orgId),
+          eq(member.role, 'admin')
+        )
+      );
 
     if (adminCount.length <= 1) {
       return { success: false, error: 'Cannot demote: You are the only admin' };
     }
   }
 
-  await db
-    .update(user)
-    .set({ role, updatedAt: new Date() })
-    .where(and(eq(user.id, memberId), eq(user.organizationId, session.user.organizationId)));
+  try {
+    await auth.api.updateMemberRole({
+      body: {
+        memberId,
+        role,
+        organizationId: session.orgId,
+      },
+      headers: hdrs,
+    });
 
-  revalidatePath('/settings');
-  return { success: true };
+    revalidatePath('/settings');
+    return { success: true };
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Failed to update role';
+    return { success: false, error: message };
+  }
 }
 
 // === PROFILE ===
 
 export async function getCurrentUser() {
-  const session = await getSession();
+  const session = await auth.api.getSession({ headers: await headers() });
   if (!session?.user?.id) return null;
 
   const [userData] = await db.select().from(user).where(eq(user.id, session.user.id)).limit(1);
@@ -267,7 +294,7 @@ export async function getCurrentUser() {
 }
 
 export async function updateUserProfile(data: { name: string; image?: string }) {
-  const session = await getSession();
+  const session = await auth.api.getSession({ headers: await headers() });
   if (!session?.user?.id) throw new Error('Unauthorized');
 
   await db
@@ -281,21 +308,21 @@ export async function updateUserProfile(data: { name: string; image?: string }) 
 
 // === INVITATION ACCEPTANCE ===
 
-export async function getInvitationByToken(token: string) {
-  const [invitation] = await db
+export async function getInvitationByToken(invitationId: string) {
+  const [inv] = await db
     .select()
-    .from(teamInvitations)
-    .where(and(eq(teamInvitations.token, token), eq(teamInvitations.status, 'pending')))
+    .from(invitation)
+    .where(and(eq(invitation.id, invitationId), eq(invitation.status, 'pending')))
     .limit(1);
 
-  if (!invitation) return null;
+  if (!inv) return null;
 
-  if (new Date(invitation.expiresAt) < new Date()) {
+  if (new Date(inv.expiresAt) < new Date()) {
     // Mark as expired
     await db
-      .update(teamInvitations)
-      .set({ status: 'expired' })
-      .where(eq(teamInvitations.id, invitation.id));
+      .update(invitation)
+      .set({ status: 'canceled' })
+      .where(eq(invitation.id, inv.id));
     return null;
   }
 
@@ -304,58 +331,56 @@ export async function getInvitationByToken(token: string) {
     db
       .select({ name: organizations.name, logoUrl: organizations.logoUrl })
       .from(organizations)
-      .where(eq(organizations.id, invitation.organizationId))
+      .where(eq(organizations.id, inv.organizationId))
       .limit(1),
-    db
-      .select({ name: user.name })
-      .from(user)
-      .where(eq(user.id, invitation.invitedBy))
-      .limit(1),
+    inv.inviterId
+      ? db
+          .select({ name: user.name })
+          .from(user)
+          .where(eq(user.id, inv.inviterId))
+          .limit(1)
+      : Promise.resolve([null]),
   ]);
 
   return {
-    ...invitation,
+    ...inv,
     organization: org || null,
     inviter: inviter || null,
   };
 }
 
-export async function acceptInvitation(token: string, userId: string) {
-  const invitation = await getInvitationByToken(token);
-  if (!invitation) {
-    return { success: false, error: 'Invalid or expired invitation' };
+export async function acceptInvitation(invitationId: string) {
+  const hdrs = await headers();
+
+  try {
+    await auth.api.acceptInvitation({
+      body: { invitationId },
+      headers: hdrs,
+    });
+
+    return { success: true };
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Invalid or expired invitation';
+    return { success: false, error: message };
   }
-
-  // Update user to join organization
-  await db
-    .update(user)
-    .set({
-      organizationId: invitation.organizationId,
-      role: invitation.role,
-      updatedAt: new Date(),
-    })
-    .where(eq(user.id, userId));
-
-  // Mark invitation as accepted
-  await db
-    .update(teamInvitations)
-    .set({ status: 'accepted', acceptedAt: new Date() })
-    .where(eq(teamInvitations.id, invitation.id));
-
-  return { success: true };
 }
 
 // === UTILITY: Check Admin Status ===
 
 export async function checkIsAdmin() {
-  const session = await getSession();
-  if (!session?.user?.id) return false;
+  const session = await getSessionWithOrg();
+  if (!session) return false;
 
-  const [userData] = await db
-    .select({ role: user.role })
-    .from(user)
-    .where(eq(user.id, session.user.id))
+  const [membership] = await db
+    .select({ role: member.role })
+    .from(member)
+    .where(
+      and(
+        eq(member.userId, session.user.id),
+        eq(member.organizationId, session.orgId)
+      )
+    )
     .limit(1);
 
-  return userData?.role === 'admin';
+  return membership?.role === 'admin';
 }
