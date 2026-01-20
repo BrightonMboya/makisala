@@ -14,8 +14,27 @@ export const auth = betterAuth({
     emailAndPassword: {
         enabled: true,
     },
-    // Auto-create organization when user signs up
+    // Database hooks for user and session management
     databaseHooks: {
+        session: {
+            create: {
+                before: async (session) => {
+                    // Set initial active organization when session is created
+                    const [membership] = await db
+                        .select({ organizationId: member.organizationId })
+                        .from(member)
+                        .where(eq(member.userId, session.userId))
+                        .limit(1)
+
+                    return {
+                        data: {
+                            ...session,
+                            activeOrganizationId: membership?.organizationId || null,
+                        },
+                    }
+                },
+            },
+        },
         user: {
             create: {
                 after: async (user) => {
