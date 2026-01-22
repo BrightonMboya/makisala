@@ -8,9 +8,10 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Form, FormControl, FormField, FormItem, FormLabel } from '@repo/ui/form'
 import { authClient } from '@/lib/auth-client'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useToast } from '@/lib/hooks/use-toast'
 import Link from 'next/link'
+import { acceptInvitation } from '@/app/(dashboard)/settings/actions'
 
 const SignUpSchema = z.object({
     name: z.string().min(2),
@@ -23,13 +24,18 @@ type SignUpFormSchema = z.infer<typeof SignUpSchema>
 export default function SignUpPage() {
     const { toast } = useToast()
     const router = useRouter()
+    const searchParams = useSearchParams()
     const [loading, startTransition] = useTransition()
+
+    // Get pre-filled email and invite token from URL params
+    const emailFromUrl = searchParams.get('email') || ''
+    const inviteToken = searchParams.get('invite')
 
     const form = useForm<SignUpFormSchema>({
         resolver: zodResolver(SignUpSchema),
         defaultValues: {
             name: '',
-            email: '',
+            email: emailFromUrl,
             password: '',
         },
     })
@@ -43,10 +49,25 @@ export default function SignUpPage() {
                     name: data.name,
                 },
                 {
-                    onSuccess: ctx => {
-                        toast('Welcome!', {
-                            description: 'Account created successfully.',
-                        })
+                    onSuccess: async () => {
+                        // If there's an invite token, accept the invitation directly
+                        if (inviteToken) {
+                            const result = await acceptInvitation(inviteToken)
+                            if (result.success) {
+                                toast('Welcome!', {
+                                    description: 'Account created and invitation accepted.',
+                                })
+                            } else {
+                                toast('Account created', {
+                                    description: 'But there was an issue with the invitation. Please contact your admin.',
+                                    variant: 'destructive',
+                                })
+                            }
+                        } else {
+                            toast('Welcome!', {
+                                description: 'Account created successfully.',
+                            })
+                        }
                         router.push('/dashboard')
                     },
                     onError: ctx => {

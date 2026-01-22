@@ -1,6 +1,7 @@
 import {
   getInvitationByToken,
   acceptInvitation,
+  getInvitationStatus,
 } from '@/app/(dashboard)/settings/actions';
 import { auth } from '@/lib/auth';
 import { headers } from 'next/headers';
@@ -23,14 +24,27 @@ export default async function InvitePage({
   const invitation = await getInvitationByToken(invitationId);
   const session = await getSession();
 
+  // If invitation not found (or not pending), check if it was already accepted
   if (!invitation) {
+    const invitationStatus = await getInvitationStatus(invitationId);
+
+    // If invitation was already accepted and user is logged in, redirect to dashboard
+    if (invitationStatus === 'accepted' && session?.user) {
+      redirect('/dashboard');
+    }
+
+    // If user is logged in, just send them to dashboard with a message
+    if (session?.user) {
+      redirect('/dashboard');
+    }
+
     return (
       <div className="min-h-screen flex items-center justify-center bg-stone-50">
         <Card className="w-full max-w-md">
           <CardHeader>
             <CardTitle className="text-red-600">Invalid Invitation</CardTitle>
             <CardDescription>
-              This invitation link is invalid or has expired.
+              This invitation link is invalid, has expired, or has already been used.
             </CardDescription>
           </CardHeader>
           <CardContent>

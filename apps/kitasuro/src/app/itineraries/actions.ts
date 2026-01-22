@@ -57,48 +57,6 @@ async function getOrganizationId(
   return membership?.organizationId ?? null;
 }
 
-export async function getToursList(country?: string) {
-  try {
-    const result = await db
-      .select({
-        id: tours.id,
-        name: tours.tourName,
-        days: tours.number_of_days,
-      })
-      .from(tours)
-      .where(country ? eq(tours.country, country) : undefined);
-
-    return result;
-  } catch (error) {
-    console.error('Error fetching tours:', error);
-    return [];
-  }
-}
-
-// Get tours belonging to the user's organization
-export async function getToursByOrganization() {
-  try {
-    const session = await getSession();
-    const orgId = await getOrganizationId(session);
-    if (!orgId) return [];
-
-    const result = await db
-      .select({
-        id: tours.id,
-        name: tours.tourName,
-        days: tours.number_of_days,
-      })
-      .from(tours)
-      .where(eq(tours.organizationId, orgId))
-      .orderBy(tours.tourName);
-
-    return result;
-  } catch (error) {
-    console.error('Error fetching organization tours:', error);
-    return [];
-  }
-}
-
 export async function getTourDetails(id: string) {
   try {
     const tour = await db.query.tours.findFirst({
@@ -135,21 +93,6 @@ export async function getTourDetails(id: string) {
     };
   } catch (error) {
     console.error('Error fetching tour details:', error);
-    return null;
-  }
-}
-
-export async function getOrganizationSettings() {
-  try {
-    const session = await getSession();
-    const orgId = await getOrganizationId(session);
-    if (!orgId) return null;
-
-    return await db.query.organizations.findFirst({
-      where: eq(organizations.id, orgId),
-    });
-  } catch (error) {
-    console.error('Error fetching organization settings:', error);
     return null;
   }
 }
@@ -240,24 +183,6 @@ export async function getAccommodationById(id: string) {
   }
 }
 
-// Batch fetch accommodations by IDs to avoid N+1 queries
-export async function getAccommodationsByIds(ids: string[]) {
-  try {
-    if (ids.length === 0) return [];
-
-    const validIds = ids.filter((id) => id && id.trim() !== '');
-    if (validIds.length === 0) return [];
-
-    return await db
-      .select({ id: accommodations.id, name: accommodations.name })
-      .from(accommodations)
-      .where(inArray(accommodations.id, validIds));
-  } catch (error) {
-    console.error('Error fetching accommodations by ids:', error);
-    return [];
-  }
-}
-
 export async function getAllNationalParks() {
   try {
     return await db
@@ -289,33 +214,56 @@ export async function getPageImages(pageIds: string[]) {
   }
 }
 
-export async function getAllProposals() {
+// Lightweight fetch for organization tours only
+export async function getTours() {
   try {
     const session = await getSession();
     const orgId = await getOrganizationId(session);
     if (!orgId) return [];
 
-    const result = await db.query.proposals.findMany({
-      where: eq(proposals.organizationId, orgId),
-      orderBy: desc(proposals.updatedAt),
-      with: {
-        client: true,
-      },
-      columns: {
-        id: true,
-        name: true,
-        status: true,
-        createdAt: true,
-        updatedAt: true,
-        tourTitle: true,
-        startDate: true,
-        travelerGroups: true,
-      },
-    });
-    return result;
+    return await db
+      .select({
+        id: tours.id,
+        name: tours.tourName,
+        days: tours.number_of_days,
+      })
+      .from(tours)
+      .where(eq(tours.organizationId, orgId))
+      .orderBy(tours.tourName);
   } catch (error) {
-    console.error('Error fetching proposals:', error);
+    console.error('Error fetching tours:', error);
     return [];
+  }
+}
+
+// Lightweight fetch for tours and clients (for new request dialog)
+export async function getToursAndClients() {
+  try {
+    const session = await getSession();
+    const orgId = await getOrganizationId(session);
+    if (!orgId) return { tours: [], clients: [] };
+
+    const [toursData, clientsData] = await Promise.all([
+      db
+        .select({
+          id: tours.id,
+          name: tours.tourName,
+          days: tours.number_of_days,
+        })
+        .from(tours)
+        .where(eq(tours.organizationId, orgId))
+        .orderBy(tours.tourName),
+      db
+        .select({ id: clients.id, name: clients.name })
+        .from(clients)
+        .where(eq(clients.organizationId, orgId))
+        .orderBy(clients.name),
+    ]);
+
+    return { tours: toursData, clients: clientsData };
+  } catch (error) {
+    console.error('Error fetching tours and clients:', error);
+    return { tours: [], clients: [] };
   }
 }
 
@@ -355,7 +303,7 @@ export async function getOnboardingData() {
     const orgId = await getOrganizationId(session);
     if (!orgId) return { organization: null, tourCount: 0 };
 
-    const [orgData, [{ count }]] = await Promise.all([
+    const [orgData, countResult] = await Promise.all([
       db.query.organizations.findFirst({
         where: eq(organizations.id, orgId),
         columns: {
@@ -363,6 +311,7 @@ export async function getOnboardingData() {
           name: true,
           logoUrl: true,
           notificationEmail: true,
+          onboardingCompletedAt: true,
         },
       }),
       db
@@ -371,78 +320,29 @@ export async function getOnboardingData() {
         .where(eq(tours.organizationId, orgId)),
     ]);
 
-    return { organization: orgData, tourCount: count };
+    return { organization: orgData, tourCount: countResult[0]?.count ?? 0 };
   } catch (error) {
     console.error('Error fetching onboarding data:', error);
     return { organization: null, tourCount: 0 };
   }
 }
 
-// Combined dashboard data fetch - single session call
-// Fetches essential data for sidebar (clients, org tours, proposals)
-export async function getDashboardData() {
+// Mark organization onboarding as complete (stores completion at org level)
+export async function markOnboardingComplete() {
   try {
     const session = await getSession();
     const orgId = await getOrganizationId(session);
+    if (!orgId) return { success: false };
 
-    if (!orgId) {
-      return { clients: [], tours: [], proposals: [], organization: null };
-    }
+    await db
+      .update(organizations)
+      .set({ onboardingCompletedAt: new Date() })
+      .where(eq(organizations.id, orgId));
 
-    // Fetch essential data in parallel
-    const [clientsData, orgToursData, proposalsData, orgData] = await Promise.all([
-      db
-        .select({ id: clients.id, name: clients.name })
-        .from(clients)
-        .where(eq(clients.organizationId, orgId))
-        .orderBy(clients.name),
-      // Organization's tours only (properly scoped)
-      db
-        .select({
-          id: tours.id,
-          name: tours.tourName,
-          days: tours.number_of_days,
-        })
-        .from(tours)
-        .where(eq(tours.organizationId, orgId))
-        .orderBy(tours.tourName),
-      // Proposals for dashboard display
-      db.query.proposals.findMany({
-        where: eq(proposals.organizationId, orgId),
-        orderBy: desc(proposals.updatedAt),
-        with: { client: true },
-        columns: {
-          id: true,
-          name: true,
-          status: true,
-          createdAt: true,
-          updatedAt: true,
-          tourTitle: true,
-          startDate: true,
-          travelerGroups: true,
-        },
-      }),
-      db.query.organizations.findFirst({
-        where: eq(organizations.id, orgId),
-        columns: {
-          id: true,
-          name: true,
-          logoUrl: true,
-          primaryColor: true,
-          notificationEmail: true,
-        },
-      }),
-    ]);
-
-    return {
-      clients: clientsData,
-      tours: orgToursData,
-      proposals: proposalsData,
-      organization: orgData,
-    };
+    return { success: true };
   } catch (error) {
-    console.error('Error fetching dashboard data:', error);
-    return { clients: [], tours: [], proposals: [], organization: null };
+    console.error('Error marking onboarding complete:', error);
+    return { success: false };
   }
 }
 

@@ -9,9 +9,7 @@ import {
   Plus,
   Copy,
 } from 'lucide-react';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { getDashboardData, getSharedTemplates, cloneTemplate } from '@/app/itineraries/actions';
+import { getTours, getSharedTemplates, cloneTemplate } from '@/app/itineraries/actions';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { queryKeys, staleTimes } from '@/lib/query-keys';
 import { authClient } from '@/lib/auth-client';
@@ -26,17 +24,16 @@ import {
 } from '@repo/ui/dialog';
 
 export default function ToursPage() {
-  const router = useRouter();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { data: session } = authClient.useSession();
   const [isTemplateDialogOpen, setIsTemplateDialogOpen] = useState(false);
   const [cloningId, setCloningId] = useState<string | null>(null);
 
-  const { data: dashboardData, isLoading } = useQuery({
-    queryKey: queryKeys.dashboardData(session?.user?.id),
-    queryFn: getDashboardData,
-    staleTime: staleTimes.dashboardData,
+  const { data: tours = [], isLoading } = useQuery({
+    queryKey: queryKeys.tours.list(session?.user?.id),
+    queryFn: getTours,
+    staleTime: staleTimes.tours,
     enabled: !!session?.user?.id,
   });
 
@@ -47,15 +44,13 @@ export default function ToursPage() {
     enabled: isTemplateDialogOpen,
   });
 
-  const tours = dashboardData?.tours || [];
-
   const handleCloneTemplate = async (templateId: string) => {
     setCloningId(templateId);
     try {
       const result = await cloneTemplate(templateId);
       if (result.success) {
         toast({ title: 'Template added to your tours!' });
-        queryClient.invalidateQueries({ queryKey: queryKeys.dashboardData(session?.user?.id) });
+        queryClient.invalidateQueries({ queryKey: queryKeys.tours.list(session?.user?.id) });
         setIsTemplateDialogOpen(false);
       } else {
         toast({ title: result.error || 'Failed to add template', variant: 'destructive' });

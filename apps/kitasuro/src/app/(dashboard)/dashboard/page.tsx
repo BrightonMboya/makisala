@@ -4,16 +4,16 @@ import { Input } from '@repo/ui/input';
 import { Clock, FileText, Search } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useState, useEffect } from 'react';
-import { getProposalsForDashboard, getOnboardingData } from '@/app/itineraries/actions';
+import { useEffect } from 'react';
+import {
+  getOnboardingData,
+  getProposalsForDashboard,
+  markOnboardingComplete,
+} from '@/app/itineraries/actions';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { queryKeys, staleTimes } from '@/lib/query-keys';
 import type { RequestItem } from '@/types/dashboard';
-import {
-  checkOnboardingStatus,
-  isOnboardingComplete,
-  setOnboardingComplete,
-} from '@/lib/onboarding';
+import { checkOnboardingStatus } from '@/lib/onboarding';
 import { Onboarding } from '../_components/onboarding';
 import { authClient } from '@/lib/auth-client';
 
@@ -23,16 +23,6 @@ export default function DashboardPage() {
   const { data: session } = authClient.useSession();
   const userId = session?.user?.id;
 
-  // Check localStorage first to avoid unnecessary fetches
-  const [onboardedFromStorage, setOnboardedFromStorage] = useState<boolean | null>(null);
-
-  useEffect(() => {
-    if (userId) {
-      setOnboardedFromStorage(isOnboardingComplete(userId));
-    }
-  }, [userId]);
-
-  // Lightweight query for proposals only
   const { data: proposals = [], isLoading: proposalsLoading } = useQuery({
     queryKey: queryKeys.proposals.list(userId),
     queryFn: getProposalsForDashboard,
@@ -40,35 +30,37 @@ export default function DashboardPage() {
     enabled: !!userId,
   });
 
-  // Only fetch onboarding data if not already onboarded (from localStorage)
+  // Always fetch onboarding data to check org-level completion status
   const { data: onboardingData, isLoading: onboardingLoading } = useQuery({
     queryKey: queryKeys.onboardingData(userId),
     queryFn: getOnboardingData,
     staleTime: staleTimes.dashboardData,
-    enabled: !!userId && onboardedFromStorage === false,
+    enabled: !!userId,
   });
 
-  // Calculate onboarding status from fetched data (only if we fetched it)
-  const onboardingStatus = onboardingData
-    ? checkOnboardingStatus(onboardingData.organization, onboardingData.tourCount)
-    : null;
+  // Check if org has already completed onboarding (stored at org level)
+  const orgOnboardingComplete = !!onboardingData?.organization?.onboardingCompletedAt;
 
-  // If onboarding is complete (from query), persist to localStorage
+  // Calculate onboarding status from fetched data (only if org hasn't completed onboarding)
+  const onboardingStatus =
+    onboardingData && !orgOnboardingComplete
+      ? checkOnboardingStatus(onboardingData.organization, onboardingData.tourCount)
+      : null;
+
+  // When all onboarding steps are complete, persist to org level in database
   useEffect(() => {
-    if (userId && onboardingStatus?.isComplete) {
-      setOnboardingComplete(userId);
-      setOnboardedFromStorage(true);
+    if (onboardingStatus?.isComplete && !orgOnboardingComplete) {
+      markOnboardingComplete();
     }
-  }, [userId, onboardingStatus?.isComplete]);
+  }, [onboardingStatus?.isComplete, orgOnboardingComplete]);
 
   // Callback to refetch data when tours are updated during onboarding
   const handleToursUpdated = () => {
     queryClient.invalidateQueries({ queryKey: queryKeys.onboardingData(userId) });
   };
 
-  const isOnboarded = onboardedFromStorage === true || onboardingStatus?.isComplete;
-  const isLoading =
-    proposalsLoading || (onboardedFromStorage === false && onboardingLoading) || onboardedFromStorage === null;
+  const isOnboarded = orgOnboardingComplete || onboardingStatus?.isComplete;
+  const isLoading = proposalsLoading || onboardingLoading;
 
   const requests: RequestItem[] = proposals.map((p: any) => ({
     id: p.id,

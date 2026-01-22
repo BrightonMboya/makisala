@@ -12,10 +12,11 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Combobox } from '@repo/ui/combobox';
 import { DatePicker } from '@repo/ui/date-picker';
 import { CountryDropdown } from '@repo/ui/country-dropdown';
-import { getDashboardData } from '@/app/itineraries/actions';
+import { getToursAndClients } from '@/app/itineraries/actions';
 import { createClient } from '@/app/(dashboard)/clients/actions';
 import { useToast } from '@/lib/hooks/use-toast';
 import { authClient } from '@/lib/auth-client';
+import { queryKeys, staleTimes } from '@/lib/query-keys';
 import { type RequestFormValues, requestSchema } from '@/lib/schemas/request';
 
 interface NewRequestDialogProps {
@@ -31,15 +32,15 @@ export function NewRequestDialog({ open, onOpenChange }: NewRequestDialogProps) 
   const [isNewClient, setIsNewClient] = useState(false);
 
   // Only fetch data when dialog is open
-  const { data: dashboardData } = useQuery({
-    queryKey: ['dashboardData', session?.user?.id],
-    queryFn: getDashboardData,
-    staleTime: 30 * 1000,
+  const { data } = useQuery({
+    queryKey: queryKeys.toursAndClients(session?.user?.id),
+    queryFn: getToursAndClients,
+    staleTime: staleTimes.toursAndClients,
     enabled: open && !!session?.user?.id,
   });
 
-  const availableTours = dashboardData?.tours || [];
-  const clients = dashboardData?.clients || [];
+  const availableTours = data?.tours || [];
+  const clients = data?.clients || [];
 
   const form = useForm<RequestFormValues>({
     resolver: zodResolver(requestSchema),
@@ -80,7 +81,7 @@ export function NewRequestDialog({ open, onOpenChange }: NewRequestDialogProps) 
           countryOfResidence: data.country || undefined,
         });
         clientId = result.id;
-        queryClient.invalidateQueries({ queryKey: ['dashboardData', session?.user?.id] });
+        queryClient.invalidateQueries({ queryKey: queryKeys.toursAndClients(session?.user?.id) });
       } catch (error) {
         toast({ title: 'Failed to create client', variant: 'destructive' });
         return;

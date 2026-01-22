@@ -59,6 +59,7 @@ interface Organization {
   logoUrl?: string | null;
   primaryColor?: string | null;
   notificationEmail?: string | null;
+  onboardingCompletedAt?: Date | null;
 }
 
 /**

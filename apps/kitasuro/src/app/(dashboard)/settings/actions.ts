@@ -308,6 +308,17 @@ export async function updateUserProfile(data: { name: string; image?: string }) 
 
 // === INVITATION ACCEPTANCE ===
 
+// Get just the status of an invitation (for checking if already accepted)
+export async function getInvitationStatus(invitationId: string) {
+  const [inv] = await db
+    .select({ status: invitation.status })
+    .from(invitation)
+    .where(eq(invitation.id, invitationId))
+    .limit(1);
+
+  return inv?.status || null;
+}
+
 export async function getInvitationByToken(invitationId: string) {
   const [inv] = await db
     .select()
@@ -353,11 +364,31 @@ export async function acceptInvitation(invitationId: string) {
   const hdrs = await headers();
 
   try {
+    // Get the invitation to know which organization to switch to
+    const [inv] = await db
+      .select({ organizationId: invitation.organizationId })
+      .from(invitation)
+      .where(eq(invitation.id, invitationId))
+      .limit(1);
+
+    if (!inv) {
+      return { success: false, error: 'Invitation not found' };
+    }
+
+    // Accept the invitation (adds user to organization)
     await auth.api.acceptInvitation({
       body: { invitationId },
       headers: hdrs,
     });
 
+    // Set the active organization to the invited org so user is switched to it
+    await auth.api.setActiveOrganization({
+      body: { organizationId: inv.organizationId },
+      headers: hdrs,
+    });
+
+    // Revalidate settings page so admin sees updated invitation status
+    revalidatePath('/settings');
     return { success: true };
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Invalid or expired invitation';

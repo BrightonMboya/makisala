@@ -1,6 +1,6 @@
 'use client';
 
-import { useTransition } from 'react';
+import { useTransition, useEffect, useRef } from 'react';
 import { Button } from '@repo/ui/button';
 import { Input } from '@repo/ui/input';
 import { z } from 'zod';
@@ -8,9 +8,10 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Form, FormControl, FormField, FormItem, FormLabel } from '@repo/ui/form';
 import { authClient } from '@/lib/auth-client';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useToast } from '@/lib/hooks/use-toast';
 import Link from 'next/link';
+import { acceptInvitation } from '@/app/(dashboard)/settings/actions';
 
 const LoginSchema = z.object({
   email: z.email(),
@@ -22,13 +23,32 @@ type LoginFormSchema = z.infer<typeof LoginSchema>;
 export default function LoginPage() {
   const { toast } = useToast();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [loading, startTransition] = useTransition();
+  const hasHandledSession = useRef(false);
+
+  // Get invite token from URL params (for accepting invitation after login)
+  const inviteToken = searchParams.get('invite');
 
   const { data: session, isPending } = authClient.useSession();
 
-  if (session && !isPending) {
-    router.push('/dashboard');
-  }
+  // Handle existing session (user already logged in)
+  useEffect(() => {
+    if (session && !isPending && !hasHandledSession.current) {
+      hasHandledSession.current = true;
+      if (inviteToken) {
+        // Accept invitation for already-logged-in user
+        acceptInvitation(inviteToken).then((result) => {
+          if (result.success) {
+            toast('Success!', { description: 'Invitation accepted.' });
+          }
+          router.push('/dashboard');
+        });
+      } else {
+        router.push('/dashboard');
+      }
+    }
+  }, [session, isPending, inviteToken, router, toast]);
 
   const form = useForm<LoginFormSchema>({
     resolver: zodResolver(LoginSchema),
@@ -46,10 +66,25 @@ export default function LoginPage() {
           password: data.password,
         },
         {
-          onSuccess: (ctx) => {
-            toast('Success!', {
-              description: 'Logged in successfully. Welcome back!',
-            });
+          onSuccess: async () => {
+            // If there's an invite token, accept the invitation directly
+            if (inviteToken) {
+              const result = await acceptInvitation(inviteToken);
+              if (result.success) {
+                toast('Success!', {
+                  description: 'Logged in and invitation accepted.',
+                });
+              } else {
+                toast('Logged in', {
+                  description: 'But there was an issue with the invitation.',
+                  variant: 'destructive',
+                });
+              }
+            } else {
+              toast('Success!', {
+                description: 'Logged in successfully. Welcome back!',
+              });
+            }
             router.push('/dashboard');
           },
           onError: (ctx) => {
