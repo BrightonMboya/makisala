@@ -191,7 +191,7 @@ export const session = pgTable('session', {
     .notNull()
     .references(() => user.id, { onDelete: 'cascade' }),
   // Better Auth organization plugin field
-  activeOrganizationId: uuid('active_organization_id').references(() => organizations.id),
+  activeOrganizationId: uuid('active_organization_id').references(() => organizations.id, { onDelete: 'set null' }),
 });
 
 // ---------- BETTER AUTH ORGANIZATION PLUGIN TABLES ----------

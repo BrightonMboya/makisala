@@ -241,27 +241,36 @@ export async function updateMemberRole(memberId: string, role: 'admin' | 'member
   const session = await requireAdmin();
   const hdrs = await headers();
 
-  // Get the member to check if it's the current user and count admins
-  const [memberData] = await db
-    .select({ userId: member.userId })
-    .from(member)
-    .where(eq(member.id, memberId))
-    .limit(1);
-
-  if (memberData?.userId === session.user.id && role === 'member') {
-    const adminCount = await db
-      .select()
+  // Use transaction to prevent race condition when checking/demoting last admin
+  const canProceed = await db.transaction(async (tx) => {
+    // Get the member to check if it's the current user
+    const [memberData] = await tx
+      .select({ userId: member.userId })
       .from(member)
-      .where(
-        and(
-          eq(member.organizationId, session.orgId),
-          eq(member.role, 'admin')
-        )
-      );
+      .where(eq(member.id, memberId))
+      .limit(1);
 
-    if (adminCount.length <= 1) {
-      return { success: false, error: 'Cannot demote: You are the only admin' };
+    if (memberData?.userId === session.user.id && role === 'member') {
+      const adminCount = await tx
+        .select()
+        .from(member)
+        .where(
+          and(
+            eq(member.organizationId, session.orgId),
+            eq(member.role, 'admin')
+          )
+        );
+
+      if (adminCount.length <= 1) {
+        return { allowed: false, error: 'Cannot demote: You are the only admin' };
+      }
     }
+
+    return { allowed: true };
+  });
+
+  if (!canProceed.allowed) {
+    return { success: false, error: canProceed.error };
   }
 
   try {
@@ -332,7 +341,7 @@ export async function getInvitationByToken(invitationId: string) {
     // Mark as expired
     await db
       .update(invitation)
-      .set({ status: 'canceled' })
+      .set({ status: 'expired' })
       .where(eq(invitation.id, inv.id));
     return null;
   }

@@ -38,12 +38,25 @@ export default function LoginPage() {
       hasHandledSession.current = true;
       if (inviteToken) {
         // Accept invitation for already-logged-in user
-        acceptInvitation(inviteToken).then((result) => {
-          if (result.success) {
-            toast('Success!', { description: 'Invitation accepted.' });
-          }
-          router.push('/dashboard');
-        });
+        acceptInvitation(inviteToken)
+          .then((result) => {
+            if (result.success) {
+              toast('Success!', { description: 'Invitation accepted.' });
+            } else {
+              toast('Warning', {
+                description: result.error || 'Could not accept invitation.',
+                variant: 'destructive',
+              });
+            }
+            router.push('/dashboard');
+          })
+          .catch(() => {
+            toast('Error', {
+              description: 'Unexpected error accepting invitation.',
+              variant: 'destructive',
+            });
+            router.push('/dashboard');
+          });
       } else {
         router.push('/dashboard');
       }
