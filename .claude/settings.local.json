@@ -9,7 +9,11 @@
       "Bash(gh api:*)",
       "Bash(bun --bun next build:*)",
       "Bash(git add:*)",
-      "Bash(git commit -m \"$\\(cat <<''EOF''\nfix: correct schema field names in cloneTemplate function\n\nFixed field mismatches identified in PR review:\n- Changed title -> dayTitle, description -> overview\n- Changed nationalParkId -> national_park_id  \n- Removed invalid ''nights'' field from itineraryAccommodations\n- Removed unnecessary ''any'' type annotation\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")"
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nfix: correct schema field names in cloneTemplate function\n\nFixed field mismatches identified in PR review:\n- Changed title -> dayTitle, description -> overview\n- Changed nationalParkId -> national_park_id  \n- Removed invalid ''nights'' field from itineraryAccommodations\n- Removed unnecessary ''any'' type annotation\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "WebFetch(domain:www.better-auth.com)",
+      "Bash(grep:*)",
+      "Bash(bun run generate:*)",
+      "Bash(bun run studio)"
     ]
   }
 }

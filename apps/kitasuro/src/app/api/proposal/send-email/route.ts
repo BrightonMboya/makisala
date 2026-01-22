@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@repo/db';
+import { db, member } from '@repo/db';
 import { proposals } from '@repo/db/schema';
 import { and, eq } from 'drizzle-orm';
 import { resend } from '@repo/resend';
@@ -7,11 +7,31 @@ import { auth } from '@/lib/auth';
 import { headers } from 'next/headers';
 import { env } from '@/lib/env';
 
+// Helper to get organization ID from session or member table
+async function getOrganizationId(session: Awaited<ReturnType<typeof auth.api.getSession>>): Promise<string | null> {
+  if (!session?.user?.id) return null;
+
+  // First try session's activeOrganizationId (set by Better Auth organization plugin)
+  if (session.session?.activeOrganizationId) {
+    return session.session.activeOrganizationId as string;
+  }
+
+  // Fallback: look up user's first organization from member table
+  const [membership] = await db
+    .select({ organizationId: member.organizationId })
+    .from(member)
+    .where(eq(member.userId, session.user.id))
+    .limit(1);
+
+  return membership?.organizationId ?? null;
+}
+
 export async function POST(request: NextRequest) {
   try {
     // Check authentication
     const session = await auth.api.getSession({ headers: await headers() });
-    if (!session?.user?.organizationId) {
+    const orgId = await getOrganizationId(session);
+    if (!orgId) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -29,7 +49,7 @@ export async function POST(request: NextRequest) {
     const proposal = await db.query.proposals.findFirst({
       where: and(
         eq(proposals.id, proposalId),
-        eq(proposals.organizationId, session.user.organizationId),
+        eq(proposals.organizationId, orgId),
       ),
       with: {
         organization: true,

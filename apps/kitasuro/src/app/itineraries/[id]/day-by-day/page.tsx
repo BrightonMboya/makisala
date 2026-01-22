@@ -1,10 +1,10 @@
 'use client';
 
 import { Button } from '@repo/ui/button';
-import { CheckCircle, ArrowRight } from 'lucide-react';
+import { ArrowRight, CheckCircle } from 'lucide-react';
 import { DayTable } from '@/components/itinerary-builder/day-table';
 import { DatePicker } from '@repo/ui/date-picker';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { addDays, format } from 'date-fns';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
@@ -48,7 +48,7 @@ export default function DayByDayPage() {
   // Memoize the transformed destinations list
   const destinationsList = useMemo(
     () => (parksData || []).map((p: any) => ({ value: p.id, label: p.name })),
-    [parksData]
+    [parksData],
   );
 
   // Track if we've already updated dates for this startDate
@@ -81,8 +81,18 @@ export default function DayByDayPage() {
               <span className="text-lg">
                 {(() => {
                   const city = (startCity || '').toLowerCase();
-                  if (city.includes('tanzania') || city.includes('arusha') || city.includes('kilimanjaro')) return '🇹🇿';
-                  if (city.includes('botswana') || city.includes('maun') || city.includes('okavango')) return '🇧🇼';
+                  if (
+                    city.includes('tanzania') ||
+                    city.includes('arusha') ||
+                    city.includes('kilimanjaro')
+                  )
+                    return '🇹🇿';
+                  if (
+                    city.includes('botswana') ||
+                    city.includes('maun') ||
+                    city.includes('okavango')
+                  )
+                    return '🇧🇼';
                   if (city.includes('kenya') || city.includes('nairobi')) return '🇰🇪';
                   if (city.includes('uganda') || city.includes('entebbe')) return '🇺🇬';
                   return '🇷🇼'; // Default
@@ -91,8 +101,18 @@ export default function DayByDayPage() {
               <span className="text-stone-600">
                 {(() => {
                   const city = (startCity || '').toLowerCase();
-                  if (city.includes('tanzania') || city.includes('arusha') || city.includes('kilimanjaro')) return 'Tanzania';
-                  if (city.includes('botswana') || city.includes('maun') || city.includes('okavango')) return 'Botswana';
+                  if (
+                    city.includes('tanzania') ||
+                    city.includes('arusha') ||
+                    city.includes('kilimanjaro')
+                  )
+                    return 'Tanzania';
+                  if (
+                    city.includes('botswana') ||
+                    city.includes('maun') ||
+                    city.includes('okavango')
+                  )
+                    return 'Botswana';
                   if (city.includes('kenya') || city.includes('nairobi')) return 'Kenya';
                   if (city.includes('uganda') || city.includes('entebbe')) return 'Uganda';
                   return 'Rwanda'; // Default

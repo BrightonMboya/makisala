@@ -121,6 +121,7 @@ export const organizations = pgTable('organizations', {
   logoUrl: text('logo_url'),
   primaryColor: text('primary_color').default('#15803d'), // Default green
   notificationEmail: text('notification_email'),
+  onboardingCompletedAt: timestamp('onboarding_completed_at'), // Set when org completes onboarding
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
@@ -129,7 +130,11 @@ export const organizationsRelations = relations(organizations, ({ many }) => ({
   users: many(user),
   proposals: many(proposals),
   clients: many(clients),
-  invitations: many(teamInvitations),
+  // Legacy invitations (to be removed after migration)
+  teamInvitations: many(teamInvitations),
+  // Better Auth organization plugin relations
+  members: many(member),
+  invitations: many(invitation),
 }));
 
 // ---------- CLIENTS ----------
@@ -185,7 +190,60 @@ export const session = pgTable('session', {
   userId: text('user_id')
     .notNull()
     .references(() => user.id, { onDelete: 'cascade' }),
+  // Better Auth organization plugin field
+  activeOrganizationId: uuid('active_organization_id').references(() => organizations.id, { onDelete: 'set null' }),
 });
+
+// ---------- BETTER AUTH ORGANIZATION PLUGIN TABLES ----------
+
+// Member table - links users to organizations with roles
+export const member = pgTable('member', {
+  id: text('id').primaryKey(),
+  userId: text('user_id')
+    .notNull()
+    .references(() => user.id, { onDelete: 'cascade' }),
+  organizationId: uuid('organization_id')
+    .notNull()
+    .references(() => organizations.id, { onDelete: 'cascade' }),
+  role: text('role').notNull().default('member'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+export const memberRelations = relations(member, ({ one }) => ({
+  user: one(user, {
+    fields: [member.userId],
+    references: [user.id],
+  }),
+  organization: one(organizations, {
+    fields: [member.organizationId],
+    references: [organizations.id],
+  }),
+}));
+
+// Invitation table - Better Auth organization invitations
+export const invitation = pgTable('invitation', {
+  id: text('id').primaryKey(),
+  email: text('email').notNull(),
+  inviterId: text('inviter_id').references(() => user.id, { onDelete: 'set null' }),
+  organizationId: uuid('organization_id')
+    .notNull()
+    .references(() => organizations.id, { onDelete: 'cascade' }),
+  role: text('role').notNull().default('member'),
+  status: text('status').notNull().default('pending'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  expiresAt: timestamp('expires_at').notNull(),
+});
+
+export const invitationRelations = relations(invitation, ({ one }) => ({
+  inviter: one(user, {
+    fields: [invitation.inviterId],
+    references: [user.id],
+  }),
+  organization: one(organizations, {
+    fields: [invitation.organizationId],
+    references: [organizations.id],
+  }),
+}));
 
 export const account = pgTable('account', {
   id: text('id').primaryKey(),
@@ -244,11 +302,15 @@ export const teamInvitationsRelations = relations(teamInvitations, ({ one }) => 
 }));
 
 export const userRelations = relations(user, ({ one, many }) => ({
+  // Legacy direct organization link (to be removed after migration)
   organization: one(organizations, {
     fields: [user.organizationId],
     references: [organizations.id],
   }),
   sentInvitations: many(teamInvitations),
+  // Better Auth organization plugin relations
+  memberships: many(member),
+  sentOrgInvitations: many(invitation),
 }));
 
 // the following tables are for p_seo, some tables looks duplicated
@@ -684,3 +746,9 @@ export type User = typeof user.$inferSelect;
 export type Organization = typeof organizations.$inferSelect;
 export type TeamInvitation = typeof teamInvitations.$inferSelect;
 export type NewTeamInvitation = typeof teamInvitations.$inferInsert;
+
+// Better Auth organization plugin types
+export type Member = typeof member.$inferSelect;
+export type NewMember = typeof member.$inferInsert;
+export type Invitation = typeof invitation.$inferSelect;
+export type NewInvitation = typeof invitation.$inferInsert;

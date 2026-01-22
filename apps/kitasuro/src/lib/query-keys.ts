@@ -2,12 +2,13 @@
 // This ensures consistency across the app and makes invalidation easier
 
 export const queryKeys = {
-  // Dashboard data (clients, tours, proposals, organization)
-  dashboardData: (userId?: string) => ['dashboardData', userId] as const,
+  // Onboarding data (organization + tour count) - lightweight check
+  onboardingData: (userId?: string) => ['onboardingData', userId] as const,
 
   // Proposals
   proposals: {
     all: ['proposals'] as const,
+    list: (userId?: string) => ['proposals', userId] as const,
     detail: (id: string) => ['proposals', id] as const,
     forBuilder: (id: string) => ['proposals', 'builder', id] as const,
   },
@@ -15,10 +16,14 @@ export const queryKeys = {
   // Tours
   tours: {
     all: ['tours'] as const,
+    list: (userId?: string) => ['tours', userId] as const,
     detail: (id: string) => ['tours', id] as const,
     byOrganization: ['tours', 'organization'] as const,
     shared: ['sharedTemplates'] as const,
   },
+
+  // Combined data for forms/dialogs
+  toursAndClients: (userId?: string) => ['toursAndClients', userId] as const,
 
   // Clients
   clients: {
@@ -44,8 +49,9 @@ export const queryKeys = {
 export const staleTimes = {
   nationalParks: 5 * 60 * 1000, // 5 minutes - rarely changes
   accommodations: 5 * 60 * 1000, // 5 minutes
-  dashboardData: 30 * 1000, // 30 seconds
   proposals: 30 * 1000, // 30 seconds
+  tours: 60 * 1000, // 1 minute
   clients: 60 * 1000, // 1 minute
+  toursAndClients: 60 * 1000, // 1 minute
   comments: 30 * 1000, // 30 seconds
 } as const;

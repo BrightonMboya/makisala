@@ -14,12 +14,52 @@ export interface OnboardingStatus {
   };
 }
 
+const ONBOARDING_KEY = 'kitasuro_onboarded';
+
+/**
+ * Check if onboarding is complete from localStorage (keyed by user ID)
+ */
+export function isOnboardingComplete(userId: string): boolean {
+  if (typeof window === 'undefined') return false;
+  try {
+    const stored = localStorage.getItem(`${ONBOARDING_KEY}_${userId}`);
+    return stored === 'true';
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Mark onboarding as complete in localStorage
+ */
+export function setOnboardingComplete(userId: string): void {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(`${ONBOARDING_KEY}_${userId}`, 'true');
+  } catch {
+    // Ignore storage errors
+  }
+}
+
+/**
+ * Clear onboarding flag (for when user needs to re-verify)
+ */
+export function clearOnboardingComplete(userId: string): void {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.removeItem(`${ONBOARDING_KEY}_${userId}`);
+  } catch {
+    // Ignore storage errors
+  }
+}
+
 interface Organization {
   id: string;
   name: string;
   logoUrl?: string | null;
   primaryColor?: string | null;
   notificationEmail?: string | null;
+  onboardingCompletedAt?: Date | null;
 }
 
 /**
@@ -27,18 +67,15 @@ interface Organization {
  * These patterns match auto-generated names during signup (e.g., "John's Agency")
  */
 function isDefaultOrganizationName(name: string | null | undefined): boolean {
-  // Treat empty or excessively long names as default (prevents regex performance issues)
+  // Treat empty or excessively long names as default
   if (!name || name.length > 255) return true;
 
-  // Pattern to detect default organization names:
+  const lowerName = name.toLowerCase();
+
+  // Check for default organization name patterns:
   // - "John's Agency" (any name followed by 's Agency)
   // - "User's Agency" (default when no name provided)
-  const defaultPatterns = [
-    /'s Agency$/i,           // Ends with "'s Agency"
-    /^User's Agency$/i,      // Exactly "User's Agency"
-  ];
-
-  return defaultPatterns.some(pattern => pattern.test(name));
+  return lowerName.endsWith("'s agency") || lowerName === "user's agency";
 }
 
 /**
