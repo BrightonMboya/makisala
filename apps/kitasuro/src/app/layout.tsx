@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
-import { Plus_Jakarta_Sans, Cormorant_Garamond } from "next/font/google";
+import { Inter, Cormorant_Garamond, Outfit } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/providers";
 
-const jakarta = Plus_Jakarta_Sans({
+const inter = Inter({
   variable: "--font-sans",
   subsets: ["latin"],
 });
@@ -12,6 +12,11 @@ const cormorant = Cormorant_Garamond({
   variable: "--font-serif",
   subsets: ["latin"],
   weight: ["300", "400", "500", "600", "700"],
+});
+
+const outfit = Outfit({
+  variable: "--font-heading",
+  subsets: ["latin"],
 });
 
 export const metadata: Metadata = {
@@ -27,7 +32,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${jakarta.variable} ${cormorant.variable} font-sans antialiased`}
+        className={`${inter.variable} ${cormorant.variable} ${outfit.variable} font-sans antialiased`}
       >
         <Providers>{children}</Providers>
       </body>
