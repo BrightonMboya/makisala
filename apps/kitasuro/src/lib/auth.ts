@@ -8,11 +8,26 @@ import { randomBytes } from 'crypto'
 import { env } from './env'
 
 export const auth = betterAuth({
+    baseURL: env.NEXT_PUBLIC_APP_URL,
     database: drizzleAdapter(db, {
         provider: 'pg',
     }),
     emailAndPassword: {
         enabled: true,
+    },
+    socialProviders: {
+        google: {
+            clientId: env.GOOGLE_CLIENT_ID,
+            clientSecret: env.GOOGLE_CLIENT_SECRET,
+            // Force account selection on each sign-in for better UX
+            prompt: 'select_account',
+        },
+    },
+    // Enable automatic account linking for users with the same email
+    // Google always verifies emails, so accounts will link automatically
+    accountLinking: {
+        enabled: true,
+        trustedProviders: ['google'],
     },
     // Database hooks for user and session management
     databaseHooks: {
