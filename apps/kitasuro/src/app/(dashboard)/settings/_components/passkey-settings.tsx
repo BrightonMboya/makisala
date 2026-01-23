@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@repo/ui/card';
 import { Button } from '@repo/ui/button';
-import { useState, useEffect, useTransition } from 'react';
+import { useState, useTransition } from 'react';
 import { authClient } from '@/lib/auth-client';
 import { toast } from '@repo/ui/toast';
 import { Key, Trash2, Plus, Smartphone, Laptop } from 'lucide-react';
@@ -16,36 +16,25 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@repo/ui/alert-dialog';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 type Passkey = NonNullable<
   Awaited<ReturnType<typeof authClient.passkey.listUserPasskeys>>['data']
 >[number];
 
 export function PasskeySettings() {
-  const [passkeys, setPasskeys] = useState<Passkey[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const queryClient = useQueryClient();
   const [isPending, startTransition] = useTransition();
   const [deleteId, setDeleteId] = useState<string | null>(null);
 
-  async function loadPasskeys() {
-    setIsLoading(true);
-    try {
+  const { data: passkeys = [], isLoading } = useQuery({
+    queryKey: ['passkeys'],
+    queryFn: async () => {
       const { data, error } = await authClient.passkey.listUserPasskeys();
-      if (error) {
-        toast({ title: 'Failed to load passkeys', variant: 'destructive' });
-      } else {
-        setPasskeys(data || []);
-      }
-    } catch {
-      toast({ title: 'Failed to load passkeys', variant: 'destructive' });
-    } finally {
-      setIsLoading(false);
-    }
-  }
-
-  useEffect(() => {
-    loadPasskeys();
-  }, []);
+      if (error) throw error;
+      return data || [];
+    },
+  });
 
   async function handleAddPasskey() {
     startTransition(async () => {
@@ -61,7 +50,7 @@ export function PasskeySettings() {
           });
         } else if (data) {
           toast({ title: 'Passkey added successfully' });
-          loadPasskeys();
+          queryClient.invalidateQueries({ queryKey: ['passkeys'] });
         }
       } catch {
         toast({
@@ -85,7 +74,7 @@ export function PasskeySettings() {
           });
         } else {
           toast({ title: 'Passkey deleted successfully' });
-          setPasskeys((prev) => prev.filter((p) => p.id !== id));
+          queryClient.invalidateQueries({ queryKey: ['passkeys'] });
         }
       } catch {
         toast({ title: 'Failed to delete passkey', variant: 'destructive' });
