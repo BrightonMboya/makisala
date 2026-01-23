@@ -19,6 +19,7 @@ import { updateUserProfile } from '../actions';
 import { toast } from '@repo/ui/toast';
 import { ImagePicker } from '@/components/image-picker';
 import { Badge } from '@repo/ui/badge';
+import { PasskeySettings } from './passkey-settings';
 
 const schema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -63,85 +64,89 @@ export function ProfileSettings({ user }: Props) {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Your Profile</CardTitle>
-        <CardDescription>Manage your personal information</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <div className="flex items-center gap-4 pb-4 border-b">
-              <div className="h-16 w-16 rounded-full bg-green-100 flex items-center justify-center text-green-800 text-2xl font-bold">
-                {user.name?.[0]?.toUpperCase()}
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>Your Profile</CardTitle>
+          <CardDescription>Manage your personal information</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              <div className="flex items-center gap-4 pb-4 border-b">
+                <div className="h-16 w-16 rounded-full bg-green-100 flex items-center justify-center text-green-800 text-2xl font-bold">
+                  {user.name?.[0]?.toUpperCase()}
+                </div>
+                <div>
+                  <p className="font-medium">{user.email}</p>
+                  <Badge variant={user.role === 'admin' ? 'default' : 'secondary'}>
+                    {user.role === 'admin' ? 'Admin' : 'Team Member'}
+                  </Badge>
+                </div>
               </div>
-              <div>
-                <p className="font-medium">{user.email}</p>
-                <Badge variant={user.role === 'admin' ? 'default' : 'secondary'}>
-                  {user.role === 'admin' ? 'Admin' : 'Team Member'}
-                </Badge>
+
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Full Name</FormLabel>
+                    <FormControl>
+                      <Input {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="image"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Profile Picture</FormLabel>
+                    <FormControl>
+                      <div className="space-y-3">
+                        <ImagePicker
+                          value={field.value}
+                          onSelect={(url) => field.onChange(url)}
+                          triggerLabel="Change Picture"
+                        />
+                        {field.value && (
+                          <div className="flex items-center gap-4">
+                            <img
+                              src={field.value}
+                              alt="Profile preview"
+                              className="h-16 w-16 object-cover rounded-full border"
+                            />
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => field.onChange('')}
+                            >
+                              Remove
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <div className="flex justify-end">
+                <Button type="submit" disabled={isSubmitting}>
+                  {isSubmitting ? 'Saving...' : 'Save Changes'}
+                </Button>
               </div>
-            </div>
+            </form>
+          </Form>
+        </CardContent>
+      </Card>
 
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Full Name</FormLabel>
-                  <FormControl>
-                    <Input {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="image"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Profile Picture</FormLabel>
-                  <FormControl>
-                    <div className="space-y-3">
-                      <ImagePicker
-                        value={field.value}
-                        onSelect={(url) => field.onChange(url)}
-                        triggerLabel="Change Picture"
-                      />
-                      {field.value && (
-                        <div className="flex items-center gap-4">
-                          <img
-                            src={field.value}
-                            alt="Profile preview"
-                            className="h-16 w-16 object-cover rounded-full border"
-                          />
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={() => field.onChange('')}
-                          >
-                            Remove
-                          </Button>
-                        </div>
-                      )}
-                    </div>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <div className="flex justify-end">
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? 'Saving...' : 'Save Changes'}
-              </Button>
-            </div>
-          </form>
-        </Form>
-      </CardContent>
-    </Card>
+      <PasskeySettings />
+    </div>
   );
 }

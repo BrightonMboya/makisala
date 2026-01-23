@@ -2,6 +2,7 @@ import { betterAuth } from 'better-auth'
 import { db, organizations, member, invitation } from '@repo/db'
 import { drizzleAdapter } from 'better-auth/adapters/drizzle'
 import { organization } from 'better-auth/plugins'
+import { passkey } from '@better-auth/passkey'
 import { sendTeamInvitationEmail } from '@repo/resend'
 import { eq, and } from 'drizzle-orm'
 import { randomBytes } from 'crypto'
@@ -99,6 +100,11 @@ export const auth = betterAuth({
         },
     },
     plugins: [
+        passkey({
+            rpID: new URL(env.NEXT_PUBLIC_APP_URL).hostname,
+            rpName: 'Kitasuro',
+            origin: env.NEXT_PUBLIC_APP_URL,
+        }),
         organization({
             // Send invitation email when a member is invited
             async sendInvitationEmail(data) {
