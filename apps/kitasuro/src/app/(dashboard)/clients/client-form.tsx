@@ -1,44 +1,44 @@
-'use client'
+'use client';
 
-import { Button } from '@repo/ui/button'
-import { Input } from '@repo/ui/input'
-import { Textarea } from '@repo/ui/textarea'
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@repo/ui/form'
-import { useRouter } from 'next/navigation'
-import { useState } from 'react'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { z } from 'zod'
-import { createClient, updateClient, deleteClient } from './actions'
-import { useToast } from '@/lib/hooks/use-toast'
+import { Button } from '@repo/ui/button';
+import { Input } from '@repo/ui/input';
+import { Textarea } from '@repo/ui/textarea';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@repo/ui/form';
+import { useRouter } from 'next/navigation';
+import { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { createClient, deleteClient, updateClient } from './actions';
+import { useToast } from '@repo/ui/use-toast';
 
 const clientSchema = z.object({
   name: z.string().min(1, 'Name is required'),
-  email: z.string().email('Invalid email').optional().or(z.literal('')),
+  email: z.email('Invalid email').optional().or(z.literal('')),
   phone: z.string().optional(),
   countryOfResidence: z.string().optional(),
   notes: z.string().optional(),
-})
+});
 
-type ClientFormValues = z.infer<typeof clientSchema>
+type ClientFormValues = z.infer<typeof clientSchema>;
 
 interface ClientFormProps {
   client?: {
-    id: string
-    name: string
-    email: string | null
-    phone: string | null
-    countryOfResidence: string | null
-    notes: string | null
-  }
+    id: string;
+    name: string;
+    email: string | null;
+    phone: string | null;
+    countryOfResidence: string | null;
+    notes: string | null;
+  };
 }
 
 export function ClientForm({ client }: ClientFormProps) {
-  const router = useRouter()
-  const { toast } = useToast()
-  const [isDeleting, setIsDeleting] = useState(false)
+  const router = useRouter();
+  const { toast } = useToast();
+  const [isDeleting, setIsDeleting] = useState(false);
 
-  const isEditing = !!client
+  const isEditing = !!client;
 
   const form = useForm<ClientFormValues>({
     resolver: zodResolver(clientSchema),
@@ -49,7 +49,7 @@ export function ClientForm({ client }: ClientFormProps) {
       countryOfResidence: client?.countryOfResidence || '',
       notes: client?.notes || '',
     },
-  })
+  });
 
   const onSubmit = async (data: ClientFormValues) => {
     try {
@@ -59,33 +59,33 @@ export function ClientForm({ client }: ClientFormProps) {
         phone: data.phone || undefined,
         countryOfResidence: data.countryOfResidence || undefined,
         notes: data.notes || undefined,
-      }
+      };
 
       if (isEditing) {
-        await updateClient(client.id, payload)
-        toast({ title: 'Client updated successfully' })
+        await updateClient(client.id, payload);
+        toast({ title: 'Client updated successfully' });
       } else {
-        await createClient(payload)
-        toast({ title: 'Client created successfully' })
+        await createClient(payload);
+        toast({ title: 'Client created successfully' });
       }
-      router.push('/clients')
+      router.push('/clients');
     } catch (error) {
-      toast({ title: 'Something went wrong', variant: 'destructive' })
+      toast({ title: 'Something went wrong', variant: 'destructive' });
     }
-  }
+  };
 
   async function handleDelete() {
-    if (!client || !confirm('Are you sure you want to delete this client?')) return
+    if (!client || !confirm('Are you sure you want to delete this client?')) return;
 
-    setIsDeleting(true)
+    setIsDeleting(true);
     try {
-      await deleteClient(client.id)
-      toast({ title: 'Client deleted successfully' })
-      router.push('/clients')
+      await deleteClient(client.id);
+      toast({ title: 'Client deleted successfully' });
+      router.push('/clients');
     } catch (error) {
-      toast({ title: 'Failed to delete client', variant: 'destructive' })
+      toast({ title: 'Failed to delete client', variant: 'destructive' });
     } finally {
-      setIsDeleting(false)
+      setIsDeleting(false);
     }
   }
 
@@ -168,7 +168,7 @@ export function ClientForm({ client }: ClientFormProps) {
           />
         </div>
 
-        <div className="flex items-center justify-between pt-4 border-t">
+        <div className="flex items-center justify-between border-t pt-4">
           <div>
             {isEditing && (
               <Button
@@ -182,19 +182,19 @@ export function ClientForm({ client }: ClientFormProps) {
             )}
           </div>
           <div className="flex gap-3">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => router.push('/clients')}
-            >
+            <Button type="button" variant="outline" onClick={() => router.push('/clients')}>
               Cancel
             </Button>
             <Button type="submit" disabled={form.formState.isSubmitting}>
-              {form.formState.isSubmitting ? 'Saving...' : isEditing ? 'Update Client' : 'Create Client'}
+              {form.formState.isSubmitting
+                ? 'Saving...'
+                : isEditing
+                  ? 'Update Client'
+                  : 'Create Client'}
             </Button>
           </div>
         </div>
       </form>
     </Form>
-  )
+  );
 }

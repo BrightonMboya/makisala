@@ -14,7 +14,7 @@ import { DatePicker } from '@repo/ui/date-picker';
 import { CountryDropdown } from '@repo/ui/country-dropdown';
 import { getToursAndClients } from '@/app/itineraries/actions';
 import { createClient } from '@/app/(dashboard)/clients/actions';
-import { useToast } from '@/lib/hooks/use-toast';
+import { useToast } from '@repo/ui/use-toast';
 import { authClient } from '@/lib/auth-client';
 import { queryKeys, staleTimes } from '@/lib/query-keys';
 import { type RequestFormValues, requestSchema } from '@/lib/schemas/request';

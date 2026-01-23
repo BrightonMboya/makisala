@@ -1,6 +1,6 @@
 'use client';
 
-import { useTransition, useEffect, useRef } from 'react';
+import { useTransition, useEffect, useRef, useState } from 'react';
 import { Button } from '@repo/ui/button';
 import { Input } from '@repo/ui/input';
 import { z } from 'zod';
@@ -9,9 +9,10 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Form, FormControl, FormField, FormItem, FormLabel } from '@repo/ui/form';
 import { authClient } from '@/lib/auth-client';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useToast } from '@/lib/hooks/use-toast';
+import { useToast } from '@repo/ui/use-toast';
 import Link from 'next/link';
 import { acceptInvitation } from '@/app/(dashboard)/settings/actions';
+import { Mail, CheckCircle, AlertCircle } from 'lucide-react';
 
 const LoginSchema = z.object({
   email: z.email(),
@@ -26,9 +27,14 @@ export default function LoginPage() {
   const searchParams = useSearchParams();
   const [loading, startTransition] = useTransition();
   const hasHandledSession = useRef(false);
+  const [unverifiedEmail, setUnverifiedEmail] = useState<string | null>(null);
 
   // Get invite token from URL params (for accepting invitation after login)
   const inviteToken = searchParams.get('invite');
+
+  // Check for email verification status from callback
+  const verificationError = searchParams.get('error');
+  const verified = searchParams.get('verified');
 
   const { data: session, isPending } = authClient.useSession();
 
@@ -101,10 +107,19 @@ export default function LoginPage() {
             router.push('/dashboard');
           },
           onError: (ctx) => {
-            toast('Error', {
-              description: `${ctx.error.message}`,
-              variant: 'destructive',
-            });
+            // Check if error is due to unverified email
+            if (ctx.error.status === 403 || ctx.error.message?.toLowerCase().includes('verify')) {
+              setUnverifiedEmail(data.email);
+              toast('Email not verified', {
+                description: 'Please check your inbox and verify your email address.',
+                variant: 'destructive',
+              });
+            } else {
+              toast('Error', {
+                description: `${ctx.error.message}`,
+                variant: 'destructive',
+              });
+            }
           },
         },
       );
@@ -118,6 +133,34 @@ export default function LoginPage() {
           <h1 className="font-serif text-3xl font-bold text-green-800">Kitasuro</h1>
           <p className="mt-2 text-stone-600">Log into your itinerary builder account</p>
         </div>
+
+        {verified === 'true' && (
+          <div className="rounded-lg border border-green-200 bg-green-50 p-4">
+            <div className="flex items-center gap-3">
+              <CheckCircle className="h-5 w-5 text-green-600" />
+              <div>
+                <p className="text-sm font-medium text-green-800">Email verified successfully!</p>
+                <p className="text-sm text-green-700">You can now sign in to your account.</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {verificationError && (
+          <div className="rounded-lg border border-red-200 bg-red-50 p-4">
+            <div className="flex items-center gap-3">
+              <AlertCircle className="h-5 w-5 text-red-600" />
+              <div>
+                <p className="text-sm font-medium text-red-800">Verification failed</p>
+                <p className="text-sm text-red-700">
+                  {verificationError === 'invalid_token'
+                    ? 'The verification link is invalid or has expired.'
+                    : 'There was a problem verifying your email.'}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="mt-8 space-y-6">
@@ -263,6 +306,40 @@ export default function LoginPage() {
             Sign in with Passkey
           </Button>
         </div>
+
+        {unverifiedEmail && (
+          <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
+            <div className="flex items-start gap-3">
+              <Mail className="h-5 w-5 text-amber-600 mt-0.5" />
+              <div className="flex-1">
+                <p className="text-sm font-medium text-amber-800">Email verification required</p>
+                <p className="text-sm text-amber-700 mt-1">
+                  We sent a verification link to <strong>{unverifiedEmail}</strong>. Please check your inbox and click the link to verify your email.
+                </p>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="mt-3"
+                  disabled={loading}
+                  onClick={() => {
+                    startTransition(async () => {
+                      await authClient.sendVerificationEmail({
+                        email: unverifiedEmail,
+                        callbackURL: '/dashboard?verified=true',
+                      });
+                      toast('Email sent!', {
+                        description: 'A new verification link has been sent to your email.',
+                      });
+                    });
+                  }}
+                >
+                  {loading ? 'Sending...' : 'Resend verification email'}
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="text-center text-sm text-stone-600">
           Don't have an account?{' '}

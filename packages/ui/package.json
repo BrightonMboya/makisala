@@ -6,6 +6,7 @@
   "exports": {
     ".": "./src/index.ts",
     "./*": "./src/components/*.tsx",
+    "./use-toast": "./src/hooks/use-toast.tsx",
     "./styles.css": "./styles.css"
   },
   "publishConfig": {

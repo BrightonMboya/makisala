@@ -13,7 +13,7 @@ import { getTours, getSharedTemplates, cloneTemplate } from '@/app/itineraries/a
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { queryKeys, staleTimes } from '@/lib/query-keys';
 import { authClient } from '@/lib/auth-client';
-import { useToast } from '@/lib/hooks/use-toast';
+import { useToast } from '@repo/ui/use-toast';
 import { useState } from 'react';
 import {
   Dialog,

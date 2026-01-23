@@ -4,6 +4,7 @@ import { renderCommentNotificationEmail } from '../templates/comment-notificatio
 import { renderProposalShareEmail } from '../templates/proposal-share';
 import { renderProposalAcceptanceEmail } from '../templates/proposal-acceptance';
 import { renderTeamInvitationEmail } from '../templates/team-invitation';
+import { renderEmailVerificationEmail } from '../templates/email-verification';
 
 export interface CommentNotificationData {
   proposalId: string;
@@ -358,6 +359,51 @@ export async function sendTeamInvitationEmail(
     return { success: true };
   } catch (error) {
     console.error('Error sending team invitation email:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error occurred',
+    };
+  }
+}
+
+export interface EmailVerificationData {
+  recipientEmail: string;
+  userName: string;
+  verificationUrl: string;
+}
+
+/**
+ * Sends an email verification email to a new user.
+ */
+export async function sendEmailVerificationEmail(
+  data: EmailVerificationData,
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const html = renderEmailVerificationEmail({
+      userName: data.userName,
+      verificationUrl: data.verificationUrl,
+    });
+
+    const fromEmail = env.RESEND_FROM_EMAIL || 'notifications@makisala.com';
+
+    const result = await resend.emails.send({
+      from: fromEmail,
+      to: data.recipientEmail,
+      subject: 'Verify your email address - Kitasuro',
+      html,
+    });
+
+    if (result.error) {
+      console.error('Resend API error:', result.error);
+      return {
+        success: false,
+        error: result.error.message || 'Failed to send email',
+      };
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error('Error sending email verification email:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error occurred',
