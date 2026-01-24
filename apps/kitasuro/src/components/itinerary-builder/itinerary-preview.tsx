@@ -77,9 +77,9 @@ export function ItineraryPreview({
   });
 
   const nationalParksMap = useMemo(() => {
-    const parksMap: Record<string, { name: string; image?: string }> = {};
+    const parksMap: Record<string, { name: string; image?: string; latitude?: string | null; longitude?: string | null }> = {};
     (parksData || []).forEach((p) => {
-      parksMap[p.id] = { name: p.name };
+      parksMap[p.id] = { name: p.name, latitude: p.latitude, longitude: p.longitude };
     });
     return parksMap;
   }, [parksData]);
@@ -166,7 +166,7 @@ export function ItineraryPreview({
                 <Map className="h-5 w-5 text-green-600" />
                 <h3 className="font-serif text-lg font-bold text-stone-900">Your Route</h3>
               </div>
-              <ItineraryMap days={days} className="rounded-none border-0 shadow-none" />
+              <ItineraryMap days={days} nationalParksMap={nationalParksMap} className="rounded-none border-0 shadow-none" />
             </div>
           </div>
 

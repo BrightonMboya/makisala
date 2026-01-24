@@ -18,7 +18,7 @@ import type { ItineraryData, NationalParkInfo } from '@/types/itinerary-types';
 
 // --- TRIP MAP COMPONENT ---
 function TripMap({ data }: { data: ItineraryData['mapData'] }) {
-  const { locations } = data;
+  const { locations, startLocation, endLocation } = data;
 
   if (!locations || locations.length === 0) {
     return (
@@ -28,20 +28,28 @@ function TripMap({ data }: { data: ItineraryData['mapData'] }) {
     );
   }
 
-  // Calculate center from all locations
+  // Build full route including start and end locations
+  const allLocations = useMemo(() => {
+    const locs = [...locations];
+    if (startLocation) locs.unshift(startLocation);
+    if (endLocation) locs.push(endLocation);
+    return locs;
+  }, [locations, startLocation, endLocation]);
+
+  // Calculate center from all locations (including start/end)
   const center = useMemo(() => {
-    const lngs = locations.map((l) => l.coordinates[0]);
-    const lats = locations.map((l) => l.coordinates[1]);
+    const lngs = allLocations.map((l) => l.coordinates[0]);
+    const lats = allLocations.map((l) => l.coordinates[1]);
     return [
       (Math.min(...lngs) + Math.max(...lngs)) / 2,
       (Math.min(...lats) + Math.max(...lats)) / 2,
     ] as [number, number];
-  }, [locations]);
+  }, [allLocations]);
 
-  // Extract coordinates for the route line
+  // Extract coordinates for the route line (start → destinations → end)
   const routeCoordinates = useMemo(
-    () => locations.map((l) => l.coordinates as [number, number]),
-    [locations],
+    () => allLocations.map((l) => l.coordinates as [number, number]),
+    [allLocations],
   );
 
   return (
@@ -66,12 +74,26 @@ function TripMap({ data }: { data: ItineraryData['mapData'] }) {
         />
       )}
 
-      {/* Markers */}
+      {/* Start Location Marker */}
+      {startLocation && (
+        <MapMarker longitude={startLocation.coordinates[0]} latitude={startLocation.coordinates[1]}>
+          <MarkerContent>
+            <div className="flex h-6 w-6 items-center justify-center rounded-full border-2 border-white bg-green-500 text-[8px] font-bold text-white shadow-md">
+              GO
+            </div>
+          </MarkerContent>
+          <MarkerTooltip>
+            <span className="text-xs font-medium">Start: {startLocation.name}</span>
+          </MarkerTooltip>
+        </MapMarker>
+      )}
+
+      {/* Destination Markers */}
       {locations.map((loc, idx) => (
         <MapMarker key={loc.name} longitude={loc.coordinates[0]} latitude={loc.coordinates[1]}>
           <MarkerContent>
             <motion.div
-              className="flex h-4 w-4 items-center justify-center rounded-full bg-green-400 shadow-md"
+              className="flex h-5 w-5 items-center justify-center rounded-full border-2 border-white bg-green-400 text-[9px] font-bold text-neutral-900 shadow-md"
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
               transition={{
@@ -80,13 +102,29 @@ function TripMap({ data }: { data: ItineraryData['mapData'] }) {
                 stiffness: 100,
                 delay: idx * 0.3,
               }}
-            />
+            >
+              {idx + 1}
+            </motion.div>
           </MarkerContent>
           <MarkerTooltip>
             <span className="text-xs font-medium">{loc.name}</span>
           </MarkerTooltip>
         </MapMarker>
       ))}
+
+      {/* End Location Marker */}
+      {endLocation && (
+        <MapMarker longitude={endLocation.coordinates[0]} latitude={endLocation.coordinates[1]}>
+          <MarkerContent>
+            <div className="flex h-6 w-6 items-center justify-center rounded-full border-2 border-white bg-red-500 text-[8px] font-bold text-white shadow-md">
+              END
+            </div>
+          </MarkerContent>
+          <MarkerTooltip>
+            <span className="text-xs font-medium">End: {endLocation.name}</span>
+          </MarkerTooltip>
+        </MapMarker>
+      )}
     </Map>
   );
 }
@@ -263,25 +301,6 @@ export default function KuduTheme({ data, onHeroImageChange, onDayImageChange }:
           )}
         </div>
       </NarrativeSection>
-
-      {/* 2. SUMMARY: THE EXPEDITION */}
-      {/*<NarrativeSection imageUrl={itinerary[0]?.accommodation ? accommodations.find(a => a.name === itinerary[0]?.accommodation)?.image : heroImage} imageRight={false}>*/}
-      {/*  <h2 className="text-5xl font-serif font-bold mb-8 text-slate-900">The Expedition</h2>*/}
-      {/*  <p className="text-lg text-slate-600 leading-relaxed mb-10 font-serif italic">*/}
-      {/*      This journey takes you through the heart of {location}.*/}
-      {/*      {itinerary.length} days of adventure, culture, and unforgettable moments.*/}
-      {/*  </p>*/}
-      {/*  <div className="grid grid-cols-2 gap-8">*/}
-      {/*     <div className="space-y-2">*/}
-      {/*        <div className="flex items-center gap-2 text-emerald-800"><Mountain size={16}/> <span className="text-[10px] font-bold uppercase tracking-widest">Duration</span></div>*/}
-      {/*        <p className="text-xl font-serif">{data.duration}</p>*/}
-      {/*     </div>*/}
-      {/*     <div className="space-y-2">*/}
-      {/*        <div className="flex items-center gap-2 text-emerald-800"><Home size={16}/> <span className="text-[10px] font-bold uppercase tracking-widest">Accommodations</span></div>*/}
-      {/*        <p className="text-xl font-serif">{accommodations.length} Unique Stays</p>*/}
-      {/*     </div>*/}
-      {/*  </div>*/}
-      {/*</NarrativeSection>*/}
 
       {/* 3. DAILY ITINERARY LOOP */}
       {itinerary.map((day, index) => {

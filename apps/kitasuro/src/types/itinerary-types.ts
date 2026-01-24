@@ -63,6 +63,7 @@ export type BuilderContextType = {
   setClientId: React.Dispatch<React.SetStateAction<string | null>>;
   tourTitle: string;
   setTourTitle: React.Dispatch<React.SetStateAction<string>>;
+  country: string | null;
   travelerGroups: TravelerGroup[];
   setTravelerGroups: React.Dispatch<React.SetStateAction<TravelerGroup[]>>;
 
@@ -173,10 +174,7 @@ export interface ItineraryData {
     points: string[];
   };
   mapData: {
-    geojson: any;
     locations: Location[];
-    scale: number;
-    rotate: [number, number, number];
     startLocation?: Location;
     endLocation?: Location;
   };

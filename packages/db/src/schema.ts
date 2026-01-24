@@ -475,6 +475,8 @@ export const nationalParks = pgTable('national_parks', {
   // TODO: this country field should be removed
   country: text().notNull(),
   destination_id: uuid().references(() => destinations.id),
+  latitude: numeric('latitude', { precision: 10, scale: 7 }),
+  longitude: numeric('longitude', { precision: 10, scale: 7 }),
   overview_page_id: text().references(() => pages.id),
   wildlife_page_id: text().references(() => pages.id),
   best_time_to_visit_id: text().references(() => pages.id),
@@ -782,3 +784,28 @@ export type NewInvitation = typeof invitation.$inferInsert;
 // Better Auth passkey plugin types
 export type Passkey = typeof passkey.$inferSelect;
 export type NewPasskey = typeof passkey.$inferInsert;
+
+// ---------- DAY CONTENT TEMPLATES ----------
+export const DayType = pgEnum('day_type', ['arrival', 'full_day', 'half_day', 'departure']);
+
+export const dayContentTemplates = pgTable('day_content_templates', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  nationalParkId: uuid('national_park_id')
+    .notNull()
+    .references(() => nationalParks.id, { onDelete: 'cascade' }),
+  dayType: DayType('day_type').notNull(),
+  description: text('description').notNull(),
+  createdAt: timestamp('created_at', { precision: 3, mode: 'string' })
+    .default(sql`CURRENT_TIMESTAMP`)
+    .notNull(),
+});
+
+export const dayContentTemplatesRelations = relations(dayContentTemplates, ({ one }) => ({
+  nationalPark: one(nationalParks, {
+    fields: [dayContentTemplates.nationalParkId],
+    references: [nationalParks.id],
+  }),
+}));
+
+export type DayContentTemplate = typeof dayContentTemplates.$inferSelect;
+export type NewDayContentTemplate = typeof dayContentTemplates.$inferInsert;
