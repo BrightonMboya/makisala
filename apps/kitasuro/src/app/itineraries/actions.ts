@@ -1217,3 +1217,77 @@ export async function cloneTemplate(templateId: string) {
     return { success: false, error: 'Failed to clone template' };
   }
 }
+
+// Get random day content template for a national park
+export async function getRandomDayTemplate(
+  nationalParkId: string,
+  dayType?: 'arrival' | 'full_day' | 'half_day' | 'departure',
+  excludeDescriptions?: string[]
+) {
+  try {
+    const { dayContentTemplates } = await import('@repo/db/schema');
+
+    // Build query conditions
+    let query = db
+      .select({
+        id: dayContentTemplates.id,
+        dayType: dayContentTemplates.dayType,
+        description: dayContentTemplates.description,
+      })
+      .from(dayContentTemplates)
+      .where(eq(dayContentTemplates.nationalParkId, nationalParkId));
+
+    const templates = await query;
+
+    if (templates.length === 0) {
+      return null;
+    }
+
+    // Filter by day type if provided
+    let candidates = templates;
+    if (dayType) {
+      const typeMatches = candidates.filter((t) => t.dayType === dayType);
+      if (typeMatches.length > 0) {
+        candidates = typeMatches;
+      }
+    }
+
+    // Exclude already used descriptions
+    if (excludeDescriptions && excludeDescriptions.length > 0) {
+      const filtered = candidates.filter(
+        (t) => !excludeDescriptions.includes(t.description)
+      );
+      if (filtered.length > 0) {
+        candidates = filtered;
+      }
+    }
+
+    // Return random template
+    const randomIndex = Math.floor(Math.random() * candidates.length);
+    return candidates[randomIndex];
+  } catch (error) {
+    console.error('Error fetching day template:', error);
+    return null;
+  }
+}
+
+// Get all day content templates for a national park (for showing options)
+export async function getDayTemplatesForPark(nationalParkId: string) {
+  try {
+    const { dayContentTemplates } = await import('@repo/db/schema');
+
+    const templates = await db
+      .select({
+        id: dayContentTemplates.id,
+        dayType: dayContentTemplates.dayType,
+        description: dayContentTemplates.description,
+      })
+      .from(dayContentTemplates)
+      .where(eq(dayContentTemplates.nationalParkId, nationalParkId));
+
+    return templates;
+  } catch (error) {
+    console.error('Error fetching day templates:', error);
+    return [];
+  }
+}

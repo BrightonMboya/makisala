@@ -25,14 +25,14 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Copy, GripVertical, MoreVertical, Plus, Trash2, FileText } from 'lucide-react';
+import { Copy, GripVertical, MoreVertical, Plus, Trash2, FileText, Sparkles, Loader2 } from 'lucide-react';
 import { useState, useCallback } from 'react';
 import { ActivityModal } from './activity-modal';
 import { Combobox } from '@repo/ui/combobox';
 import { AsyncCombobox } from './async-combobox';
 import { Textarea } from '@repo/ui/textarea';
 import { addDays, format } from 'date-fns';
-import { searchAccommodations, getAccommodationById } from '@/app/itineraries/actions';
+import { searchAccommodations, getAccommodationById, getRandomDayTemplate } from '@/app/itineraries/actions';
 
 import type { BuilderDay, BuilderActivity } from '@/types/itinerary-types';
 
@@ -267,6 +267,26 @@ function SortableDayRow({
   });
 
   const [isExpanded, setIsExpanded] = useState(!!day.description);
+  const [isSuggesting, setIsSuggesting] = useState(false);
+
+  const handleSuggestContent = useCallback(async () => {
+    if (!day.destination) return;
+
+    setIsSuggesting(true);
+    try {
+      const template = await getRandomDayTemplate(
+        day.destination,
+        undefined,
+        day.description ? [day.description] : undefined
+      );
+      if (template?.description) {
+        onUpdate(day.id, 'description', template.description);
+        setIsExpanded(true);
+      }
+    } finally {
+      setIsSuggesting(false);
+    }
+  }, [day.destination, day.description, day.id, onUpdate]);
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -432,12 +452,29 @@ function SortableDayRow({
                 <FileText className="h-3.5 w-3.5" />
                 Day Overview
               </label>
-              <button
-                onClick={() => setIsExpanded(false)}
-                className="text-xs text-stone-400 hover:text-stone-600"
-              >
-                Hide
-              </button>
+              <div className="flex items-center gap-3">
+                {day.destination && (
+                  <button
+                    onClick={handleSuggestContent}
+                    disabled={isSuggesting}
+                    className="flex items-center gap-1 text-xs font-medium text-green-600 hover:underline disabled:opacity-50"
+                    title="Suggest content based on destination"
+                  >
+                    {isSuggesting ? (
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                    ) : (
+                      <Sparkles className="h-3 w-3" />
+                    )}
+                    Suggest
+                  </button>
+                )}
+                <button
+                  onClick={() => setIsExpanded(false)}
+                  className="text-xs font-medium text-stone-400 hover:text-stone-600"
+                >
+                  Hide
+                </button>
+              </div>
             </div>
             <Textarea
               value={day.description || ''}
@@ -447,15 +484,32 @@ function SortableDayRow({
             />
           </div>
         ) : (
-          <button
-            onClick={() => setIsExpanded(true)}
-            className="group mt-2 w-full rounded-md border border-dashed border-stone-200 px-3 py-2 text-left transition-colors hover:border-stone-300 hover:bg-stone-50"
-          >
-            <span className="flex items-center gap-1.5 text-xs text-stone-500 group-hover:text-stone-700">
-              <FileText className="h-3.5 w-3.5" />
-              {day.description ? 'Edit day overview' : 'Add day overview (optional)'}
-            </span>
-          </button>
+          <div className="mt-2 flex items-center gap-2">
+            <button
+              onClick={() => setIsExpanded(true)}
+              className="group flex-1 rounded-md border border-dashed border-stone-200 px-3 py-2 text-left transition-colors hover:border-stone-300 hover:bg-stone-50"
+            >
+              <span className="flex items-center gap-1.5 text-xs text-stone-500 group-hover:text-stone-700">
+                <FileText className="h-3.5 w-3.5" />
+                {day.description ? 'Edit day overview' : 'Add day overview (optional)'}
+              </span>
+            </button>
+            {day.destination && !day.description && (
+              <button
+                onClick={handleSuggestContent}
+                disabled={isSuggesting}
+                className="flex items-center gap-1.5 rounded-md border border-dashed border-green-300 bg-green-50 px-3 py-2 text-xs font-medium text-green-600 transition-colors hover:bg-green-100 disabled:opacity-50"
+                title="Auto-fill with suggested content"
+              >
+                {isSuggesting ? (
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                ) : (
+                  <Sparkles className="h-3 w-3" />
+                )}
+                Suggest
+              </button>
+            )}
+          </div>
         )}
       </div>
     </div>

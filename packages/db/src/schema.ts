@@ -782,3 +782,28 @@ export type NewInvitation = typeof invitation.$inferInsert;
 // Better Auth passkey plugin types
 export type Passkey = typeof passkey.$inferSelect;
 export type NewPasskey = typeof passkey.$inferInsert;
+
+// ---------- DAY CONTENT TEMPLATES ----------
+export const DayType = pgEnum('day_type', ['arrival', 'full_day', 'half_day', 'departure']);
+
+export const dayContentTemplates = pgTable('day_content_templates', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  nationalParkId: uuid('national_park_id')
+    .notNull()
+    .references(() => nationalParks.id, { onDelete: 'cascade' }),
+  dayType: DayType('day_type').notNull(),
+  description: text('description').notNull(),
+  createdAt: timestamp('created_at', { precision: 3, mode: 'string' })
+    .default(sql`CURRENT_TIMESTAMP`)
+    .notNull(),
+});
+
+export const dayContentTemplatesRelations = relations(dayContentTemplates, ({ one }) => ({
+  nationalPark: one(nationalParks, {
+    fields: [dayContentTemplates.nationalParkId],
+    references: [nationalParks.id],
+  }),
+}));
+
+export type DayContentTemplate = typeof dayContentTemplates.$inferSelect;
+export type NewDayContentTemplate = typeof dayContentTemplates.$inferInsert;

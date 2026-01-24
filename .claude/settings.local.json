@@ -13,7 +13,11 @@
       "WebFetch(domain:www.better-auth.com)",
       "Bash(grep:*)",
       "Bash(bun run generate:*)",
-      "Bash(bun run studio)"
+      "Bash(bun run studio)",
+      "Bash(bun -e:*)",
+      "Bash(bun run:*)",
+      "Bash(bun --bun next lint:*)",
+      "Bash(bunx tsc:*)"
     ]
   }
 }
