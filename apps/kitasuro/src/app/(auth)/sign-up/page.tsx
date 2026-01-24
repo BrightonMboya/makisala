@@ -1,6 +1,6 @@
 'use client'
 
-import { useTransition, useState } from 'react'
+import { useTransition, useState, Suspense } from 'react'
 import { Button } from '@repo/ui/button'
 import { Input } from '@repo/ui/input'
 import { z } from 'zod'
@@ -27,6 +27,33 @@ const SignUpSchema = z.object({
 type SignUpFormSchema = z.infer<typeof SignUpSchema>
 
 export default function SignUpPage() {
+    return (
+        <Suspense fallback={<SignUpSkeleton />}>
+            <SignUpForm />
+        </Suspense>
+    )
+}
+
+function SignUpSkeleton() {
+    return (
+        <div className="flex min-h-screen items-center justify-center bg-stone-50 p-4">
+            <div className="w-full max-w-md space-y-8 rounded-2xl border border-stone-200 bg-white p-8 shadow-sm">
+                <div className="text-center">
+                    <h1 className="font-serif text-3xl font-bold text-green-800">Kitasuro</h1>
+                    <p className="mt-2 text-stone-600">Create your tour operator account</p>
+                </div>
+                <div className="animate-pulse space-y-4">
+                    <div className="h-10 bg-stone-200 rounded" />
+                    <div className="h-10 bg-stone-200 rounded" />
+                    <div className="h-10 bg-stone-200 rounded" />
+                    <div className="h-10 bg-stone-200 rounded" />
+                </div>
+            </div>
+        </div>
+    )
+}
+
+function SignUpForm() {
     const { toast } = useToast()
     const searchParams = useSearchParams()
     const [loading, startTransition] = useTransition()

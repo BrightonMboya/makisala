@@ -11,7 +11,7 @@ import { BuilderProvider, useBuilder } from '@/components/itinerary-builder/buil
 import { SidebarProvider, SidebarInset, SidebarTrigger } from '@repo/ui/sidebar';
 import { AppSidebar } from '@/components/app-sidebar';
 import type { TravelerGroup } from '@/types/itinerary-types';
-import { useMemo } from 'react';
+import { useMemo, Suspense } from 'react';
 import { saveProposal } from '@/app/itineraries/actions';
 import { useMutation } from '@tanstack/react-query';
 import { toast } from '@repo/ui/toast';
@@ -390,6 +390,25 @@ function BuilderLayoutContent({ children }: { children: React.ReactNode }) {
 }
 
 export default function BuilderLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <Suspense fallback={<BuilderLayoutSkeleton />}>
+      <BuilderLayoutInner>{children}</BuilderLayoutInner>
+    </Suspense>
+  );
+}
+
+function BuilderLayoutSkeleton() {
+  return (
+    <div className="flex h-screen flex-col items-center justify-center bg-stone-50">
+      <div className="flex flex-col items-center gap-4">
+        <div className="h-10 w-10 animate-spin rounded-full border-4 border-green-600 border-t-transparent"></div>
+        <p className="text-sm font-medium text-stone-600">Loading proposal...</p>
+      </div>
+    </div>
+  );
+}
+
+function BuilderLayoutInner({ children }: { children: React.ReactNode }) {
   const searchParams = useSearchParams();
   const tourId = searchParams.get('tourId');
   const startDateParam = searchParams.get('startDate');
