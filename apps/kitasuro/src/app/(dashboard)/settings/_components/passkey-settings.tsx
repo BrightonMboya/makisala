@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@repo
 import { Button } from '@repo/ui/button';
 import { useState, useTransition } from 'react';
 import { authClient } from '@/lib/auth-client';
-import { toast } from '@repo/ui/toast';
+import { toast } from '@repo/ui/use-toast';
 import { Key, Trash2, Plus, Smartphone, Laptop } from 'lucide-react';
 import {
   AlertDialog,
@@ -34,6 +34,7 @@ export function PasskeySettings() {
       if (error) throw error;
       return data || [];
     },
+    staleTime: 60 * 1000, // 1 minute - passkeys rarely change
   });
 
   async function handleAddPasskey() {
@@ -52,7 +53,8 @@ export function PasskeySettings() {
           toast({ title: 'Passkey added successfully' });
           queryClient.invalidateQueries({ queryKey: ['passkeys'] });
         }
-      } catch {
+      } catch (error) {
+        console.error('Failed to add passkey:', error);
         toast({
           title: 'Failed to add passkey',
           description: 'Your browser may not support passkeys.',
@@ -76,7 +78,8 @@ export function PasskeySettings() {
           toast({ title: 'Passkey deleted successfully' });
           queryClient.invalidateQueries({ queryKey: ['passkeys'] });
         }
-      } catch {
+      } catch (error) {
+        console.error('Failed to delete passkey:', error);
         toast({ title: 'Failed to delete passkey', variant: 'destructive' });
       } finally {
         setDeleteId(null);

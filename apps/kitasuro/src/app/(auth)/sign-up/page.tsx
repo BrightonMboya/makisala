@@ -6,7 +6,7 @@ import { Input } from '@repo/ui/input'
 import { z } from 'zod'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Form, FormControl, FormField, FormItem, FormLabel } from '@repo/ui/form'
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@repo/ui/form'
 import { authClient } from '@/lib/auth-client'
 import { useSearchParams } from 'next/navigation'
 import { useToast } from '@repo/ui/use-toast'
@@ -14,9 +14,14 @@ import Link from 'next/link'
 import { Mail, CheckCircle } from 'lucide-react'
 
 const SignUpSchema = z.object({
-    name: z.string().min(2),
-    email: z.email(),
-    password: z.string().min(8),
+    name: z.string().min(2, 'Name must be at least 2 characters'),
+    email: z.email('Please enter a valid email address'),
+    password: z
+        .string()
+        .min(8, 'Password must be at least 8 characters')
+        .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
+        .regex(/[a-z]/, 'Password must contain at least one lowercase letter')
+        .regex(/[0-9]/, 'Password must contain at least one number'),
 })
 
 type SignUpFormSchema = z.infer<typeof SignUpSchema>
@@ -137,6 +142,7 @@ export default function SignUpPage() {
                                         <FormControl>
                                             <Input placeholder="John Doe" {...field} />
                                         </FormControl>
+                                        <FormMessage />
                                     </FormItem>
                                 )}
                             />
@@ -153,6 +159,7 @@ export default function SignUpPage() {
                                                 {...field}
                                             />
                                         </FormControl>
+                                        <FormMessage />
                                     </FormItem>
                                 )}
                             />
@@ -161,10 +168,14 @@ export default function SignUpPage() {
                                 control={form.control}
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel>Password (min 8 characters)</FormLabel>
+                                        <FormLabel>Password</FormLabel>
                                         <FormControl>
                                             <Input placeholder="••••••••" type="password" {...field} />
                                         </FormControl>
+                                        <FormMessage />
+                                        <p className="text-xs text-stone-500">
+                                            Must be at least 8 characters with uppercase, lowercase, and a number
+                                        </p>
                                     </FormItem>
                                 )}
                             />
