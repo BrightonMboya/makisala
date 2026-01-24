@@ -78,8 +78,9 @@ export async function getTourDetails(id: string) {
     if (!tour) return null;
 
     return {
-      tourType: 'Private Tour', // Default
+      tourType: 'Private Tour',
       price: tour.pricing,
+      country: tour.country,
       days: tour.days.map((day) => ({
         id: day.id,
         dayNumber: day.dayNumber,
@@ -190,6 +191,8 @@ export async function getAllNationalParks() {
         id: nationalParks.id,
         name: nationalParks.name,
         overview_page_id: nationalParks.overview_page_id,
+        latitude: nationalParks.latitude,
+        longitude: nationalParks.longitude,
       })
       .from(nationalParks);
   } catch (error) {
@@ -411,6 +414,11 @@ export async function getProposalForBuilder(id: string) {
         heroImage: true,
       },
       with: {
+        tour: {
+          columns: {
+            country: true,
+          },
+        },
         days: {
           columns: {
             id: true,
@@ -453,6 +461,13 @@ export async function getProposalForBuilder(id: string) {
       },
     });
 
+    // Include country from tour relation
+    if (result) {
+      return {
+        ...result,
+        country: result.tour?.country || null,
+      };
+    }
     return result;
   } catch (error) {
     console.error('Error fetching proposal for builder:', error);
@@ -1222,7 +1237,7 @@ export async function cloneTemplate(templateId: string) {
 export async function getRandomDayTemplate(
   nationalParkId: string,
   dayType?: 'arrival' | 'full_day' | 'half_day' | 'departure',
-  excludeDescriptions?: string[]
+  excludeDescriptions?: string[],
 ) {
   try {
     const { dayContentTemplates } = await import('@repo/db/schema');
@@ -1254,9 +1269,7 @@ export async function getRandomDayTemplate(
 
     // Exclude already used descriptions
     if (excludeDescriptions && excludeDescriptions.length > 0) {
-      const filtered = candidates.filter(
-        (t) => !excludeDescriptions.includes(t.description)
-      );
+      const filtered = candidates.filter((t) => !excludeDescriptions.includes(t.description));
       if (filtered.length > 0) {
         candidates = filtered;
       }
@@ -1268,26 +1281,5 @@ export async function getRandomDayTemplate(
   } catch (error) {
     console.error('Error fetching day template:', error);
     return null;
-  }
-}
-
-// Get all day content templates for a national park (for showing options)
-export async function getDayTemplatesForPark(nationalParkId: string) {
-  try {
-    const { dayContentTemplates } = await import('@repo/db/schema');
-
-    const templates = await db
-      .select({
-        id: dayContentTemplates.id,
-        dayType: dayContentTemplates.dayType,
-        description: dayContentTemplates.description,
-      })
-      .from(dayContentTemplates)
-      .where(eq(dayContentTemplates.nationalParkId, nationalParkId));
-
-    return templates;
-  } catch (error) {
-    console.error('Error fetching day templates:', error);
-    return [];
   }
 }

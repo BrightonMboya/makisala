@@ -475,6 +475,8 @@ export const nationalParks = pgTable('national_parks', {
   // TODO: this country field should be removed
   country: text().notNull(),
   destination_id: uuid().references(() => destinations.id),
+  latitude: numeric('latitude', { precision: 10, scale: 7 }),
+  longitude: numeric('longitude', { precision: 10, scale: 7 }),
   overview_page_id: text().references(() => pages.id),
   wildlife_page_id: text().references(() => pages.id),
   best_time_to_visit_id: text().references(() => pages.id),

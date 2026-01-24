@@ -436,6 +436,7 @@ export default function BuilderLayout({ children }: { children: React.ReactNode 
         tourTitle: proposal.tourTitle || proposal.name,
         tourType: proposal.tourType || data.tourType,
         clientId: proposal.clientId || data.clientId,
+        country: (proposal as any).country || null,
         startDate: proposal.startDate ? new Date(proposal.startDate) : data.startDate,
         startCity: proposal.startCity || '',
         endCity: proposal.endCity || '',
@@ -475,7 +476,7 @@ export default function BuilderLayout({ children }: { children: React.ReactNode 
         })),
       };
     } else if (tourTemplate) {
-      // Fallback to tour template data
+      // Fallback to tour template data (includes country)
       data = { ...data, ...tourTemplate };
       if (!data.travelerGroups && travelersParam) {
         const travelersCount = parseInt(travelersParam, 10);

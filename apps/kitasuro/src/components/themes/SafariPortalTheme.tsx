@@ -1,13 +1,20 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ComposableMap, Geographies, Geography, Line, Marker } from 'react-simple-maps';
+import {
+  Map,
+  MapRoute,
+  MapMarker,
+  MarkerContent,
+  MarkerTooltip,
+} from '@repo/ui/map';
 import type { ItineraryData, NationalParkInfo } from '@/types/itinerary-types';
 
 function TripMap({ data }: { data: ItineraryData['mapData'] }) {
-  const { geojson, locations, scale, rotate } = data;
+  const { locations, startLocation, endLocation } = data;
+
   // Handle empty locations array
   if (!locations || locations.length === 0) {
     return (
@@ -16,53 +23,95 @@ function TripMap({ data }: { data: ItineraryData['mapData'] }) {
       </div>
     );
   }
+
+  // Calculate center based on all locations
+  const center = useMemo((): [number, number] => {
+    const allLocs = [...locations];
+    if (startLocation) allLocs.push(startLocation);
+    if (endLocation) allLocs.push(endLocation);
+    const lngs = allLocs.map((l) => l.coordinates[0]);
+    const lats = allLocs.map((l) => l.coordinates[1]);
+    return [
+      (Math.min(...lngs) + Math.max(...lngs)) / 2,
+      (Math.min(...lats) + Math.max(...lats)) / 2,
+    ];
+  }, [locations, startLocation, endLocation]);
+
+  // Build route coordinates
+  const routeCoordinates = useMemo(() => {
+    const coords: [number, number][] = [];
+    if (startLocation) coords.push(startLocation.coordinates);
+    locations.forEach((loc) => coords.push(loc.coordinates));
+    if (endLocation) coords.push(endLocation.coordinates);
+    return coords;
+  }, [locations, startLocation, endLocation]);
+
   return (
     <div className="h-full min-h-[400px] w-full overflow-hidden rounded-xl border border-stone-200 bg-stone-100/50">
-      <ComposableMap
-        projection="geoAzimuthalEqualArea"
-        projectionConfig={{ rotate, scale }}
-        className="h-full w-full fill-none"
-      >
-        <Geographies geography={geojson}>
-          {({ geographies }) =>
-            geographies.map((geo: any) => (
-              <Geography
-                key={geo.rsmKey}
-                geography={geo}
-                fill="#FFFFFF"
-                stroke="#D6D3D1"
-                strokeWidth={0.5}
-                style={{ default: { outline: 'none' } }}
-              />
-            ))
-          }
-        </Geographies>
-        {locations.map((loc, idx) => {
-          if (idx === 0) return null;
-          return (
-            <Line
-              key={idx}
-              from={locations[idx - 1].coordinates}
-              to={loc.coordinates}
-              stroke="#A8A29E"
-              strokeWidth={1}
-              strokeDasharray="3 3"
-            />
-          );
-        })}
-        {locations.map((loc) => (
-          <Marker key={loc.name} coordinates={loc.coordinates}>
-            <circle r={3} fill="#444" />
-            <text
-              textAnchor="middle"
-              y={-10}
-              className="fill-stone-500 text-[8px] font-bold tracking-widest uppercase"
-            >
-              {loc.name}
-            </text>
-          </Marker>
+      <Map center={center} zoom={7} minZoom={5} maxZoom={12}>
+        {/* Route Line */}
+        {routeCoordinates.length > 1 && (
+          <MapRoute
+            coordinates={routeCoordinates}
+            color="#A8A29E"
+            width={2}
+            opacity={0.8}
+            dashArray={[4, 4]}
+          />
+        )}
+
+        {/* Start Location Marker */}
+        {startLocation && (
+          <MapMarker
+            longitude={startLocation.coordinates[0]}
+            latitude={startLocation.coordinates[1]}
+          >
+            <MarkerContent>
+              <div className="flex h-5 w-5 items-center justify-center rounded-full border-2 border-white bg-stone-600 shadow-md">
+                <div className="h-1.5 w-1.5 rounded-full bg-white" />
+              </div>
+            </MarkerContent>
+            <MarkerTooltip>
+              <span className="text-xs font-medium">Start: {startLocation.name}</span>
+            </MarkerTooltip>
+          </MapMarker>
+        )}
+
+        {/* Destination Markers */}
+        {locations.map((loc, idx) => (
+          <MapMarker
+            key={loc.name}
+            longitude={loc.coordinates[0]}
+            latitude={loc.coordinates[1]}
+          >
+            <MarkerContent>
+              <div className="flex h-6 w-6 items-center justify-center rounded-full border-2 border-white bg-stone-800 text-[10px] font-bold text-white shadow-md">
+                {idx + 1}
+              </div>
+            </MarkerContent>
+            <MarkerTooltip>
+              <span className="text-xs font-medium">{loc.name}</span>
+            </MarkerTooltip>
+          </MapMarker>
         ))}
-      </ComposableMap>
+
+        {/* End Location Marker */}
+        {endLocation && (
+          <MapMarker
+            longitude={endLocation.coordinates[0]}
+            latitude={endLocation.coordinates[1]}
+          >
+            <MarkerContent>
+              <div className="flex h-5 w-5 items-center justify-center rounded-full border-2 border-white bg-stone-600 shadow-md">
+                <div className="h-1.5 w-1.5 rounded-full bg-white" />
+              </div>
+            </MarkerContent>
+            <MarkerTooltip>
+              <span className="text-xs font-medium">End: {endLocation.name}</span>
+            </MarkerTooltip>
+          </MapMarker>
+        )}
+      </Map>
     </div>
   );
 }

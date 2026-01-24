@@ -47,6 +47,7 @@ export default function PreviewPage() {
     clientId,
     tourTitle,
     startCity,
+    endCity,
     pickupPoint,
     transferIncluded,
     inclusions,
@@ -106,9 +107,9 @@ export default function PreviewPage() {
   });
 
   const nationalParksMap = useMemo(() => {
-    const map: Record<string, { id: string; name: string }> = {};
+    const map: Record<string, { id: string; name: string; latitude?: string | null; longitude?: string | null }> = {};
     parksData?.forEach((p) => {
-      map[p.id] = { id: p.id, name: p.name };
+      map[p.id] = { id: p.id, name: p.name, latitude: p.latitude, longitude: p.longitude };
     });
     return map;
   }, [parksData]);
@@ -140,10 +141,12 @@ export default function PreviewPage() {
       clientName,
       selectedTheme,
       heroImage,
+      startCity,
+      endCity,
       nationalParksMap,
       accommodationsMap,
     });
-  }, [days, startDate, travelerGroups, pricingRows, extras, inclusions, exclusions, tourTitle, clientName, selectedTheme, heroImage, nationalParksMap, accommodationsMap]);
+  }, [days, startDate, travelerGroups, pricingRows, extras, inclusions, exclusions, tourTitle, clientName, selectedTheme, heroImage, startCity, endCity, nationalParksMap, accommodationsMap]);
 
   // Share Proposal Mutation
   const shareProposalMutation = useMutation({

@@ -24,6 +24,7 @@ export function BuilderProvider({
   const [tourType, setTourType] = useState('Private Tour');
   const [clientId, setClientId] = useState<string | null>(null);
   const [tourTitle, setTourTitle] = useState('');
+  const [country, setCountry] = useState<string | null>(null);
   const [travelerGroups, setTravelerGroups] = useState<TravelerGroup[]>([
     { id: '1', count: 2, type: 'Adult' },
   ]);
@@ -74,6 +75,7 @@ export function BuilderProvider({
       if (initialData.tourType) setTourType(initialData.tourType);
       if (initialData.clientId) setClientId(initialData.clientId);
       if (initialData.tourTitle) setTourTitle(initialData.tourTitle);
+      if (initialData.country) setCountry(initialData.country);
       if (initialData.days) setDays(initialData.days);
       if (initialData.startDate) setStartDate(new Date(initialData.startDate));
 
@@ -185,6 +187,7 @@ export function BuilderProvider({
         setClientId,
         tourTitle,
         setTourTitle,
+        country,
         travelerGroups,
         setTravelerGroups,
         days,

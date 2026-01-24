@@ -9,11 +9,11 @@ import { addDays, format } from 'date-fns';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@repo/ui/select';
-import { Input } from '@repo/ui/input';
 import { Combobox } from '@repo/ui/combobox';
 import { Checkbox } from '@repo/ui/checkbox';
 import { Label } from '@repo/ui/label';
 import { airports } from '@/lib/data/itinerary-data';
+import { CITIES } from '@/lib/data/cities';
 import { useBuilder } from '@/components/itinerary-builder/builder-context';
 import { getAllNationalParks } from '@/app/itineraries/actions';
 import { useQuery } from '@tanstack/react-query';
@@ -36,6 +36,7 @@ export default function DayByDayPage() {
     setTransferIncluded,
     pickupPoint,
     setPickupPoint,
+    country,
   } = useBuilder();
 
   // Use React Query for caching national parks (accommodations are loaded on-demand via AsyncCombobox)
@@ -50,6 +51,16 @@ export default function DayByDayPage() {
     () => (parksData || []).map((p: any) => ({ value: p.id, label: p.name })),
     [parksData],
   );
+
+  // Filter cities based on tour country
+  // Note: Use city.value (lowercase) as the value prop because cmdk lowercases values internally
+  const citiesList = useMemo(() => {
+    const countryLower = country?.toLowerCase() || null;
+    const filtered = countryLower
+      ? CITIES.filter((city) => city.country === countryLower)
+      : CITIES;
+    return filtered.map((city) => ({ value: city.value, label: city.label }));
+  }, [country]);
 
   // Track if we've already updated dates for this startDate
   const lastStartDateRef = useRef<Date | undefined>(undefined);
@@ -141,23 +152,31 @@ export default function DayByDayPage() {
             <div className="space-y-2">
               <label className="text-xs font-semibold tracking-wide text-stone-500 uppercase">
                 Tour Starts In
+                {country && (
+                  <span className="ml-2 text-green-600 capitalize">({country})</span>
+                )}
               </label>
-              <Input
+              <Combobox
+                items={citiesList}
                 value={startCity}
-                onChange={(e) => setStartCity(e.target.value)}
-                placeholder="e.g. Kigali, Rwanda"
-                className="border-stone-200 bg-stone-50 focus:bg-white"
+                onChange={setStartCity}
+                placeholder="Select start city"
+                className="border-stone-200 bg-stone-50"
               />
             </div>
             <div className="space-y-2">
               <label className="text-xs font-semibold tracking-wide text-stone-500 uppercase">
                 Tour Ends In
+                {country && (
+                  <span className="ml-2 text-green-600 capitalize">({country})</span>
+                )}
               </label>
-              <Input
+              <Combobox
+                items={citiesList}
                 value={endCity}
-                onChange={(e) => setEndCity(e.target.value)}
-                placeholder="e.g. Kigali, Rwanda"
-                className="border-stone-200 bg-stone-50 focus:bg-white"
+                onChange={setEndCity}
+                placeholder="Select end city"
+                className="border-stone-200 bg-stone-50"
               />
             </div>
           </div>

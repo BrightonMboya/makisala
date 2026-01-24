@@ -11,39 +11,7 @@ import type {
   PricingRow,
   ExtraOption,
 } from '@/types/itinerary-types';
-
-// GeoJSON data for Rwanda (default)
-const RWANDA_GEOJSON = {
-  type: 'FeatureCollection',
-  features: [
-    {
-      type: 'Feature',
-      properties: { name: 'Rwanda' },
-      geometry: {
-        type: 'Polygon',
-        coordinates: [
-          [
-            [29.3399, -1.2132],
-            [29.5833, -1.4333],
-            [30.15, -1.05],
-            [30.4, -1.1],
-            [30.85, -1.35],
-            [30.7, -2.15],
-            [30.8, -2.35],
-            [30.45, -2.4],
-            [29.9, -2.35],
-            [29.6, -2.85],
-            [29.0, -2.7],
-            [28.85, -2.4],
-            [29.3, -1.8],
-            [29.25, -1.55],
-            [29.3399, -1.2132],
-          ],
-        ],
-      },
-    },
-  ],
-};
+import { CITIES } from '@/lib/data/cities';
 
 // Calculate pricing
 function calculatePricing(
@@ -65,6 +33,43 @@ function calculatePricing(
   };
 }
 
+function getCityCoordinates(city: string | null): Location | undefined {
+  if (!city) return undefined;
+  const cityLower = city.toLowerCase().trim();
+
+  // Try exact match by value first (value is lowercase like "kigali")
+  const exactMatch = CITIES.find((c) => c.value === cityLower);
+  if (exactMatch) {
+    return {
+      name: exactMatch.label,
+      coordinates: exactMatch.coordinates,
+    };
+  }
+
+  // Try match by label (case-insensitive)
+  const labelMatch = CITIES.find((c) => c.label.toLowerCase() === cityLower);
+  if (labelMatch) {
+    return {
+      name: labelMatch.label,
+      coordinates: labelMatch.coordinates,
+    };
+  }
+
+  // Try partial match
+  const partialMatch = CITIES.find(
+    (c) => cityLower.includes(c.value) || c.value.includes(cityLower) ||
+           cityLower.includes(c.label.toLowerCase()) || c.label.toLowerCase().includes(cityLower)
+  );
+  if (partialMatch) {
+    return {
+      name: partialMatch.label,
+      coordinates: partialMatch.coordinates,
+    };
+  }
+
+  return undefined;
+}
+
 // Transform builder context data to ItineraryData format (for preview page)
 // This is a client-safe function that doesn't use database imports
 export function transformBuilderToItineraryData(params: {
@@ -79,7 +84,9 @@ export function transformBuilderToItineraryData(params: {
   clientName: string;
   selectedTheme: ThemeType;
   heroImage: string;
-  nationalParksMap: Record<string, { id: string; name: string }>;
+  startCity?: string;
+  endCity?: string;
+  nationalParksMap: Record<string, { id: string; name: string; latitude?: string | null; longitude?: string | null }>;
   accommodationsMap: Record<string, { id: string; name: string; image?: string; description?: string }>;
 }): ItineraryData {
   const {
@@ -94,6 +101,8 @@ export function transformBuilderToItineraryData(params: {
     clientName,
     selectedTheme,
     heroImage,
+    startCity,
+    endCity,
     nationalParksMap,
     accommodationsMap,
   } = params;
@@ -207,24 +216,21 @@ export function transformBuilderToItineraryData(params: {
     if (day.destination && !seenParks.has(day.destination)) {
       seenParks.add(day.destination);
       const parkData = nationalParksMap[day.destination];
-      if (parkData) {
-        // Use default Rwanda coordinates for now
+      // All national parks must have coordinates in the database
+      if (parkData?.longitude && parkData?.latitude) {
         mapLocations.push({
           name: parkData.name,
-          coordinates: [30.0619, -1.9441],
+          coordinates: [parseFloat(parkData.longitude), parseFloat(parkData.latitude)],
         });
       }
     }
   });
 
-  if (mapLocations.length === 0) {
-    mapLocations.push({
-      name: 'Kigali',
-      coordinates: [30.0619, -1.9441],
-    });
-  }
-
   const duration = `${days.length} Days`;
+
+  // Get start/end city locations
+  const startLocation = getCityCoordinates(startCity || null);
+  const endLocation = getCityCoordinates(endCity || null);
 
   return {
     id: 'preview',
@@ -250,10 +256,9 @@ export function transformBuilderToItineraryData(params: {
       ],
     },
     mapData: {
-      geojson: RWANDA_GEOJSON, // Ideally switch based on country like proposal-transform
       locations: mapLocations,
-      scale: 40000,
-      rotate: [-29.85, 1.7, 0],
+      startLocation,
+      endLocation,
     },
   };
 }
