@@ -136,13 +136,29 @@ function dispatch(action: Action) {
 
 type Toast = Omit<ToasterToast, 'id'>;
 
-function toast(props: Toast) {
+interface ToastWithTitle extends Toast {
+  title?: React.ReactNode;
+}
+
+function toast(props: ToastWithTitle): { id: string; dismiss: () => void; update: (props: ToasterToast) => void };
+function toast(title: string, props?: Toast): { id: string; dismiss: () => void; update: (props: ToasterToast) => void };
+function toast(
+  titleOrProps: string | ToastWithTitle,
+  maybeProps?: Toast
+): { id: string; dismiss: () => void; update: (props: ToasterToast) => void } {
   const id = genId();
 
-  const update = (props: ToasterToast) =>
+  let props: ToastWithTitle;
+  if (typeof titleOrProps === 'string') {
+    props = { ...maybeProps, title: titleOrProps };
+  } else {
+    props = titleOrProps;
+  }
+
+  const update = (newProps: ToasterToast) =>
     dispatch({
       type: 'UPDATE_TOAST',
-      toast: { ...props, id },
+      toast: { ...newProps, id },
     });
   const dismiss = () => dispatch({ type: 'DISMISS_TOAST', toastId: id });
 

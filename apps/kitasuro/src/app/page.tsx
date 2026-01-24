@@ -4,6 +4,7 @@ import { FeatureGrid } from '@/components/landing/FeatureGrid';
 import { FeatureHighlight } from '@/components/landing/FeatureHighlight';
 import { Footer } from '@/components/landing/Footer';
 import { Compass, Globe, Layout, Library, Share2, Sparkles } from 'lucide-react';
+import Link from 'next/link';
 
 export default function LandingPage() {
   const coreFeatures = [
@@ -121,19 +122,18 @@ export default function LandingPage() {
               Join hundreds of tour operators who are saving time and selling more with Kitasuro.
             </p>
             <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
-              {/* Using HTML button for simplicity or import Button if wrapper needed */}
-              <a
-                href="/register"
+              <Link
+                href="/sign-up"
                 className="bg-primary text-primary-foreground hover:bg-primary/90 focus-visible:ring-ring inline-flex h-12 items-center justify-center rounded-full px-8 text-sm font-medium shadow transition-colors focus-visible:ring-1 focus-visible:outline-none"
               >
                 Start your 14-day free trial
-              </a>
-              <a
+              </Link>
+              <Link
                 href="/contact"
                 className="border-input bg-background hover:bg-accent hover:text-accent-foreground focus-visible:ring-ring inline-flex h-12 items-center justify-center rounded-full border px-8 text-sm font-medium shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none"
               >
                 Contact Sales
-              </a>
+              </Link>
             </div>
           </div>
         </section>

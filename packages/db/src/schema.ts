@@ -272,6 +272,30 @@ export const verification = pgTable('verification', {
   updatedAt: timestamp('updated_at').$defaultFn(() => /* @__PURE__ */ new Date()),
 });
 
+// ---------- PASSKEYS (Better Auth Passkey Plugin) ----------
+export const passkey = pgTable('passkey', {
+  id: text('id').primaryKey(),
+  name: text('name'),
+  publicKey: text('public_key').notNull(),
+  userId: text('user_id')
+    .notNull()
+    .references(() => user.id, { onDelete: 'cascade' }),
+  credentialID: text('credential_id').notNull().unique(),
+  counter: integer('counter').notNull(),
+  deviceType: text('device_type').notNull(),
+  backedUp: boolean('backed_up').notNull(),
+  transports: text('transports'),
+  aaguid: text('aaguid'),
+  createdAt: timestamp('created_at').$defaultFn(() => new Date()),
+});
+
+export const passkeyRelations = relations(passkey, ({ one }) => ({
+  user: one(user, {
+    fields: [passkey.userId],
+    references: [user.id],
+  }),
+}));
+
 // ---------- TEAM INVITATIONS ----------
 export const teamInvitations = pgTable('team_invitations', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -311,6 +335,8 @@ export const userRelations = relations(user, ({ one, many }) => ({
   // Better Auth organization plugin relations
   memberships: many(member),
   sentOrgInvitations: many(invitation),
+  // Better Auth passkey plugin relations
+  passkeys: many(passkey),
 }));
 
 // the following tables are for p_seo, some tables looks duplicated
@@ -752,3 +778,7 @@ export type Member = typeof member.$inferSelect;
 export type NewMember = typeof member.$inferInsert;
 export type Invitation = typeof invitation.$inferSelect;
 export type NewInvitation = typeof invitation.$inferInsert;
+
+// Better Auth passkey plugin types
+export type Passkey = typeof passkey.$inferSelect;
+export type NewPasskey = typeof passkey.$inferInsert;
