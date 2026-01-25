@@ -4,7 +4,7 @@ import { Input } from '@repo/ui/input';
 import { Clock, FileText, Search } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import {
   getOnboardingData,
   getProposalsForDashboard,
@@ -22,6 +22,16 @@ export default function DashboardPage() {
   const queryClient = useQueryClient();
   const { data: session } = authClient.useSession();
   const userId = session?.user?.id;
+  const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedQuery, setDebouncedQuery] = useState('');
+
+  // Debounce search query
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedQuery(searchQuery);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   const { data: proposals = [], isLoading: proposalsLoading } = useQuery({
     queryKey: queryKeys.proposals.list(userId),
@@ -62,17 +72,27 @@ export default function DashboardPage() {
   const isOnboarded = orgOnboardingComplete || onboardingStatus?.isComplete;
   const isLoading = proposalsLoading || onboardingLoading;
 
-  const requests: RequestItem[] = proposals.map((p: any) => ({
-    id: p.id,
-    client: p.client?.name || 'Unknown',
-    travelers: 0,
-    country: 'Unknown',
-    title: p.tourTitle || p.name,
-    startDate: p.startDate ? new Date(p.startDate).toLocaleDateString() : 'TBD',
-    received: new Date(p.createdAt).toLocaleDateString(),
-    source: 'Manual',
-    status: p.status === 'shared' ? 'shared' : 'draft',
-  }));
+  const requests: RequestItem[] = proposals
+    .map((p: any): RequestItem => ({
+      id: p.id,
+      client: p.client?.name || 'Unknown',
+      travelers: 0,
+      country: 'Unknown',
+      title: p.tourTitle || p.name,
+      startDate: p.startDate ? new Date(p.startDate).toLocaleDateString() : 'TBD',
+      received: new Date(p.createdAt).toLocaleDateString(),
+      source: 'Manual',
+      status: p.status === 'shared' ? 'shared' : 'draft',
+    }))
+    .filter((req) => {
+      if (!debouncedQuery.trim()) return true;
+      const query = debouncedQuery.toLowerCase();
+      return (
+        req.client.toLowerCase().includes(query) ||
+        req.title.toLowerCase().includes(query) ||
+        req.status.toLowerCase().includes(query)
+      );
+    });
 
   // Show loading state
   if (isLoading) {
@@ -102,7 +122,12 @@ export default function DashboardPage() {
         <div className="flex items-center gap-4">
           <div className="relative w-64">
             <Search className="absolute top-2.5 left-2.5 h-4 w-4 text-stone-400" />
-            <Input placeholder="Search proposals..." className="pl-9" />
+            <Input
+              placeholder="Search proposals..."
+              className="pl-9"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
           </div>
         </div>
       </header>
@@ -113,9 +138,13 @@ export default function DashboardPage() {
             <div className="mx-auto mb-4 h-12 w-12 text-stone-300">
               <FileText className="h-full w-full" />
             </div>
-            <h3 className="text-lg font-medium text-stone-900">No proposals yet</h3>
+            <h3 className="text-lg font-medium text-stone-900">
+              {debouncedQuery.trim() ? 'No matching proposals' : 'No proposals yet'}
+            </h3>
             <p className="mt-1 text-stone-500">
-              Create your first proposal using the sidebar button.
+              {debouncedQuery.trim()
+                ? 'Try adjusting your search terms.'
+                : 'Create your first proposal using the sidebar button.'}
             </p>
           </div>
         ) : (
