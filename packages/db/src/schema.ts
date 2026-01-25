@@ -655,6 +655,7 @@ export const proposalsRelations = relations(proposals, ({ one, many }) => ({
   }),
   days: many(proposalDays),
   comments: many(comments),
+  notes: many(proposalNotes),
 }));
 
 export const proposalDaysRelations = relations(proposalDays, ({ one, many }) => ({
@@ -748,8 +749,29 @@ export const commentRepliesRelations = relations(commentReplies, ({ one }) => ({
   }),
 }));
 
+// ---------- PROPOSAL NOTES (Internal Team Notes) ----------
+export const proposalNotes = pgTable('proposal_notes', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  proposalId: text('proposal_id')
+    .notNull()
+    .references(() => proposals.id, { onDelete: 'cascade' }),
+  userId: text('user_id').references(() => user.id),
+  userName: text('user_name'),
+  content: text('content').notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
 
-
+export const proposalNotesRelations = relations(proposalNotes, ({ one }) => ({
+  proposal: one(proposals, {
+    fields: [proposalNotes.proposalId],
+    references: [proposals.id],
+  }),
+  user: one(user, {
+    fields: [proposalNotes.userId],
+    references: [user.id],
+  }),
+}));
 
 export type Tours = typeof tours.$inferSelect;
 export type NewTourPackage = typeof tourPackages.$inferInsert;
@@ -772,6 +794,8 @@ export type ProposalMeal = typeof proposalMeals.$inferSelect;
 export type NewProposalMeal = typeof proposalMeals.$inferInsert;
 export type Comment = typeof comments.$inferSelect;
 export type NewComment = typeof comments.$inferInsert;
+export type ProposalNote = typeof proposalNotes.$inferSelect;
+export type NewProposalNote = typeof proposalNotes.$inferInsert;
 export type Client = typeof clients.$inferSelect;
 export type NewClient = typeof clients.$inferInsert;
 export type User = typeof user.$inferSelect;

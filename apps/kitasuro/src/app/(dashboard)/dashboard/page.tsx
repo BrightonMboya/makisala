@@ -16,6 +16,7 @@ import type { RequestItem } from '@/types/dashboard';
 import { checkOnboardingStatus } from '@/lib/onboarding';
 import { Onboarding } from '../_components/onboarding';
 import { authClient } from '@/lib/auth-client';
+import { NotesPanel } from '@/components/notes-panel';
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -181,7 +182,8 @@ export default function DashboardPage() {
                     <div className="mt-1">Created {req.received}</div>
                   </div>
                 </div>
-                <div className="mt-4 flex justify-end border-t border-stone-100 pt-3">
+                <div className="mt-4 flex items-center justify-end gap-3 border-t border-stone-100 pt-3">
+                  <NotesPanel proposalId={req.id} compact />
                   <button
                     className="text-xs font-medium text-green-700 hover:text-green-800 hover:underline"
                     onClick={(e) => {

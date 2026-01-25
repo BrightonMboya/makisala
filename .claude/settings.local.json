@@ -20,7 +20,8 @@
       "Bash(bunx tsc:*)",
       "WebSearch",
       "Bash(cat:*)",
-      "Bash(npx next lint:*)"
+      "Bash(npx next lint:*)",
+      "Bash(timeout 15 bun:*)"
     ]
   }
 }
