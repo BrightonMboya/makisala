@@ -1,11 +1,13 @@
 'use client';
 
+import { useState } from 'react';
+import Image from 'next/image';
 import { Card, CardContent, CardFooter, CardHeader } from '@repo/ui/card';
 import { Button } from '@repo/ui/button';
 import { Badge } from '@repo/ui/badge';
 import { Calendar, MapPin, Pencil, Eye } from 'lucide-react';
 import Link from 'next/link';
-import { capitalize } from '@/lib/utils';
+import { capitalize, formatPrice, MAX_VISIBLE_TAGS } from '@/lib/utils';
 
 interface TourCardProps {
   tour: {
@@ -21,23 +23,20 @@ interface TourCardProps {
 }
 
 export default function TourCard({ tour }: TourCardProps) {
-  const formattedPrice = new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: 0,
-  }).format(Number(tour.pricing));
+  const [imgError, setImgError] = useState(false);
+  const formattedPrice = formatPrice(tour.pricing);
 
   return (
     <Card className="group border-stone-200 bg-white transition-all duration-300 hover:border-green-600/30 hover:shadow-lg">
       <CardHeader className="p-0">
-        <div className="relative overflow-hidden rounded-t-lg">
-          <img
-            src={tour.imageUrl || '/placeholder.svg'}
+        <div className="relative overflow-hidden rounded-t-lg h-48">
+          <Image
+            src={imgError ? '/placeholder.svg' : (tour.imageUrl || '/placeholder.svg')}
             alt={tour.name}
-            className="h-48 w-full object-cover transition-transform duration-300 group-hover:scale-105"
-            onError={(e) => {
-              e.currentTarget.src = '/placeholder.svg';
-            }}
+            fill
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+            className="object-cover transition-transform duration-300 group-hover:scale-105"
+            onError={() => setImgError(true)}
           />
           <div className="absolute top-3 right-3">
             <Badge className="bg-white/90 text-stone-900 font-semibold shadow-sm">
@@ -68,14 +67,14 @@ export default function TourCard({ tour }: TourCardProps) {
         </div>
 
         <div className="flex flex-wrap gap-1">
-          {(tour.tags || []).slice(0, 3).map((tag) => (
+          {(tour.tags || []).slice(0, MAX_VISIBLE_TAGS).map((tag) => (
             <Badge key={tag} variant="outline" className="text-xs text-stone-600 border-stone-300">
               {tag}
             </Badge>
           ))}
-          {(tour.tags || []).length > 3 && (
+          {(tour.tags || []).length > MAX_VISIBLE_TAGS && (
             <Badge variant="outline" className="text-xs text-stone-600 border-stone-300">
-              +{tour.tags.length - 3} more
+              +{(tour.tags || []).length - MAX_VISIBLE_TAGS} more
             </Badge>
           )}
         </div>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useDeferredValue } from 'react';
 import { useParams, useSearchParams, useRouter } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useFieldArray, useForm } from 'react-hook-form';
@@ -10,8 +10,8 @@ import {
   getTourById,
   updateTour,
   deleteTour,
-  getAllNationalParks,
-  getAllAccommodations,
+  searchNationalParks,
+  searchAccommodations,
 } from '@/app/itineraries/actions';
 import { Button } from '@repo/ui/button';
 import { Input } from '@repo/ui/input';
@@ -71,10 +71,11 @@ import {
   ChevronDown,
 } from 'lucide-react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useToast } from '@repo/ui/use-toast';
 import { authClient } from '@/lib/auth-client';
 import { queryKeys } from '@/lib/query-keys';
-import { cn, capitalize } from '@/lib/utils';
+import { cn, capitalize, formatPrice } from '@/lib/utils';
 
 const itinerarySchema = z.object({
   title: z.string().min(1, 'Day title is required').max(255, 'Title too long'),
@@ -110,6 +111,7 @@ export default function TourDetailPage() {
   const tourId = params.id as string;
   const isEditMode = searchParams.get('edit') === 'true';
   const [editMode, setEditMode] = useState(isEditMode);
+  const [imgError, setImgError] = useState(false);
 
   const { data: tour, isLoading } = useQuery({
     queryKey: ['tour', tourId],
@@ -117,19 +119,6 @@ export default function TourDetailPage() {
     enabled: !!tourId && !!session?.user?.id,
   });
 
-  const { data: parks = [] } = useQuery({
-    queryKey: ['nationalParks'],
-    queryFn: getAllNationalParks,
-    enabled: editMode,
-    staleTime: 5 * 60 * 1000, // 5 minutes - avoid refetching on every edit toggle
-  });
-
-  const { data: accommodations = [] } = useQuery({
-    queryKey: ['accommodations'],
-    queryFn: getAllAccommodations,
-    enabled: editMode,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-  });
 
   // Derive form values from tour data
   const formValues = useMemo(() => {
@@ -233,13 +222,7 @@ export default function TourDetailPage() {
     updateMutation.mutate(data);
   };
 
-  const formattedPrice = tour
-    ? new Intl.NumberFormat('en-US', {
-        style: 'currency',
-        currency: 'USD',
-        minimumFractionDigits: 0,
-      }).format(Number(tour.pricing))
-    : '';
+  const formattedPrice = tour ? formatPrice(tour.pricing) : '';
 
   if (isLoading) {
     return (
@@ -544,11 +527,14 @@ export default function TourDetailPage() {
                             render={({ field }) => (
                               <FormItem>
                                 <FormLabel>Destination / Park</FormLabel>
-                                <SelectWithSearch
+                                <AsyncSelectWithSearch
                                   value={field.value}
                                   onChange={field.onChange}
-                                  options={parks.map((p) => ({ id: p.id, name: p.name }))}
-                                  placeholder="Select destination..."
+                                  searchFn={async (query) => {
+                                    const results = await searchNationalParks(query, 20);
+                                    return results.map((p) => ({ id: p.id, name: p.name }));
+                                  }}
+                                  placeholder="Search destinations..."
                                 />
                                 <FormMessage />
                               </FormItem>
@@ -561,11 +547,14 @@ export default function TourDetailPage() {
                             render={({ field }) => (
                               <FormItem>
                                 <FormLabel>Accommodation</FormLabel>
-                                <SelectWithSearch
+                                <AsyncSelectWithSearch
                                   value={field.value}
                                   onChange={field.onChange}
-                                  options={accommodations.map((a) => ({ id: a.id, name: a.name }))}
-                                  placeholder="Select accommodation..."
+                                  searchFn={async (query) => {
+                                    const results = await searchAccommodations(query, 20);
+                                    return results.map((a) => ({ id: a.id, name: a.name }));
+                                  }}
+                                  placeholder="Search accommodations..."
                                   allowNone
                                 />
                                 <FormMessage />
@@ -598,14 +587,15 @@ export default function TourDetailPage() {
           // View Mode
           <div className="max-w-4xl mx-auto p-8">
             {/* Hero Image */}
-            <div className="relative rounded-xl overflow-hidden mb-6">
-              <img
-                src={tour.img_url || '/placeholder.svg'}
+            <div className="relative rounded-xl overflow-hidden mb-6 h-72">
+              <Image
+                src={imgError ? '/placeholder.svg' : (tour.img_url || '/placeholder.svg')}
                 alt={tour.tourName}
-                className="w-full h-72 object-cover"
-                onError={(e) => {
-                  e.currentTarget.src = '/placeholder.svg';
-                }}
+                fill
+                sizes="(max-width: 1024px) 100vw, 896px"
+                className="object-cover"
+                priority
+                onError={() => setImgError(true)}
               />
               <div className="absolute top-4 right-4">
                 <Badge className="bg-white/90 text-stone-900 font-semibold shadow-sm text-lg px-3 py-1">
@@ -677,25 +667,113 @@ export default function TourDetailPage() {
   );
 }
 
-// Reusable select with search component
-function SelectWithSearch({
+// Async select with search-as-you-type component
+function AsyncSelectWithSearch({
   value,
   onChange,
-  options,
+  searchFn,
   placeholder,
   allowNone,
 }: {
   value?: string;
   onChange: (value: string) => void;
-  options: Array<{ id: string; name: string }>;
+  searchFn: (query: string) => Promise<Array<{ id: string; name: string }>>;
   placeholder: string;
   allowNone?: boolean;
 }) {
   const [open, setOpen] = useState(false);
-  const selectedName = options.find((o) => o.id === value)?.name;
+  const [searchQuery, setSearchQuery] = useState('');
+  const [options, setOptions] = useState<Array<{ id: string; name: string }>>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [selectedName, setSelectedName] = useState<string | null>(null);
+
+  const deferredQuery = useDeferredValue(searchQuery);
+
+  // Fetch results when search query changes
+  useEffect(() => {
+    if (!open) return;
+
+    let cancelled = false;
+    setIsLoading(true);
+
+    searchFn(deferredQuery)
+      .then((results) => {
+        if (!cancelled) {
+          setOptions(results);
+          // Update selected name if current value is in results
+          if (value) {
+            const selected = results.find((o) => o.id === value);
+            if (selected) {
+              setSelectedName(selected.name);
+            }
+          }
+        }
+      })
+      .catch((error) => {
+        console.error('Search error:', error);
+        if (!cancelled) {
+          setOptions([]);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setIsLoading(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [deferredQuery, open, searchFn, value]);
+
+  // Load initial results and selected name when opening
+  useEffect(() => {
+    if (open && options.length === 0) {
+      searchFn('').then((results) => {
+        setOptions(results);
+        if (value) {
+          const selected = results.find((o) => o.id === value);
+          if (selected) {
+            setSelectedName(selected.name);
+          }
+        }
+      });
+    }
+  }, [open, options.length, searchFn, value]);
+
+  // Fetch selected item name on mount if we have a value
+  useEffect(() => {
+    if (value && !selectedName) {
+      searchFn('').then((results) => {
+        const selected = results.find((o) => o.id === value);
+        if (selected) {
+          setSelectedName(selected.name);
+        }
+      });
+    }
+  }, [value, selectedName, searchFn]);
+
+  const handleSelect = (option: { id: string; name: string }) => {
+    onChange(option.id);
+    setSelectedName(option.name);
+    setOpen(false);
+    setSearchQuery('');
+  };
+
+  const handleClear = () => {
+    onChange('');
+    setSelectedName(null);
+    setOpen(false);
+    setSearchQuery('');
+  };
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover open={open} onOpenChange={(isOpen) => {
+      setOpen(isOpen);
+      if (!isOpen) {
+        setSearchQuery('');
+      }
+    }}>
       <PopoverTrigger asChild>
         <Button variant="outline" className="w-full justify-between" role="combobox" aria-expanded={open}>
           {selectedName || placeholder}
@@ -703,40 +781,48 @@ function SelectWithSearch({
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-[300px] p-0">
-        <Command>
-          <CommandInput placeholder="Search..." />
+        <Command shouldFilter={false}>
+          <CommandInput
+            placeholder="Type to search..."
+            value={searchQuery}
+            onValueChange={setSearchQuery}
+          />
           <CommandList>
-            <CommandEmpty>No results found.</CommandEmpty>
-            <CommandGroup>
-              {allowNone && (
-                <CommandItem
-                  value="none"
-                  onSelect={() => {
-                    onChange('');
-                    setOpen(false);
-                  }}
-                  className="text-stone-500 italic"
-                >
-                  None
-                  <CheckIcon className={cn('ml-auto h-4 w-4', !value ? 'opacity-100' : 'opacity-0')} />
-                </CommandItem>
-              )}
-              {options.map((option) => (
-                <CommandItem
-                  key={option.id}
-                  value={option.name}
-                  onSelect={() => {
-                    onChange(option.id);
-                    setOpen(false);
-                  }}
-                >
-                  {option.name}
-                  <CheckIcon
-                    className={cn('ml-auto h-4 w-4', value === option.id ? 'opacity-100' : 'opacity-0')}
-                  />
-                </CommandItem>
-              ))}
-            </CommandGroup>
+            {isLoading ? (
+              <div className="py-6 text-center text-sm text-stone-500">
+                <div className="h-4 w-4 animate-spin rounded-full border-2 border-green-600 border-t-transparent mx-auto mb-2" />
+                Searching...
+              </div>
+            ) : options.length === 0 ? (
+              <CommandEmpty>
+                {searchQuery ? 'No results found.' : 'Start typing to search...'}
+              </CommandEmpty>
+            ) : (
+              <CommandGroup>
+                {allowNone && (
+                  <CommandItem
+                    value="__none__"
+                    onSelect={handleClear}
+                    className="text-stone-500 italic"
+                  >
+                    None
+                    <CheckIcon className={cn('ml-auto h-4 w-4', !value ? 'opacity-100' : 'opacity-0')} />
+                  </CommandItem>
+                )}
+                {options.map((option) => (
+                  <CommandItem
+                    key={option.id}
+                    value={option.id}
+                    onSelect={() => handleSelect(option)}
+                  >
+                    {option.name}
+                    <CheckIcon
+                      className={cn('ml-auto h-4 w-4', value === option.id ? 'opacity-100' : 'opacity-0')}
+                    />
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            )}
           </CommandList>
         </Command>
       </PopoverContent>

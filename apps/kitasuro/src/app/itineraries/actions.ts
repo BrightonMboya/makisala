@@ -180,6 +180,29 @@ export async function updateTour(
 
     const { itineraries, ...tourData } = data;
 
+    // Validate itinerary day numbers if provided
+    if (itineraries && itineraries.length > 0) {
+      const dayNumbers = itineraries.map((d) => d.dayNumber);
+      const uniqueDayNumbers = new Set(dayNumbers);
+
+      // Check for duplicate day numbers
+      if (uniqueDayNumbers.size !== dayNumbers.length) {
+        return { success: false, error: 'Duplicate day numbers are not allowed' };
+      }
+
+      // Check that all day numbers are positive integers
+      if (dayNumbers.some((n) => !Number.isInteger(n) || n < 1)) {
+        return { success: false, error: 'Day numbers must be positive integers' };
+      }
+
+      // Check that day numbers are sequential starting from 1
+      const sortedDayNumbers = [...dayNumbers].sort((a, b) => a - b);
+      const isSequential = sortedDayNumbers.every((num, idx) => num === idx + 1);
+      if (!isSequential) {
+        return { success: false, error: 'Day numbers must be sequential starting from 1' };
+      }
+    }
+
     await db.transaction(async (tx) => {
       // Update tour basic info
       await tx
@@ -354,6 +377,34 @@ export async function getAllNationalParks() {
       .from(nationalParks);
   } catch (error) {
     console.error('Error fetching national parks:', error);
+    return [];
+  }
+}
+
+export async function searchNationalParks(query: string, limit: number = 20) {
+  try {
+    const baseQuery = db
+      .select({
+        id: nationalParks.id,
+        name: nationalParks.name,
+      })
+      .from(nationalParks)
+      .limit(limit);
+
+    if (!query.trim()) {
+      return await baseQuery;
+    }
+
+    return await db
+      .select({
+        id: nationalParks.id,
+        name: nationalParks.name,
+      })
+      .from(nationalParks)
+      .where(ilike(nationalParks.name, `%${query}%`))
+      .limit(limit);
+  } catch (error) {
+    console.error('Error searching national parks:', error);
     return [];
   }
 }

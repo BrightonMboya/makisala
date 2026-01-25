@@ -14,7 +14,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { queryKeys, staleTimes } from '@/lib/query-keys';
 import { authClient } from '@/lib/auth-client';
 import { useToast } from '@repo/ui/use-toast';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useDeferredValue } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -31,6 +31,7 @@ export default function ToursPage() {
   const [isTemplateDialogOpen, setIsTemplateDialogOpen] = useState(false);
   const [cloningId, setCloningId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const deferredSearchQuery = useDeferredValue(searchQuery);
 
   const { data: tours = [], isLoading } = useQuery({
     queryKey: queryKeys.tours.list(session?.user?.id),
@@ -46,17 +47,17 @@ export default function ToursPage() {
     enabled: isTemplateDialogOpen,
   });
 
-  // Filter tours based on search query
+  // Filter tours based on search query (deferred for performance)
   const filteredTours = useMemo(() => {
-    if (!searchQuery.trim()) return tours;
-    const query = searchQuery.toLowerCase();
+    if (!deferredSearchQuery.trim()) return tours;
+    const query = deferredSearchQuery.toLowerCase();
     return tours.filter(
       (tour) =>
         tour.name.toLowerCase().includes(query) ||
         tour.country.toLowerCase().includes(query) ||
         (tour.tags || []).some((tag) => tag.toLowerCase().includes(query))
     );
-  }, [tours, searchQuery]);
+  }, [tours, deferredSearchQuery]);
 
   const handleCloneTemplate = async (templateId: string) => {
     setCloningId(templateId);
