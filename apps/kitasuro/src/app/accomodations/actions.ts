@@ -5,6 +5,34 @@ import { and, desc, eq, ilike, inArray, sql } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { uploadToStorage } from '@/lib/storage';
 import { compressImage, replaceExtension } from '@/lib/image-utils';
+import { z } from 'zod';
+
+const imageSchema = z.object({
+  name: z.string().min(1),
+  type: z.string().min(1),
+  base64: z.string().min(1),
+});
+
+const createAccommodationSchema = z.object({
+  name: z.string().min(1).max(255),
+  url: z.string().url().optional().or(z.literal('')),
+  overview: z.string().max(1000).optional(),
+  description: z.string().max(5000).optional(),
+  latitude: z.string().optional(),
+  longitude: z.string().optional(),
+  images: z.array(imageSchema).optional(),
+});
+
+const updateAccommodationSchema = z.object({
+  name: z.string().min(1).max(255),
+  url: z.string().url().optional().or(z.literal('')),
+  overview: z.string().max(1000).optional(),
+  description: z.string().max(5000).optional(),
+  latitude: z.string().optional(),
+  longitude: z.string().optional(),
+  newImages: z.array(imageSchema).optional(),
+  removedImageIds: z.array(z.string()).optional(),
+});
 
 export async function getAccommodations(options?: {
   query?: string;
@@ -88,116 +116,123 @@ export async function getAccommodationById(id: string) {
   }
 }
 
-export async function createAccommodation(data: {
-  name: string;
-  url?: string;
-  overview?: string;
-  description?: string;
-  latitude?: string;
-  longitude?: string;
-  images?: { name: string; type: string; base64: string }[];
-}) {
-  const [newAcc] = await db
-    .insert(accommodations)
-    .values({
-      name: data.name,
-      url: data.url,
-      overview: data.overview,
-      description: data.description,
-      latitude: data.latitude,
-      longitude: data.longitude,
-    })
-    .returning();
-
-  if (!newAcc) {
-    throw new Error('Failed to create accomodation');
+export async function createAccommodation(data: z.infer<typeof createAccommodationSchema>) {
+  const parsed = createAccommodationSchema.safeParse(data);
+  if (!parsed.success) {
+    return { success: false, error: 'Invalid input data' };
   }
 
-  if (data.images && data.images.length > 0) {
-    for (const img of data.images) {
-      const rawBuffer = Buffer.from(img.base64, 'base64');
-      // Compress image to WebP format
-      const compressed = await compressImage(rawBuffer);
-      const compressedName = replaceExtension(img.name, compressed.extension);
-      const key = `accommodations/${newAcc.id}/${Date.now()}-${compressedName}`;
-      const { bucket, key: storageKey } = await uploadToStorage({
-        file: compressed.buffer,
-        contentType: compressed.contentType,
-        key,
-        visibility: 'public',
-      });
+  const validated = parsed.data;
 
-      await db.insert(accommodationImages).values({
-        accommodationId: newAcc.id,
-        bucket,
-        key: storageKey,
-      });
+  try {
+    const [newAcc] = await db
+      .insert(accommodations)
+      .values({
+        name: validated.name,
+        url: validated.url || undefined,
+        overview: validated.overview,
+        description: validated.description,
+        latitude: validated.latitude,
+        longitude: validated.longitude,
+      })
+      .returning();
+
+    if (!newAcc) {
+      return { success: false, error: 'Failed to create accommodation' };
     }
-  }
 
-  revalidatePath('/accomodations');
-  return { success: true, id: newAcc.id };
+    if (validated.images && validated.images.length > 0) {
+      for (const img of validated.images) {
+        const rawBuffer = Buffer.from(img.base64, 'base64');
+        const compressed = await compressImage(rawBuffer);
+        const compressedName = replaceExtension(img.name, compressed.extension);
+        const key = `accommodations/${newAcc.id}/${Date.now()}-${compressedName}`;
+        const { bucket, key: storageKey } = await uploadToStorage({
+          file: compressed.buffer,
+          contentType: compressed.contentType,
+          key,
+          visibility: 'public',
+        });
+
+        await db.insert(accommodationImages).values({
+          accommodationId: newAcc.id,
+          bucket,
+          key: storageKey,
+        });
+      }
+    }
+
+    revalidatePath('/accomodations');
+    return { success: true, id: newAcc.id };
+  } catch (error) {
+    console.error('Error creating accommodation:', error);
+    return { success: false, error: 'Failed to create accommodation' };
+  }
 }
 
 export async function updateAccommodation(
   id: string,
-  data: {
-    name: string;
-    url?: string;
-    overview?: string;
-    description?: string;
-    latitude?: string;
-    longitude?: string;
-    newImages?: { name: string; type: string; base64: string }[];
-    removedImageIds?: string[];
-  },
+  data: z.infer<typeof updateAccommodationSchema>,
 ) {
-  await db
-    .update(accommodations)
-    .set({
-      name: data.name,
-      url: data.url,
-      overview: data.overview,
-      description: data.description,
-      latitude: data.latitude,
-      longitude: data.longitude,
-    })
-    .where(eq(accommodations.id, id));
-
-  if (data.removedImageIds && data.removedImageIds.length > 0) {
-    await db.delete(accommodationImages).where(
-      and(
-        eq(accommodationImages.accommodationId, id),
-        sql`${accommodationImages.id}
-        IN
-        ${data.removedImageIds}`,
-      ),
-    );
+  if (!id || typeof id !== 'string') {
+    return { success: false, error: 'Invalid accommodation ID' };
   }
 
-  if (data.newImages && data.newImages.length > 0) {
-    for (const img of data.newImages) {
-      const rawBuffer = Buffer.from(img.base64, 'base64');
-      // Compress image to WebP format
-      const compressed = await compressImage(rawBuffer);
-      const compressedName = replaceExtension(img.name, compressed.extension);
-      const key = `accommodations/${id}/${Date.now()}-${compressedName}`;
-      const { bucket, key: storageKey } = await uploadToStorage({
-        file: compressed.buffer,
-        contentType: compressed.contentType,
-        key,
-        visibility: 'public',
-      });
+  const parsed = updateAccommodationSchema.safeParse(data);
+  if (!parsed.success) {
+    return { success: false, error: 'Invalid input data' };
+  }
 
-      await db.insert(accommodationImages).values({
-        accommodationId: id,
-        bucket,
-        key: storageKey,
-      });
+  const validated = parsed.data;
+
+  try {
+    await db
+      .update(accommodations)
+      .set({
+        name: validated.name,
+        url: validated.url || undefined,
+        overview: validated.overview,
+        description: validated.description,
+        latitude: validated.latitude,
+        longitude: validated.longitude,
+      })
+      .where(eq(accommodations.id, id));
+
+    if (validated.removedImageIds && validated.removedImageIds.length > 0) {
+      await db.delete(accommodationImages).where(
+        and(
+          eq(accommodationImages.accommodationId, id),
+          inArray(accommodationImages.id, validated.removedImageIds),
+        ),
+      );
     }
-  }
 
-  revalidatePath('/accomodations');
-  revalidatePath(`/accomodations/${id}/edit`);
-  return { success: true };
+    if (validated.newImages && validated.newImages.length > 0) {
+      for (const img of validated.newImages) {
+        const rawBuffer = Buffer.from(img.base64, 'base64');
+        const compressed = await compressImage(rawBuffer);
+        const compressedName = replaceExtension(img.name, compressed.extension);
+        const key = `accommodations/${id}/${Date.now()}-${compressedName}`;
+        const { bucket, key: storageKey } = await uploadToStorage({
+          file: compressed.buffer,
+          contentType: compressed.contentType,
+          key,
+          visibility: 'public',
+        });
+
+        await db.insert(accommodationImages).values({
+          accommodationId: id,
+          bucket,
+          key: storageKey,
+        });
+      }
+    }
+
+    revalidatePath('/accomodations');
+    revalidatePath(`/accomodations/${id}/edit`);
+    return { success: true };
+  } catch (error) {
+    console.error('Error updating accommodation:', error);
+    return { success: false, error: 'Failed to update accommodation' };
+  }
 }

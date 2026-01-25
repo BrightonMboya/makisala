@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, Suspense } from 'react';
+import { useRef, useEffect, Suspense } from 'react';
 import { authClient } from '@/lib/auth-client';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { SidebarInset, SidebarProvider, SidebarTrigger } from '@repo/ui/sidebar';
@@ -40,21 +40,19 @@ function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
   const hasShownVerificationToast = useRef(false);
   const { data: session, isPending } = authClient.useSession();
 
-  // Show toast when user arrives after email verification (runs once during render)
-  if (searchParams.get('verified') === 'true' && !hasShownVerificationToast.current) {
-    hasShownVerificationToast.current = true;
-    toast('Email verified!', {
-      description: 'Your email has been verified successfully. Welcome to Kitasuro!',
-    });
-    // Clean up URL on next tick to avoid hydration issues
-    if (typeof window !== 'undefined') {
-      setTimeout(() => {
-        const url = new URL(window.location.href);
-        url.searchParams.delete('verified');
-        window.history.replaceState({}, '', url.pathname);
-      }, 0);
+  // Show toast when user arrives after email verification
+  useEffect(() => {
+    if (searchParams.get('verified') === 'true' && !hasShownVerificationToast.current) {
+      hasShownVerificationToast.current = true;
+      toast('Email verified!', {
+        description: 'Your email has been verified successfully. Welcome to Kitasuro!',
+      });
+      // Clean up URL
+      const url = new URL(window.location.href);
+      url.searchParams.delete('verified');
+      window.history.replaceState({}, '', url.pathname);
     }
-  }
+  }, [searchParams]);
 
   if (!session && !isPending) {
     router.push('/login');
