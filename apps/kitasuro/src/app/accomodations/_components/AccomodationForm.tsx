@@ -43,8 +43,8 @@ export default function AccomodationForm({ initialData }: AccomodationFormProps)
         url: formData.get('url') as string,
         overview: formData.get('overview') as string,
         description: formData.get('description') as string,
-        latitude: latitudeRaw === '' ? null : Number(latitudeRaw),
-        longitude: longitudeRaw === '' ? null : Number(longitudeRaw),
+        latitude: latitudeRaw || undefined,
+        longitude: longitudeRaw || undefined,
         }
 
         try {
@@ -81,10 +81,13 @@ export default function AccomodationForm({ initialData }: AccomodationFormProps)
 
         for (let i = 0; i < files.length; i++) {
             const file = files[i]
+            if (!file) continue
             const reader = new FileReader()
             reader.onloadend = () => {
                 const base64 = (reader.result as string).split(',')[1]
-                setNewImages(prev => [...prev, { name: file.name, type: file.type, base64 }])
+                if (base64) {
+                    setNewImages(prev => [...prev, { name: file.name, type: file.type, base64 }])
+                }
             }
             reader.readAsDataURL(file)
         }

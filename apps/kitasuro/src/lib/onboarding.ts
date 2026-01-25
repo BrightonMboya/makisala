@@ -14,45 +14,6 @@ export interface OnboardingStatus {
   };
 }
 
-const ONBOARDING_KEY = 'kitasuro_onboarded';
-
-/**
- * Check if onboarding is complete from localStorage (keyed by user ID)
- */
-export function isOnboardingComplete(userId: string): boolean {
-  if (typeof window === 'undefined') return false;
-  try {
-    const stored = localStorage.getItem(`${ONBOARDING_KEY}_${userId}`);
-    return stored === 'true';
-  } catch {
-    return false;
-  }
-}
-
-/**
- * Mark onboarding as complete in localStorage
- */
-export function setOnboardingComplete(userId: string): void {
-  if (typeof window === 'undefined') return;
-  try {
-    localStorage.setItem(`${ONBOARDING_KEY}_${userId}`, 'true');
-  } catch {
-    // Ignore storage errors
-  }
-}
-
-/**
- * Clear onboarding flag (for when user needs to re-verify)
- */
-export function clearOnboardingComplete(userId: string): void {
-  if (typeof window === 'undefined') return;
-  try {
-    localStorage.removeItem(`${ONBOARDING_KEY}_${userId}`);
-  } catch {
-    // Ignore storage errors
-  }
-}
-
 interface Organization {
   id: string;
   name: string;
@@ -83,7 +44,7 @@ function isDefaultOrganizationName(name: string | null | undefined): boolean {
  */
 export function checkOnboardingStatus(
   organization: Organization | null | undefined,
-  toursCount: number
+  toursCount: number,
 ): OnboardingStatus {
   // Organization must exist and have a non-default name
   const organizationNameComplete = !!(

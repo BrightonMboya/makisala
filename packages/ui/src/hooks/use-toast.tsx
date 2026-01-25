@@ -7,7 +7,7 @@ import type { ToastActionElement, ToastProps } from '@repo/ui/toast';
 const TOAST_LIMIT = 1;
 const TOAST_REMOVE_DELAY = 1000000;
 
-type ToasterToast = ToastProps & {
+type ToasterToast = Omit<ToastProps, 'title'> & {
   id: string;
   title?: React.ReactNode;
   description?: React.ReactNode;
@@ -136,9 +136,9 @@ function dispatch(action: Action) {
 
 type Toast = Omit<ToasterToast, 'id'>;
 
-interface ToastWithTitle extends Toast {
+type ToastWithTitle = Omit<Toast, 'title'> & {
   title?: React.ReactNode;
-}
+};
 
 function toast(props: ToastWithTitle): { id: string; dismiss: () => void; update: (props: ToasterToast) => void };
 function toast(title: string, props?: Toast): { id: string; dismiss: () => void; update: (props: ToasterToast) => void };

@@ -159,17 +159,3 @@ export async function deleteClient(id: string) {
   revalidatePath('/clients');
   return { success: true };
 }
-
-export async function getAllClients() {
-  const session = await getSession();
-  const orgId = await getOrganizationId(session);
-  if (!orgId) return [];
-
-  const data = await db
-    .select({ id: clients.id, name: clients.name })
-    .from(clients)
-    .where(eq(clients.organizationId, orgId))
-    .orderBy(clients.name);
-
-  return data;
-}
