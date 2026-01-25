@@ -98,6 +98,186 @@ export async function getTourDetails(id: string) {
   }
 }
 
+// Get full tour by ID (for detail/edit page)
+export async function getTourById(id: string) {
+  try {
+    const session = await getSession();
+    const orgId = await getOrganizationId(session);
+    if (!orgId) return null;
+
+    const tour = await db.query.tours.findFirst({
+      where: eq(tours.id, id),
+      with: {
+        days: {
+          with: {
+            itineraryAccommodations: {
+              with: {
+                accommodation: {
+                  with: {
+                    images: {
+                      limit: 1,
+                    },
+                  },
+                },
+              },
+            },
+          },
+          orderBy: (days, { asc }) => [asc(days.dayNumber)],
+        },
+      },
+    });
+
+    if (!tour) return null;
+
+    // Authorization: Only allow viewing tours from user's organization
+    if (tour.organizationId !== orgId) {
+      return null;
+    }
+
+    return tour;
+  } catch (error) {
+    console.error('Error fetching tour by id:', error);
+    return null;
+  }
+}
+
+// Update tour with itinerary days
+export async function updateTour(
+  id: string,
+  data: {
+    tourName?: string;
+    overview?: string;
+    pricing?: string;
+    country?: string;
+    tags?: string[];
+    img_url?: string;
+    number_of_days?: number;
+    itineraries?: Array<{
+      dayNumber: number;
+      title: string;
+      overview?: string;
+      national_park_id?: string;
+      accommodation_id?: string;
+    }>;
+  },
+) {
+  try {
+    const session = await getSession();
+    const orgId = await getOrganizationId(session);
+    if (!orgId) {
+      return { success: false, error: 'Unauthorized' };
+    }
+
+    // Verify tour belongs to organization
+    const tour = await db.query.tours.findFirst({
+      where: eq(tours.id, id),
+      columns: { organizationId: true },
+    });
+
+    if (!tour || tour.organizationId !== orgId) {
+      return { success: false, error: 'Tour not found or unauthorized' };
+    }
+
+    const { itineraries, ...tourData } = data;
+
+    // Validate itinerary day numbers if provided
+    if (itineraries && itineraries.length > 0) {
+      const dayNumbers = itineraries.map((d) => d.dayNumber);
+      const uniqueDayNumbers = new Set(dayNumbers);
+
+      // Check for duplicate day numbers
+      if (uniqueDayNumbers.size !== dayNumbers.length) {
+        return { success: false, error: 'Duplicate day numbers are not allowed' };
+      }
+
+      // Check that all day numbers are positive integers
+      if (dayNumbers.some((n) => !Number.isInteger(n) || n < 1)) {
+        return { success: false, error: 'Day numbers must be positive integers' };
+      }
+
+      // Check that day numbers are sequential starting from 1
+      const sortedDayNumbers = [...dayNumbers].sort((a, b) => a - b);
+      const isSequential = sortedDayNumbers.every((num, idx) => num === idx + 1);
+      if (!isSequential) {
+        return { success: false, error: 'Day numbers must be sequential starting from 1' };
+      }
+    }
+
+    await db.transaction(async (tx) => {
+      // Update tour basic info
+      await tx
+        .update(tours)
+        .set({
+          ...tourData,
+          updatedAt: new Date(),
+        })
+        .where(eq(tours.id, id));
+
+      // Update itinerary days if provided
+      if (itineraries && itineraries.length > 0) {
+        // Delete existing days (cascade deletes accommodations)
+        await tx.delete(itineraryDays).where(eq(itineraryDays.tourId, id));
+
+        // Insert new days
+        for (const day of itineraries) {
+          const [newDay] = await tx
+            .insert(itineraryDays)
+            .values({
+              tourId: id,
+              dayNumber: day.dayNumber,
+              dayTitle: day.title,
+              overview: day.overview || null,
+              national_park_id: day.national_park_id || null,
+            })
+            .returning({ id: itineraryDays.id });
+
+          // Add accommodation if specified
+          if (day.accommodation_id && newDay) {
+            await tx.insert(itineraryAccommodations).values({
+              itineraryDayId: newDay.id,
+              accommodationId: day.accommodation_id,
+            });
+          }
+        }
+      }
+    });
+
+    return { success: true };
+  } catch (error) {
+    console.error('Error updating tour:', error);
+    return { success: false, error: 'Failed to update tour' };
+  }
+}
+
+// Delete tour (cascade deletes days and accommodations)
+export async function deleteTour(id: string) {
+  try {
+    const session = await getSession();
+    const orgId = await getOrganizationId(session);
+    if (!orgId) {
+      return { success: false, error: 'Unauthorized' };
+    }
+
+    // Verify tour belongs to organization
+    const tour = await db.query.tours.findFirst({
+      where: eq(tours.id, id),
+      columns: { organizationId: true },
+    });
+
+    if (!tour || tour.organizationId !== orgId) {
+      return { success: false, error: 'Tour not found or unauthorized' };
+    }
+
+    // Delete tour (cascade will handle days and accommodations)
+    await db.delete(tours).where(eq(tours.id, id));
+
+    return { success: true };
+  } catch (error) {
+    console.error('Error deleting tour:', error);
+    return { success: false, error: 'Failed to delete tour' };
+  }
+}
+
 export async function updateOrganizationSettings(data: {
   name?: string;
   logoUrl?: string;
@@ -201,6 +381,34 @@ export async function getAllNationalParks() {
   }
 }
 
+export async function searchNationalParks(query: string, limit: number = 20) {
+  try {
+    const baseQuery = db
+      .select({
+        id: nationalParks.id,
+        name: nationalParks.name,
+      })
+      .from(nationalParks)
+      .limit(limit);
+
+    if (!query.trim()) {
+      return await baseQuery;
+    }
+
+    return await db
+      .select({
+        id: nationalParks.id,
+        name: nationalParks.name,
+      })
+      .from(nationalParks)
+      .where(ilike(nationalParks.name, `%${query}%`))
+      .limit(limit);
+  } catch (error) {
+    console.error('Error searching national parks:', error);
+    return [];
+  }
+}
+
 export async function getPageImages(pageIds: string[]) {
   try {
     if (pageIds.length === 0) return [];
@@ -217,7 +425,7 @@ export async function getPageImages(pageIds: string[]) {
   }
 }
 
-// Lightweight fetch for organization tours only
+// Fetch organization tours with full display data
 export async function getTours() {
   try {
     const session = await getSession();
@@ -229,6 +437,11 @@ export async function getTours() {
         id: tours.id,
         name: tours.tourName,
         days: tours.number_of_days,
+        imageUrl: tours.img_url,
+        overview: tours.overview,
+        country: tours.country,
+        pricing: tours.pricing,
+        tags: tours.tags,
       })
       .from(tours)
       .where(eq(tours.organizationId, orgId))

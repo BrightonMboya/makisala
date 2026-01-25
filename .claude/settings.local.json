@@ -18,7 +18,9 @@
       "Bash(bun run:*)",
       "Bash(bun --bun next lint:*)",
       "Bash(bunx tsc:*)",
-      "WebSearch"
+      "WebSearch",
+      "Bash(cat:*)",
+      "Bash(npx next lint:*)"
     ]
   }
 }

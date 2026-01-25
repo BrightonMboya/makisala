@@ -14,7 +14,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { queryKeys, staleTimes } from '@/lib/query-keys';
 import { authClient } from '@/lib/auth-client';
 import { useToast } from '@repo/ui/use-toast';
-import { useState } from 'react';
+import { useState, useMemo, useDeferredValue } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -22,6 +22,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@repo/ui/dialog';
+import TourCard from '../_components/tour-card';
 
 export default function ToursPage() {
   const { toast } = useToast();
@@ -29,6 +30,8 @@ export default function ToursPage() {
   const { data: session } = authClient.useSession();
   const [isTemplateDialogOpen, setIsTemplateDialogOpen] = useState(false);
   const [cloningId, setCloningId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const deferredSearchQuery = useDeferredValue(searchQuery);
 
   const { data: tours = [], isLoading } = useQuery({
     queryKey: queryKeys.tours.list(session?.user?.id),
@@ -43,6 +46,18 @@ export default function ToursPage() {
     staleTime: 60 * 1000,
     enabled: isTemplateDialogOpen,
   });
+
+  // Filter tours based on search query (deferred for performance)
+  const filteredTours = useMemo(() => {
+    if (!deferredSearchQuery.trim()) return tours;
+    const query = deferredSearchQuery.toLowerCase();
+    return tours.filter(
+      (tour) =>
+        tour.name.toLowerCase().includes(query) ||
+        tour.country.toLowerCase().includes(query) ||
+        (tour.tags || []).some((tag) => tag.toLowerCase().includes(query))
+    );
+  }, [tours, deferredSearchQuery]);
 
   const handleCloneTemplate = async (templateId: string) => {
     setCloningId(templateId);
@@ -69,7 +84,12 @@ export default function ToursPage() {
         <div className="flex items-center gap-4">
           <div className="relative w-64">
             <Search className="absolute top-2.5 left-2.5 h-4 w-4 text-stone-400" />
-            <Input placeholder="Search tours..." className="pl-9" />
+            <Input
+              placeholder="Search by name, country, tags..."
+              className="pl-9"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
           </div>
           <Dialog open={isTemplateDialogOpen} onOpenChange={setIsTemplateDialogOpen}>
             <DialogTrigger asChild>
@@ -158,25 +178,32 @@ export default function ToursPage() {
               Browse Templates
             </Button>
           </div>
+        ) : filteredTours.length === 0 ? (
+          <div className="py-24 text-center">
+            <div className="mx-auto h-12 w-12 text-stone-300 mb-4">
+              <Search className="h-full w-full" />
+            </div>
+            <h3 className="text-lg font-medium text-stone-900">No tours found</h3>
+            <p className="text-stone-500 mt-1">
+              Try adjusting your search query.
+            </p>
+          </div>
         ) : (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {tours.map((tour) => (
-              <div
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {filteredTours.map((tour) => (
+              <TourCard
                 key={tour.id}
-                className="group rounded-xl border border-stone-200 bg-white p-5 shadow-sm transition-all hover:border-green-600/30 hover:shadow-md"
-              >
-                <div className="flex items-start justify-between">
-                  <div>
-                    <h3 className="font-serif text-lg font-bold text-stone-900 group-hover:text-green-800">
-                      {tour.name}
-                    </h3>
-                    <div className="flex items-center gap-1.5 mt-2 text-sm text-stone-500">
-                      <Clock className="h-3.5 w-3.5" />
-                      {tour.days} days
-                    </div>
-                  </div>
-                </div>
-              </div>
+                tour={{
+                  id: tour.id,
+                  name: tour.name,
+                  days: tour.days,
+                  imageUrl: tour.imageUrl,
+                  overview: tour.overview,
+                  country: tour.country,
+                  pricing: tour.pricing,
+                  tags: tour.tags,
+                }}
+              />
             ))}
           </div>
         )}
