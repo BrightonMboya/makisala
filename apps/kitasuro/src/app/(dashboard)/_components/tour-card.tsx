@@ -5,6 +5,7 @@ import { Button } from '@repo/ui/button';
 import { Badge } from '@repo/ui/badge';
 import { Calendar, MapPin, Pencil, Eye } from 'lucide-react';
 import Link from 'next/link';
+import { capitalize } from '@/lib/utils';
 
 interface TourCardProps {
   tour: {
@@ -17,10 +18,6 @@ interface TourCardProps {
     pricing: string;
     tags: string[];
   };
-}
-
-function capitalize(str: string) {
-  return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
 }
 
 export default function TourCard({ tour }: TourCardProps) {
@@ -38,6 +35,9 @@ export default function TourCard({ tour }: TourCardProps) {
             src={tour.imageUrl || '/placeholder.svg'}
             alt={tour.name}
             className="h-48 w-full object-cover transition-transform duration-300 group-hover:scale-105"
+            onError={(e) => {
+              e.currentTarget.src = '/placeholder.svg';
+            }}
           />
           <div className="absolute top-3 right-3">
             <Badge className="bg-white/90 text-stone-900 font-semibold shadow-sm">
@@ -68,12 +68,12 @@ export default function TourCard({ tour }: TourCardProps) {
         </div>
 
         <div className="flex flex-wrap gap-1">
-          {tour.tags.slice(0, 3).map((tag) => (
+          {(tour.tags || []).slice(0, 3).map((tag) => (
             <Badge key={tag} variant="outline" className="text-xs text-stone-600 border-stone-300">
               {tag}
             </Badge>
           ))}
-          {tour.tags.length > 3 && (
+          {(tour.tags || []).length > 3 && (
             <Badge variant="outline" className="text-xs text-stone-600 border-stone-300">
               +{tour.tags.length - 3} more
             </Badge>

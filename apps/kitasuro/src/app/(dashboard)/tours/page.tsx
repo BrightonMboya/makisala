@@ -54,7 +54,7 @@ export default function ToursPage() {
       (tour) =>
         tour.name.toLowerCase().includes(query) ||
         tour.country.toLowerCase().includes(query) ||
-        tour.tags.some((tag) => tag.toLowerCase().includes(query))
+        (tour.tags || []).some((tag) => tag.toLowerCase().includes(query))
     );
   }, [tours, searchQuery]);
 

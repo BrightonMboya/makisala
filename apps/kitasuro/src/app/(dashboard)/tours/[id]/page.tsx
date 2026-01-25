@@ -74,31 +74,30 @@ import Link from 'next/link';
 import { useToast } from '@repo/ui/use-toast';
 import { authClient } from '@/lib/auth-client';
 import { queryKeys } from '@/lib/query-keys';
-import { cn } from '@/lib/utils';
+import { cn, capitalize } from '@/lib/utils';
 
 const itinerarySchema = z.object({
-  title: z.string().min(1, 'Day title is required'),
-  overview: z.string().optional(),
+  title: z.string().min(1, 'Day title is required').max(255, 'Title too long'),
+  overview: z.string().max(5000, 'Overview too long').optional(),
   national_park_id: z.string().optional(),
   accommodation_id: z.string().optional(),
 });
 
 const tourFormSchema = z.object({
-  tourName: z.string().min(2, 'Tour name must be at least 2 characters'),
-  overview: z.string().min(10, 'Overview must be at least 10 characters'),
-  pricing: z.string().min(1, 'Pricing is required'),
+  tourName: z.string().min(2, 'Tour name must be at least 2 characters').max(255, 'Tour name too long'),
+  overview: z.string().min(10, 'Overview must be at least 10 characters').max(5000, 'Overview too long'),
+  pricing: z.string().min(1, 'Pricing is required').refine(
+    (val) => !isNaN(Number(val)) && Number(val) >= 0,
+    'Pricing must be a valid positive number'
+  ),
   country: z.string().min(2, 'Country is required'),
-  img_url: z.string().optional(),
+  img_url: z.string().url('Must be a valid URL').optional().or(z.literal('')),
   number_of_days: z.number().min(1, 'Number of days must be at least 1'),
-  tags: z.array(z.string()).min(1, 'At least one tag is required'),
+  tags: z.array(z.string().max(50, 'Tag too long')).min(1, 'At least one tag is required'),
   itineraries: z.array(itinerarySchema).min(1, 'At least one day is required'),
 });
 
 type TourFormData = z.infer<typeof tourFormSchema>;
-
-function capitalize(str: string) {
-  return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
-}
 
 export default function TourDetailPage() {
   const params = useParams();
@@ -122,12 +121,14 @@ export default function TourDetailPage() {
     queryKey: ['nationalParks'],
     queryFn: getAllNationalParks,
     enabled: editMode,
+    staleTime: 5 * 60 * 1000, // 5 minutes - avoid refetching on every edit toggle
   });
 
   const { data: accommodations = [] } = useQuery({
     queryKey: ['accommodations'],
     queryFn: getAllAccommodations,
     enabled: editMode,
+    staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
   // Derive form values from tour data
@@ -136,9 +137,9 @@ export default function TourDetailPage() {
     return {
       tourName: tour.tourName,
       overview: tour.overview,
-      pricing: tour.pricing,
+      pricing: tour.pricing || '',
       country: tour.country,
-      img_url: tour.img_url,
+      img_url: tour.img_url || '',
       number_of_days: tour.number_of_days,
       tags: tour.tags || [],
       itineraries:
@@ -197,8 +198,13 @@ export default function TourDetailPage() {
         toast({ title: result.error || 'Failed to update tour', variant: 'destructive' });
       }
     },
-    onError: () => {
-      toast({ title: 'Failed to update tour', variant: 'destructive' });
+    onError: (error) => {
+      console.error('Update tour error:', error);
+      toast({
+        title: 'Failed to update tour',
+        description: 'Please check your connection and try again.',
+        variant: 'destructive',
+      });
     },
   });
 
@@ -213,8 +219,13 @@ export default function TourDetailPage() {
         toast({ title: result.error || 'Failed to delete tour', variant: 'destructive' });
       }
     },
-    onError: () => {
-      toast({ title: 'Failed to delete tour', variant: 'destructive' });
+    onError: (error) => {
+      console.error('Delete tour error:', error);
+      toast({
+        title: 'Failed to delete tour',
+        description: 'Please check your connection and try again.',
+        variant: 'destructive',
+      });
     },
   });
 
@@ -273,7 +284,6 @@ export default function TourDetailPage() {
                 onClick={() => {
                   setEditMode(false);
                   router.replace(`/tours/${tourId}`);
-                  form.reset();
                 }}
               >
                 Cancel
@@ -389,7 +399,10 @@ export default function TourDetailPage() {
                               type="number"
                               min="1"
                               {...field}
-                              onChange={(e) => field.onChange(parseInt(e.target.value) || 1)}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                field.onChange(val === '' ? undefined : parseInt(val, 10));
+                              }}
                             />
                           </FormControl>
                           <FormMessage />
@@ -404,7 +417,13 @@ export default function TourDetailPage() {
                         <FormItem>
                           <FormLabel>Price (USD)</FormLabel>
                           <FormControl>
-                            <Input placeholder="5000" {...field} />
+                            <Input
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              placeholder="5000"
+                              {...field}
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -423,6 +442,20 @@ export default function TourDetailPage() {
                               tags={field.value}
                               setTags={field.onChange}
                             />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="img_url"
+                      render={({ field }) => (
+                        <FormItem className="md:col-span-2">
+                          <FormLabel>Image URL</FormLabel>
+                          <FormControl>
+                            <Input placeholder="https://example.com/image.jpg" {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -570,6 +603,9 @@ export default function TourDetailPage() {
                 src={tour.img_url || '/placeholder.svg'}
                 alt={tour.tourName}
                 className="w-full h-72 object-cover"
+                onError={(e) => {
+                  e.currentTarget.src = '/placeholder.svg';
+                }}
               />
               <div className="absolute top-4 right-4">
                 <Badge className="bg-white/90 text-stone-900 font-semibold shadow-sm text-lg px-3 py-1">
@@ -661,7 +697,7 @@ function SelectWithSearch({
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button variant="outline" className="w-full justify-between" role="combobox">
+        <Button variant="outline" className="w-full justify-between" role="combobox" aria-expanded={open}>
           {selectedName || placeholder}
           <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
