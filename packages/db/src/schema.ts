@@ -731,6 +731,10 @@ export const commentsRelations = relations(comments, ({ one, many }) => ({
     references: [user.id],
   }),
   replies: many(commentReplies),
+  proposal: one(proposals, {
+    fields: [comments.proposalId],
+    references: [proposals.id],
+  }),
 }));
 
 export const commentRepliesRelations = relations(commentReplies, ({ one }) => ({

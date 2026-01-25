@@ -1094,10 +1094,11 @@ export async function sendProposalToClient(proposalId: string, message?: string)
     }
 
     // Calculate duration using SQL count (more efficient than fetching all rows)
-    const [{ count: daysCount }] = await db
+    const daysCountResult = await db
       .select({ count: sql<number>`count(*)::int` })
       .from(proposalDays)
       .where(eq(proposalDays.proposalId, proposalId));
+    const daysCount = daysCountResult[0]?.count ?? 0;
     const duration = daysCount > 0 ? `${daysCount} days` : undefined;
 
     // Format start date
@@ -1258,7 +1259,7 @@ export async function getAllAccommodationFolders() {
 export async function confirmProposal(proposalId: string, clientName: string) {
   try {
     // Fetch proposal and day count in parallel (don't fetch full days data)
-    const [proposal, [{ count: daysCount }]] = await Promise.all([
+    const [proposal, daysCountResult] = await Promise.all([
       db.query.proposals.findFirst({
         where: eq(proposals.id, proposalId),
         with: {
@@ -1281,6 +1282,7 @@ export async function confirmProposal(proposalId: string, clientName: string) {
     }
 
     // Calculate duration from count
+    const daysCount = daysCountResult[0]?.count ?? 0;
     const duration = daysCount > 0 ? `${daysCount} days` : undefined;
 
     // Format start date
@@ -1391,7 +1393,7 @@ export async function cloneTemplate(templateId: string) {
     // Use a transaction to ensure data integrity
     const result = await db.transaction(async (tx) => {
       // Create a new tour for the organization
-      const [newTour] = await tx
+      const newTourResult = await tx
         .insert(tours)
         .values({
           tourName: template.tourName,
@@ -1410,10 +1412,15 @@ export async function cloneTemplate(templateId: string) {
         })
         .returning({ id: tours.id });
 
+      const newTour = newTourResult[0];
+      if (!newTour) {
+        throw new Error('Failed to create tour');
+      }
+
       // Clone the itinerary days if they exist
       if (template.days && template.days.length > 0) {
         for (const day of template.days) {
-          const [newDay] = await tx
+          const newDayResult = await tx
             .insert(itineraryDays)
             .values({
               tourId: newTour.id,
@@ -1423,6 +1430,11 @@ export async function cloneTemplate(templateId: string) {
               national_park_id: day.national_park_id,
             })
             .returning({ id: itineraryDays.id });
+
+          const newDay = newDayResult[0];
+          if (!newDay) {
+            throw new Error('Failed to create itinerary day');
+          }
 
           // Clone accommodations for this day
           if (day.itineraryAccommodations && day.itineraryAccommodations.length > 0) {

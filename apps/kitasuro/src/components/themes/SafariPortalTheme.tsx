@@ -1,12 +1,12 @@
 'use client';
 
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import Image from 'next/image';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import {
-  Map,
-  MapRoute,
+  Map as MapComponent,
   MapMarker,
+  MapRoute,
   MarkerContent,
   MarkerTooltip,
 } from '@repo/ui/map';
@@ -48,7 +48,7 @@ function TripMap({ data }: { data: ItineraryData['mapData'] }) {
 
   return (
     <div className="h-full min-h-[400px] w-full overflow-hidden rounded-xl border border-stone-200 bg-stone-100/50">
-      <Map center={center} zoom={7} minZoom={5} maxZoom={12}>
+      <MapComponent center={center} zoom={7} minZoom={5} maxZoom={12}>
         {/* Route Line */}
         {routeCoordinates.length > 1 && (
           <MapRoute
@@ -79,11 +79,7 @@ function TripMap({ data }: { data: ItineraryData['mapData'] }) {
 
         {/* Destination Markers */}
         {locations.map((loc, idx) => (
-          <MapMarker
-            key={loc.name}
-            longitude={loc.coordinates[0]}
-            latitude={loc.coordinates[1]}
-          >
+          <MapMarker key={loc.name} longitude={loc.coordinates[0]} latitude={loc.coordinates[1]}>
             <MarkerContent>
               <div className="flex h-6 w-6 items-center justify-center rounded-full border-2 border-white bg-stone-800 text-[10px] font-bold text-white shadow-md">
                 {idx + 1}
@@ -97,10 +93,7 @@ function TripMap({ data }: { data: ItineraryData['mapData'] }) {
 
         {/* End Location Marker */}
         {endLocation && (
-          <MapMarker
-            longitude={endLocation.coordinates[0]}
-            latitude={endLocation.coordinates[1]}
-          >
+          <MapMarker longitude={endLocation.coordinates[0]} latitude={endLocation.coordinates[1]}>
             <MarkerContent>
               <div className="flex h-5 w-5 items-center justify-center rounded-full border-2 border-white bg-stone-600 shadow-md">
                 <div className="h-1.5 w-1.5 rounded-full bg-white" />
@@ -111,7 +104,7 @@ function TripMap({ data }: { data: ItineraryData['mapData'] }) {
             </MarkerTooltip>
           </MapMarker>
         )}
-      </Map>
+      </MapComponent>
     </div>
   );
 }
@@ -121,7 +114,7 @@ export default function SafariPortalTheme({ data }: { data: ItineraryData }) {
   const [scrollProgress, setScrollProgress] = useState(0);
   const [activeSection, setActiveSection] = useState<'overview' | number>('overview');
   const rightContentRef = useRef<HTMLDivElement>(null);
-  const sectionRefs = useRef<Map<string, HTMLDivElement>>(new Map());
+  const sectionRefs = useRef(new Map<string, HTMLElement>());
 
   useEffect(() => {
     const handleScroll = () => {
@@ -169,26 +162,6 @@ export default function SafariPortalTheme({ data }: { data: ItineraryData }) {
       return () => container.removeEventListener('scroll', handleScroll);
     }
   }, [data.itinerary]);
-
-  const navItems = [
-    { id: 'overview', label: 'Overview' },
-    { id: 'itinerary', label: 'Itinerary' },
-    { id: 'stays', label: 'Your Stays' },
-    { id: 'map', label: 'Map' },
-    { id: 'details', label: 'Pricing & Details' },
-  ];
-
-  const scrollToSection = (id: string) => {
-    const element = document.getElementById(id);
-    if (element && rightContentRef.current) {
-      const container = rightContentRef.current;
-      const elementTop = element.offsetTop - 100;
-      container.scrollTo({
-        top: elementTop,
-        behavior: 'smooth',
-      });
-    }
-  };
 
   return (
     <div className="flex h-screen overflow-hidden bg-white font-sans text-stone-900 selection:bg-stone-100">
@@ -313,9 +286,17 @@ export default function SafariPortalTheme({ data }: { data: ItineraryData }) {
               </svg>
             </button>
             {data.organization?.logoUrl ? (
-              <Image src={data.organization.logoUrl} alt={data.organization.name} width={120} height={40} className="object-contain" />
+              <Image
+                src={data.organization.logoUrl}
+                alt={data.organization.name}
+                width={120}
+                height={40}
+                className="object-contain"
+              />
             ) : (
-              <div className="font-serif text-lg tracking-tight text-stone-800">{data.organization?.name || 'Your Logo Here'}</div>
+              <div className="font-serif text-lg tracking-tight text-stone-800">
+                {data.organization?.name || 'Your Logo Here'}
+              </div>
             )}
             <div className="flex gap-4">
               <button className="rounded p-2 hover:bg-stone-100">
@@ -540,38 +521,47 @@ export default function SafariPortalTheme({ data }: { data: ItineraryData }) {
                       )}
 
                       {/* Accommodation Image Section - Show if different from previous day */}
-                      {!shouldHideAccommodation && day.accommodation && day.accommodation !== 'N/A' && accommodation && (
-                        <div className="mt-6">
-                          <div className="relative h-48 w-full overflow-hidden rounded-xl">
-                            <Image
-                              src={day.previewImage || accommodation.image}
-                              alt={accommodation.name}
-                              fill
-                              className="object-cover"
-                            />
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-                            <div className="absolute bottom-4 left-4">
-                              <span className="text-[10px] font-bold tracking-[0.2em] text-white/80 uppercase">
-                                Your Stay
-                              </span>
-                              <h4 className="mt-1 font-serif text-lg text-white">
-                                {accommodation.name}
-                              </h4>
+                      {!shouldHideAccommodation &&
+                        day.accommodation &&
+                        day.accommodation !== 'N/A' &&
+                        accommodation && (
+                          <div className="mt-6">
+                            <div className="relative h-48 w-full overflow-hidden rounded-xl">
+                              <Image
+                                src={day.previewImage || accommodation.image}
+                                alt={accommodation.name}
+                                fill
+                                className="object-cover"
+                              />
+                              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                              <div className="absolute bottom-4 left-4">
+                                <span className="text-[10px] font-bold tracking-[0.2em] text-white/80 uppercase">
+                                  Your Stay
+                                </span>
+                                <h4 className="mt-1 font-serif text-lg text-white">
+                                  {accommodation.name}
+                                </h4>
+                              </div>
                             </div>
+                            {accommodation.description && (
+                              <p className="mt-3 text-sm leading-relaxed text-stone-500">
+                                {accommodation.description}
+                              </p>
+                            )}
                           </div>
-                          {accommodation.description && (
-                            <p className="mt-3 text-sm leading-relaxed text-stone-500">
-                              {accommodation.description}
-                            </p>
-                          )}
-                        </div>
-                      )}
+                        )}
 
                       {day.accommodation && day.accommodation !== 'N/A' && (
                         <div className="border-t border-stone-100 pt-4">
-                          <div className={`text-sm text-stone-500 italic ${shouldHideAccommodation ? 'opacity-50' : ''}`}>
+                          <div
+                            className={`text-sm text-stone-500 italic ${shouldHideAccommodation ? 'opacity-50' : ''}`}
+                          >
                             Overnight {day.accommodation}
-                            {shouldHideAccommodation && <span className="ml-2 text-xs not-italic text-stone-400">(Cont.)</span>}
+                            {shouldHideAccommodation && (
+                              <span className="ml-2 text-xs text-stone-400 not-italic">
+                                (Cont.)
+                              </span>
+                            )}
                           </div>
                         </div>
                       )}
@@ -648,9 +638,7 @@ export default function SafariPortalTheme({ data }: { data: ItineraryData }) {
                   <span className="mb-4 block text-[10px] font-bold tracking-[0.4em] text-stone-400 uppercase">
                     Final Confirmation
                   </span>
-                  <h2 className="font-serif text-4xl leading-tight">
-                    {data.title}
-                  </h2>
+                  <h2 className="font-serif text-4xl leading-tight">{data.title}</h2>
                 </div>
 
                 <div className="border-y border-white/10 py-8">
@@ -687,7 +675,9 @@ export default function SafariPortalTheme({ data }: { data: ItineraryData }) {
 
             {data.organization?.name && (
               <footer className="space-y-6 border-t border-stone-200 pt-12 text-center">
-                <div className="font-serif text-2xl text-stone-300 italic">{data.organization.name}</div>
+                <div className="font-serif text-2xl text-stone-300 italic">
+                  {data.organization.name}
+                </div>
                 <div className="text-[9px] tracking-widest text-stone-300 uppercase">
                   © {new Date().getFullYear()} {data.organization.name} • Private & Confidential
                 </div>

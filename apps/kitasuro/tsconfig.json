@@ -15,7 +15,9 @@
     ],
     "jsx": "preserve",
     "moduleResolution": "bundler",
-    "strictNullChecks": true
+    "strict": true,
+    "declaration": false,
+    "declarationMap": false
   },
   "include": [
     "next-env.d.ts",

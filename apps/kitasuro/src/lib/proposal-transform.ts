@@ -12,6 +12,7 @@ import type {
 } from '@/types/itinerary-types';
 import type { Proposal } from '@repo/db/schema';
 import { CITIES } from '@/lib/data/cities';
+import { getPublicUrl } from '@/lib/storage';
 
 function getCityCoordinates(city: string | null): Location | undefined {
   if (!city) return undefined;
@@ -102,7 +103,7 @@ export async function transformProposalToItineraryData(
           id: string;
           name: string;
           overview: string | null;
-          images?: Array<{ imageUrl: string }>;
+          images?: Array<{ id: string; bucket: string; key: string }>;
         };
       }>;
       activities?: Array<{
@@ -223,7 +224,8 @@ export async function transformProposalToItineraryData(
   proposalDays.forEach((day) => {
     day.accommodations?.forEach(({ accommodation }) => {
       if (!accommodationMap.has(accommodation.id)) {
-        const firstImage = accommodation.images?.[0]?.imageUrl;
+        const firstImageData = accommodation.images?.[0];
+        const firstImage = firstImageData ? getPublicUrl(firstImageData.bucket, firstImageData.key) : undefined;
         accommodationMap.set(accommodation.id, {
           id: accommodation.id,
           name: accommodation.name,
