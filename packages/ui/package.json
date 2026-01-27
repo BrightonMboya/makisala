@@ -7,6 +7,7 @@
     ".": "./src/index.ts",
     "./*": "./src/components/*.tsx",
     "./use-toast": "./src/hooks/use-toast.tsx",
+    "./use-debounce": "./src/hooks/use-debounce.ts",
     "./styles.css": "./styles.css"
   },
   "publishConfig": {

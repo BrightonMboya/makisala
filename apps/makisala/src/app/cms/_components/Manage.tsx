@@ -2,7 +2,7 @@ import { TabsContent } from '@repo/ui/tabs'
 import { Search } from 'lucide-react'
 import { Input } from '@repo/ui/input'
 import { useState } from 'react'
-import { useDebounce } from '@/lib/hooks/use-debounce'
+import { useDebounce } from '@repo/ui/use-debounce'
 import PageList from './PageList'
 import { type HandleLoadPage } from '../page'
 

@@ -5,6 +5,7 @@ import { Clock, FileText, Search } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { useDebounce } from '@repo/ui/use-debounce';
 import {
   getOnboardingData,
   getProposalsForDashboard,
@@ -24,15 +25,7 @@ export default function DashboardPage() {
   const { data: session } = authClient.useSession();
   const userId = session?.user?.id;
   const [searchQuery, setSearchQuery] = useState('');
-  const [debouncedQuery, setDebouncedQuery] = useState('');
-
-  // Debounce search query
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedQuery(searchQuery);
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [searchQuery]);
+  const debouncedQuery = useDebounce(searchQuery, 300);
 
   const { data: proposals = [], isLoading: proposalsLoading } = useQuery({
     queryKey: queryKeys.proposals.list(userId),
