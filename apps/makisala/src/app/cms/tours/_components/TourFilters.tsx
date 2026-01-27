@@ -2,7 +2,7 @@
 
 import { Input } from '@repo/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@repo/ui/select'
-import { useDebounce } from '@/lib/hooks/use-debounce'
+import { useDebounce } from '@repo/ui/use-debounce'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useEffect, useState } from 'react'
 

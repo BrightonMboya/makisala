@@ -5,6 +5,7 @@ import { Clock, FileText, Search } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { useDebounce } from '@repo/ui/use-debounce';
 import {
   getOnboardingData,
   getProposalsForDashboard,
@@ -16,6 +17,7 @@ import type { RequestItem } from '@/types/dashboard';
 import { checkOnboardingStatus } from '@/lib/onboarding';
 import { Onboarding } from '../_components/onboarding';
 import { authClient } from '@/lib/auth-client';
+import { NotesPanel } from '@/components/notes-panel';
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -23,15 +25,7 @@ export default function DashboardPage() {
   const { data: session } = authClient.useSession();
   const userId = session?.user?.id;
   const [searchQuery, setSearchQuery] = useState('');
-  const [debouncedQuery, setDebouncedQuery] = useState('');
-
-  // Debounce search query
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedQuery(searchQuery);
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [searchQuery]);
+  const debouncedQuery = useDebounce(searchQuery, 300);
 
   const { data: proposals = [], isLoading: proposalsLoading } = useQuery({
     queryKey: queryKeys.proposals.list(userId),
@@ -181,7 +175,8 @@ export default function DashboardPage() {
                     <div className="mt-1">Created {req.received}</div>
                   </div>
                 </div>
-                <div className="mt-4 flex justify-end border-t border-stone-100 pt-3">
+                <div className="mt-4 flex items-center justify-end gap-3 border-t border-stone-100 pt-3">
+                  <NotesPanel proposalId={req.id} compact />
                   <button
                     className="text-xs font-medium text-green-700 hover:text-green-800 hover:underline"
                     onClick={(e) => {

@@ -16,6 +16,7 @@ import {
   proposalActivities,
   proposalDays,
   proposalMeals,
+  proposalNotes,
   proposals,
   tours,
 } from '@repo/db/schema';
@@ -1506,5 +1507,91 @@ export async function getRandomDayTemplate(
   } catch (error) {
     console.error('Error fetching day template:', error);
     return null;
+  }
+}
+
+// ---------- PROPOSAL NOTES (Internal Team Notes) ----------
+
+export async function createProposalNote(data: { proposalId: string; content: string }) {
+  try {
+    const session = await getSession();
+    if (!session?.user) {
+      return { success: false, error: 'Unauthorized' };
+    }
+
+    const [note] = await db
+      .insert(proposalNotes)
+      .values({
+        proposalId: data.proposalId,
+        userId: session.user.id,
+        userName: session.user.name || 'Unknown User',
+        content: data.content,
+      })
+      .returning();
+
+    return { success: true, note };
+  } catch (error) {
+    console.error('Error creating proposal note:', error);
+    return { success: false, error: 'Failed to create note' };
+  }
+}
+
+export async function getProposalNotes(proposalId: string) {
+  try {
+    const session = await getSession();
+    if (!session?.user) {
+      return [];
+    }
+
+    const notesList = await db.query.proposalNotes.findMany({
+      where: eq(proposalNotes.proposalId, proposalId),
+      orderBy: (notes, { desc }) => [desc(notes.createdAt)],
+    });
+
+    return notesList.map((note) => ({
+      id: note.id,
+      content: note.content,
+      userName: note.userName || 'Unknown User',
+      createdAt: new Date(note.createdAt),
+      updatedAt: new Date(note.updatedAt),
+    }));
+  } catch (error) {
+    console.error('Error fetching proposal notes:', error);
+    return [];
+  }
+}
+
+export async function updateProposalNote(noteId: string, content: string) {
+  try {
+    const session = await getSession();
+    if (!session?.user) {
+      return { success: false, error: 'Unauthorized' };
+    }
+
+    await db
+      .update(proposalNotes)
+      .set({ content, updatedAt: new Date() })
+      .where(eq(proposalNotes.id, noteId));
+
+    return { success: true };
+  } catch (error) {
+    console.error('Error updating proposal note:', error);
+    return { success: false, error: 'Failed to update note' };
+  }
+}
+
+export async function deleteProposalNote(noteId: string) {
+  try {
+    const session = await getSession();
+    if (!session?.user) {
+      return { success: false, error: 'Unauthorized' };
+    }
+
+    await db.delete(proposalNotes).where(eq(proposalNotes.id, noteId));
+
+    return { success: true };
+  } catch (error) {
+    console.error('Error deleting proposal note:', error);
+    return { success: false, error: 'Failed to delete note' };
   }
 }

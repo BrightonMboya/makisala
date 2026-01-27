@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { BuilderProvider, useBuilder } from '@/components/itinerary-builder/builder-context';
 import { SidebarProvider, SidebarInset, SidebarTrigger } from '@repo/ui/sidebar';
 import { AppSidebar } from '@/components/app-sidebar';
+import { NotesPanel } from '@/components/notes-panel';
 import type { TravelerGroup } from '@/types/itinerary-types';
 import { useMemo, Suspense } from 'react';
 import { saveProposal } from '@/app/itineraries/actions';
@@ -307,6 +308,9 @@ function Header() {
               </div>
             </PopoverContent>
           </Popover>
+
+          {/* Team Notes Panel */}
+          <NotesPanel proposalId={id} />
 
           <div className="h-6 w-px bg-stone-200" />
 

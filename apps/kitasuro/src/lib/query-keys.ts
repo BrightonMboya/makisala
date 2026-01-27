@@ -43,6 +43,9 @@ export const queryKeys = {
 
   // Comments
   comments: (proposalId: string) => ['comments', proposalId] as const,
+
+  // Proposal Notes (internal team notes)
+  notes: (proposalId: string) => ['notes', proposalId] as const,
 } as const;
 
 // Default stale times
@@ -54,5 +57,6 @@ export const staleTimes = {
   clients: 60 * 1000, // 1 minute
   toursAndClients: 60 * 1000, // 1 minute
   comments: 30 * 1000, // 30 seconds
+  notes: 30 * 1000, // 30 seconds
   dashboardData: 60 * 1000, // 1 minute
 } as const;
