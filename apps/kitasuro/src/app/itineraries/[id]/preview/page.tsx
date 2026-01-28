@@ -125,14 +125,16 @@ export default function PreviewPage() {
   }, [parksData]);
 
   const accommodationsMap = useMemo(() => {
-    const map: Record<string, { id: string; name: string; image?: string; description?: string }> =
+    const map: Record<string, { id: string; name: string; image?: string; images?: string[]; description?: string }> =
       {};
     accommodationsData?.forEach((a: any) => {
+      const imageUrls = a.images?.map((img: any) => img.url).filter(Boolean) || [];
       map[a.id] = {
         id: a.id,
         name: a.name,
         description: a.overview || undefined,
-        image: a.images?.[0]?.imageUrl || undefined,
+        image: imageUrls[0] || undefined,
+        images: imageUrls.length > 0 ? imageUrls : undefined,
       };
     });
     return map;

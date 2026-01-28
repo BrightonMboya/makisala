@@ -87,7 +87,7 @@ export function transformBuilderToItineraryData(params: {
   startCity?: string;
   endCity?: string;
   nationalParksMap: Record<string, { id: string; name: string; latitude?: string | null; longitude?: string | null }>;
-  accommodationsMap: Record<string, { id: string; name: string; image?: string; description?: string }>;
+  accommodationsMap: Record<string, { id: string; name: string; image?: string; images?: string[]; description?: string }>;
 }): ItineraryData {
   const {
     days,
@@ -178,10 +178,12 @@ export function transformBuilderToItineraryData(params: {
       seenAccommodations.add(day.accommodation);
       const accData = accommodationsMap[day.accommodation];
       if (accData) {
+        const defaultImage = 'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?q=80&w=2670&auto=format&fit=crop';
         accommodationsList.push({
           id: accData.id,
           name: accData.name,
-          image: accData.image || 'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?q=80&w=2670&auto=format&fit=crop',
+          image: accData.image || defaultImage,
+          images: accData.images && accData.images.length > 0 ? accData.images : undefined,
           description: accData.description || 'Luxury accommodation',
           location: nationalParksMap[day.destination || '']?.name || 'Rwanda',
         });

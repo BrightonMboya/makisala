@@ -309,13 +309,20 @@ export async function updateOrganizationSettings(data: {
 
 export async function getAllAccommodations() {
   try {
-    return await db.query.accommodations.findMany({
+    const results = await db.query.accommodations.findMany({
       with: {
-        images: {
-          limit: 1,
-        },
+        images: true,
       },
     });
+
+    // Generate public URLs for all images
+    return results.map((acc) => ({
+      ...acc,
+      images: acc.images.map((img) => ({
+        ...img,
+        url: `${env.SUPABASE_URL}/storage/v1/object/public/${img.bucket}/${img.key}`,
+      })),
+    }));
   } catch (error) {
     console.error('Error fetching accommodations:', error);
     return [];
