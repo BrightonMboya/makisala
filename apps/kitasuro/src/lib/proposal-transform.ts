@@ -103,7 +103,8 @@ export async function transformProposalToItineraryData(
           id: string;
           name: string;
           overview: string | null;
-          images?: Array<{ id: string; bucket: string; key: string }>;
+          description: string | null;
+          images?: Array<{ bucket: string; key: string }>;
         };
       }>;
       activities?: Array<{
@@ -224,15 +225,20 @@ export async function transformProposalToItineraryData(
   proposalDays.forEach((day) => {
     day.accommodations?.forEach(({ accommodation }) => {
       if (!accommodationMap.has(accommodation.id)) {
-        const firstImageData = accommodation.images?.[0];
-        const firstImage = firstImageData ? getPublicUrl(firstImageData.bucket, firstImageData.key) : undefined;
+        // Get all images for carousel
+        const allImages = accommodation.images?.map(img => getPublicUrl(img.bucket, img.key)) || [];
+        const firstImage = allImages[0];
+
         accommodationMap.set(accommodation.id, {
           id: accommodation.id,
           name: accommodation.name,
           image:
             firstImage ||
             'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?q=80&w=2670&auto=format&fit=crop',
+          images: allImages.length > 0 ? allImages : undefined,
+          overview: accommodation.overview || undefined,
           description:
+            accommodation.description ||
             accommodation.overview ||
             `Luxury accommodation in ${day.nationalPark?.name || 'Rwanda'}`,
           location: day.nationalPark?.name || 'Rwanda',

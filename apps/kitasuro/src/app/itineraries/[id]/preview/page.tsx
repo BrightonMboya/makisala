@@ -7,6 +7,7 @@ import { useBuilder } from '@/components/itinerary-builder/builder-context';
 import { format } from 'date-fns';
 import MinimalisticTheme from '@/components/themes/MinimalisticTheme';
 import KuduTheme from '@/components/themes/kudu';
+import DiscoveryTheme from '@/components/themes/DiscoveryTheme';
 import {
   getAllAccommodations,
   getAllNationalParks,
@@ -32,6 +33,11 @@ const THEME_OPTIONS: { value: ThemeType; label: string; description: string }[] 
     description: 'Clean, modern design with elegant typography',
   },
   { value: 'kudu', label: 'Kudu', description: 'Dark, immersive snap-scroll theme' },
+  {
+    value: 'discovery',
+    label: 'Discovery',
+    description: 'Immersive split-screen layout with full-size images',
+  },
 ];
 
 export default function PreviewPage() {
@@ -351,6 +357,8 @@ export default function PreviewPage() {
           onHeroImageChange={handleHeroImageSelect}
           onDayImageChange={handleDayImageSelect}
         />
+      ) : selectedTheme === 'discovery' ? (
+        <DiscoveryTheme data={itineraryData} onHeroImageChange={handleHeroImageSelect} />
       ) : (
         <MinimalisticTheme data={itineraryData} onHeroImageChange={handleHeroImageSelect} />
       )}

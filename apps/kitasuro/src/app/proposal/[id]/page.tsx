@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import MinimalisticTheme from '@/components/themes/MinimalisticTheme';
 import SafariPortalTheme from '@/components/themes/SafariPortalTheme';
 import KuduTheme from '@/components/themes/kudu';
+import DiscoveryTheme from '@/components/themes/DiscoveryTheme';
 import { CommentsProvider } from '@/components/comments/CommentsProvider';
 import { CommentsOverlay } from '@/components/comments/CommentsOverlay';
 import { PDFDownloadButton } from '@/components/pdf-download-button';
@@ -33,6 +34,8 @@ export default async function ItineraryPage({ params }: { params: Promise<{ id: 
             <SafariPortalTheme data={transformedData} />
           ) : transformedData.theme === 'kudu' ? (
             <KuduTheme data={transformedData} />
+          ) : transformedData.theme === 'discovery' ? (
+            <DiscoveryTheme data={transformedData} />
           ) : (
             <MinimalisticTheme data={transformedData} />
           )}

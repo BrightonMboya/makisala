@@ -568,21 +568,62 @@ export async function getProposal(id: string) {
     const result = await db.query.proposals.findFirst({
       where: eq(proposals.id, id),
       with: {
-        organization: true,
-        tour: true,
-        client: true,
+        organization: {
+          columns: {
+            name: true,
+            logoUrl: true,
+          },
+        },
+        tour: {
+          columns: {
+            country: true,
+            tourName: true,
+          },
+        },
+        client: {
+          columns: {
+            name: true,
+            email: true,
+          },
+        },
         days: {
+          columns: {
+            dayNumber: true,
+            title: true,
+            description: true,
+          },
           with: {
             nationalPark: {
-              with: {
-                destination: true,
+              columns: {
+                name: true,
+                country: true,
+                latitude: true,
+                longitude: true,
               },
+              // with: {
+              //   destination: true,
+              // },
             },
             accommodations: {
+              columns: {
+                id: true,
+              },
               with: {
                 accommodation: {
+                  columns: {
+                    id: true,
+                    name: true,
+                    url: true,
+                    overview: true,
+                    // description: true,
+                  },
                   with: {
-                    images: true,
+                    images: {
+                      columns: {
+                        bucket: true,
+                        key: true,
+                      },
+                    },
                   },
                 },
               },

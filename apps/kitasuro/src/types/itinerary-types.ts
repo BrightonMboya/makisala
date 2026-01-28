@@ -51,7 +51,7 @@ export type ExtraOption = {
   selected: boolean;
 };
 
-export type ThemeType = 'minimalistic' | 'safari-portal' | 'kudu';
+export type ThemeType = 'minimalistic' | 'safari-portal' | 'kudu' | 'discovery';
 
 export type BuilderContextType = {
   // Tour Details
@@ -132,7 +132,9 @@ export interface Accommodation {
   id: string;
   name: string;
   image: string;
-  description: string;
+  images?: string[]; // Multiple images for carousel
+  overview?: string; // Short overview text
+  description: string; // Full description
   location: string;
 }
 
