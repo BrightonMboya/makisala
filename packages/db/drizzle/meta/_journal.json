@@ -141,6 +141,13 @@
       "when": 1769369987474,
       "tag": "0019_fantastic_moira_mactaggert",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1769710875755,
+      "tag": "0020_zippy_george_stacy",
+      "breakpoints": true
     }
   ]
 }
