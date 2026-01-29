@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { FileText, LayoutDashboard, LogOut, Map, Plus, Settings, Users, Sparkles } from 'lucide-react';
+import { FileText, LayoutDashboard, LogOut, Map, Plus, Settings, Users, Library } from 'lucide-react';
 import {
   Sidebar,
   SidebarContent,
@@ -69,7 +69,7 @@ export function AppSidebar() {
         !pathname.includes('share'),
     },
     {
-      icon: Sparkles,
+      icon: Library,
       label: 'Content Library',
       href: '/content-library',
       active: pathname?.startsWith('/content-library'),

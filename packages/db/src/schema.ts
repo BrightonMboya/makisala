@@ -397,13 +397,6 @@ export const itineraryDaysRelations = relations(itineraryDays, ({ one, many }) =
 }));
 
 // ---------- DEDUPED ACCOMMODATIONS (MASTER) ----------
-export const contentFetchStatus = pgEnum('content_fetch_status', [
-  'pending',
-  'fetching',
-  'completed',
-  'failed',
-]);
-
 export const accommodations = pgTable('accommodations', {
   id: uuid('id').defaultRandom().primaryKey(),
   name: text('name').notNull(),
@@ -419,10 +412,6 @@ export const accommodations = pgTable('accommodations', {
   roomTypes: json('room_types').$type<{ name: string; description: string; capacity?: string }[]>(),
   locationHighlights: text('location_highlights').array(),
   pricingInfo: text('pricing_info'),
-
-  // Content fetch tracking
-  contentStatus: contentFetchStatus('content_status').default('pending'),
-  contentLastFetchedAt: timestamp('content_last_fetched_at'),
 });
 
 export const accommodationsRelations = relations(accommodations, ({ many }) => ({

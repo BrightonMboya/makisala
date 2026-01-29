@@ -148,6 +148,13 @@
       "when": 1769448263403,
       "tag": "0020_worried_giant_man",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1769715467621,
+      "tag": "0021_new_nightshade",
+      "breakpoints": true
     }
   ]
 }

@@ -1,9 +1,9 @@
 import Link from 'next/link';
-import { Sparkles, Search } from 'lucide-react';
+import { Library } from 'lucide-react';
 import { Button } from '@repo/ui/button';
-import { Input } from '@repo/ui/input';
 import { getAccommodationsWithContentStatus } from './actions';
 import { AccommodationSelector } from './_components/AccommodationSelector';
+import { SearchInput } from './_components/SearchInput';
 
 export default async function Page({
   searchParams,
@@ -26,7 +26,7 @@ export default async function Page({
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center gap-3">
-            <Sparkles className="h-8 w-8 text-purple-500" />
+            <Library className="h-8 w-8 text-green-700" />
             <div>
               <h1 className="text-3xl font-bold text-gray-900">Content Library</h1>
               <p className="mt-1 text-gray-600">
@@ -37,17 +37,7 @@ export default async function Page({
         </div>
 
         <div className="mb-6 flex items-center gap-4">
-          <div className="relative flex-1 max-w-sm">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-            <form method="GET">
-                <Input
-                    name="query"
-                    defaultValue={query}
-                    placeholder="Search by name..."
-                    className="pl-10"
-                />
-            </form>
-          </div>
+          <SearchInput />
         </div>
 
         {/* Accommodation selector */}
@@ -58,7 +48,7 @@ export default async function Page({
           <div className="mt-6 flex items-center justify-center gap-2">
             {Array.from({ length: pagination.totalPages }, (_, i) => i + 1).map((p) => (
               <Button key={p} variant={p === pagination.page ? 'default' : 'outline'} size="sm" asChild>
-                <Link href={`/content-creation?page=${p}${query ? `&query=${query}` : ''}`}>{p}</Link>
+                <Link href={`/content-library?page=${p}${query ? `&query=${query}` : ''}`}>{p}</Link>
               </Button>
             ))}
           </div>
