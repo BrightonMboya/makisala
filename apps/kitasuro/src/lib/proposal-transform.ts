@@ -79,13 +79,12 @@ export async function transformProposalToItineraryData(
     organization?: {
       name: string;
       logoUrl: string | null;
-      primaryColor: string | null;
     } | null;
     client?: {
       name: string;
     } | null;
     days?: Array<{
-      id: string;
+      // id: string;
       dayNumber: number;
       title: string | null;
       description: string | null;
@@ -94,7 +93,6 @@ export async function transformProposalToItineraryData(
         id: string;
         name: string;
         park_overview: Array<{ title?: string; name?: string; description: string }> | null;
-        overview_page_id: string | null;
         latitude: string | null;
         longitude: string | null;
       } | null;
@@ -226,7 +224,8 @@ export async function transformProposalToItineraryData(
     day.accommodations?.forEach(({ accommodation }) => {
       if (!accommodationMap.has(accommodation.id)) {
         // Get all images for carousel
-        const allImages = accommodation.images?.map(img => getPublicUrl(img.bucket, img.key)) || [];
+        const allImages =
+          accommodation.images?.map((img) => getPublicUrl(img.bucket, img.key)) || [];
         const firstImage = allImages[0];
 
         accommodationMap.set(accommodation.id, {
@@ -236,9 +235,7 @@ export async function transformProposalToItineraryData(
             firstImage ||
             'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?q=80&w=2670&auto=format&fit=crop',
           images: allImages.length > 0 ? allImages : undefined,
-          overview: accommodation.overview || undefined,
           description:
-            accommodation.description ||
             accommodation.overview ||
             `Luxury accommodation in ${day.nationalPark?.name || 'Rwanda'}`,
           location: day.nationalPark?.name || 'Rwanda',
@@ -270,11 +267,6 @@ export async function transformProposalToItineraryData(
 
   // Fetch pages for featured images (needed for hero image and park images)
   const pageIds = new Set<string>();
-  proposalDays.forEach((day) => {
-    if (day.nationalPark?.overview_page_id) {
-      pageIds.add(day.nationalPark.overview_page_id);
-    }
-  });
 
   const pagesMap = new Map<string, string | null>();
   if (pageIds.size > 0) {
@@ -302,11 +294,6 @@ export async function transformProposalToItineraryData(
   // Use saved hero image from proposal if available
   if (proposal.heroImage) {
     heroImage = proposal.heroImage;
-  } else if (firstPark?.overview_page_id) {
-    const featuredImage = pagesMap.get(firstPark.overview_page_id);
-    if (featuredImage) {
-      heroImage = featuredImage;
-    }
   }
 
   // Calculate pricing
@@ -325,9 +312,6 @@ export async function transformProposalToItineraryData(
 
       // Get featured image from page if available
       let featuredImageUrl: string | null = null;
-      if (park.overview_page_id) {
-        featuredImageUrl = pagesMap.get(park.overview_page_id) || null;
-      }
 
       const parkData: NationalParkInfo = {
         id: park.id,
@@ -361,7 +345,6 @@ export async function transformProposalToItineraryData(
       ? {
           name: proposal.organization.name,
           logoUrl: proposal.organization.logoUrl,
-          primaryColor: proposal.organization.primaryColor,
         }
       : undefined,
     itinerary,

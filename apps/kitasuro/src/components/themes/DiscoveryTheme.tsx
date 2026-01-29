@@ -623,8 +623,7 @@ const DaySection = ({
       : accommodationDetails?.image
         ? [accommodationDetails.image]
         : [defaultAccommodationImage];
-  const accommodationOverview =
-    accommodationDetails?.overview || accommodationDetails?.description || '';
+  const accommodationOverview = accommodationDetails?.description || '';
 
   const hasActivities = day.activities.length > 0;
   const hasAccommodation = day.accommodation && day.accommodation !== 'Last day, no accommodation';
@@ -998,7 +997,7 @@ export default function DiscoveryTheme({ data, onHeroImageChange }: DiscoveryThe
                   </p>
 
                   <div className="mb-6">
-                    <label className="mb-2 block text-xs font-semibold uppercase tracking-wide text-stone-500">
+                    <label className="mb-2 block text-xs font-semibold tracking-wide text-stone-500 uppercase">
                       Your Name
                     </label>
                     <input
@@ -1006,7 +1005,7 @@ export default function DiscoveryTheme({ data, onHeroImageChange }: DiscoveryThe
                       value={confirmName}
                       onChange={(e) => setConfirmName(e.target.value)}
                       placeholder="Enter your full name"
-                      className="w-full rounded-lg border border-stone-200 bg-stone-50 px-4 py-3 text-stone-900 placeholder-stone-400 focus:border-stone-400 focus:outline-none focus:ring-2 focus:ring-stone-200"
+                      className="w-full rounded-lg border border-stone-200 bg-stone-50 px-4 py-3 text-stone-900 placeholder-stone-400 focus:border-stone-400 focus:ring-2 focus:ring-stone-200 focus:outline-none"
                     />
                   </div>
 

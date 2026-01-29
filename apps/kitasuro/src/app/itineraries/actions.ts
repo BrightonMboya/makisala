@@ -598,12 +598,15 @@ export async function getProposal(id: string) {
             dayNumber: true,
             title: true,
             description: true,
+            previewImage: true,
           },
           with: {
             nationalPark: {
               columns: {
+                id: true,
                 name: true,
                 country: true,
+                park_overview: true,
                 latitude: true,
                 longitude: true,
               },
@@ -620,9 +623,8 @@ export async function getProposal(id: string) {
                   columns: {
                     id: true,
                     name: true,
-                    url: true,
                     overview: true,
-                    // description: true,
+                    description: true,
                   },
                   with: {
                     images: {

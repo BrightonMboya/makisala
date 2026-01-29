@@ -133,7 +133,7 @@ export interface Accommodation {
   name: string;
   image: string;
   images?: string[]; // Multiple images for carousel
-  overview?: string; // Short overview text
+  // overview?: string; // Short overview text
   description: string; // Full description
   location: string;
 }
@@ -148,7 +148,6 @@ export interface NationalParkInfo {
 export interface OrganizationInfo {
   name: string;
   logoUrl: string | null;
-  primaryColor: string | null;
 }
 
 export interface ItineraryData {
