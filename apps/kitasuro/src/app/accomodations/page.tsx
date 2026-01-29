@@ -1,7 +1,7 @@
 import { getAccommodations } from './actions'
 import { Button } from '@repo/ui/button'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@repo/ui/table'
-import { Edit, Plus, Search, Globe, MapPin } from 'lucide-react'
+import { Edit, Plus, Search, Globe, MapPin, Eye } from 'lucide-react'
 import Link from 'next/link'
 import { Input } from '@repo/ui/input'
 
@@ -28,12 +28,13 @@ export default async function AccomodationsPage({
                         <h1 className="text-3xl font-bold text-gray-900">Accomodations</h1>
                         <p className="mt-2 text-gray-600">Manage your stay options and their details</p>
                     </div>
-                    <Button asChild>
-                        <Link href="/accomodations/new">
-                            <Plus className="mr-2 h-4 w-4" />
-                            Add Accomodation
-                        </Link>
-                    </Button>
+                        <Button asChild>
+                            <Link href="/accomodations/new">
+                                <Plus className="mr-2 h-4 w-4" />
+                                Add Accomodation
+                            </Link>
+                        </Button>
+
                 </div>
 
                 <div className="mb-6 flex items-center gap-4">
@@ -94,6 +95,12 @@ export default async function AccomodationsPage({
                                             {acc.images.length} images
                                         </TableCell>
                                         <TableCell className="text-right flex justify-end gap-2">
+                                            <Button variant="ghost" size="sm" asChild>
+                                                <Link href={`/accomodations/${acc.id}`}>
+                                                    <Eye className="h-4 w-4" />
+                                                    <span className="sr-only">View</span>
+                                                </Link>
+                                            </Button>
                                             <Button variant="ghost" size="sm" asChild>
                                                 <Link href={`/accomodations/${acc.id}/edit`}>
                                                     <Edit className="h-4 w-4" />

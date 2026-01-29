@@ -397,6 +397,13 @@ export const itineraryDaysRelations = relations(itineraryDays, ({ one, many }) =
 }));
 
 // ---------- DEDUPED ACCOMMODATIONS (MASTER) ----------
+export const contentFetchStatus = pgEnum('content_fetch_status', [
+  'pending',
+  'fetching',
+  'completed',
+  'failed',
+]);
+
 export const accommodations = pgTable('accommodations', {
   id: uuid('id').defaultRandom().primaryKey(),
   name: text('name').notNull(),
@@ -405,6 +412,17 @@ export const accommodations = pgTable('accommodations', {
   description: text('description'),
   latitude: numeric('latitude', { precision: 10, scale: 7 }),
   longitude: numeric('longitude', { precision: 10, scale: 7 }),
+
+  // AI-generated content (merged from accommodation_content)
+  enhancedDescription: text('enhanced_description'),
+  amenities: json('amenities').$type<{ category: string; items: string[] }[]>(),
+  roomTypes: json('room_types').$type<{ name: string; description: string; capacity?: string }[]>(),
+  locationHighlights: text('location_highlights').array(),
+  pricingInfo: text('pricing_info'),
+
+  // Content fetch tracking
+  contentStatus: contentFetchStatus('content_status').default('pending'),
+  contentLastFetchedAt: timestamp('content_last_fetched_at'),
 });
 
 export const accommodationsRelations = relations(accommodations, ({ many }) => ({
@@ -837,3 +855,7 @@ export const dayContentTemplatesRelations = relations(dayContentTemplates, ({ on
 
 export type DayContentTemplate = typeof dayContentTemplates.$inferSelect;
 export type NewDayContentTemplate = typeof dayContentTemplates.$inferInsert;
+
+// Accommodation types
+export type Accommodation = typeof accommodations.$inferSelect;
+export type NewAccommodation = typeof accommodations.$inferInsert;
