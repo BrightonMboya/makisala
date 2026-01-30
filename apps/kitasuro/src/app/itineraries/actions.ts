@@ -19,12 +19,14 @@ import {
   proposalNotes,
   proposals,
   tours,
+  user,
 } from '@repo/db/schema';
-import { desc, eq, ilike, inArray, isNull, sql } from 'drizzle-orm';
+import { and, desc, eq, ilike, inArray, isNull, lt, sql } from 'drizzle-orm';
 import {
   sendCommentNotificationEmail,
   sendProposalAcceptanceEmail,
   sendProposalShareEmail,
+  sendNoteMentionEmail,
 } from '@repo/resend';
 import { auth } from '@/lib/auth';
 import { headers } from 'next/headers';
@@ -1562,7 +1564,37 @@ export async function getRandomDayTemplate(
 
 // ---------- PROPOSAL NOTES (Internal Team Notes) ----------
 
-export async function createProposalNote(data: { proposalId: string; content: string }) {
+export async function getTeamMembersForMention() {
+  try {
+    const session = await getSession();
+    const orgId = await getOrganizationId(session);
+    if (!orgId) return [];
+
+    const members = await db
+      .select({
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        image: user.image,
+      })
+      .from(member)
+      .innerJoin(user, eq(member.userId, user.id))
+      .where(eq(member.organizationId, orgId))
+      .limit(100);
+
+    return members;
+  } catch (error) {
+    console.error('Error fetching team members:', error);
+    return [];
+  }
+}
+
+export async function createProposalNote(data: {
+  proposalId: string;
+  content: string;
+  parentId?: string; // For replies
+  mentionedUserIds?: string[];
+}) {
   try {
     const session = await getSession();
     if (!session?.user) {
@@ -1573,40 +1605,184 @@ export async function createProposalNote(data: { proposalId: string; content: st
       .insert(proposalNotes)
       .values({
         proposalId: data.proposalId,
+        parentId: data.parentId || null,
         userId: session.user.id,
         userName: session.user.name || 'Unknown User',
         content: data.content,
       })
       .returning();
 
-    return { success: true, note };
+    // Send mention notifications (non-blocking)
+    if (data.mentionedUserIds && data.mentionedUserIds.length > 0 && note) {
+      // Filter out the current user from mentions
+      const usersToNotify = data.mentionedUserIds.filter((id) => id !== session.user.id);
+
+      if (usersToNotify.length > 0) {
+        // Fetch mentioned users' emails and the proposal title
+        const [mentionedUsers, proposal] = await Promise.all([
+          db
+            .select({ id: user.id, name: user.name, email: user.email })
+            .from(user)
+            .where(inArray(user.id, usersToNotify)),
+          db.query.proposals.findFirst({
+            where: eq(proposals.id, data.proposalId),
+            columns: { tourTitle: true, name: true },
+          }),
+        ]);
+
+        const proposalTitle = proposal?.tourTitle || proposal?.name || 'Untitled Proposal';
+
+        // Send emails to each mentioned user (fire and forget)
+        for (const mentionedUser of mentionedUsers) {
+          sendNoteMentionEmail({
+            recipientEmail: mentionedUser.email,
+            recipientName: mentionedUser.name,
+            mentionerName: session.user.name || 'A team member',
+            noteContent: data.content,
+            proposalTitle,
+            proposalId: data.proposalId,
+          }).catch((err) => {
+            console.error('Failed to send mention email:', err);
+          });
+        }
+      }
+    }
+
+    return {
+      success: true,
+      note: note
+        ? {
+            ...note,
+            replies: [],
+            replyCount: 0,
+          }
+        : undefined,
+    };
   } catch (error) {
     console.error('Error creating proposal note:', error);
     return { success: false, error: 'Failed to create note' };
   }
 }
 
-export async function getProposalNotes(proposalId: string) {
+const NOTES_PAGE_SIZE = 20;
+
+// Transform a raw note row into the shape the frontend expects
+function transformNote(note: any): any {
+  return {
+    id: note.id,
+    content: note.content,
+    userName: note.userName || 'Unknown User',
+    userId: note.userId,
+    parentId: note.parentId ?? null,
+    createdAt: new Date(note.createdAt),
+    updatedAt: new Date(note.updatedAt),
+    replies: (note.replies || []).map(transformNote),
+    replyCount: countReplies(note),
+  };
+}
+
+export async function getProposalNotes(
+  proposalId: string,
+  cursor?: string, // Note ID to paginate from (fetch notes older than this)
+) {
+  try {
+    const session = await getSession();
+    if (!session?.user) {
+      return { notes: [], nextCursor: null };
+    }
+
+    return await fetchNotesWithReplies(proposalId, cursor);
+  } catch (error) {
+    console.error('Error fetching proposal notes:', error);
+    return { notes: [], nextCursor: null };
+  }
+}
+
+async function fetchNotesWithReplies(proposalId: string, cursor?: string) {
+  const whereConditions = [
+    eq(proposalNotes.proposalId, proposalId),
+    isNull(proposalNotes.parentId),
+  ];
+
+  if (cursor) {
+    const cursorNote = await db.query.proposalNotes.findFirst({
+      where: eq(proposalNotes.id, cursor),
+      columns: { createdAt: true },
+    });
+    if (cursorNote) {
+      whereConditions.push(lt(proposalNotes.createdAt, cursorNote.createdAt));
+    }
+  }
+
+  const notesList = await db.query.proposalNotes.findMany({
+    where: and(...whereConditions),
+    orderBy: (notes, { desc }) => [desc(notes.createdAt)],
+    limit: NOTES_PAGE_SIZE + 1,
+    with: {
+      replies: {
+        orderBy: (replies, { asc }) => [asc(replies.createdAt)],
+        with: {
+          replies: {
+            orderBy: (r, { asc }) => [asc(r.createdAt)],
+          },
+        },
+      },
+    },
+  });
+
+  const hasMore = notesList.length > NOTES_PAGE_SIZE;
+  const notesToReturn = hasMore ? notesList.slice(0, NOTES_PAGE_SIZE) : notesList;
+  const nextCursor = hasMore ? notesToReturn[notesToReturn.length - 1]?.id : null;
+
+  return {
+    notes: notesToReturn.map(transformNote),
+    nextCursor,
+  };
+}
+
+
+// Helper to count all nested replies
+function countReplies(note: any): number {
+  if (!note.replies || note.replies.length === 0) return 0;
+  return note.replies.reduce(
+    (count: number, reply: any) => count + 1 + countReplies(reply),
+    0
+  );
+}
+
+// Get replies for a specific note (for lazy loading deep threads)
+export async function getNoteReplies(noteId: string) {
   try {
     const session = await getSession();
     if (!session?.user) {
       return [];
     }
 
-    const notesList = await db.query.proposalNotes.findMany({
-      where: eq(proposalNotes.proposalId, proposalId),
-      orderBy: (notes, { desc }) => [desc(notes.createdAt)],
+    const replies = await db.query.proposalNotes.findMany({
+      where: eq(proposalNotes.parentId, noteId),
+      orderBy: (notes, { asc }) => [asc(notes.createdAt)],
+      with: {
+        replies: {
+          orderBy: (r, { asc }) => [asc(r.createdAt)],
+        },
+      },
     });
 
-    return notesList.map((note) => ({
-      id: note.id,
-      content: note.content,
-      userName: note.userName || 'Unknown User',
-      createdAt: new Date(note.createdAt),
-      updatedAt: new Date(note.updatedAt),
-    }));
+    const transformReply = (reply: any): any => ({
+      id: reply.id,
+      content: reply.content,
+      userName: reply.userName || 'Unknown User',
+      userId: reply.userId,
+      parentId: reply.parentId,
+      createdAt: new Date(reply.createdAt),
+      updatedAt: new Date(reply.updatedAt),
+      replies: (reply.replies || []).map(transformReply),
+      replyCount: countReplies(reply),
+    });
+
+    return replies.map(transformReply);
   } catch (error) {
-    console.error('Error fetching proposal notes:', error);
+    console.error('Error fetching note replies:', error);
     return [];
   }
 }
@@ -1616,6 +1792,15 @@ export async function updateProposalNote(noteId: string, content: string) {
     const session = await getSession();
     if (!session?.user) {
       return { success: false, error: 'Unauthorized' };
+    }
+
+    const note = await db.query.proposalNotes.findFirst({
+      where: eq(proposalNotes.id, noteId),
+      columns: { userId: true },
+    });
+
+    if (!note || note.userId !== session.user.id) {
+      return { success: false, error: 'You can only edit your own notes' };
     }
 
     await db
@@ -1637,11 +1822,22 @@ export async function deleteProposalNote(noteId: string) {
       return { success: false, error: 'Unauthorized' };
     }
 
+    const note = await db.query.proposalNotes.findFirst({
+      where: eq(proposalNotes.id, noteId),
+      columns: { userId: true },
+    });
+
+    if (!note || note.userId !== session.user.id) {
+      return { success: false, error: 'You can only delete your own notes' };
+    }
+
+    // Delete the note — replies are cascade-deleted via the parentId FK constraint
     await db.delete(proposalNotes).where(eq(proposalNotes.id, noteId));
 
-    return { success: true };
+    return { success: true, deletedId: noteId };
   } catch (error) {
     console.error('Error deleting proposal note:', error);
     return { success: false, error: 'Failed to delete note' };
   }
 }
+

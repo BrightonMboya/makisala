@@ -7,6 +7,7 @@ import {
   pgTable,
   text,
   timestamp,
+  index,
   uuid,
   varchar,
 } from 'drizzle-orm/pg-core';
@@ -191,7 +192,9 @@ export const session = pgTable('session', {
     .notNull()
     .references(() => user.id, { onDelete: 'cascade' }),
   // Better Auth organization plugin field
-  activeOrganizationId: uuid('active_organization_id').references(() => organizations.id, { onDelete: 'set null' }),
+  activeOrganizationId: uuid('active_organization_id').references(() => organizations.id, {
+    onDelete: 'set null',
+  }),
 });
 
 // ---------- BETTER AUTH ORGANIZATION PLUGIN TABLES ----------
@@ -356,7 +359,9 @@ export const tours = pgTable('tours', {
   img_url: text('img_url').notNull(),
   number_of_days: integer('number_of_days').notNull(),
   tags: text('tags').array().notNull(), // eg ['family', 'group', 'luxury']
-  organizationId: uuid('organization_id').references(() => organizations.id, { onDelete: 'cascade' }), // null = shared template, uuid = org-specific
+  organizationId: uuid('organization_id').references(() => organizations.id, {
+    onDelete: 'cascade',
+  }), // null = shared template, uuid = org-specific
   clonedFromId: uuid('cloned_from_id').references((): any => tours.id, { onDelete: 'set null' }), // reference to template this was cloned from
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
@@ -762,14 +767,18 @@ export const proposalNotes = pgTable('proposal_notes', {
   proposalId: text('proposal_id')
     .notNull()
     .references(() => proposals.id, { onDelete: 'cascade' }),
+
+  parentId: uuid('parent_id').references((): any => proposalNotes.id, { onDelete: 'cascade' }),
   userId: text('user_id').references(() => user.id),
   userName: text('user_name'),
   content: text('content').notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
-});
+}, (table) => [
+  index('idx_proposal_notes_parent_id').on(table.parentId),
+]);
 
-export const proposalNotesRelations = relations(proposalNotes, ({ one }) => ({
+export const proposalNotesRelations = relations(proposalNotes, ({ one, many }) => ({
   proposal: one(proposals, {
     fields: [proposalNotes.proposalId],
     references: [proposals.id],
@@ -777,6 +786,14 @@ export const proposalNotesRelations = relations(proposalNotes, ({ one }) => ({
   user: one(user, {
     fields: [proposalNotes.userId],
     references: [user.id],
+  }),
+  parent: one(proposalNotes, {
+    fields: [proposalNotes.parentId],
+    references: [proposalNotes.id],
+    relationName: 'noteReplies',
+  }),
+  replies: many(proposalNotes, {
+    relationName: 'noteReplies',
   }),
 }));
 

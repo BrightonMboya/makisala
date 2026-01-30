@@ -5,6 +5,7 @@ import { renderProposalShareEmail } from '../templates/proposal-share';
 import { renderProposalAcceptanceEmail } from '../templates/proposal-acceptance';
 import { renderTeamInvitationEmail } from '../templates/team-invitation';
 import { renderEmailVerificationEmail } from '../templates/email-verification';
+import { renderNoteMentionEmail } from '../templates/note-mention';
 
 export interface CommentNotificationData {
   proposalId: string;
@@ -404,6 +405,70 @@ export async function sendEmailVerificationEmail(
     return { success: true };
   } catch (error) {
     console.error('Error sending email verification email:', error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error occurred',
+    };
+  }
+}
+
+export interface NoteMentionData {
+  recipientEmail: string;
+  recipientName: string;
+  mentionerName: string;
+  noteContent: string;
+  proposalTitle: string;
+  proposalId: string;
+}
+
+/**
+ * Sends an email notification when a user is @mentioned in a proposal note.
+ */
+export async function sendNoteMentionEmail(
+  data: NoteMentionData,
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const mentionedAt = new Date().toLocaleString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      timeZoneName: 'short',
+    });
+
+    const proposalUrl = `${env.NEXT_PUBLIC_APP_URL}/itineraries/${data.proposalId}`;
+
+    const html = renderNoteMentionEmail({
+      recipientName: data.recipientName,
+      mentionerName: data.mentionerName,
+      noteContent: data.noteContent,
+      proposalTitle: data.proposalTitle,
+      proposalUrl,
+      mentionedAt,
+    });
+
+    const fromEmail = env.RESEND_FROM_EMAIL || 'notifications@makisala.com';
+
+    const result = await resend.emails.send({
+      from: fromEmail,
+      to: data.recipientEmail,
+      subject: `${data.mentionerName} mentioned you in a note`,
+      html,
+    });
+
+    if (result.error) {
+      console.error('Resend API error:', result.error);
+      return {
+        success: false,
+        error: result.error.message || 'Failed to send email',
+      };
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error('Error sending note mention email:', error);
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error occurred',
