@@ -23,7 +23,7 @@ import { useMutation, useQuery } from '@tanstack/react-query';
 import { queryKeys, staleTimes } from '@/lib/query-keys';
 import { Popover, PopoverContent, PopoverTrigger } from '@repo/ui/popover';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@repo/ui/dialog';
-import { ImagePicker } from '@/components/image-picker';
+import { ImagePicker, ImagePickerContent } from '@/components/image-picker';
 import type { ThemeType } from '@/types/itinerary-types';
 
 const THEME_OPTIONS: { value: ThemeType; label: string; description: string }[] = [
@@ -70,7 +70,7 @@ export default function PreviewPage() {
   const proposalId = urlParams.id as string;
   const [isProposalSaved, setIsProposalSaved] = useState(false);
   const [isHeroPickerOpen, setIsHeroPickerOpen] = useState(false);
-  const [dayPickerOpen, setDayPickerOpen] = useState<number | null>(null);
+  const [dayPickerOpen, setDayPickerOpen] = useState<{ dayNumber: number; accommodationName?: string } | null>(null);
   const [isThemePopoverOpen, setIsThemePopoverOpen] = useState(false);
 
   // Listen for hero image picker event from themes
@@ -82,8 +82,8 @@ export default function PreviewPage() {
 
   // Listen for day image picker event from themes
   useEffect(() => {
-    const handleOpenDayPicker = (e: CustomEvent<{ dayNumber: number }>) => {
-      setDayPickerOpen(e.detail.dayNumber);
+    const handleOpenDayPicker = (e: CustomEvent<{ dayNumber: number; accommodationName?: string }>) => {
+      setDayPickerOpen({ dayNumber: e.detail.dayNumber, accommodationName: e.detail.accommodationName });
     };
     window.addEventListener('openDayImagePicker', handleOpenDayPicker as EventListener);
     return () =>
@@ -344,15 +344,20 @@ export default function PreviewPage() {
       >
         <DialogContent className="max-w-4xl">
           <DialogHeader>
-            <DialogTitle>Select Image for Day {dayPickerOpen}</DialogTitle>
+            <DialogTitle>
+              {dayPickerOpen?.accommodationName || `Day ${dayPickerOpen?.dayNumber}`}
+            </DialogTitle>
           </DialogHeader>
-          <ImagePicker
-            value={days.find((d) => d.dayNumber === dayPickerOpen)?.previewImage || ''}
+          <ImagePickerContent
+            value={days.find((d) => d.dayNumber === dayPickerOpen?.dayNumber)?.previewImage || ''}
             onSelect={(url) => {
               if (dayPickerOpen !== null) {
-                handleDayImageSelect(dayPickerOpen, url);
+                handleDayImageSelect(dayPickerOpen.dayNumber, url);
+                setDayPickerOpen(null);
               }
             }}
+            initialFolder={dayPickerOpen?.accommodationName}
+            isOpen={dayPickerOpen !== null}
           />
         </DialogContent>
       </Dialog>
@@ -367,7 +372,7 @@ export default function PreviewPage() {
       ) : selectedTheme === 'discovery' ? (
         <DiscoveryTheme data={itineraryData} onHeroImageChange={handleHeroImageSelect} />
       ) : (
-        <MinimalisticTheme data={itineraryData} onHeroImageChange={handleHeroImageSelect} />
+        <MinimalisticTheme data={itineraryData} onHeroImageChange={handleHeroImageSelect} onDayImageChange={handleDayImageSelect} />
       )}
 
       {/* Floating Action Bar */}

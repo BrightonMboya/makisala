@@ -151,10 +151,12 @@ function TripMap({ data }: { data: ItineraryData['mapData'] }) {
 interface MinimalisticThemeProps {
   data: ItineraryData;
   onHeroImageChange?: (url: string) => void;
+  onDayImageChange?: (dayNumber: number, url: string) => void;
 }
 
-export default function MinimalisticTheme({ data, onHeroImageChange }: MinimalisticThemeProps) {
+export default function MinimalisticTheme({ data, onHeroImageChange, onDayImageChange }: MinimalisticThemeProps) {
   const [isHeroHovered, setIsHeroHovered] = React.useState(false);
+  const [hoveredDayImage, setHoveredDayImage] = React.useState<number | null>(null);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [confirmName, setConfirmName] = useState(data.clientName || '');
   const [isConfirming, setIsConfirming] = useState(false);
@@ -460,7 +462,11 @@ export default function MinimalisticTheme({ data, onHeroImageChange }: Minimalis
                           {/* Accommodation Image Section - Show if different from previous day */}
                           {!shouldHideAccommodation && accommodation && accommodationDetails && (
                             <div className="mt-8">
-                              <div className="relative h-64 w-full overflow-hidden rounded-2xl">
+                              <div
+                                className="relative h-64 w-full overflow-hidden rounded-2xl"
+                                onMouseEnter={() => onDayImageChange && setHoveredDayImage(day.day)}
+                                onMouseLeave={() => setHoveredDayImage(null)}
+                              >
                                 <Image
                                   src={day.previewImage || accommodationDetails.image}
                                   alt={accommodationDetails.name}
@@ -476,6 +482,43 @@ export default function MinimalisticTheme({ data, onHeroImageChange }: Minimalis
                                     {accommodationDetails.name}
                                   </h4>
                                 </div>
+
+                                {/* Edit overlay for day image */}
+                                {onDayImageChange && (
+                                  <div
+                                    className={`absolute inset-0 z-30 flex items-center justify-center bg-black/40 transition-opacity duration-200 ${
+                                      hoveredDayImage === day.day ? 'opacity-100' : 'pointer-events-none opacity-0'
+                                    }`}
+                                  >
+                                    <button
+                                      onClick={() => {
+                                        const event = new CustomEvent('openDayImagePicker', {
+                                          detail: { dayNumber: day.day, accommodationName: accommodationDetails.name }
+                                        });
+                                        window.dispatchEvent(event);
+                                      }}
+                                      className="flex flex-col items-center gap-3 text-white transition-transform hover:scale-105"
+                                    >
+                                      <svg className="h-10 w-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path
+                                          strokeLinecap="round"
+                                          strokeLinejoin="round"
+                                          strokeWidth={1.5}
+                                          d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"
+                                        />
+                                        <path
+                                          strokeLinecap="round"
+                                          strokeLinejoin="round"
+                                          strokeWidth={1.5}
+                                          d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"
+                                        />
+                                      </svg>
+                                      <span className="text-xs font-medium tracking-wider uppercase">
+                                        Change Image
+                                      </span>
+                                    </button>
+                                  </div>
+                                )}
                               </div>
                               {accommodationDetails.description && (
                                 <div className="mt-4 px-1">
