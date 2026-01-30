@@ -1,1 +1,0 @@
-ALTER TABLE "proposal_notes" ADD COLUMN "parent_id" uuid;

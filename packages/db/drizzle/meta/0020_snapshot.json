@@ -1,6 +1,6 @@
 {
-  "id": "154bc62a-76e8-4082-8c61-098e50238626",
-  "prevId": "b3efb2cf-310b-4433-952b-2c2996257d02",
+  "id": "d27fa905-9bc3-4a7b-b273-f098f27b2e15",
+  "prevId": "86dab39e-6434-4612-a7de-35a4e36673a4",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -100,6 +100,50 @@
         "longitude": {
           "name": "longitude",
           "type": "numeric(10, 7)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "enhanced_description": {
+          "name": "enhanced_description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "amenities": {
+          "name": "amenities",
+          "type": "json",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "room_types": {
+          "name": "room_types",
+          "type": "json",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "location_highlights": {
+          "name": "location_highlights",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "pricing_info": {
+          "name": "pricing_info",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "content_status": {
+          "name": "content_status",
+          "type": "content_fetch_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "'pending'"
+        },
+        "content_last_fetched_at": {
+          "name": "content_last_fetched_at",
+          "type": "timestamp",
           "primaryKey": false,
           "notNull": false
         }
@@ -1875,97 +1919,6 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.proposal_notes": {
-      "name": "proposal_notes",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
-        },
-        "proposal_id": {
-          "name": "proposal_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "parent_id": {
-          "name": "parent_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "user_id": {
-          "name": "user_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "user_name": {
-          "name": "user_name",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "content": {
-          "name": "content",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {
-        "proposal_notes_proposal_id_proposals_id_fk": {
-          "name": "proposal_notes_proposal_id_proposals_id_fk",
-          "tableFrom": "proposal_notes",
-          "tableTo": "proposals",
-          "columnsFrom": [
-            "proposal_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "proposal_notes_user_id_user_id_fk": {
-          "name": "proposal_notes_user_id_user_id_fk",
-          "tableFrom": "proposal_notes",
-          "tableTo": "user",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
     "public.proposals": {
       "name": "proposals",
       "schema": "",
@@ -2952,6 +2905,16 @@
       "values": [
         "admin",
         "member"
+      ]
+    },
+    "public.content_fetch_status": {
+      "name": "content_fetch_status",
+      "schema": "public",
+      "values": [
+        "pending",
+        "fetching",
+        "completed",
+        "failed"
       ]
     }
   },
