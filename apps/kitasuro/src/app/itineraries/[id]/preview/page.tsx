@@ -48,6 +48,7 @@ export default function PreviewPage() {
     startDate,
     travelerGroups,
     tourType,
+    country,
     pricingRows,
     extras,
     clientId,
@@ -156,6 +157,8 @@ export default function PreviewPage() {
       heroImage,
       startCity,
       endCity,
+      tourType,
+      country: country || undefined,
       nationalParksMap,
       accommodationsMap,
     });
@@ -173,6 +176,8 @@ export default function PreviewPage() {
     heroImage,
     startCity,
     endCity,
+    tourType,
+    country,
     nationalParksMap,
     accommodationsMap,
   ]);

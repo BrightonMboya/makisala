@@ -2,14 +2,14 @@
 
 import React, { useMemo, useState } from 'react';
 import Image from 'next/image';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import {
+  AnimatedRouteMarker,
   Map,
-  MapRoute,
   MapMarker,
+  MapRoute,
   MarkerContent,
   MarkerTooltip,
-  AnimatedRouteMarker,
 } from '@repo/ui/map';
 import type { ItineraryData, NationalParkInfo } from '@/types/itinerary-types';
 import { confirmProposal } from '@/app/itineraries/actions';
@@ -34,20 +34,30 @@ function TripMap({ data }: { data: ItineraryData['mapData'] }) {
     return locs;
   }, [locations, startLocation, endLocation]);
 
-  // Calculate center from all locations
-  const center = useMemo(() => {
+  // Calculate bounds from all locations for auto-fit
+  const bounds = useMemo(() => {
     const lngs = allLocations.map((l) => l.coordinates[0]);
     const lats = allLocations.map((l) => l.coordinates[1]);
+
+    const minLng = Math.min(...lngs);
+    const maxLng = Math.max(...lngs);
+    const minLat = Math.min(...lats);
+    const maxLat = Math.max(...lats);
+
+    // Add padding to the bounds (roughly 20% on each side)
+    const lngPadding = (maxLng - minLng) * 0.2 || 0.5;
+    const latPadding = (maxLat - minLat) * 0.2 || 0.5;
+
     return [
-      (Math.min(...lngs) + Math.max(...lngs)) / 2,
-      (Math.min(...lats) + Math.max(...lats)) / 2,
-    ] as [number, number];
+      [minLng - lngPadding, minLat - latPadding], // Southwest
+      [maxLng + lngPadding, maxLat + latPadding], // Northeast
+    ] as [[number, number], [number, number]];
   }, [allLocations]);
 
   // Extract coordinates for the route line
   const routeCoordinates = useMemo(
     () => allLocations.map((l) => l.coordinates as [number, number]),
-    [allLocations]
+    [allLocations],
   );
 
   return (
@@ -57,7 +67,7 @@ function TripMap({ data }: { data: ItineraryData['mapData'] }) {
           Route Map
         </h3>
       </div>
-      <Map center={center} zoom={7} minZoom={5} maxZoom={12}>
+      <Map bounds={bounds} minZoom={4} maxZoom={12}>
         {/* Route Line */}
         {routeCoordinates.length > 1 && (
           <MapRoute
@@ -98,11 +108,7 @@ function TripMap({ data }: { data: ItineraryData['mapData'] }) {
 
         {/* Destination Markers */}
         {locations.map((loc, idx) => (
-          <MapMarker
-            key={loc.name}
-            longitude={loc.coordinates[0]}
-            latitude={loc.coordinates[1]}
-          >
+          <MapMarker key={loc.name} longitude={loc.coordinates[0]} latitude={loc.coordinates[1]}>
             <MarkerContent>
               <motion.div
                 className="flex h-5 w-5 items-center justify-center rounded-full border-2 border-white bg-stone-800 text-[9px] font-bold text-white shadow-md"
@@ -126,10 +132,7 @@ function TripMap({ data }: { data: ItineraryData['mapData'] }) {
 
         {/* End Location Marker */}
         {endLocation && (
-          <MapMarker
-            longitude={endLocation.coordinates[0]}
-            latitude={endLocation.coordinates[1]}
-          >
+          <MapMarker longitude={endLocation.coordinates[0]} latitude={endLocation.coordinates[1]}>
             <MarkerContent>
               <div className="flex h-6 w-6 items-center justify-center rounded-full border-2 border-white bg-red-600 text-[8px] font-bold text-white shadow-md">
                 END
@@ -203,7 +206,7 @@ export default function MinimalisticTheme({ data, onHeroImageChange }: Minimalis
         {onHeroImageChange && (
           <div
             className={`absolute inset-0 z-30 flex items-center justify-center bg-black/40 transition-opacity duration-200 ${
-              isHeroHovered ? 'opacity-100' : 'opacity-0 pointer-events-none'
+              isHeroHovered ? 'opacity-100' : 'pointer-events-none opacity-0'
             }`}
           >
             <button
@@ -212,13 +215,25 @@ export default function MinimalisticTheme({ data, onHeroImageChange }: Minimalis
                 const event = new CustomEvent('openHeroImagePicker');
                 window.dispatchEvent(event);
               }}
-              className="flex flex-col items-center gap-3 text-white hover:scale-105 transition-transform"
+              className="flex flex-col items-center gap-3 text-white transition-transform hover:scale-105"
             >
               <svg className="h-12 w-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={1.5}
+                  d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"
+                />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={1.5}
+                  d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"
+                />
               </svg>
-              <span className="text-sm font-medium uppercase tracking-wider">Change Hero Image</span>
+              <span className="text-sm font-medium tracking-wider uppercase">
+                Change Hero Image
+              </span>
             </button>
           </div>
         )}
@@ -244,6 +259,82 @@ export default function MinimalisticTheme({ data, onHeroImageChange }: Minimalis
         </div>
       </section>
 
+      {/* Trip at a Glance */}
+      {data.tripOverview && data.tripOverview.destinations.length > 0 && (
+        <section className="border-b border-stone-100 bg-white">
+          <div className="mx-auto max-w-screen-xl px-6 py-16 md:py-20">
+            <h2 className="mb-10 text-center text-xs font-medium tracking-[0.3em] text-stone-400 uppercase">
+              Your Destinations
+            </h2>
+
+            {/* Destinations flow */}
+            <div className="mb-12 flex flex-wrap items-center justify-center gap-3 md:gap-4">
+              {data.tripOverview.destinations.map((dest, idx) => (
+                <React.Fragment key={dest}>
+                  <span className="font-serif text-xl text-stone-700 italic md:text-2xl">
+                    {dest}
+                  </span>
+                  {idx < data.tripOverview!.destinations.length - 1 && (
+                    <span className="text-stone-300">—</span>
+                  )}
+                </React.Fragment>
+              ))}
+            </div>
+
+            {/* Trip details grid */}
+            <div className="mx-auto flex max-w-3xl flex-wrap items-center justify-center gap-8 text-center md:gap-12">
+              {data.tripOverview.travelDates && (
+                <div>
+                  <span className="mb-1 block text-[10px] font-medium tracking-[0.2em] text-stone-400 uppercase">
+                    Travel Dates
+                  </span>
+                  <span className="text-sm text-stone-600">
+                    {data.tripOverview.travelDates.start.split(',')[0]} —{' '}
+                    {data.tripOverview.travelDates.end.split(',')[0]}
+                  </span>
+                </div>
+              )}
+
+              {(data.tripOverview.startCity || data.tripOverview.endCity) && (
+                <div>
+                  <span className="mb-1 block text-[10px] font-medium tracking-[0.2em] text-stone-400 uppercase">
+                    {data.tripOverview.startCity === data.tripOverview.endCity
+                      ? 'Start & End'
+                      : 'Route'}
+                  </span>
+                  <span className="text-sm text-stone-600">
+                    {data.tripOverview.startCity === data.tripOverview.endCity
+                      ? data.tripOverview.startCity
+                      : `${data.tripOverview.startCity || '—'} → ${data.tripOverview.endCity || '—'}`}
+                  </span>
+                </div>
+              )}
+
+              {data.tripOverview.travelerCount && data.tripOverview.travelerCount > 0 && (
+                <div>
+                  <span className="mb-1 block text-[10px] font-medium tracking-[0.2em] text-stone-400 uppercase">
+                    Travelers
+                  </span>
+                  <span className="text-sm text-stone-600">
+                    {data.tripOverview.travelerCount}{' '}
+                    {data.tripOverview.travelerCount === 1 ? 'Guest' : 'Guests'}
+                  </span>
+                </div>
+              )}
+
+              {data.tripOverview.tourType && (
+                <div>
+                  <span className="mb-1 block text-[10px] font-medium tracking-[0.2em] text-stone-400 uppercase">
+                    Experience
+                  </span>
+                  <span className="text-sm text-stone-600">{data.tripOverview.tourType}</span>
+                </div>
+              )}
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* Main Content */}
       <main className="mx-auto max-w-screen-xl px-6 py-24 md:py-32">
         <div className="grid grid-cols-1 gap-24 lg:grid-cols-[1fr_400px]">
@@ -266,11 +357,13 @@ export default function MinimalisticTheme({ data, onHeroImageChange }: Minimalis
                   const accommodation = day.accommodation;
                   // Find accommodation details from accommodations array by name match or fallback to ID if possible (though we only store name in Day)
                   // Improved matching: try to find by name since that's what we have in Day
-                  const accommodationDetails = data.accommodations.find(a => a.name === day.accommodation);
+                  const accommodationDetails = data.accommodations.find(
+                    (a) => a.name === day.accommodation,
+                  );
 
-                   // Check previous day for redundant info
+                  // Check previous day for redundant info
                   const previousDay = dayIndex > 0 ? data.itinerary[dayIndex - 1] : null;
-                  
+
                   // Hide accommodation if it's the same as previous day AND consecutive
                   const isSameAccommodation = previousDay?.accommodation === day.accommodation;
                   const shouldHideAccommodation = isSameAccommodation && dayIndex > 0;
@@ -285,7 +378,7 @@ export default function MinimalisticTheme({ data, onHeroImageChange }: Minimalis
                       <div className="flex flex-col gap-8 md:flex-row md:gap-16">
                         <div className="shrink-0 md:w-32">
                           <span className="font-serif text-5xl text-stone-200 italic transition-colors group-hover:text-stone-300">
-                            0{day.day}
+                            {day.day < 10 ? `0${day.day}` : day.day}
                           </span>
                           <p className="mt-2 text-xs tracking-widest text-stone-500 uppercase">
                             {day.date}
@@ -293,9 +386,12 @@ export default function MinimalisticTheme({ data, onHeroImageChange }: Minimalis
                         </div>
 
                         <div className="flex-1 space-y-12">
-                          <h3 className="font-serif text-3xl leading-tight text-stone-800 md:text-4xl">
-                            {day.title}
-                          </h3>
+                          {/* Day header with destination */}
+                          <div>
+                            <h3 className="font-serif text-3xl leading-tight text-stone-800 md:text-4xl">
+                              {day.title}
+                            </h3>
+                          </div>
 
                           {day.description && (
                             <p className="text-lg leading-relaxed text-stone-600">
@@ -364,68 +460,117 @@ export default function MinimalisticTheme({ data, onHeroImageChange }: Minimalis
                           {/* Accommodation Image Section - Show if different from previous day */}
                           {!shouldHideAccommodation && accommodation && accommodationDetails && (
                             <div className="mt-8">
-                                <div className="relative h-64 w-full overflow-hidden rounded-2xl">
-                                    <Image
-                                        src={day.previewImage || accommodationDetails.image}
-                                        alt={accommodationDetails.name}
-                                        fill
-                                        className="object-cover"
-                                    />
-                                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-                                    <div className="absolute bottom-6 left-6 max-w-2xl text-balance">
-                                        <span className="text-[10px] font-bold tracking-[0.3em] text-white/80 uppercase">
-                                            Your Stay
-                                        </span>
-                                        <h4 className="mt-1 font-serif text-2xl text-white">
-                                            {accommodationDetails.name}
-                                        </h4>
-                                    </div>
+                              <div className="relative h-64 w-full overflow-hidden rounded-2xl">
+                                <Image
+                                  src={day.previewImage || accommodationDetails.image}
+                                  alt={accommodationDetails.name}
+                                  fill
+                                  className="object-cover"
+                                />
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                                <div className="absolute bottom-6 left-6 max-w-2xl text-balance">
+                                  <span className="text-[10px] font-bold tracking-[0.3em] text-white/80 uppercase">
+                                    Your Stay
+                                  </span>
+                                  <h4 className="mt-1 font-serif text-2xl text-white">
+                                    {accommodationDetails.name}
+                                  </h4>
                                 </div>
-                                {accommodationDetails.description && (
-                                    <div className="mt-4 px-1">
-                                         <p className="text-sm leading-relaxed text-stone-700">
-                                            {accommodationDetails.description}
-                                        </p>
-                                    </div>
-                                )}
+                              </div>
+                              {accommodationDetails.description && (
+                                <div className="mt-4 px-1">
+                                  <p className="text-sm leading-relaxed text-stone-700">
+                                    {accommodationDetails.description}
+                                  </p>
+                                </div>
+                              )}
                             </div>
                           )}
 
-                          <div className="space-y-10 border-l border-stone-200 pl-8">
-                            {day.activities.map((activity, idx) => (
-                              <div key={idx} className="relative">
-                                <div className="absolute top-2 -left-[37px] h-2 w-2 rounded-full bg-stone-500 outline outline-8 outline-[#FDFCFB]" />
-                                <div className="space-y-2">
-                                  <div className="flex items-baseline gap-4">
-                                    <span className="text-[10px] font-medium tracking-tighter text-stone-500 uppercase">
-                                      {activity.time}
-                                    </span>
-                                    <h4 className="text-lg font-medium text-stone-700">
-                                      {activity.activity}
-                                    </h4>
+                          {/* Activities Timeline */}
+                          <div className="space-y-8">
+                            <div className="flex items-center gap-4">
+                              <span className="text-xs font-medium tracking-[0.2em] text-stone-400 uppercase">
+                                Your Day Unfolds
+                              </span>
+                              <div className="h-px flex-1 bg-stone-200" />
+                            </div>
+
+                            <div className="space-y-8 border-l border-stone-200 pl-8">
+                              {day.activities.map((activity, idx) => {
+                                // Generate narrative transition based on moment
+                                const getTransitionText = (moment: string, isFirst: boolean) => {
+                                  if (isFirst) {
+                                    switch (moment) {
+                                      case 'Morning':
+                                        return 'As the sun rises over the landscape, your day begins with';
+                                      case 'Full Day':
+                                        return 'Today is dedicated to';
+                                      case 'Half Day':
+                                        return 'This half-day experience brings you';
+                                      default:
+                                        return 'Your adventure starts with';
+                                    }
+                                  }
+                                  switch (moment) {
+                                    case 'Afternoon':
+                                      return 'As the day warms, continue with';
+                                    case 'Evening':
+                                      return 'As golden hour approaches, enjoy';
+                                    case 'Night':
+                                      return 'Under the starlit sky, experience';
+                                    default:
+                                      return 'Then, discover';
+                                  }
+                                };
+
+                                const transitionText = getTransitionText(activity.time, idx === 0);
+
+                                return (
+                                  <div key={idx} className="relative">
+                                    <div className="absolute top-1.5 -left-[37px] h-2.5 w-2.5 rounded-full bg-stone-400 outline outline-4 outline-[#FDFCFB]" />
+                                    <div className="space-y-3">
+                                      {/* Narrative intro */}
+                                      <p className="text-sm text-stone-500 italic">
+                                        {transitionText}
+                                      </p>
+                                      {/* Activity header with moment badge */}
+                                      <div className="flex flex-wrap items-center gap-3">
+                                        <h4 className="text-lg font-medium text-stone-800">
+                                          {activity.activity}
+                                        </h4>
+                                        <span className="rounded-full bg-stone-100 px-2.5 py-0.5 text-[10px] font-medium tracking-wide text-stone-500">
+                                          {activity.time}
+                                        </span>
+                                      </div>
+                                      {/* Description */}
+                                      {activity.description && (
+                                        <p className="max-w-2xl leading-relaxed text-stone-600">
+                                          {activity.description}
+                                        </p>
+                                      )}
+                                      {/* Location */}
+                                      {activity.location && (
+                                        <span className="inline-flex items-center gap-1.5 text-[11px] tracking-wider text-stone-500 uppercase">
+                                          <svg
+                                            width="10"
+                                            height="10"
+                                            viewBox="0 0 24 24"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            strokeWidth="2.5"
+                                          >
+                                            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" />
+                                            <circle cx="12" cy="10" r="3" />
+                                          </svg>
+                                          {activity.location}
+                                        </span>
+                                      )}
+                                    </div>
                                   </div>
-                                  <p className="max-w-2xl leading-relaxed text-balance text-stone-600">
-                                    {activity.description}
-                                  </p>
-                                  {activity.location && (
-                                    <span className="inline-flex items-center gap-1.5 text-[11px] tracking-wider text-stone-500 uppercase">
-                                      <svg
-                                        width="10"
-                                        height="10"
-                                        viewBox="0 0 24 24"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        strokeWidth="2.5"
-                                      >
-                                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" />
-                                        <circle cx="12" cy="10" r="3" />
-                                      </svg>
-                                      {activity.location}
-                                    </span>
-                                  )}
-                                </div>
-                              </div>
-                            ))}
+                                );
+                              })}
+                            </div>
                           </div>
 
                           <div className="flex flex-col justify-between gap-8 rounded-2xl bg-stone-50 p-8 md:flex-row">
@@ -433,9 +578,15 @@ export default function MinimalisticTheme({ data, onHeroImageChange }: Minimalis
                               <span className="mb-2 block text-[10px] tracking-[0.2em] text-stone-400 uppercase">
                                 Accommodation
                               </span>
-                              <span className={`font-serif text-lg text-stone-700 italic ${shouldHideAccommodation ? 'opacity-50' : ''}`}>
+                              <span
+                                className={`font-serif text-lg text-stone-700 italic ${shouldHideAccommodation ? 'opacity-50' : ''}`}
+                              >
                                 {day.accommodation}
-                                {shouldHideAccommodation && <span className="ml-2 text-xs not-italic text-stone-400">(Cont.)</span>}
+                                {shouldHideAccommodation && (
+                                  <span className="ml-2 text-xs text-stone-400 not-italic">
+                                    (Cont.)
+                                  </span>
+                                )}
                               </span>
                             </div>
                             <div className="md:text-right">
@@ -478,6 +629,24 @@ export default function MinimalisticTheme({ data, onHeroImageChange }: Minimalis
                       <span className="text-stone-400">Destination</span>
                       <span className="font-medium italic">{data.location}</span>
                     </div>
+                    {data.tripOverview?.travelDates && (
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-stone-400">Dates</span>
+                        <span className="text-right text-xs font-medium">
+                          {data.tripOverview.travelDates.start.split(',')[0]} —{' '}
+                          {data.tripOverview.travelDates.end.split(',')[0]}
+                        </span>
+                      </div>
+                    )}
+                    {data.tripOverview?.travelerCount && data.tripOverview.travelerCount > 0 && (
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-stone-400">Travelers</span>
+                        <span className="font-medium">
+                          {data.tripOverview.travelerCount}{' '}
+                          {data.tripOverview.travelerCount === 1 ? 'Guest' : 'Guests'}
+                        </span>
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -517,20 +686,20 @@ export default function MinimalisticTheme({ data, onHeroImageChange }: Minimalis
                 </div>
 
                 {data.excludedItems && data.excludedItems.length > 0 && (
-                   <div className="mt-8 pt-8 border-t border-stone-100">
-                      <h4 className="mb-4 flex items-center gap-2 text-[11px] font-bold tracking-[0.2em] text-stone-500 uppercase">
-                        <span className="h-1.5 w-1.5 rounded-full bg-stone-300" />
-                        Exclusions
-                      </h4>
-                      <ul className="space-y-3">
-                        {data.excludedItems.map((item, i) => (
-                          <li key={i} className="flex items-start gap-3 text-sm text-stone-700">
-                            <span className="font-bold text-stone-300">-</span>
-                            {item}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
+                  <div className="mt-8 border-t border-stone-100 pt-8">
+                    <h4 className="mb-4 flex items-center gap-2 text-[11px] font-bold tracking-[0.2em] text-stone-500 uppercase">
+                      <span className="h-1.5 w-1.5 rounded-full bg-stone-300" />
+                      Exclusions
+                    </h4>
+                    <ul className="space-y-3">
+                      {data.excludedItems.map((item, i) => (
+                        <li key={i} className="flex items-start gap-3 text-sm text-stone-700">
+                          <span className="font-bold text-stone-300">-</span>
+                          {item}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                 )}
 
                 <button
@@ -560,13 +729,26 @@ export default function MinimalisticTheme({ data, onHeroImageChange }: Minimalis
                         {confirmStatus === 'success' ? (
                           <div className="text-center">
                             <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
-                              <svg className="h-8 w-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                              <svg
+                                className="h-8 w-8 text-green-600"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M5 13l4 4L19 7"
+                                />
                               </svg>
                             </div>
-                            <h3 className="mb-2 font-serif text-2xl text-stone-900">Proposal Confirmed!</h3>
+                            <h3 className="mb-2 font-serif text-2xl text-stone-900">
+                              Proposal Confirmed!
+                            </h3>
                             <p className="mb-6 text-stone-600">
-                              Thank you for confirming. The tour operator has been notified and will contact you shortly to finalize your booking.
+                              Thank you for confirming. The tour operator has been notified and will
+                              contact you shortly to finalize your booking.
                             </p>
                             <button
                               onClick={() => {
@@ -580,13 +762,16 @@ export default function MinimalisticTheme({ data, onHeroImageChange }: Minimalis
                           </div>
                         ) : (
                           <>
-                            <h3 className="mb-2 font-serif text-2xl text-stone-900">Confirm Your Proposal</h3>
+                            <h3 className="mb-2 font-serif text-2xl text-stone-900">
+                              Confirm Your Proposal
+                            </h3>
                             <p className="mb-6 text-sm text-stone-600">
-                              By confirming, you agree to proceed with this trip. The tour operator will be notified and will contact you to finalize the details.
+                              By confirming, you agree to proceed with this trip. The tour operator
+                              will be notified and will contact you to finalize the details.
                             </p>
 
                             <div className="mb-6">
-                              <label className="mb-2 block text-xs font-semibold uppercase tracking-wide text-stone-500">
+                              <label className="mb-2 block text-xs font-semibold tracking-wide text-stone-500 uppercase">
                                 Your Name
                               </label>
                               <input
@@ -594,7 +779,7 @@ export default function MinimalisticTheme({ data, onHeroImageChange }: Minimalis
                                 value={confirmName}
                                 onChange={(e) => setConfirmName(e.target.value)}
                                 placeholder="Enter your full name"
-                                className="w-full rounded-lg border border-stone-200 bg-stone-50 px-4 py-3 text-stone-900 placeholder-stone-400 focus:border-stone-400 focus:outline-none focus:ring-2 focus:ring-stone-200"
+                                className="w-full rounded-lg border border-stone-200 bg-stone-50 px-4 py-3 text-stone-900 placeholder-stone-400 focus:border-stone-400 focus:ring-2 focus:ring-stone-200 focus:outline-none"
                               />
                             </div>
 
@@ -624,8 +809,20 @@ export default function MinimalisticTheme({ data, onHeroImageChange }: Minimalis
                                 {isConfirming ? (
                                   <span className="flex items-center justify-center gap-2">
                                     <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24">
-                                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                                      <circle
+                                        className="opacity-25"
+                                        cx="12"
+                                        cy="12"
+                                        r="10"
+                                        stroke="currentColor"
+                                        strokeWidth="4"
+                                        fill="none"
+                                      />
+                                      <path
+                                        className="opacity-75"
+                                        fill="currentColor"
+                                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                      />
                                     </svg>
                                     Confirming...
                                   </span>
@@ -657,6 +854,31 @@ export default function MinimalisticTheme({ data, onHeroImageChange }: Minimalis
                     ))}
                   </ul>
                 </div>
+
+                {/* Organization branding */}
+                {data.organization && (
+                  <div className="border-t border-stone-100 pt-6">
+                    <div className="flex items-center gap-3">
+                      {data.organization.logoUrl && (
+                        <Image
+                          src={data.organization.logoUrl}
+                          alt={data.organization.name}
+                          width={32}
+                          height={32}
+                          className="rounded-full object-cover"
+                        />
+                      )}
+                      <div>
+                        <span className="block text-[10px] tracking-wider text-stone-400 uppercase">
+                          Curated by
+                        </span>
+                        <span className="text-sm font-medium text-stone-700">
+                          {data.organization.name}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </aside>
@@ -674,6 +896,7 @@ export default function MinimalisticTheme({ data, onHeroImageChange }: Minimalis
             opacity: 1;
           }
         }
+
         @keyframes fade-in-up {
           from {
             opacity: 0;
@@ -684,9 +907,11 @@ export default function MinimalisticTheme({ data, onHeroImageChange }: Minimalis
             transform: translateY(0);
           }
         }
+
         .animate-reveal {
           animation: reveal 1.5s ease-out forwards;
         }
+
         .animate-fade-in-up {
           animation: fade-in-up 0.8s ease-out forwards;
           opacity: 0;

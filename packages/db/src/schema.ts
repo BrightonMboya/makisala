@@ -630,7 +630,6 @@ export const proposalActivities = pgTable('proposal_activities', {
   moment: text('moment').notNull(), // 'Morning', 'Afternoon', 'Evening', 'Half Day', 'Full Day', 'Night'
   isOptional: boolean('is_optional').default(false).notNull(),
   imageUrl: text('image_url'),
-  time: text('time'), // Optional: specific time like "08:00"
   createdAt: timestamp('created_at', { precision: 3, mode: 'string' })
     .default(sql`CURRENT_TIMESTAMP`)
     .notNull(),

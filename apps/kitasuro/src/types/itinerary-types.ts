@@ -150,6 +150,19 @@ export interface OrganizationInfo {
   logoUrl: string | null;
 }
 
+export interface TripOverview {
+  tourType?: string; // Safari, Beach, Adventure, etc.
+  country?: string; // Main country
+  travelerCount?: number; // Total number of travelers
+  travelDates?: {
+    start: string; // e.g., "January 15, 2025"
+    end: string; // e.g., "January 20, 2025"
+  };
+  startCity?: string; // Pickup city
+  endCity?: string; // Dropoff city
+  destinations: string[]; // List of all destinations/parks to visit
+}
+
 export interface ItineraryData {
   id: string;
   title: string;
@@ -160,6 +173,7 @@ export interface ItineraryData {
   heroImage: string;
   theme: ThemeType;
   organization?: OrganizationInfo;
+  tripOverview?: TripOverview;
   itinerary: Day[];
   accommodations: Accommodation[];
   nationalParks?: Record<string, NationalParkInfo>; // Key is destination value (e.g., 'akagera-np')

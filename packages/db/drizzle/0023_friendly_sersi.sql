@@ -1,0 +1,1 @@
+ALTER TABLE "proposal_activities" DROP COLUMN "time";
