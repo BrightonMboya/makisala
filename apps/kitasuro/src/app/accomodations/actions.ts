@@ -236,3 +236,4 @@ export async function updateAccommodation(
     return { success: false, error: 'Failed to update accommodation' };
   }
 }
+
