@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation';
 import { ArrowLeft, Globe, MapPin } from 'lucide-react';
 import { Button } from '@repo/ui/button';
 import { getPublicUrl } from '@/lib/storage';
-import { getAccommodationWithContent } from '../actions';
+import { getAccommodationById } from '../actions';
 import { ImageGallery } from '../_components/ImageGallery';
 import { ContentDisplay } from '../_components/ContentDisplay';
 
@@ -19,7 +19,7 @@ export default async function AccommodationDetailPage({
     notFound();
   }
 
-  const acc = await getAccommodationWithContent(id);
+  const acc = await getAccommodationById(id);
 
   if (!acc) {
     notFound();
@@ -48,7 +48,7 @@ export default async function AccommodationDetailPage({
             asChild 
             className="absolute left-4 top-4 z-20 h-10 w-10 rounded-full bg-white/80 backdrop-blur-sm hover:bg-white shadow-sm"
           >
-            <Link href="/dashboard">
+            <Link href="/content-library">
               <ArrowLeft className="h-5 w-5" />
               <span className="sr-only">Back</span>
             </Link>
@@ -87,8 +87,8 @@ export default async function AccommodationDetailPage({
           <div className="mt-2 space-y-12">
              <ContentDisplay
               enhancedDescription={acc.enhancedDescription}
-              amenities={acc.amenities as { category: string; items: string[] }[] | null}
-              roomTypes={acc.roomTypes as { name: string; description: string; capacity?: string }[] | null}
+              amenities={acc.amenities}
+              roomTypes={acc.roomTypes}
               locationHighlights={acc.locationHighlights}
               pricingInfo={acc.pricingInfo}
             />

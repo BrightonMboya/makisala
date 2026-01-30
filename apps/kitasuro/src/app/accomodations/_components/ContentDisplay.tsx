@@ -1,8 +1,7 @@
 'use client';
 
 import { Badge } from '@repo/ui/badge';
-import { Bed, MapPin, DollarSign, Sparkles, Check, Info } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { MapPin, DollarSign, Sparkles, Check } from 'lucide-react';
 
 interface Amenity {
   category: string;
@@ -46,7 +45,7 @@ export function ContentDisplay({
       {/* Enhanced Description */}
       {enhancedDescription && (
         <section className="py-8 first:pt-0">
-          <h2 className="mb-6 text-2xl font-serif text-3xl text-gray-900">Property Overview</h2>
+          <h2 className="mb-6 font-serif text-3xl text-gray-900">Property Overview</h2>
           <div className="prose prose-lg prose-gray max-w-none text-gray-600">
             {enhancedDescription.split('\n\n').map((paragraph, idx) => (
               <p key={idx} className="mb-6 leading-relaxed last:mb-0">
@@ -60,7 +59,7 @@ export function ContentDisplay({
       {/* Room Types */}
       {roomTypes && roomTypes.length > 0 && (
         <section className="py-8">
-          <h2 className="mb-6 text-2xl font-serif text-3xl text-gray-900">Accommodations</h2>
+          <h2 className="mb-6 font-serif text-3xl text-gray-900">Accommodations</h2>
           <div className="grid gap-6">
             {roomTypes.map((room, idx) => (
               <div key={idx} className="group relative rounded-xl bg-gray-50 p-6 transition-colors hover:bg-gray-100/80">
@@ -82,7 +81,7 @@ export function ContentDisplay({
       {/* Fast Facts / Highlights */}
       {(locationHighlights?.length || amenities?.length) && (
         <section className="py-8">
-          <h2 className="mb-6 text-2xl font-serif text-3xl text-gray-900">Fast Facts</h2>
+          <h2 className="mb-6 font-serif text-3xl text-gray-900">Fast Facts</h2>
           
           <div className="grid gap-8 md:grid-cols-2">
             {locationHighlights && locationHighlights.length > 0 && (

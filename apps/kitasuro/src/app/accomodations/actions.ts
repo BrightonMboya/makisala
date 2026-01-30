@@ -237,27 +237,3 @@ export async function updateAccommodation(
   }
 }
 
-export async function getAccommodationWithContent(id: string) {
-  if (!id || typeof id !== 'string') {
-    return null;
-  }
-
-  try {
-    const [acc] = await db.select().from(accommodations).where(eq(accommodations.id, id)).limit(1);
-
-    if (!acc) return null;
-
-    const images = await db
-      .select()
-      .from(accommodationImages)
-      .where(eq(accommodationImages.accommodationId, id));
-
-    return {
-      ...acc,
-      images,
-    };
-  } catch (error) {
-    console.error('Database error in getAccommodationWithContent:', error);
-    return null;
-  }
-}

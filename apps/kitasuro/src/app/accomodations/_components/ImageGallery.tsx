@@ -110,7 +110,7 @@ export function ImageGallery({ images, accommodationName, className }: ImageGall
             <Button
               variant="ghost"
               size="icon"
-              className="absolute left-4 z-50 text-white hover:bg-white/20"
+              className="absolute left-4 top-1/2 -translate-y-1/2 z-50 text-white hover:bg-white/20"
               onClick={handlePrevious}
             >
               <ChevronLeft className="h-8 w-8" />
@@ -119,7 +119,7 @@ export function ImageGallery({ images, accommodationName, className }: ImageGall
             <Button
               variant="ghost"
               size="icon"
-              className="absolute right-4 z-50 text-white hover:bg-white/20"
+              className="absolute right-4 top-1/2 -translate-y-1/2 z-50 text-white hover:bg-white/20"
               onClick={handleNext}
             >
               <ChevronRight className="h-8 w-8" />
