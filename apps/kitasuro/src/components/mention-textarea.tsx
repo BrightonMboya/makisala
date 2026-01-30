@@ -248,7 +248,7 @@ export function MentionTextarea({
   }, [value, memberNames]);
 
   // Determine if we should show the dropdown
-  const showDropdown = isOpen && (isLoadingMembers || filteredMembers.length > 0);
+  const showDropdown = isOpen && (isLoadingMembers || teamMembers.filter((m) => m.id !== currentUserId).length === 0 || filteredMembers.length > 0);
 
   return (
     <Popover open={showDropdown} onOpenChange={setIsOpen}>
@@ -299,6 +299,10 @@ export function MentionTextarea({
           <div className="flex items-center justify-center gap-2 px-3 py-3 text-sm text-stone-500">
             <Loader2 className="h-4 w-4 animate-spin" />
             <span>Loading team members...</span>
+          </div>
+        ) : teamMembers.filter((m) => m.id !== currentUserId).length === 0 ? (
+          <div className="px-3 py-2 text-sm text-stone-500">
+            No team members yet. Invite your team from Settings.
           </div>
         ) : filteredMembers.length === 0 ? (
           <div className="px-3 py-2 text-sm text-stone-500">No team members found</div>

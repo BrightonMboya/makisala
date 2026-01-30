@@ -1794,6 +1794,15 @@ export async function updateProposalNote(noteId: string, content: string) {
       return { success: false, error: 'Unauthorized' };
     }
 
+    const note = await db.query.proposalNotes.findFirst({
+      where: eq(proposalNotes.id, noteId),
+      columns: { userId: true },
+    });
+
+    if (!note || note.userId !== session.user.id) {
+      return { success: false, error: 'You can only edit your own notes' };
+    }
+
     await db
       .update(proposalNotes)
       .set({ content, updatedAt: new Date() })
@@ -1811,6 +1820,15 @@ export async function deleteProposalNote(noteId: string) {
     const session = await getSession();
     if (!session?.user) {
       return { success: false, error: 'Unauthorized' };
+    }
+
+    const note = await db.query.proposalNotes.findFirst({
+      where: eq(proposalNotes.id, noteId),
+      columns: { userId: true },
+    });
+
+    if (!note || note.userId !== session.user.id) {
+      return { success: false, error: 'You can only delete your own notes' };
     }
 
     // Delete the note — replies are cascade-deleted via the parentId FK constraint
