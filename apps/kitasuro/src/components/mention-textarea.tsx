@@ -81,13 +81,16 @@ export function MentionTextarea({
   );
 
   // Update mentioned users when value changes
+  const mentionedUserIdsRef = useRef(mentionedUserIds);
+  mentionedUserIdsRef.current = mentionedUserIds;
+
   useEffect(() => {
     const newMentioned = extractMentionedUsers(value);
-    if (!setsEqual(newMentioned, mentionedUserIds)) {
+    if (!setsEqual(newMentioned, mentionedUserIdsRef.current)) {
       setMentionedUserIds(newMentioned);
       onMentionsChange?.(Array.from(newMentioned));
     }
-  }, [value, extractMentionedUsers, onMentionsChange, mentionedUserIds]);
+  }, [value, extractMentionedUsers, onMentionsChange]);
 
   // Sync scroll between textarea and highlight overlay
   const syncScroll = () => {

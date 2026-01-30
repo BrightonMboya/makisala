@@ -26,6 +26,8 @@ import { HighlightedText } from './highlighted-text';
 import { authClient } from '@/lib/auth-client';
 import { cn } from '@/lib/utils';
 
+const MAX_REPLY_DEPTH = 3;
+
 interface NotesPanelProps {
   proposalId: string;
   /** Compact mode for dashboard cards - just shows icon */
@@ -301,7 +303,7 @@ export function NotesPanel({ proposalId, compact = false }: NotesPanelProps) {
     const isExpanded = expandedNotes.has(note.id);
     const hasReplies = note.replies.length > 0;
     const isReplying = replyingTo === note.id;
-    const maxDepth = 3; // Limit nesting depth for readability
+    const maxDepth = MAX_REPLY_DEPTH;
 
     return (
       <div

@@ -7,6 +7,7 @@ import {
   pgTable,
   text,
   timestamp,
+  index,
   uuid,
   varchar,
 } from 'drizzle-orm/pg-core';
@@ -760,13 +761,15 @@ export const proposalNotes = pgTable('proposal_notes', {
     .notNull()
     .references(() => proposals.id, { onDelete: 'cascade' }),
 
-  parentId: uuid('parent_id'), // Self-reference for nested replies (null = top-level note)
+  parentId: uuid('parent_id').references((): any => proposalNotes.id, { onDelete: 'cascade' }),
   userId: text('user_id').references(() => user.id),
   userName: text('user_name'),
   content: text('content').notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
-});
+}, (table) => [
+  index('idx_proposal_notes_parent_id').on(table.parentId),
+]);
 
 export const proposalNotesRelations = relations(proposalNotes, ({ one, many }) => ({
   proposal: one(proposals, {

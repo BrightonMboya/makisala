@@ -1579,7 +1579,8 @@ export async function getTeamMembersForMention() {
       })
       .from(member)
       .innerJoin(user, eq(member.userId, user.id))
-      .where(eq(member.organizationId, orgId));
+      .where(eq(member.organizationId, orgId))
+      .limit(100);
 
     return members;
   } catch (error) {
@@ -1690,14 +1691,7 @@ export async function getProposalNotes(
       return { notes: [], nextCursor: null };
     }
 
-    // Try the full query with replies support first (requires parent_id column).
-    // Falls back to the simple query if the column doesn't exist yet.
-    try {
-      return await fetchNotesWithReplies(proposalId, cursor);
-    } catch {
-      // parent_id column likely doesn't exist yet — fall back to flat query
-      return await fetchNotesFlat(proposalId, cursor);
-    }
+    return await fetchNotesWithReplies(proposalId, cursor);
   } catch (error) {
     console.error('Error fetching proposal notes:', error);
     return { notes: [], nextCursor: null };
@@ -1746,34 +1740,6 @@ async function fetchNotesWithReplies(proposalId: string, cursor?: string) {
   };
 }
 
-async function fetchNotesFlat(proposalId: string, cursor?: string) {
-  const whereConditions = [eq(proposalNotes.proposalId, proposalId)];
-
-  if (cursor) {
-    const cursorNote = await db.query.proposalNotes.findFirst({
-      where: eq(proposalNotes.id, cursor),
-      columns: { createdAt: true },
-    });
-    if (cursorNote) {
-      whereConditions.push(lt(proposalNotes.createdAt, cursorNote.createdAt));
-    }
-  }
-
-  const notesList = await db.query.proposalNotes.findMany({
-    where: and(...whereConditions),
-    orderBy: (notes, { desc }) => [desc(notes.createdAt)],
-    limit: NOTES_PAGE_SIZE + 1,
-  });
-
-  const hasMore = notesList.length > NOTES_PAGE_SIZE;
-  const notesToReturn = hasMore ? notesList.slice(0, NOTES_PAGE_SIZE) : notesList;
-  const nextCursor = hasMore ? notesToReturn[notesToReturn.length - 1]?.id : null;
-
-  return {
-    notes: notesToReturn.map(transformNote),
-    nextCursor,
-  };
-}
 
 // Helper to count all nested replies
 function countReplies(note: any): number {
@@ -1847,9 +1813,8 @@ export async function deleteProposalNote(noteId: string) {
       return { success: false, error: 'Unauthorized' };
     }
 
-    // Delete the note and all its nested replies (cascade via parentId FK would be ideal,
-    // but since we don't have that constraint, we delete recursively)
-    await deleteNoteAndReplies(noteId);
+    // Delete the note — replies are cascade-deleted via the parentId FK constraint
+    await db.delete(proposalNotes).where(eq(proposalNotes.id, noteId));
 
     return { success: true, deletedId: noteId };
   } catch (error) {
@@ -1858,19 +1823,3 @@ export async function deleteProposalNote(noteId: string) {
   }
 }
 
-// Helper to recursively delete a note and all its replies
-async function deleteNoteAndReplies(noteId: string) {
-  // Find all direct replies
-  const replies = await db
-    .select({ id: proposalNotes.id })
-    .from(proposalNotes)
-    .where(eq(proposalNotes.parentId, noteId));
-
-  // Recursively delete replies first
-  for (const reply of replies) {
-    await deleteNoteAndReplies(reply.id);
-  }
-
-  // Delete the note itself
-  await db.delete(proposalNotes).where(eq(proposalNotes.id, noteId));
-}
