@@ -24,9 +24,9 @@ import {
 import { and, desc, eq, ilike, inArray, isNull, lt, sql } from 'drizzle-orm';
 import {
   sendCommentNotificationEmail,
+  sendNoteMentionEmail,
   sendProposalAcceptanceEmail,
   sendProposalShareEmail,
-  sendNoteMentionEmail,
 } from '@repo/resend';
 import { auth } from '@/lib/auth';
 import { headers } from 'next/headers';
@@ -639,7 +639,16 @@ export async function getProposal(id: string) {
                 },
               },
             },
-            activities: true,
+            activities: {
+              columns: {
+                name: true,
+                description: true,
+                location: true,
+                moment: true,
+                isOptional: true,
+                imageUrl: true,
+              },
+            },
             meals: true,
           },
           orderBy: (days, { asc }) => [asc(days.dayNumber)],
@@ -911,7 +920,6 @@ export async function saveProposal(data: {
               moment: activity.moment || 'Full Day',
               isOptional: activity.isOptional || false,
               imageUrl: activity.imageUrl || null,
-              time: activity.time || null,
             });
           }
         }
@@ -1740,14 +1748,10 @@ async function fetchNotesWithReplies(proposalId: string, cursor?: string) {
   };
 }
 
-
 // Helper to count all nested replies
 function countReplies(note: any): number {
   if (!note.replies || note.replies.length === 0) return 0;
-  return note.replies.reduce(
-    (count: number, reply: any) => count + 1 + countReplies(reply),
-    0
-  );
+  return note.replies.reduce((count: number, reply: any) => count + 1 + countReplies(reply), 0);
 }
 
 // Get replies for a specific note (for lazy loading deep threads)
@@ -1840,4 +1844,3 @@ export async function deleteProposalNote(noteId: string) {
     return { success: false, error: 'Failed to delete note' };
   }
 }
-
