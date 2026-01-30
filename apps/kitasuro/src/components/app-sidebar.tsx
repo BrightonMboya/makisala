@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { FileText, LayoutDashboard, LogOut, Map, Plus, Settings, Users } from 'lucide-react';
+import { FileText, LayoutDashboard, LogOut, Map, Plus, Settings, Users, Library } from 'lucide-react';
 import {
   Sidebar,
   SidebarContent,
@@ -67,6 +67,12 @@ export function AppSidebar() {
         !pathname.includes('pricing') &&
         !pathname.includes('preview') &&
         !pathname.includes('share'),
+    },
+    {
+      icon: Library,
+      label: 'Content Library',
+      href: '/content-library',
+      active: pathname?.startsWith('/content-library'),
     },
     {
       icon: Users,

@@ -1,122 +1,9 @@
 {
-  "id": "86dab39e-6434-4612-a7de-35a4e36673a4",
-  "id": "b3efb2cf-310b-4433-952b-2c2996257d02",
-  "prevId": "e3509f20-4152-435b-a71f-1bb25406de13",
+  "id": "24ce98cd-5d6c-4be6-88dc-2978f05c37f1",
+  "prevId": "d27fa905-9bc3-4a7b-b273-f098f27b2e15",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
-    "public.accommodation_content": {
-      "name": "accommodation_content",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
-        },
-        "accommodation_id": {
-          "name": "accommodation_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "enhanced_description": {
-          "name": "enhanced_description",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "amenities": {
-          "name": "amenities",
-          "type": "json",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "room_types": {
-          "name": "room_types",
-          "type": "json",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "location_highlights": {
-          "name": "location_highlights",
-          "type": "text[]",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "pricing_info": {
-          "name": "pricing_info",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "status": {
-          "name": "status",
-          "type": "content_fetch_status",
-          "typeSchema": "public",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'pending'"
-        },
-        "last_fetched_at": {
-          "name": "last_fetched_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "fetch_error": {
-          "name": "fetch_error",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {
-        "accommodation_content_accommodation_id_accommodations_id_fk": {
-          "name": "accommodation_content_accommodation_id_accommodations_id_fk",
-          "tableFrom": "accommodation_content",
-          "tableTo": "accommodations",
-          "columnsFrom": [
-            "accommodation_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {
-        "accommodation_content_accommodation_id_unique": {
-          "name": "accommodation_content_accommodation_id_unique",
-          "nullsNotDistinct": false,
-          "columns": [
-            "accommodation_id"
-          ]
-        }
-      },
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
     "public.accommodation_images": {
       "name": "accommodation_images",
       "schema": "",
@@ -213,6 +100,36 @@
         "longitude": {
           "name": "longitude",
           "type": "numeric(10, 7)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "enhanced_description": {
+          "name": "enhanced_description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "amenities": {
+          "name": "amenities",
+          "type": "json",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "room_types": {
+          "name": "room_types",
+          "type": "json",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "location_highlights": {
+          "name": "location_highlights",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "pricing_info": {
+          "name": "pricing_info",
+          "type": "text",
           "primaryKey": false,
           "notNull": false
         }
@@ -3059,16 +2976,6 @@
       "values": [
         "admin",
         "member"
-      ]
-    },
-    "public.content_fetch_status": {
-      "name": "content_fetch_status",
-      "schema": "public",
-      "values": [
-        "pending",
-        "fetching",
-        "completed",
-        "failed"
       ]
     }
   },

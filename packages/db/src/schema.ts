@@ -405,6 +405,13 @@ export const accommodations = pgTable('accommodations', {
   description: text('description'),
   latitude: numeric('latitude', { precision: 10, scale: 7 }),
   longitude: numeric('longitude', { precision: 10, scale: 7 }),
+
+  // AI-generated content (merged from accommodation_content)
+  enhancedDescription: text('enhanced_description'),
+  amenities: json('amenities').$type<{ category: string; items: string[] }[]>(),
+  roomTypes: json('room_types').$type<{ name: string; description: string; capacity?: string }[]>(),
+  locationHighlights: text('location_highlights').array(),
+  pricingInfo: text('pricing_info'),
 });
 
 export const accommodationsRelations = relations(accommodations, ({ many }) => ({
@@ -837,3 +844,7 @@ export const dayContentTemplatesRelations = relations(dayContentTemplates, ({ on
 
 export type DayContentTemplate = typeof dayContentTemplates.$inferSelect;
 export type NewDayContentTemplate = typeof dayContentTemplates.$inferInsert;
+
+// Accommodation types
+export type Accommodation = typeof accommodations.$inferSelect;
+export type NewAccommodation = typeof accommodations.$inferInsert;

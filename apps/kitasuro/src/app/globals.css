@@ -61,6 +61,15 @@
     --selection-foreground: oklch(1 0 0);
 }
 
+@keyframes shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+@utility animate-shimmer {
+    animation: shimmer 1.5s ease-in-out infinite;
+}
+
 @layer base {
     * {
         @apply border-border outline-ring/50;
