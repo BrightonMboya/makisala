@@ -64,6 +64,8 @@ export type BuilderContextType = {
   tourTitle: string;
   setTourTitle: React.Dispatch<React.SetStateAction<string>>;
   country: string | null;
+  countries: string[];
+  setCountries: React.Dispatch<React.SetStateAction<string[]>>;
   travelerGroups: TravelerGroup[];
   setTravelerGroups: React.Dispatch<React.SetStateAction<TravelerGroup[]>>;
 

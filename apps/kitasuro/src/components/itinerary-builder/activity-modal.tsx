@@ -9,7 +9,7 @@ import {
   ChevronUp,
   Image as ImageIcon,
 } from 'lucide-react';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import type { BuilderActivity as Activity } from '@/types/itinerary-types';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@repo/ui/select';
 import { Input } from '@repo/ui/input';
@@ -33,10 +33,8 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Combobox } from '@repo/ui/combobox';
-import { commonActivities } from '@/lib/data/itinerary-data';
-import { getAllNationalParks } from '@/app/itineraries/actions';
-import { useQuery } from '@tanstack/react-query';
+import { CreatableAsyncCombobox } from './creatable-async-combobox';
+import { searchActivities, createActivity, searchNationalParks } from '@/app/itineraries/actions';
 
 const moments = ['Morning', 'Afternoon', 'Evening', 'Half Day', 'Full Day', 'Night'] as const;
 
@@ -55,17 +53,26 @@ export function ActivityModal({
 }) {
   const [activities, setActivities] = useState<Activity[]>([]);
 
-  // Use React Query for caching - shares cache with other components
-  const { data: parksData } = useQuery({
-    queryKey: ['nationalParks'],
-    queryFn: getAllNationalParks,
-    staleTime: 5 * 60 * 1000,
-  });
+  // Activity search handler
+  const handleActivitySearch = useCallback(async (query: string) => {
+    const results = await searchActivities(query, 10);
+    return results.map((a) => ({ value: a.name, label: a.name }));
+  }, []);
 
-  const nationalParksList = useMemo(
-    () => (parksData || []).map((p) => ({ value: p.id, label: p.name })),
-    [parksData]
-  );
+  // Activity create handler
+  const handleActivityCreate = useCallback(async (name: string) => {
+    const result = await createActivity(name);
+    if (result.success && result.activity) {
+      return { value: result.activity.name, label: result.activity.name };
+    }
+    return null;
+  }, []);
+
+  // Location search handler
+  const handleLocationSearch = useCallback(async (query: string) => {
+    const results = await searchNationalParks(query, 10);
+    return results.map((p) => ({ value: p.id, label: p.name }));
+  }, []);
 
   useEffect(() => {
     if (isOpen) {
@@ -155,7 +162,9 @@ export function ActivityModal({
                     activity={activity}
                     onUpdate={handleUpdateActivity}
                     onDelete={handleDeleteActivity}
-                    nationalParksList={nationalParksList}
+                    onActivitySearch={handleActivitySearch}
+                    onActivityCreate={handleActivityCreate}
+                    onLocationSearch={handleLocationSearch}
                   />
                 ))}
               </div>
@@ -190,12 +199,16 @@ function SortableActivityRow({
   activity,
   onUpdate,
   onDelete,
-  nationalParksList,
+  onActivitySearch,
+  onActivityCreate,
+  onLocationSearch,
 }: {
   activity: Activity;
   onUpdate: (id: string, field: keyof Activity, value: any) => void;
   onDelete: (id: string) => void;
-  nationalParksList: { value: string; label: string }[];
+  onActivitySearch: (query: string) => Promise<{ value: string; label: string }[]>;
+  onActivityCreate: (name: string) => Promise<{ value: string; label: string } | null>;
+  onLocationSearch: (query: string) => Promise<{ value: string; label: string }[]>;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: activity.id,
@@ -229,20 +242,25 @@ function SortableActivityRow({
           </Button>
         </div>
         <div className="col-span-3">
-          <Combobox
-            items={commonActivities}
+          <CreatableAsyncCombobox
             value={activity.name}
             onChange={(val) => onUpdate(activity.id, 'name', val)}
+            onSearch={onActivitySearch}
+            onCreate={onActivityCreate}
+            initialLabel={activity.name || null}
             placeholder="Select activity"
+            createLabel="Create"
             className="h-9 border-stone-200"
           />
         </div>
         <div className="col-span-3">
-          <Combobox
-            items={nationalParksList}
+          <CreatableAsyncCombobox
             value={activity.location}
             onChange={(val) => onUpdate(activity.id, 'location', val)}
+            onSearch={onLocationSearch}
+            initialLabel={activity.location || null}
             placeholder="Select location"
+            createLabel="Use"
             className="h-9 border-stone-200"
           />
         </div>

@@ -9,32 +9,46 @@ import {
 } from '@repo/ui/dropdown-menu';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@repo/ui/select';
 import {
+  closestCenter,
   DndContext,
   type DragEndEvent,
   KeyboardSensor,
   PointerSensor,
-  closestCenter,
   useSensor,
   useSensors,
 } from '@dnd-kit/core';
 import {
-  SortableContext,
   arrayMove,
+  SortableContext,
   sortableKeyboardCoordinates,
   useSortable,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Copy, GripVertical, MoreVertical, Plus, Trash2, FileText, Sparkles, Loader2 } from 'lucide-react';
-import { useState, useCallback } from 'react';
+import {
+  Copy,
+  FileText,
+  GripVertical,
+  Loader2,
+  MoreVertical,
+  Plus,
+  Sparkles,
+  Trash2,
+} from 'lucide-react';
+import React, { useCallback, useState } from 'react';
 import { ActivityModal } from './activity-modal';
-import { Combobox } from '@repo/ui/combobox';
 import { AsyncCombobox } from './async-combobox';
+import { CreatableAsyncCombobox } from './creatable-async-combobox';
 import { Textarea } from '@repo/ui/textarea';
 import { addDays, format } from 'date-fns';
-import { searchAccommodations, getAccommodationById, getRandomDayTemplate } from '@/app/itineraries/actions';
+import {
+  getAccommodationById,
+  getRandomDayTemplate,
+  searchAccommodations,
+  searchNationalParks,
+} from '@/app/itineraries/actions';
 
-import type { BuilderDay, BuilderActivity } from '@/types/itinerary-types';
+import type { BuilderActivity, BuilderDay } from '@/types/itinerary-types';
 
 type Day = BuilderDay;
 type Activity = BuilderActivity;
@@ -42,12 +56,10 @@ type Activity = BuilderActivity;
 export function DayTable({
   days,
   setDays,
-  destinations = [],
   startDate,
 }: {
   days: Day[];
   setDays: React.Dispatch<React.SetStateAction<Day[]>>;
-  destinations?: { value: string; label: string }[];
   startDate?: Date;
 }) {
   const [isActivityModalOpen, setIsActivityModalOpen] = useState(false);
@@ -179,7 +191,6 @@ export function DayTable({
                 onDelete={handleDeleteDay}
                 onDuplicate={handleDuplicateDay}
                 onUpdate={handleUpdateDay}
-                destinations={destinations}
               />
             ))}
           </div>
@@ -233,7 +244,6 @@ function SortableDayRow({
   onDelete,
   onDuplicate,
   onUpdate,
-  destinations,
 }: {
   day: Day;
   onAddActivity: (id: string) => void;
@@ -241,27 +251,32 @@ function SortableDayRow({
   onDelete: (id: string) => void;
   onDuplicate: (id: string) => void;
   onUpdate: (id: string, field: keyof Day, value: any) => void;
-  destinations: { value: string; label: string }[];
 }) {
   // Callbacks for async accommodation search
-  const handleAccommodationSearch = useCallback(
-    async (query: string) => {
-      const results = await searchAccommodations(query, 10);
-      return results.map((acc) => ({ value: acc.id, label: acc.name }));
-    },
-    []
-  );
+  const handleAccommodationSearch = useCallback(async (query: string) => {
+    const results = await searchAccommodations(query, 10);
+    return results.map((acc) => ({ value: acc.id, label: acc.name }));
+  }, []);
 
   // Only fetch label if we don't already have the accommodation name
   // This prevents N+1 queries when proposal data already includes names
-  const handleGetAccommodationLabel = useCallback(async (id: string) => {
-    // Check if we already have the name from the day data
-    if (day.accommodationName) {
-      return day.accommodationName;
-    }
-    const acc = await getAccommodationById(id);
-    return acc?.name || null;
-  }, [day.accommodationName]);
+  const handleGetAccommodationLabel = useCallback(
+    async (id: string) => {
+      // Check if we already have the name from the day data
+      if (day.accommodationName) {
+        return day.accommodationName;
+      }
+      const acc = await getAccommodationById(id);
+      return acc?.name || null;
+    },
+    [day.accommodationName],
+  );
+
+  // Destination search handler
+  const handleDestinationSearch = useCallback(async (query: string) => {
+    const results = await searchNationalParks(query, 10);
+    return results.map((p) => ({ value: p.id, label: p.name }));
+  }, []);
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: day.id,
   });
@@ -277,7 +292,7 @@ function SortableDayRow({
       const template = await getRandomDayTemplate(
         day.destination,
         undefined,
-        day.description ? [day.description] : undefined
+        day.description ? [day.description] : undefined,
       );
       if (template?.description) {
         onUpdate(day.id, 'description', template.description);
@@ -339,20 +354,21 @@ function SortableDayRow({
                   <SelectItem value="2 nights">2 nights</SelectItem>
                 </SelectContent>
               </Select>
-              <button className="text-xs font-medium text-green-600 hover:underline">
+              {/* <button className="text-xs font-medium text-green-600 hover:underline">
                 More Options
-              </button>
+              </button> */}
             </div>
           </div>
         </div>
 
         {/* Destination Column */}
         <div className="col-span-3 min-w-0">
-          <Combobox
-            items={destinations}
+          <CreatableAsyncCombobox
             value={day.destination}
             onChange={(val) => onUpdate(day.id, 'destination', val)}
+            onSearch={handleDestinationSearch}
             placeholder="Select Destination"
+            createLabel="Use"
           />
         </div>
 

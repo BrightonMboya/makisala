@@ -25,6 +25,7 @@ export function BuilderProvider({
   const [clientId, setClientId] = useState<string | null>(null);
   const [tourTitle, setTourTitle] = useState('');
   const [country, setCountry] = useState<string | null>(null);
+  const [countries, setCountries] = useState<string[]>([]);
   const [travelerGroups, setTravelerGroups] = useState<TravelerGroup[]>([
     { id: '1', count: 2, type: 'Adult' },
   ]);
@@ -76,6 +77,12 @@ export function BuilderProvider({
       if (initialData.clientId) setClientId(initialData.clientId);
       if (initialData.tourTitle) setTourTitle(initialData.tourTitle);
       if (initialData.country) setCountry(initialData.country);
+      if (initialData.countries && Array.isArray(initialData.countries)) {
+        setCountries(initialData.countries);
+      } else if (initialData.country) {
+        // Bootstrap from single country if no multi-country data exists
+        setCountries([initialData.country]);
+      }
       if (initialData.days) setDays(initialData.days);
       if (initialData.startDate) setStartDate(new Date(initialData.startDate));
 
@@ -188,6 +195,8 @@ export function BuilderProvider({
         tourTitle,
         setTourTitle,
         country,
+        countries,
+        setCountries,
         travelerGroups,
         setTravelerGroups,
         days,

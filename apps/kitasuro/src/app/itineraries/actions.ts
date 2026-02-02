@@ -3,6 +3,7 @@
 import { db } from '@repo/db';
 import {
   accommodations,
+  activityLibrary,
   clients,
   commentReplies,
   comments,
@@ -21,7 +22,7 @@ import {
   tours,
   user,
 } from '@repo/db/schema';
-import { and, desc, eq, ilike, inArray, isNull, lt, sql } from 'drizzle-orm';
+import { and, desc, eq, ilike, inArray, isNull, lt, or, sql } from 'drizzle-orm';
 import {
   sendCommentNotificationEmail,
   sendNoteMentionEmail,
@@ -683,6 +684,7 @@ export async function getProposalForBuilder(id: string) {
         travelerGroups: true,
         pricingRows: true,
         extras: true,
+        countries: true,
         inclusions: true,
         exclusions: true,
         theme: true,
@@ -791,6 +793,7 @@ export async function saveProposal(data: {
       pricingRows: builderData.pricingRows || null,
       extras: builderData.extras || null,
       travelerGroups: builderData.travelerGroups || null,
+      countries: builderData.countries || null,
       inclusions: builderData.inclusions || null,
       exclusions: builderData.exclusions || null,
       status: data.status || 'draft',
@@ -820,6 +823,7 @@ export async function saveProposal(data: {
           travelerGroups: proposalData.travelerGroups || null,
           pricingRows: proposalData.pricingRows || null,
           extras: proposalData.extras || null,
+          countries: proposalData.countries || null,
           inclusions: proposalData.inclusions || null,
           exclusions: proposalData.exclusions || null,
           status: proposalData.status || 'draft',
@@ -844,6 +848,7 @@ export async function saveProposal(data: {
             travelerGroups: proposalData.travelerGroups || null,
             pricingRows: proposalData.pricingRows || null,
             extras: proposalData.extras || null,
+            countries: proposalData.countries || null,
             inclusions: proposalData.inclusions || null,
             exclusions: proposalData.exclusions || null,
             status: proposalData.status || 'draft',
@@ -1842,5 +1847,64 @@ export async function deleteProposalNote(noteId: string) {
   } catch (error) {
     console.error('Error deleting proposal note:', error);
     return { success: false, error: 'Failed to delete note' };
+  }
+}
+
+// ---------- ACTIVITY LIBRARY ----------
+
+export async function searchActivities(query: string, limit: number = 10) {
+  try {
+    const session = await getSession();
+    const orgId = await getOrganizationId(session);
+
+    const conditions = orgId
+      ? or(
+          eq(activityLibrary.isGlobal, true),
+          eq(activityLibrary.organizationId, orgId),
+        )
+      : eq(activityLibrary.isGlobal, true);
+
+    if (!query.trim()) {
+      return await db
+        .select({ id: activityLibrary.id, name: activityLibrary.name })
+        .from(activityLibrary)
+        .where(conditions)
+        .orderBy(activityLibrary.name)
+        .limit(limit);
+    }
+
+    return await db
+      .select({ id: activityLibrary.id, name: activityLibrary.name })
+      .from(activityLibrary)
+      .where(and(conditions, ilike(activityLibrary.name, `%${query}%`)))
+      .orderBy(activityLibrary.name)
+      .limit(limit);
+  } catch (error) {
+    console.error('Error searching activities:', error);
+    return [];
+  }
+}
+
+export async function createActivity(name: string) {
+  try {
+    const session = await getSession();
+    const orgId = await getOrganizationId(session);
+    if (!orgId) {
+      return { success: false, error: 'Unauthorized' };
+    }
+
+    const [activity] = await db
+      .insert(activityLibrary)
+      .values({
+        name,
+        organizationId: orgId,
+        isGlobal: false,
+      })
+      .returning({ id: activityLibrary.id, name: activityLibrary.name });
+
+    return { success: true, activity };
+  } catch (error) {
+    console.error('Error creating activity:', error);
+    return { success: false, error: 'Failed to create activity' };
   }
 }

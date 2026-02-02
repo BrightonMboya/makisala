@@ -169,6 +169,13 @@
       "when": 1769796133140,
       "tag": "0023_friendly_sersi",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1769800143028,
+      "tag": "0024_spicy_supreme_intelligence",
+      "breakpoints": true
     }
   ]
 }

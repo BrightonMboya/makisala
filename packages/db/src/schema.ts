@@ -574,6 +574,7 @@ export const proposals = pgTable('proposals', {
     json('extras').$type<Array<{ id: string; name: string; price: number; selected: boolean }>>(),
   travelerGroups:
     json('traveler_groups').$type<Array<{ id: string; count: number; type: string }>>(),
+  countries: text('countries').array(),
   inclusions: text('inclusions').array(),
   exclusions: text('exclusions').array(),
   organizationId: uuid('organization_id').references(() => organizations.id),
@@ -836,6 +837,24 @@ export type NewInvitation = typeof invitation.$inferInsert;
 export type Passkey = typeof passkey.$inferSelect;
 export type NewPasskey = typeof passkey.$inferInsert;
 
+// ---------- ACTIVITY LIBRARY ----------
+export const activityLibrary = pgTable('activity_library', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  name: text('name').notNull(),
+  description: text('description'),
+  imageUrl: text('image_url'),
+  organizationId: uuid('organization_id').references(() => organizations.id, { onDelete: 'cascade' }),
+  isGlobal: boolean('is_global').default(false).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+export const activityLibraryRelations = relations(activityLibrary, ({ one }) => ({
+  organization: one(organizations, {
+    fields: [activityLibrary.organizationId],
+    references: [organizations.id],
+  }),
+}));
+
 // ---------- DAY CONTENT TEMPLATES ----------
 export const DayType = pgEnum('day_type', ['arrival', 'full_day', 'half_day', 'departure']);
 
@@ -864,3 +883,7 @@ export type NewDayContentTemplate = typeof dayContentTemplates.$inferInsert;
 // Accommodation types
 export type Accommodation = typeof accommodations.$inferSelect;
 export type NewAccommodation = typeof accommodations.$inferInsert;
+
+// Activity Library types
+export type ActivityLibraryItem = typeof activityLibrary.$inferSelect;
+export type NewActivityLibraryItem = typeof activityLibrary.$inferInsert;

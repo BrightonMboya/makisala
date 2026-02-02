@@ -15,9 +15,7 @@ import { Label } from '@repo/ui/label';
 import { airports } from '@/lib/data/itinerary-data';
 import { CITIES } from '@/lib/data/cities';
 import { useBuilder } from '@/components/itinerary-builder/builder-context';
-import { getAllNationalParks } from '@/app/itineraries/actions';
-import { useQuery } from '@tanstack/react-query';
-import { queryKeys, staleTimes } from '@/lib/query-keys';
+import { CountryPicker } from '@/components/itinerary-builder/country-picker';
 
 export default function DayByDayPage() {
   const params = useParams();
@@ -37,30 +35,21 @@ export default function DayByDayPage() {
     pickupPoint,
     setPickupPoint,
     country,
+    countries,
+    setCountries,
   } = useBuilder();
 
-  // Use React Query for caching national parks (accommodations are loaded on-demand via AsyncCombobox)
-  const { data: parksData } = useQuery({
-    queryKey: queryKeys.nationalParks,
-    queryFn: getAllNationalParks,
-    staleTime: staleTimes.nationalParks,
-  });
-
-  // Memoize the transformed destinations list
-  const destinationsList = useMemo(
-    () => (parksData || []).map((p: any) => ({ value: p.id, label: p.name })),
-    [parksData],
-  );
-
-  // Filter cities based on tour country
+  // Filter cities based on selected countries (multi-country support)
   // Note: Use city.value (lowercase) as the value prop because cmdk lowercases values internally
   const citiesList = useMemo(() => {
-    const countryLower = country?.toLowerCase() || null;
-    const filtered = countryLower
-      ? CITIES.filter((city) => city.country === countryLower)
+    const countryValues = countries.length > 0
+      ? countries.map((c) => c.toLowerCase())
+      : country ? [country.toLowerCase()] : [];
+    const filtered = countryValues.length > 0
+      ? CITIES.filter((city) => countryValues.includes(city.country))
       : CITIES;
     return filtered.map((city) => ({ value: city.value, label: city.label }));
-  }, [country]);
+  }, [countries, country]);
 
   // Track if we've already updated dates for this startDate
   const lastStartDateRef = useRef<Date | undefined>(undefined);
@@ -85,53 +74,7 @@ export default function DayByDayPage() {
           <h2 className="font-serif text-3xl font-bold text-stone-900">Day-by-Day Itinerary</h2>
           <p className="mt-1 text-stone-500">Build the daily schedule and manage activities.</p>
         </div>
-        <div className="flex items-center gap-4 rounded-lg border border-stone-200 bg-white px-4 py-2 text-sm shadow-sm">
-          <div className="flex items-center gap-2">
-            <span className="font-bold text-stone-700">Destinations:</span>
-            <div className="flex items-center gap-1.5">
-              <span className="text-lg">
-                {(() => {
-                  const city = (startCity || '').toLowerCase();
-                  if (
-                    city.includes('tanzania') ||
-                    city.includes('arusha') ||
-                    city.includes('kilimanjaro')
-                  )
-                    return '🇹🇿';
-                  if (
-                    city.includes('botswana') ||
-                    city.includes('maun') ||
-                    city.includes('okavango')
-                  )
-                    return '🇧🇼';
-                  if (city.includes('kenya') || city.includes('nairobi')) return '🇰🇪';
-                  if (city.includes('uganda') || city.includes('entebbe')) return '🇺🇬';
-                  return '🇷🇼'; // Default
-                })()}
-              </span>
-              <span className="text-stone-600">
-                {(() => {
-                  const city = (startCity || '').toLowerCase();
-                  if (
-                    city.includes('tanzania') ||
-                    city.includes('arusha') ||
-                    city.includes('kilimanjaro')
-                  )
-                    return 'Tanzania';
-                  if (
-                    city.includes('botswana') ||
-                    city.includes('maun') ||
-                    city.includes('okavango')
-                  )
-                    return 'Botswana';
-                  if (city.includes('kenya') || city.includes('nairobi')) return 'Kenya';
-                  if (city.includes('uganda') || city.includes('entebbe')) return 'Uganda';
-                  return 'Rwanda'; // Default
-                })()}
-              </span>
-            </div>
-          </div>
-        </div>
+        <CountryPicker value={countries} onChange={setCountries} />
       </div>
 
       <div className="rounded-xl border border-stone-200 bg-white shadow-sm">
@@ -235,7 +178,6 @@ export default function DayByDayPage() {
         <DayTable
           days={days}
           setDays={setDays}
-          destinations={destinationsList}
           startDate={startDate}
         />
       </div>
