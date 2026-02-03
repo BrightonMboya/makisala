@@ -674,17 +674,24 @@ const DaySection = ({
   day,
   data,
   isEven,
+  onDayImageChange,
+  hoveredDayImage,
+  setHoveredDayImage,
 }: {
   day: ItineraryData['itinerary'][0];
   data: ItineraryData;
   isEven: boolean;
+  onDayImageChange?: (dayNumber: number, url: string) => void;
+  hoveredDayImage: number | null;
+  setHoveredDayImage: (day: number | null) => void;
 }) => {
   const parkInfo =
     data.nationalParks && day.nationalParkId ? data.nationalParks[day.nationalParkId] : null;
   const accommodationDetails = data.accommodations.find((a) => a.name === day.accommodation);
 
-  // Destination image - from park's featured image (Cloudinary via pages table)
+  // Destination image - previewImage first, then park's featured image, then fallback
   const destinationImage =
+    day.previewImage ||
     parkInfo?.featured_image_url ||
     'https://images.unsplash.com/photo-1516426122078-c23e76319801?q=80&w=2000&auto=format&fit=crop';
 
@@ -707,7 +714,11 @@ const DaySection = ({
   return (
     <section className="relative">
       {/* Day Header - Full bleed image */}
-      <div className="relative h-[60vh] overflow-hidden lg:h-[70vh]">
+      <div
+        className="relative h-[60vh] overflow-hidden lg:h-[70vh]"
+        onMouseEnter={() => onDayImageChange && setHoveredDayImage(day.day)}
+        onMouseLeave={() => setHoveredDayImage(null)}
+      >
         <Image
           src={destinationImage}
           alt={day.destination || day.title}
@@ -715,6 +726,43 @@ const DaySection = ({
           className="object-cover"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-black/20" />
+
+        {/* Edit overlay for day image */}
+        {onDayImageChange && (
+          <div
+            className={`absolute inset-0 z-30 flex items-center justify-center bg-black/40 transition-opacity duration-200 ${
+              hoveredDayImage === day.day ? 'opacity-100' : 'pointer-events-none opacity-0'
+            }`}
+          >
+            <button
+              onClick={() => {
+                const event = new CustomEvent('openDayImagePicker', {
+                  detail: { dayNumber: day.day },
+                });
+                window.dispatchEvent(event);
+              }}
+              className="flex flex-col items-center gap-3 text-white transition-transform hover:scale-105"
+            >
+              <svg className="h-10 w-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={1.5}
+                  d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"
+                />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={1.5}
+                  d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"
+                />
+              </svg>
+              <span className="text-xs font-medium tracking-wider uppercase">
+                Change Image
+              </span>
+            </button>
+          </div>
+        )}
 
         <div className="absolute right-0 bottom-0 left-0 p-8 lg:p-16">
           <div className="mx-auto max-w-6xl">
@@ -1067,14 +1115,16 @@ const Footer = ({ data, onConfirm }: { data: ItineraryData; onConfirm: () => voi
 interface DiscoveryThemeProps {
   data: ItineraryData;
   onHeroImageChange?: (url: string) => void;
+  onDayImageChange?: (dayNumber: number, url: string) => void;
 }
 
-export default function DiscoveryTheme({ data, onHeroImageChange }: DiscoveryThemeProps) {
+export default function DiscoveryTheme({ data, onHeroImageChange, onDayImageChange }: DiscoveryThemeProps) {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [confirmName, setConfirmName] = useState(data.clientName || '');
   const [isConfirming, setIsConfirming] = useState(false);
   const [confirmStatus, setConfirmStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [confirmError, setConfirmError] = useState('');
+  const [hoveredDayImage, setHoveredDayImage] = useState<number | null>(null);
 
   const handleHeroImageChange = () => {
     if (onHeroImageChange) {
@@ -1126,7 +1176,7 @@ export default function DiscoveryTheme({ data, onHeroImageChange }: DiscoveryThe
               <div className="h-px w-16 bg-stone-200" />
             </div>
           )}
-          <DaySection day={day} data={data} isEven={index % 2 === 1} />
+          <DaySection day={day} data={data} isEven={index % 2 === 1} onDayImageChange={onDayImageChange} hoveredDayImage={hoveredDayImage} setHoveredDayImage={setHoveredDayImage} />
         </React.Fragment>
       ))}
 

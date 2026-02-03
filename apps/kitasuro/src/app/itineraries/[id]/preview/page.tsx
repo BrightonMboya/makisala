@@ -370,7 +370,7 @@ export default function PreviewPage() {
           onDayImageChange={handleDayImageSelect}
         />
       ) : selectedTheme === 'discovery' ? (
-        <DiscoveryTheme data={itineraryData} onHeroImageChange={handleHeroImageSelect} />
+        <DiscoveryTheme data={itineraryData} onHeroImageChange={handleHeroImageSelect} onDayImageChange={handleDayImageSelect} />
       ) : (
         <MinimalisticTheme data={itineraryData} onHeroImageChange={handleHeroImageSelect} onDayImageChange={handleDayImageSelect} />
       )}
