@@ -8,6 +8,8 @@ import type {
   Location,
   NationalParkInfo,
   PricingRow,
+  ThemeTransportation,
+  TransportModeType,
   TravelerGroup,
   TripOverview,
 } from '@/types/itinerary-types';
@@ -54,6 +56,24 @@ function getCityCoordinates(city: string | null): Location | undefined {
   }
 
   return undefined;
+}
+
+// Transport mode labels
+const transportModeLabels: Record<TransportModeType, string> = {
+  road_4x4: '4WD Safari Vehicle',
+  road_shuttle: 'Shuttle/Minibus',
+  road_bus: 'Coach Bus',
+  flight_domestic: 'Domestic Flight',
+  flight_bush: 'Bush/Charter Flight',
+};
+
+function formatDuration(minutes: number | null): string | null {
+  if (!minutes) return null;
+  const hours = Math.floor(minutes / 60);
+  const mins = minutes % 60;
+  if (hours === 0) return `${mins} min`;
+  if (mins === 0) return `${hours}h`;
+  return `${hours}h ${mins}min`;
 }
 
 // Calculate pricing
@@ -119,6 +139,24 @@ export async function transformProposalToItineraryData(
         lunch: boolean;
         dinner: boolean;
       } | null;
+      transportation?: Array<{
+        id: string;
+        originName: string;
+        destinationName: string;
+        mode: TransportModeType;
+        durationMinutes: number | null;
+        distanceKm: number | null;
+        notes: string | null;
+      }>;
+    }>;
+    transportation?: Array<{
+      id: string;
+      originName: string;
+      destinationName: string;
+      mode: TransportModeType;
+      durationMinutes: number | null;
+      distanceKm: number | null;
+      notes: string | null;
     }>;
   },
 ): Promise<ItineraryData> {
@@ -197,6 +235,21 @@ export async function transformProposalToItineraryData(
           .join(', ') || 'None'
       : 'None';
 
+    // Get per-day transportation
+    const dayTransport = day.transportation?.[0];
+    const themeTransport = dayTransport
+      ? {
+          id: dayTransport.id,
+          originName: dayTransport.originName,
+          destinationName: dayTransport.destinationName,
+          mode: dayTransport.mode,
+          modeLabel: transportModeLabels[dayTransport.mode] || dayTransport.mode,
+          durationFormatted: formatDuration(dayTransport.durationMinutes),
+          distanceKm: dayTransport.distanceKm,
+          notes: dayTransport.notes,
+        }
+      : undefined;
+
     return {
       day: day.dayNumber,
       date: dateStr,
@@ -208,6 +261,7 @@ export async function transformProposalToItineraryData(
       accommodation: accommodationName,
       meals: mealsStr,
       previewImage: day.previewImage || undefined,
+      transportation: themeTransport,
     };
   });
 
@@ -359,6 +413,23 @@ export async function transformProposalToItineraryData(
     destinations: destinationNames,
   };
 
+  // Derive transportation from per-day transfers
+  const transportation: ThemeTransportation[] = proposalDays
+    .filter((day) => day.transportation && day.transportation.length > 0)
+    .map((day) => {
+      const t = day.transportation![0]!;
+      return {
+        id: t.id,
+        originName: t.originName,
+        destinationName: t.destinationName,
+        mode: t.mode,
+        modeLabel: transportModeLabels[t.mode] || t.mode,
+        durationFormatted: formatDuration(t.durationMinutes),
+        distanceKm: t.distanceKm,
+        notes: t.notes,
+      };
+    });
+
   return {
     id: proposal.id,
     title: tourTitle,
@@ -378,6 +449,7 @@ export async function transformProposalToItineraryData(
     itinerary,
     accommodations,
     nationalParks: Object.keys(nationalParksMap).length > 0 ? nationalParksMap : undefined,
+    transportation: transportation.length > 0 ? transportation : undefined,
     pricing,
     includedItems: inclusions,
     excludedItems: exclusions,

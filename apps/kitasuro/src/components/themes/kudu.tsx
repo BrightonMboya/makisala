@@ -4,11 +4,13 @@ import React, { useMemo, useRef } from 'react';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import {
   ArrowRight,
+  Car,
   CheckCircle2,
+  ChevronRight,
   Home,
   MapPin,
+  Plane,
   Star,
-  Trees,
   Utensils,
   XCircle,
 } from 'lucide-react';
@@ -259,6 +261,7 @@ export default function KuduTheme({ data, onHeroImageChange, onDayImageChange }:
     mapData,
     clientName,
     organization,
+    tripOverview,
   } = data;
 
   return (
@@ -300,6 +303,43 @@ export default function KuduTheme({ data, onHeroImageChange, onDayImageChange }:
             </p>
           )}
         </div>
+
+        {/* Trip Overview Strip */}
+        {tripOverview && (
+          <div className="mt-6 flex flex-wrap items-center gap-x-3 gap-y-2 text-[10px] font-bold tracking-[0.2em] text-slate-500 uppercase">
+            {tripOverview.tourType && (
+              <>
+                <span>{tripOverview.tourType}</span>
+                <span className="h-1 w-1 rounded-full bg-emerald-800/40" />
+              </>
+            )}
+            {tripOverview.travelerCount && tripOverview.travelerCount > 0 && (
+              <>
+                <span>
+                  {tripOverview.travelerCount}{' '}
+                  {tripOverview.travelerCount === 1 ? 'Traveler' : 'Travelers'}
+                </span>
+                <span className="h-1 w-1 rounded-full bg-emerald-800/40" />
+              </>
+            )}
+            {tripOverview.travelDates && (
+              <>
+                <span>
+                  {tripOverview.travelDates.start.split(',')[0]} —{' '}
+                  {tripOverview.travelDates.end.split(',')[0]}
+                </span>
+                <span className="h-1 w-1 rounded-full bg-emerald-800/40" />
+              </>
+            )}
+            {(tripOverview.startCity || tripOverview.endCity) && (
+              <span>
+                {tripOverview.startCity === tripOverview.endCity
+                  ? tripOverview.startCity
+                  : `${tripOverview.startCity || '—'} → ${tripOverview.endCity || '—'}`}
+              </span>
+            )}
+          </div>
+        )}
       </NarrativeSection>
 
       {/* 3. DAILY ITINERARY LOOP */}
@@ -367,56 +407,106 @@ export default function KuduTheme({ data, onHeroImageChange, onDayImageChange }:
               <p className="mb-6 text-base leading-relaxed text-slate-600">{day.description}</p>
             )}
 
-            {/* Activities with descriptions */}
-            <div className="mb-6 flex max-h-[40vh] flex-col gap-3 overflow-y-auto pr-2">
-              {day.activities.map((act, actIdx) => (
-                <div
-                  key={actIdx}
-                  className="flex items-start gap-4 border-b border-black/5 py-3 last:border-0"
-                >
-                  <Trees className="mt-1 shrink-0 text-emerald-800" size={18} />
-                  <div className="flex flex-col gap-1">
-                    <div className="flex items-center gap-3">
-                      <span className="text-sm font-bold tracking-wider uppercase">
-                        {act.activity}
-                      </span>
-                      <span className="text-[10px] text-slate-400 uppercase">{act.time}</span>
+            {/* Activities with timeline */}
+            <div className="mb-6 max-h-[40vh] overflow-y-auto pr-2">
+              <div className="border-l border-emerald-800/20 pl-6">
+                {day.activities.map((act, actIdx) => (
+                  <div key={actIdx} className="relative py-3">
+                    {/* Timeline dot */}
+                    <div className="absolute -left-[27px] top-4 h-2 w-2 rounded-full bg-emerald-800" />
+                    <div className="flex flex-col gap-1">
+                      <div className="flex items-center gap-3">
+                        <span className="text-sm font-bold tracking-wider uppercase">
+                          {act.activity}
+                        </span>
+                        <span className="text-[10px] text-slate-400 uppercase">{act.time}</span>
+                      </div>
+                      {act.description && (
+                        <p className="text-sm leading-relaxed text-slate-500">{act.description}</p>
+                      )}
+                      {act.location && (
+                        <span className="inline-flex items-center gap-1 text-[10px] text-emerald-700 uppercase">
+                          <MapPin size={10} /> {act.location}
+                        </span>
+                      )}
                     </div>
-                    {act.description && (
-                      <p className="text-sm leading-relaxed text-slate-500">{act.description}</p>
-                    )}
-                    {act.location && (
-                      <span className="inline-flex items-center gap-1 text-[10px] text-emerald-700 uppercase">
-                        <MapPin size={10} /> {act.location}
-                      </span>
-                    )}
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
+
+            {/* Transfer / Transportation */}
+            {day.transportation && (
+              <div className="mb-4 rounded-sm bg-emerald-800/10 px-4 py-3">
+                <div className="mb-1 flex items-center gap-2">
+                  {day.transportation.mode.startsWith('flight') ? (
+                    <Plane size={14} className="shrink-0 text-emerald-800" />
+                  ) : (
+                    <Car size={14} className="shrink-0 text-emerald-800" />
+                  )}
+                  <span className="text-sm font-bold tracking-wider text-emerald-800 uppercase">
+                    {day.transportation.originName}
+                  </span>
+                  <ChevronRight size={12} className="shrink-0 text-emerald-800/50" />
+                  <span className="text-sm font-bold tracking-wider text-emerald-800 uppercase">
+                    {day.transportation.destinationName}
+                  </span>
+                </div>
+                <div className="flex flex-wrap items-center gap-2 text-[10px] tracking-wider text-emerald-800/70 uppercase">
+                  <span>{day.transportation.modeLabel}</span>
+                  {day.transportation.durationFormatted && (
+                    <>
+                      <span className="h-0.5 w-0.5 rounded-full bg-emerald-800/40" />
+                      <span>{day.transportation.durationFormatted}</span>
+                    </>
+                  )}
+                  {day.transportation.distanceKm && (
+                    <>
+                      <span className="h-0.5 w-0.5 rounded-full bg-emerald-800/40" />
+                      <span>{day.transportation.distanceKm} km</span>
+                    </>
+                  )}
+                </div>
+                {day.transportation.notes && (
+                  <p className="mt-1 text-xs leading-relaxed text-emerald-800/60 italic">
+                    {day.transportation.notes}
+                  </p>
+                )}
+              </div>
+            )}
 
             {/* Footer: Accommodation & Meals */}
             <div className="space-y-3 border-t border-black/10 pt-4">
-              <div className="flex flex-wrap items-center gap-6">
-                <div className="flex items-center gap-2">
-                  <Home size={14} className="text-emerald-800" />
-                  <span
-                    className={`text-xs tracking-widest uppercase ${isSameAccommodation ? 'text-slate-400' : 'font-medium text-slate-700'}`}
-                  >
-                    {day.accommodation}
-                    {isSameAccommodation && <span className="ml-1 text-slate-300">(Cont.)</span>}
+              <div className={`flex items-start gap-6 ${isSameAccommodation ? 'opacity-40' : ''}`}>
+                <div className="flex flex-col gap-1">
+                  <span className="text-[9px] font-bold tracking-[0.3em] text-emerald-800/60 uppercase">
+                    Stay
                   </span>
+                  <div className="flex items-center gap-2">
+                    <Home size={13} className="text-emerald-800" />
+                    <span className="text-xs font-medium tracking-widest text-slate-700 uppercase">
+                      {day.accommodation}
+                    </span>
+                  </div>
                 </div>
                 {day.meals && (
-                  <div className="flex items-center gap-2">
-                    <Utensils size={14} className="text-emerald-800" />
-                    <span className="text-xs text-slate-500 italic">{day.meals}</span>
-                  </div>
+                  <>
+                    <div className="mt-2 h-8 w-px bg-black/10" />
+                    <div className="flex flex-col gap-1">
+                      <span className="text-[9px] font-bold tracking-[0.3em] text-emerald-800/60 uppercase">
+                        Meals
+                      </span>
+                      <div className="flex items-center gap-2">
+                        <Utensils size={13} className="text-emerald-800" />
+                        <span className="text-xs text-slate-500 italic">{day.meals}</span>
+                      </div>
+                    </div>
+                  </>
                 )}
               </div>
               {/* Accommodation Description */}
               {!isSameAccommodation && accommodationDetails?.description && (
-                <p className="pl-6 text-xs leading-relaxed text-slate-500">
+                <p className="pl-5 text-xs leading-relaxed text-slate-500">
                   {accommodationDetails.description}
                 </p>
               )}
@@ -502,7 +592,18 @@ export default function KuduTheme({ data, onHeroImageChange, onDayImageChange }:
               Confirm Proposal <ArrowRight size={16} />
             </button>
             {organization?.name && (
-              <p className="mt-4 text-center text-[10px] text-white/30">by {organization.name}</p>
+              <div className="mt-4 flex items-center justify-center gap-2">
+                {organization.logoUrl && (
+                  <Image
+                    src={organization.logoUrl}
+                    alt={organization.name}
+                    width={24}
+                    height={24}
+                    className="rounded-full object-cover"
+                  />
+                )}
+                <span className="text-[10px] text-white/30">by {organization.name}</span>
+              </div>
             )}
           </div>
         </div>

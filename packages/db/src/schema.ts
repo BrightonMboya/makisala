@@ -629,12 +629,22 @@ export const proposalActivities = pgTable('proposal_activities', {
   description: text('description'),
   location: text('location'),
   moment: text('moment').notNull(), // 'Morning', 'Afternoon', 'Evening', 'Half Day', 'Full Day', 'Night'
+  time: text('time'), // Legacy time field - stored in moment now
   isOptional: boolean('is_optional').default(false).notNull(),
   imageUrl: text('image_url'),
   createdAt: timestamp('created_at', { precision: 3, mode: 'string' })
     .default(sql`CURRENT_TIMESTAMP`)
     .notNull(),
 });
+
+// ---------- TRANSPORT MODE ----------
+export const TransportMode = pgEnum('transport_mode', [
+  'road_4x4',
+  'road_shuttle',
+  'road_bus',
+  'flight_domestic',
+  'flight_bush',
+]);
 
 // ---------- PROPOSAL MEALS ----------
 export const proposalMeals = pgTable('proposal_meals', {
@@ -646,6 +656,25 @@ export const proposalMeals = pgTable('proposal_meals', {
   breakfast: boolean('breakfast').default(false).notNull(),
   lunch: boolean('lunch').default(false).notNull(),
   dinner: boolean('dinner').default(false).notNull(),
+  createdAt: timestamp('created_at', { precision: 3, mode: 'string' })
+    .default(sql`CURRENT_TIMESTAMP`)
+    .notNull(),
+});
+
+// ---------- PROPOSAL TRANSPORTATION ----------
+export const proposalTransportation = pgTable('proposal_transportation', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  proposalDayId: uuid('proposal_day_id')
+    .notNull()
+    .references(() => proposalDays.id, { onDelete: 'cascade' }),
+  originName: text('origin_name').notNull(),
+  originId: uuid('origin_id').references(() => nationalParks.id, { onDelete: 'set null' }),
+  destinationName: text('destination_name').notNull(),
+  destinationId: uuid('destination_id').references(() => nationalParks.id, { onDelete: 'set null' }),
+  mode: TransportMode('mode').notNull(),
+  durationMinutes: integer('duration_minutes'),
+  distanceKm: integer('distance_km'),
+  notes: text('notes'),
   createdAt: timestamp('created_at', { precision: 3, mode: 'string' })
     .default(sql`CURRENT_TIMESTAMP`)
     .notNull(),
@@ -685,6 +714,7 @@ export const proposalDaysRelations = relations(proposalDays, ({ one, many }) => 
     fields: [proposalDays.id],
     references: [proposalMeals.proposalDayId],
   }),
+  transportation: many(proposalTransportation),
 }));
 
 export const proposalAccommodationsRelations = relations(proposalAccommodations, ({ one }) => ({
@@ -709,6 +739,23 @@ export const proposalMealsRelations = relations(proposalMeals, ({ one }) => ({
   proposalDay: one(proposalDays, {
     fields: [proposalMeals.proposalDayId],
     references: [proposalDays.id],
+  }),
+}));
+
+export const proposalTransportationRelations = relations(proposalTransportation, ({ one }) => ({
+  proposalDay: one(proposalDays, {
+    fields: [proposalTransportation.proposalDayId],
+    references: [proposalDays.id],
+  }),
+  origin: one(nationalParks, {
+    fields: [proposalTransportation.originId],
+    references: [nationalParks.id],
+    relationName: 'transportationOrigin',
+  }),
+  destination: one(nationalParks, {
+    fields: [proposalTransportation.destinationId],
+    references: [nationalParks.id],
+    relationName: 'transportationDestination',
   }),
 }));
 
@@ -887,3 +934,7 @@ export type NewAccommodation = typeof accommodations.$inferInsert;
 // Activity Library types
 export type ActivityLibraryItem = typeof activityLibrary.$inferSelect;
 export type NewActivityLibraryItem = typeof activityLibrary.$inferInsert;
+
+// Transportation types
+export type ProposalTransportation = typeof proposalTransportation.$inferSelect;
+export type NewProposalTransportation = typeof proposalTransportation.$inferInsert;

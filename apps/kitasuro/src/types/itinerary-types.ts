@@ -27,6 +27,16 @@ export type BuilderDay = {
   description?: string; // Narrative for the day
   accommodationImage?: string;
   previewImage?: string; // Custom image for theme preview
+  transfer?: {
+    originId: string | null;
+    originName: string;
+    destinationId: string | null;
+    destinationName: string;
+    mode: TransportModeType;
+    durationMinutes: number | null;
+    distanceKm: number | null;
+    notes: string;
+  } | null;
 };
 
 export type TravelerType = 'Adult' | 'Senior' | 'Child' | 'Baby';
@@ -50,6 +60,13 @@ export type ExtraOption = {
   price: number;
   selected: boolean;
 };
+
+export type TransportModeType =
+  | 'road_4x4'
+  | 'road_shuttle'
+  | 'road_bus'
+  | 'flight_domestic'
+  | 'flight_bush';
 
 export type ThemeType = 'minimalistic' | 'safari-portal' | 'kudu' | 'discovery';
 
@@ -123,6 +140,7 @@ export interface Day {
   accommodation: string;
   meals: string;
   previewImage?: string; // Custom image for theme preview
+  transportation?: ThemeTransportation; // Transfer happening on this day
 }
 
 export interface Location {
@@ -165,6 +183,17 @@ export interface TripOverview {
   destinations: string[]; // List of all destinations/parks to visit
 }
 
+export interface ThemeTransportation {
+  id: string;
+  originName: string;
+  destinationName: string;
+  mode: TransportModeType;
+  modeLabel: string;
+  durationFormatted: string | null;
+  distanceKm: number | null;
+  notes: string | null;
+}
+
 export interface ItineraryData {
   id: string;
   title: string;
@@ -179,6 +208,7 @@ export interface ItineraryData {
   itinerary: Day[];
   accommodations: Accommodation[];
   nationalParks?: Record<string, NationalParkInfo>; // Key is destination value (e.g., 'akagera-np')
+  transportation?: ThemeTransportation[]; // Major transfers between destinations
   pricing: {
     total: string;
     perPerson: string;

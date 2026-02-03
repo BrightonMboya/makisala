@@ -7,7 +7,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@repo/ui/dropdown-menu';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@repo/ui/select';
 import {
   closestCenter,
   DndContext,
@@ -26,6 +25,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import {
+  Car,
   Copy,
   FileText,
   GripVertical,
@@ -34,15 +34,20 @@ import {
   Plus,
   Sparkles,
   Trash2,
+  X,
 } from 'lucide-react';
 import React, { useCallback, useState } from 'react';
 import { ActivityModal } from './activity-modal';
 import { AsyncCombobox } from './async-combobox';
 import { CreatableAsyncCombobox } from './creatable-async-combobox';
 import { Textarea } from '@repo/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@repo/ui/select';
+import { Input } from '@repo/ui/input';
+import type { TransportModeType } from '@/types/itinerary-types';
 import { addDays, format } from 'date-fns';
 import {
   getAccommodationById,
+  getNationalParkById,
   getRandomDayTemplate,
   searchAccommodations,
   searchNationalParks,
@@ -277,11 +282,24 @@ function SortableDayRow({
     const results = await searchNationalParks(query, 10);
     return results.map((p) => ({ value: p.id, label: p.name }));
   }, []);
+
+  // Get destination label by ID
+  const handleGetDestinationLabel = useCallback(async (id: string) => {
+    // Check if it's a UUID (national park ID) vs custom text
+    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+    if (!isUUID) {
+      // Custom text, return as-is
+      return id;
+    }
+    const park = await getNationalParkById(id);
+    return park?.name || null;
+  }, []);
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: day.id,
   });
 
   const [isExpanded, setIsExpanded] = useState(!!day.description);
+  const [isTransferExpanded, setIsTransferExpanded] = useState(!!day.transfer);
   const [isSuggesting, setIsSuggesting] = useState(false);
 
   const handleSuggestContent = useCallback(async () => {
@@ -344,20 +362,6 @@ function SortableDayRow({
               placeholder="Search accommodation..."
               className="w-full"
             />
-            <div className="flex items-center justify-between">
-              <Select defaultValue="1 night">
-                <SelectTrigger className="h-8 w-24 text-xs">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="1 night">1 night</SelectItem>
-                  <SelectItem value="2 nights">2 nights</SelectItem>
-                </SelectContent>
-              </Select>
-              {/* <button className="text-xs font-medium text-green-600 hover:underline">
-                More Options
-              </button> */}
-            </div>
           </div>
         </div>
 
@@ -367,6 +371,7 @@ function SortableDayRow({
             value={day.destination}
             onChange={(val) => onUpdate(day.id, 'destination', val)}
             onSearch={handleDestinationSearch}
+            onGetLabel={handleGetDestinationLabel}
             placeholder="Select Destination"
             createLabel="Use"
           />
@@ -433,8 +438,6 @@ function SortableDayRow({
                 />
               </div>
             </div>
-            <div className="mt-1 text-xs text-green-600">Add drinks & other options</div>
-            <div className="text-xs text-stone-500">Drinking water</div>
           </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -527,6 +530,177 @@ function SortableDayRow({
             )}
           </div>
         )}
+      </div>
+
+      {/* Transfer Section */}
+      <div className="px-4 pb-3">
+        {isTransferExpanded ? (
+          <TransferFields
+            transfer={day.transfer || null}
+            dayDestination={day.destination}
+            onUpdate={(transfer) => onUpdate(day.id, 'transfer', transfer)}
+            onRemove={() => {
+              onUpdate(day.id, 'transfer', null);
+              setIsTransferExpanded(false);
+            }}
+          />
+        ) : (
+          <button
+            onClick={async () => {
+              if (!day.transfer) {
+                const emptyTransfer = {
+                  originId: null,
+                  originName: '',
+                  destinationId: null,
+                  destinationName: '',
+                  mode: 'road_4x4' as TransportModeType,
+                  durationMinutes: null,
+                  distanceKm: null,
+                  notes: '',
+                };
+                // Pre-populate origin from the day's destination
+                if (day.destination && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(day.destination)) {
+                  onUpdate(day.id, 'transfer', emptyTransfer);
+                  const park = await getNationalParkById(day.destination);
+                  if (park) {
+                    onUpdate(day.id, 'transfer', { ...emptyTransfer, originName: park.name });
+                  }
+                } else {
+                  onUpdate(day.id, 'transfer', { ...emptyTransfer, originName: day.destination || '' });
+                }
+              }
+              setIsTransferExpanded(true);
+            }}
+            className="group w-full cursor-pointer rounded-md border border-dashed border-stone-200 px-3 py-2 text-left transition-colors hover:border-stone-300 hover:bg-stone-50"
+          >
+            <span className="flex items-center gap-1.5 text-xs text-stone-500 group-hover:text-stone-700">
+              <Car className="h-3.5 w-3.5" />
+              {day.transfer ? 'Edit transfer' : 'Add transfer (optional)'}
+            </span>
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function TransferFields({
+  transfer,
+  dayDestination,
+  onUpdate,
+  onRemove,
+}: {
+  transfer: NonNullable<Day['transfer']> | null;
+  dayDestination: string | null;
+  onUpdate: (transfer: NonNullable<Day['transfer']>) => void;
+  onRemove: () => void;
+}) {
+  const current = transfer || {
+    originId: null,
+    originName: '',
+    destinationId: null,
+    destinationName: '',
+    mode: 'road_4x4' as TransportModeType,
+    durationMinutes: null,
+    distanceKm: null,
+    notes: '',
+  };
+
+  const update = (field: string, value: any) => {
+    onUpdate({ ...current, [field]: value });
+  };
+
+  // Parse duration into hours for display
+  const durationHours = current.durationMinutes ? Math.round(current.durationMinutes / 60) : '';
+
+  return (
+    <div className="space-y-3 border-t border-stone-100 pt-2">
+      <div className="flex items-center justify-between">
+        <label className="flex items-center gap-1.5 text-xs font-bold tracking-wider text-stone-600 uppercase">
+          <Car className="h-3.5 w-3.5" />
+          Transfer
+        </label>
+        <button
+          onClick={onRemove}
+          className="flex cursor-pointer items-center gap-1 text-xs font-medium text-red-500 hover:text-red-700"
+        >
+          <X className="h-3 w-3" />
+          Remove
+        </button>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-1">
+          <label className="text-[10px] font-medium text-stone-500 uppercase">From</label>
+          <Input
+            className="h-9 text-xs"
+            placeholder="e.g. Kigali Airport, Lodge name..."
+            value={current.originName}
+            onChange={(e) => onUpdate({ ...current, originId: null, originName: e.target.value })}
+          />
+        </div>
+        <div className="space-y-1">
+          <label className="text-[10px] font-medium text-stone-500 uppercase">To</label>
+          <Input
+            className="h-9 text-xs"
+            placeholder="e.g. Akagera NP, Lodge name..."
+            value={current.destinationName}
+            onChange={(e) => onUpdate({ ...current, destinationId: null, destinationName: e.target.value })}
+          />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-3 gap-3">
+        <div className="space-y-1">
+          <label className="text-[10px] font-medium text-stone-500 uppercase">Mode</label>
+          <Select value={current.mode} onValueChange={(val) => update('mode', val)}>
+            <SelectTrigger className="h-9 text-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="road_4x4">4WD Safari</SelectItem>
+              <SelectItem value="road_shuttle">Shuttle</SelectItem>
+              <SelectItem value="road_bus">Bus</SelectItem>
+              <SelectItem value="flight_domestic">Domestic Flight</SelectItem>
+              <SelectItem value="flight_bush">Bush Flight</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-1">
+          <label className="text-[10px] font-medium text-stone-500 uppercase">Duration (hours)</label>
+          <Input
+            type="number"
+            min={0}
+            className="h-9 text-xs"
+            placeholder="0"
+            value={durationHours}
+            onChange={(e) => {
+              const h = parseInt(e.target.value) || 0;
+              update('durationMinutes', h * 60 || null);
+            }}
+          />
+        </div>
+        <div className="space-y-1">
+          <label className="text-[10px] font-medium text-stone-500 uppercase">Distance (km)</label>
+          <Input
+            type="number"
+            min={0}
+            className="h-9 text-xs"
+            placeholder="Optional"
+            value={current.distanceKm ?? ''}
+            onChange={(e) => update('distanceKm', parseInt(e.target.value) || null)}
+          />
+        </div>
+      </div>
+
+      <div className="space-y-1">
+        <label className="text-[10px] font-medium text-stone-500 uppercase">Notes</label>
+        <Textarea
+          value={current.notes || ''}
+          onChange={(e) => update('notes', e.target.value)}
+          placeholder="Transfer notes (optional)"
+          className="min-h-[40px] text-xs"
+        />
       </div>
     </div>
   );
