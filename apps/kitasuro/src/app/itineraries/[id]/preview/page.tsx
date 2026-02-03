@@ -117,10 +117,10 @@ export default function PreviewPage() {
   const nationalParksMap = useMemo(() => {
     const map: Record<
       string,
-      { id: string; name: string; latitude?: string | null; longitude?: string | null }
+      { id: string; name: string; latitude?: string | null; longitude?: string | null; park_overview?: Array<{ title?: string; name?: string; description: string }> | null }
     > = {};
-    parksData?.forEach((p) => {
-      map[p.id] = { id: p.id, name: p.name, latitude: p.latitude, longitude: p.longitude };
+    parksData?.forEach((p: any) => {
+      map[p.id] = { id: p.id, name: p.name, latitude: p.latitude, longitude: p.longitude, park_overview: p.park_overview };
     });
     return map;
   }, [parksData]);

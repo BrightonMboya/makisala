@@ -283,34 +283,6 @@ export async function deleteTour(id: string) {
   }
 }
 
-export async function updateOrganizationSettings(data: {
-  name?: string;
-  logoUrl?: string;
-  primaryColor?: string;
-  notificationEmail?: string;
-}) {
-  try {
-    const session = await getSession();
-    const orgId = await getOrganizationId(session);
-    if (!orgId) {
-      return { success: false, error: 'User must be associated with an organization' };
-    }
-
-    await db
-      .update(organizations)
-      .set({
-        ...data,
-        updatedAt: new Date(),
-      })
-      .where(eq(organizations.id, orgId));
-
-    return { success: true };
-  } catch (error) {
-    console.error('Error updating organization settings:', error);
-    return { success: false, error: 'Failed to update settings' };
-  }
-}
-
 export async function getAllAccommodations() {
   try {
     const results = await db.query.accommodations.findMany({
@@ -385,6 +357,7 @@ export async function getAllNationalParks() {
         overview_page_id: nationalParks.overview_page_id,
         latitude: nationalParks.latitude,
         longitude: nationalParks.longitude,
+        park_overview: nationalParks.park_overview,
       })
       .from(nationalParks);
   } catch (error) {
@@ -1814,71 +1787,6 @@ function countReplies(note: any): number {
   return note.replies.reduce((count: number, reply: any) => count + 1 + countReplies(reply), 0);
 }
 
-// Get replies for a specific note (for lazy loading deep threads)
-export async function getNoteReplies(noteId: string) {
-  try {
-    const session = await getSession();
-    if (!session?.user) {
-      return [];
-    }
-
-    const replies = await db.query.proposalNotes.findMany({
-      where: eq(proposalNotes.parentId, noteId),
-      orderBy: (notes, { asc }) => [asc(notes.createdAt)],
-      with: {
-        replies: {
-          orderBy: (r, { asc }) => [asc(r.createdAt)],
-        },
-      },
-    });
-
-    const transformReply = (reply: any): any => ({
-      id: reply.id,
-      content: reply.content,
-      userName: reply.userName || 'Unknown User',
-      userId: reply.userId,
-      parentId: reply.parentId,
-      createdAt: new Date(reply.createdAt),
-      updatedAt: new Date(reply.updatedAt),
-      replies: (reply.replies || []).map(transformReply),
-      replyCount: countReplies(reply),
-    });
-
-    return replies.map(transformReply);
-  } catch (error) {
-    console.error('Error fetching note replies:', error);
-    return [];
-  }
-}
-
-export async function updateProposalNote(noteId: string, content: string) {
-  try {
-    const session = await getSession();
-    if (!session?.user) {
-      return { success: false, error: 'Unauthorized' };
-    }
-
-    const note = await db.query.proposalNotes.findFirst({
-      where: eq(proposalNotes.id, noteId),
-      columns: { userId: true },
-    });
-
-    if (!note || note.userId !== session.user.id) {
-      return { success: false, error: 'You can only edit your own notes' };
-    }
-
-    await db
-      .update(proposalNotes)
-      .set({ content, updatedAt: new Date() })
-      .where(eq(proposalNotes.id, noteId));
-
-    return { success: true };
-  } catch (error) {
-    console.error('Error updating proposal note:', error);
-    return { success: false, error: 'Failed to update note' };
-  }
-}
-
 export async function deleteProposalNote(noteId: string) {
   try {
     const session = await getSession();
@@ -1913,10 +1821,7 @@ export async function searchActivities(query: string, limit: number = 10) {
     const orgId = await getOrganizationId(session);
 
     const conditions = orgId
-      ? or(
-          eq(activityLibrary.isGlobal, true),
-          eq(activityLibrary.organizationId, orgId),
-        )
+      ? or(eq(activityLibrary.isGlobal, true), eq(activityLibrary.organizationId, orgId))
       : eq(activityLibrary.isGlobal, true);
 
     if (!query.trim()) {

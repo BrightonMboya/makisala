@@ -7,6 +7,7 @@ import type {
   ExtraOption,
   ItineraryData,
   Location,
+  NationalParkInfo,
   PricingRow,
   ThemeTransportation,
   ThemeType,
@@ -115,7 +116,7 @@ export function transformBuilderToItineraryData(params: {
   country?: string;
   nationalParksMap: Record<
     string,
-    { id: string; name: string; latitude?: string | null; longitude?: string | null }
+    { id: string; name: string; latitude?: string | null; longitude?: string | null; park_overview?: Array<{ title?: string; name?: string; description: string }> | null }
   >;
   accommodationsMap: Record<
     string,
@@ -190,6 +191,20 @@ export function transformBuilderToItineraryData(params: {
         .filter(Boolean)
         .join(', ') || 'None';
 
+    // Build per-day transportation
+    const dayTransport = day.transfer
+      ? {
+          id: `transfer-day-${day.dayNumber}`,
+          originName: day.transfer.originName,
+          destinationName: day.transfer.destinationName,
+          mode: day.transfer.mode,
+          modeLabel: transportModeLabels[day.transfer.mode] || day.transfer.mode,
+          durationFormatted: formatDuration(day.transfer.durationMinutes),
+          distanceKm: day.transfer.distanceKm,
+          notes: day.transfer.notes,
+        }
+      : undefined;
+
     return {
       day: day.dayNumber,
       date: dateStr,
@@ -201,6 +216,7 @@ export function transformBuilderToItineraryData(params: {
       accommodation: accommodationName,
       meals: mealsStr,
       previewImage: day.previewImage || undefined,
+      transportation: dayTransport,
     };
   });
 
@@ -312,6 +328,29 @@ export function transformBuilderToItineraryData(params: {
     destinations: destinationNames,
   };
 
+  // Build national parks map for theme rendering (park info blocks)
+  const themeNationalParks: Record<string, NationalParkInfo> = {};
+  days.forEach((day) => {
+    if (day.destination) {
+      const parkData = nationalParksMap[day.destination];
+      if (parkData && !themeNationalParks[parkData.id]) {
+        const parkInfo: NationalParkInfo = {
+          id: parkData.id,
+          name: parkData.name,
+          park_overview: (parkData.park_overview as any) || null,
+          featured_image_url: null,
+        };
+        // Store by ID and name variations for matching
+        themeNationalParks[parkData.id] = parkInfo;
+        const parkNameLower = parkData.name.toLowerCase();
+        const parkNameShort = parkNameLower.replace(/\s+national\s+park/i, '').trim();
+        themeNationalParks[parkNameLower] = parkInfo;
+        themeNationalParks[parkNameShort] = parkInfo;
+        themeNationalParks[parkNameShort + '-np'] = parkInfo;
+      }
+    }
+  });
+
   // Derive transportation from per-day transfers
   const transportation: ThemeTransportation[] = days
     .filter((d) => d.transfer)
@@ -341,6 +380,7 @@ export function transformBuilderToItineraryData(params: {
     tripOverview,
     itinerary,
     accommodations: accommodationsList,
+    nationalParks: Object.keys(themeNationalParks).length > 0 ? themeNationalParks : undefined,
     transportation: transportation.length > 0 ? transportation : undefined,
     pricing,
     includedItems: inclusions,

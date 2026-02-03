@@ -140,6 +140,7 @@ export interface Day {
   accommodation: string;
   meals: string;
   previewImage?: string; // Custom image for theme preview
+  transportation?: ThemeTransportation; // Transfer happening on this day
 }
 
 export interface Location {

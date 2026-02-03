@@ -337,60 +337,6 @@ export default function MinimalisticTheme({ data, onHeroImageChange, onDayImageC
         </section>
       )}
 
-      {/* Major Transfers Section */}
-      {data.transportation && data.transportation.length > 0 && (
-        <section className="border-b border-stone-100 bg-stone-50/50">
-          <div className="mx-auto max-w-screen-xl px-6 py-12 md:py-16">
-            <h2 className="mb-8 text-center text-xs font-medium tracking-[0.3em] text-stone-400 uppercase">
-              Major Transfers
-            </h2>
-
-            <div className="mx-auto max-w-3xl space-y-4">
-              {data.transportation.map((transfer, idx) => (
-                <div
-                  key={transfer.id}
-                  className="flex flex-col gap-3 rounded-xl border border-stone-200 bg-white p-5 shadow-sm sm:flex-row sm:items-center sm:justify-between"
-                >
-                  <div className="flex items-center gap-3">
-                    {/* Mode Icon */}
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-stone-100">
-                      {transfer.mode.startsWith('flight') ? (
-                        <svg className="h-5 w-5 text-stone-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 19h14M12 3l-6 8h12l-6-8zM12 11v5" />
-                        </svg>
-                      ) : (
-                        <svg className="h-5 w-5 text-stone-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 17h8m-8 0a2 2 0 01-2-2V7a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2m-8 0v2a1 1 0 001 1h6a1 1 0 001-1v-2M7 10h10" />
-                        </svg>
-                      )}
-                    </div>
-
-                    {/* Route */}
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:gap-3">
-                      <span className="font-medium text-stone-800">{transfer.originName}</span>
-                      <span className="hidden text-stone-400 sm:inline">&rarr;</span>
-                      <span className="text-sm text-stone-500 sm:hidden">&darr;</span>
-                      <span className="font-medium text-stone-800">{transfer.destinationName}</span>
-                    </div>
-                  </div>
-
-                  {/* Details */}
-                  <div className="flex flex-wrap items-center gap-3 text-xs text-stone-500">
-                    <span className="rounded-full bg-stone-100 px-3 py-1">{transfer.modeLabel}</span>
-                    {transfer.durationFormatted && (
-                      <span>{transfer.durationFormatted}</span>
-                    )}
-                    {transfer.distanceKm && (
-                      <span>{transfer.distanceKm} km</span>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
-
       {/* Main Content */}
       <main className="mx-auto max-w-screen-xl px-6 py-24 md:py-32">
         <div className="grid grid-cols-1 gap-24 lg:grid-cols-[1fr_400px]">
@@ -584,7 +530,8 @@ export default function MinimalisticTheme({ data, onHeroImageChange, onDayImageC
                             </div>
                           )}
 
-                          {/* Activities Timeline */}
+                          {/* Activities Timeline — only show when there are activities */}
+                          {day.activities.length > 0 && (
                           <div className="space-y-8">
                             <div className="flex items-center gap-4">
                               <span className="text-xs font-medium tracking-[0.2em] text-stone-400 uppercase">
@@ -669,6 +616,60 @@ export default function MinimalisticTheme({ data, onHeroImageChange, onDayImageC
                               })}
                             </div>
                           </div>
+                          )}
+
+                          {/* Day Transfer — shown after activities as the closing event of the day */}
+                          {day.transportation && (
+                            <div className="relative space-y-3 border-l border-dashed border-stone-300 pl-8">
+                              <div className="absolute top-1.5 -left-[9px] h-[18px] w-[18px] rounded-full border-2 border-stone-300 bg-white">
+                                {day.transportation.mode.startsWith('flight') ? (
+                                  <svg className="mt-[1px] ml-[1px] h-3 w-3 text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 19h14M12 3l-6 8h12l-6-8zM12 11v5" />
+                                  </svg>
+                                ) : (
+                                  <svg className="mt-[1px] ml-[1px] h-3 w-3 text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 17h8m-8 0a2 2 0 01-2-2V7a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2m-8 0v2a1 1 0 001 1h6a1 1 0 001-1v-2M7 10h10" />
+                                  </svg>
+                                )}
+                              </div>
+
+                              <p className="text-sm text-stone-500 italic">
+                                {day.transportation.mode.startsWith('flight')
+                                  ? 'Afterwards, you fly to your next destination'
+                                  : 'Afterwards, you travel to your next destination'}
+                              </p>
+
+                              <div className="flex flex-wrap items-center gap-2 text-base text-stone-800">
+                                <span className="font-medium">{day.transportation.originName}</span>
+                                <svg className="h-4 w-4 shrink-0 text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                                </svg>
+                                <span className="font-medium">{day.transportation.destinationName}</span>
+                              </div>
+
+                              <div className="flex flex-wrap items-center gap-3 text-sm text-stone-500">
+                                <span>{day.transportation.modeLabel}</span>
+                                {day.transportation.durationFormatted && (
+                                  <>
+                                    <span className="text-stone-300">|</span>
+                                    <span>{day.transportation.durationFormatted}</span>
+                                  </>
+                                )}
+                                {day.transportation.distanceKm && (
+                                  <>
+                                    <span className="text-stone-300">|</span>
+                                    <span>{day.transportation.distanceKm} km</span>
+                                  </>
+                                )}
+                              </div>
+
+                              {day.transportation.notes && (
+                                <p className="text-sm leading-relaxed text-stone-500 italic">
+                                  {day.transportation.notes}
+                                </p>
+                              )}
+                            </div>
+                          )}
 
                           <div className="flex flex-col justify-between gap-8 rounded-2xl bg-stone-50 p-8 md:flex-row">
                             <div>

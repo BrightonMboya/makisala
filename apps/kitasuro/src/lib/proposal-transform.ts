@@ -235,6 +235,21 @@ export async function transformProposalToItineraryData(
           .join(', ') || 'None'
       : 'None';
 
+    // Get per-day transportation
+    const dayTransport = day.transportation?.[0];
+    const themeTransport = dayTransport
+      ? {
+          id: dayTransport.id,
+          originName: dayTransport.originName,
+          destinationName: dayTransport.destinationName,
+          mode: dayTransport.mode,
+          modeLabel: transportModeLabels[dayTransport.mode] || dayTransport.mode,
+          durationFormatted: formatDuration(dayTransport.durationMinutes),
+          distanceKm: dayTransport.distanceKm,
+          notes: dayTransport.notes,
+        }
+      : undefined;
+
     return {
       day: day.dayNumber,
       date: dateStr,
@@ -246,6 +261,7 @@ export async function transformProposalToItineraryData(
       accommodation: accommodationName,
       meals: mealsStr,
       previewImage: day.previewImage || undefined,
+      transportation: themeTransport,
     };
   });
 
