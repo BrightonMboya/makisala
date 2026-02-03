@@ -496,6 +496,18 @@ function BuilderLayoutInner({ children }: { children: React.ReactNode }) {
             imageUrl: act.imageUrl,
             time: act.time,
           })),
+          transfer: day.transportation?.[0]
+            ? {
+                originId: day.transportation[0].originId || null,
+                originName: day.transportation[0].originName,
+                destinationId: day.transportation[0].destinationId || null,
+                destinationName: day.transportation[0].destinationName,
+                mode: day.transportation[0].mode,
+                durationMinutes: day.transportation[0].durationMinutes,
+                distanceKm: day.transportation[0].distanceKm,
+                notes: day.transportation[0].notes || '',
+              }
+            : null,
         })),
       };
     } else if (tourTemplate) {

@@ -8,12 +8,32 @@ import type {
   ItineraryData,
   Location,
   PricingRow,
+  ThemeTransportation,
   ThemeType,
+  TransportModeType,
   TravelerGroup,
   TripOverview,
 } from '@/types/itinerary-types';
 import { capitalize } from '@/lib/utils';
 import { CITIES } from '@/lib/data/cities';
+
+// Transport mode labels
+const transportModeLabels: Record<TransportModeType, string> = {
+  road_4x4: '4WD Safari Vehicle',
+  road_shuttle: 'Shuttle/Minibus',
+  road_bus: 'Coach Bus',
+  flight_domestic: 'Domestic Flight',
+  flight_bush: 'Bush/Charter Flight',
+};
+
+function formatDuration(minutes: number | null): string | null {
+  if (!minutes) return null;
+  const hours = Math.floor(minutes / 60);
+  const mins = minutes % 60;
+  if (hours === 0) return `${mins} min`;
+  if (mins === 0) return `${hours}h`;
+  return `${hours}h ${mins}min`;
+}
 
 // Calculate pricing
 function calculatePricing(
@@ -292,6 +312,23 @@ export function transformBuilderToItineraryData(params: {
     destinations: destinationNames,
   };
 
+  // Derive transportation from per-day transfers
+  const transportation: ThemeTransportation[] = days
+    .filter((d) => d.transfer)
+    .map((d) => {
+      const t = d.transfer!;
+      return {
+        id: `transfer-day-${d.dayNumber}`,
+        originName: t.originName,
+        destinationName: t.destinationName,
+        mode: t.mode,
+        modeLabel: transportModeLabels[t.mode] || t.mode,
+        durationFormatted: formatDuration(t.durationMinutes),
+        distanceKm: t.distanceKm,
+        notes: t.notes,
+      };
+    });
+
   return {
     id: 'preview',
     title: tourTitle || 'Safari Adventure',
@@ -304,6 +341,7 @@ export function transformBuilderToItineraryData(params: {
     tripOverview,
     itinerary,
     accommodations: accommodationsList,
+    transportation: transportation.length > 0 ? transportation : undefined,
     pricing,
     includedItems: inclusions,
     excludedItems: exclusions,

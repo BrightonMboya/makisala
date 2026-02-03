@@ -19,6 +19,7 @@ import {
   proposalMeals,
   proposalNotes,
   proposals,
+  proposalTransportation,
   tours,
   user,
 } from '@repo/db/schema';
@@ -420,6 +421,21 @@ export async function searchNationalParks(query: string, limit: number = 20) {
   }
 }
 
+export async function getNationalParkById(id: string) {
+  try {
+    return await db.query.nationalParks.findFirst({
+      where: eq(nationalParks.id, id),
+      columns: {
+        id: true,
+        name: true,
+      },
+    });
+  } catch (error) {
+    console.error('Error fetching national park by id:', error);
+    return null;
+  }
+}
+
 export async function getPageImages(pageIds: string[]) {
   try {
     if (pageIds.length === 0) return [];
@@ -651,6 +667,17 @@ export async function getProposal(id: string) {
               },
             },
             meals: true,
+            transportation: {
+              columns: {
+                id: true,
+                originName: true,
+                destinationName: true,
+                mode: true,
+                durationMinutes: true,
+                distanceKm: true,
+                notes: true,
+              },
+            },
           },
           orderBy: (days, { asc }) => [asc(days.dayNumber)],
         },
@@ -730,6 +757,19 @@ export async function getProposalForBuilder(id: string) {
                 id: true,
                 name: true,
                 description: true,
+              },
+            },
+            transportation: {
+              columns: {
+                id: true,
+                originId: true,
+                originName: true,
+                destinationId: true,
+                destinationName: true,
+                mode: true,
+                durationMinutes: true,
+                distanceKm: true,
+                notes: true,
               },
             },
           },
@@ -936,6 +976,21 @@ export async function saveProposal(data: {
             breakfast: day.meals.breakfast || false,
             lunch: day.meals.lunch || false,
             dinner: day.meals.dinner || false,
+          });
+        }
+
+        // Insert transfer if present
+        if (day.transfer) {
+          await tx.insert(proposalTransportation).values({
+            proposalDayId: proposalDay.id,
+            originName: day.transfer.originName,
+            originId: day.transfer.originId || null,
+            destinationName: day.transfer.destinationName,
+            destinationId: day.transfer.destinationId || null,
+            mode: day.transfer.mode,
+            durationMinutes: day.transfer.durationMinutes || null,
+            distanceKm: day.transfer.distanceKm || null,
+            notes: day.transfer.notes || null,
           });
         }
       }
