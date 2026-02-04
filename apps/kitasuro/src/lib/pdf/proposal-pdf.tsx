@@ -226,6 +226,8 @@ interface ProposalPDFProps {
     tourTitle: string;
     clientName: string;
     agencyName: string;
+    aboutDescription?: string;
+    paymentTerms?: string;
     startDate?: Date;
     duration: number;
     days: Array<{
@@ -394,6 +396,22 @@ export function ProposalPDF({ proposal }: ProposalPDFProps) {
                 <Text style={styles.listText}>{item}</Text>
               </View>
             ))}
+          </View>
+        )}
+
+        {/* About Organization */}
+        {proposal.aboutDescription && (
+          <View style={styles.inclusionsSection}>
+            <Text style={styles.sectionTitle}>About {proposal.agencyName}</Text>
+            <Text style={styles.listText}>{proposal.aboutDescription}</Text>
+          </View>
+        )}
+
+        {/* Payment Terms */}
+        {proposal.paymentTerms && (
+          <View style={styles.inclusionsSection}>
+            <Text style={styles.sectionTitle}>Payment Terms & Conditions</Text>
+            <Text style={styles.listText}>{proposal.paymentTerms}</Text>
           </View>
         )}
 

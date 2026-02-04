@@ -8,6 +8,7 @@ import type {
   ItineraryData,
   Location,
   NationalParkInfo,
+  OrganizationInfo,
   PricingRow,
   ThemeTransportation,
   ThemeType,
@@ -128,6 +129,7 @@ export function transformBuilderToItineraryData(params: {
       description?: string;
     }
   >;
+  organization?: OrganizationInfo;
 }): ItineraryData {
   const {
     days,
@@ -147,6 +149,7 @@ export function transformBuilderToItineraryData(params: {
     country: countryParam,
     nationalParksMap,
     accommodationsMap,
+    organization,
   } = params;
 
   // Convert builder days to theme days
@@ -380,6 +383,7 @@ export function transformBuilderToItineraryData(params: {
     location,
     heroImage,
     theme: selectedTheme,
+    organization,
     tripOverview,
     itinerary,
     accommodations: accommodationsList,

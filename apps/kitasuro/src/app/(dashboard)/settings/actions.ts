@@ -5,6 +5,8 @@ import { and, desc, eq, inArray } from 'drizzle-orm';
 import { auth } from '@/lib/auth';
 import { headers } from 'next/headers';
 import { revalidatePath } from 'next/cache';
+import { uploadToStorage } from '@/lib/storage';
+import { compressImage } from '@/lib/image-utils';
 
 // Helper: Get authenticated session with active organization
 async function getSessionWithOrg() {
@@ -82,6 +84,8 @@ export async function updateOrganizationSettings(data: {
   logoUrl?: string;
   primaryColor?: string;
   notificationEmail?: string;
+  aboutDescription?: string;
+  paymentTerms?: string;
 }) {
   const session = await requireAdmin();
 
@@ -92,6 +96,51 @@ export async function updateOrganizationSettings(data: {
 
   revalidatePath('/settings');
   return { success: true };
+}
+
+export async function uploadOrganizationLogo(base64Data: string) {
+  const session = await requireAdmin();
+
+  try {
+    // Strip data URL prefix if present (handles any MIME type)
+    const base64 = base64Data.replace(/^data:[^;]+;base64,/, '');
+    const buffer = Buffer.from(base64, 'base64');
+
+    // Compress to WebP, max 512px for a logo
+    const compressed = await compressImage(buffer, {
+      quality: 85,
+      maxWidth: 512,
+      maxHeight: 512,
+    });
+
+    const key = `organizations/${session.orgId}/logo.webp`;
+
+    const result = await uploadToStorage({
+      file: compressed.buffer,
+      contentType: compressed.contentType,
+      key,
+      visibility: 'public',
+    });
+
+    if (!result.publicUrl) {
+      throw new Error('Failed to get public URL for uploaded logo');
+    }
+
+    // Append cache-busting param so browser/CDN serves the new image
+    const logoUrl = `${result.publicUrl}?v=${Date.now()}`;
+
+    // Save the URL to the organization
+    await db
+      .update(organizations)
+      .set({ logoUrl, updatedAt: new Date() })
+      .where(eq(organizations.id, session.orgId));
+
+    revalidatePath('/settings');
+    return { success: true, url: logoUrl };
+  } catch (error) {
+    console.error('Logo upload failed:', error);
+    throw error;
+  }
 }
 
 // === TEAM MANAGEMENT ===

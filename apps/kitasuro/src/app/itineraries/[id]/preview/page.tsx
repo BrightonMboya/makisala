@@ -14,6 +14,7 @@ import {
   saveProposal,
   sendProposalToClient,
 } from '@/app/itineraries/actions';
+import { getOrganizationSettings } from '@/app/(dashboard)/settings/actions';
 import { getClientById } from '@/app/(dashboard)/clients/actions';
 import { toast } from '@repo/ui/toast';
 import { useEffect, useMemo, useState } from 'react';
@@ -114,6 +115,11 @@ export default function PreviewPage() {
     staleTime: staleTimes.accommodations,
   });
 
+  const { data: orgSettings } = useQuery({
+    queryKey: ['organization-settings'],
+    queryFn: () => getOrganizationSettings(),
+  });
+
   const nationalParksMap = useMemo(() => {
     const map: Record<
       string,
@@ -161,6 +167,12 @@ export default function PreviewPage() {
       country: country || undefined,
       nationalParksMap,
       accommodationsMap,
+      organization: orgSettings ? {
+        name: orgSettings.name,
+        logoUrl: orgSettings.logoUrl,
+        aboutDescription: orgSettings.aboutDescription,
+        paymentTerms: orgSettings.paymentTerms,
+      } : undefined,
     });
   }, [
     days,
@@ -180,6 +192,7 @@ export default function PreviewPage() {
     country,
     nationalParksMap,
     accommodationsMap,
+    orgSettings,
   ]);
 
   // Share Proposal Mutation

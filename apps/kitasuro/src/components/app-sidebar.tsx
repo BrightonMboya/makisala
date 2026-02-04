@@ -16,8 +16,9 @@ import {
   SidebarMenuItem,
   SidebarRail,
 } from '@repo/ui/sidebar';
-import { useQueryClient } from '@tanstack/react-query';
-import { authClient, useListOrganizations } from '@/lib/auth-client';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { authClient, useActiveOrganization } from '@/lib/auth-client';
+import { getOrganizationSettings } from '@/app/(dashboard)/settings/actions';
 import { NewRequestDialog } from './new-request-dialog';
 
 export function AppSidebar() {
@@ -25,15 +26,17 @@ export function AppSidebar() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { data: session } = authClient.useSession();
-  const { data: organizations } = useListOrganizations();
-
-  // Get the first organization the user is a member of
-  const activeOrg = organizations?.[0];
+  const { data: activeOrg } = useActiveOrganization();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+
+  const { data: orgSettings } = useQuery({
+    queryKey: ['organization-settings'],
+    queryFn: () => getOrganizationSettings(),
+  });
 
   // Get org info from active organization
   const orgName = activeOrg?.name || 'Dashboard';
-  const orgLogo = activeOrg?.logo;
+  const orgLogo = orgSettings?.logoUrl;
   const orgInitial = orgName[0]?.toUpperCase();
   const userName = session?.user?.name || '';
   const userEmail = session?.user?.email || '';
@@ -101,7 +104,7 @@ export function AppSidebar() {
             >
               <Link href="/dashboard">
                 {orgLogo ? (
-                  <img src={orgLogo} alt={orgName} className="h-8 w-8 rounded object-contain" />
+                  <img src={orgLogo} alt={orgName} className="h-10 w-10 rounded-full border-2 border-stone-200 object-cover" />
                 ) : (
                   <div className="flex h-10 w-10 items-center justify-center rounded-full bg-green-100 font-serif text-lg font-bold text-green-800">
                     {orgInitial}
