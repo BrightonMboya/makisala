@@ -1,5 +1,7 @@
-import React from 'react';
+import { cache } from 'react';
+import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
+import { format } from 'date-fns';
 import MinimalisticTheme from '@/components/themes/MinimalisticTheme';
 import SafariPortalTheme from '@/components/themes/SafariPortalTheme';
 import KuduTheme from '@/components/themes/kudu';
@@ -10,11 +12,59 @@ import { PDFDownloadButton } from '@/components/pdf-download-button';
 import { getProposal } from '@/app/itineraries/actions';
 import { transformProposalToItineraryData } from '@/lib/proposal-transform';
 
-export default async function ItineraryPage({ params }: { params: Promise<{ id: string }> }) {
+type Props = {
+  params: Promise<{ id: string }>;
+};
+
+const getCachedProposal = cache(getProposal);
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { id } = await params;
+  const proposal = await getCachedProposal(id);
+
+  if (!proposal) {
+    return {
+      title: 'Proposal not found | Kitasuro',
+    };
+  }
+
+  const dayCount = proposal.days.length;
+  const title = proposal.tourTitle || proposal.name;
+  const orgName = proposal.organization?.name;
+
+  const descriptionParts: string[] = [];
+  if (dayCount > 0) descriptionParts.push(`${dayCount}-day`);
+  if (proposal.tourType) descriptionParts.push(proposal.tourType.toLowerCase());
+  if (proposal.countries?.length) descriptionParts.push(`across ${proposal.countries.join(', ')}`);
+  if (proposal.startCity && proposal.endCity && proposal.startCity !== proposal.endCity) {
+    descriptionParts.push(`· ${proposal.startCity} → ${proposal.endCity}`);
+  }
+  if (proposal.startDate) {
+    descriptionParts.push(`· Starting ${format(new Date(proposal.startDate), 'MMM d, yyyy')}`);
+  }
+
+  const description =
+    descriptionParts.length > 0
+      ? descriptionParts.join(' ')
+      : `Travel proposal${orgName ? ` by ${orgName}` : ''}`;
+
+  return {
+    title: orgName ? `${title} — ${orgName}` : title,
+    description,
+    robots: { index: false, follow: false },
+    openGraph: {
+      title: orgName ? `${title} — ${orgName}` : title,
+      description,
+      type: 'website',
+    },
+  };
+}
+
+export default async function ItineraryPage({ params }: Props) {
   const { id } = await params;
 
   try {
-    const proposal = await getProposal(id);
+    const proposal = await getCachedProposal(id);
 
     if (!proposal) {
       notFound();
