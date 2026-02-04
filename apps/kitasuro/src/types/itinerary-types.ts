@@ -24,6 +24,7 @@ export type BuilderDay = {
     lunch: boolean;
     dinner: boolean;
   };
+  title?: string; // Editable day title for timeline
   description?: string; // Narrative for the day
   accommodationImage?: string;
   previewImage?: string; // Custom image for theme preview

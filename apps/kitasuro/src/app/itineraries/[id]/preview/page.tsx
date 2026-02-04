@@ -308,6 +308,12 @@ export default function PreviewPage() {
     });
   };
 
+  const handleDayTitleChange = (dayNumber: number, title: string) => {
+    setDays((prevDays) =>
+      prevDays.map((day) => (day.dayNumber === dayNumber ? { ...day, title } : day)),
+    );
+  };
+
   const handleDayImageSelect = (dayNumber: number, url: string) => {
     setDays((prevDays) =>
       prevDays.map((day) => (day.dayNumber === dayNumber ? { ...day, previewImage: url } : day)),
@@ -370,7 +376,7 @@ export default function PreviewPage() {
           onDayImageChange={handleDayImageSelect}
         />
       ) : selectedTheme === 'discovery' ? (
-        <DiscoveryTheme data={itineraryData} onHeroImageChange={handleHeroImageSelect} onDayImageChange={handleDayImageSelect} />
+        <DiscoveryTheme data={itineraryData} onHeroImageChange={handleHeroImageSelect} onDayImageChange={handleDayImageSelect} onDayTitleChange={handleDayTitleChange} />
       ) : (
         <MinimalisticTheme data={itineraryData} onHeroImageChange={handleHeroImageSelect} onDayImageChange={handleDayImageSelect} />
       )}
@@ -425,19 +431,7 @@ export default function PreviewPage() {
 
             {isProposalSaved && (
               <>
-                <Button
-                  variant="outline"
-                  className="gap-2"
-                  onClick={() => downloadPDFMutation.mutate()}
-                  disabled={downloadPDFMutation.isPending}
-                >
-                  {downloadPDFMutation.isPending ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Download className="h-4 w-4" />
-                  )}
-                  {downloadPDFMutation.isPending ? 'Generating...' : 'Download PDF'}
-                </Button>
+                {/* PDF download hidden until design is finalized */}
 
                 {clientId && (
                   <Button

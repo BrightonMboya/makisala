@@ -700,6 +700,7 @@ export async function getProposalForBuilder(id: string) {
           columns: {
             id: true,
             dayNumber: true,
+            title: true,
             nationalParkId: true,
             description: true,
             previewImage: true,

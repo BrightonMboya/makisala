@@ -32,7 +32,7 @@ import {
   X,
 } from 'lucide-react';
 import Image from 'next/image';
-import { Map, MapMarker, MapRoute, MarkerContent, MarkerTooltip } from '@repo/ui/map';
+import { AnimatedRouteMarker, Map, MapMarker, MapRoute, MarkerContent, MarkerTooltip } from '@repo/ui/map';
 import type { ItineraryData } from '@/types/itinerary-types';
 import { cn } from '@/lib/utils';
 import { confirmProposal } from '@/app/itineraries/actions';
@@ -176,6 +176,14 @@ function JourneyMap({ data, className }: { data: ItineraryData['mapData']; class
             width={1.5}
             opacity={0.4}
             dashArray={[6, 4]}
+          />
+        )}
+        {routeCoordinates.length > 1 && (
+          <AnimatedRouteMarker
+            coordinates={routeCoordinates}
+            color="#1c1917"
+            size={10}
+            duration={8000}
           />
         )}
         {startLocation && (
@@ -506,7 +514,7 @@ const IntroductionSection = ({ data }: { data: ItineraryData }) => {
 // ============================================================================
 // JOURNEY OVERVIEW - Map and Timeline
 // ============================================================================
-const JourneyOverview = ({ data }: { data: ItineraryData }) => (
+const JourneyOverview = ({ data, onDayTitleChange }: { data: ItineraryData; onDayTitleChange?: (dayNumber: number, title: string) => void }) => (
   <section className="bg-white">
     <div className="grid grid-cols-1 lg:grid-cols-2">
       {/* Map */}
@@ -557,7 +565,17 @@ const JourneyOverview = ({ data }: { data: ItineraryData }) => (
                     <p className="mb-1 text-xs tracking-wider text-stone-400 uppercase">
                       {day.date}
                     </p>
-                    <h4 className="mb-1 font-serif text-lg text-stone-800">{day.title}</h4>
+                    {onDayTitleChange ? (
+                      <input
+                        type="text"
+                        value={day.title}
+                        onChange={(e) => onDayTitleChange(day.day, e.target.value)}
+                        placeholder={`Day ${day.day} title...`}
+                        className="mb-1 w-full rounded-md border border-dashed border-stone-300 bg-white/60 px-2 py-1 font-serif text-lg text-stone-800 outline-none transition-colors placeholder:text-stone-300 hover:border-stone-400 hover:bg-white focus:border-stone-500 focus:bg-white focus:ring-1 focus:ring-stone-300"
+                      />
+                    ) : (
+                      <h4 className="mb-1 font-serif text-lg text-stone-800">{day.title}</h4>
+                    )}
                     {day.destination && (
                       <p className="flex items-center gap-1.5 text-sm text-stone-500">
                         <MapPin className="h-3.5 w-3.5" />
@@ -772,7 +790,7 @@ const DaySection = ({
               viewport={{ once: true }}
             >
               <div className="mb-4 flex items-end gap-6">
-                <span className="-mb-2 font-serif text-8xl leading-none text-white/20 lg:text-9xl">
+                <span className="-mb-2 font-serif text-8xl leading-none text-white/40 lg:text-9xl" style={{ textShadow: '0 2px 12px rgba(0,0,0,0.4)' }}>
                   {String(day.day).padStart(2, '0')}
                 </span>
                 <div>
@@ -1116,9 +1134,10 @@ interface DiscoveryThemeProps {
   data: ItineraryData;
   onHeroImageChange?: (url: string) => void;
   onDayImageChange?: (dayNumber: number, url: string) => void;
+  onDayTitleChange?: (dayNumber: number, title: string) => void;
 }
 
-export default function DiscoveryTheme({ data, onHeroImageChange, onDayImageChange }: DiscoveryThemeProps) {
+export default function DiscoveryTheme({ data, onHeroImageChange, onDayImageChange, onDayTitleChange }: DiscoveryThemeProps) {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [confirmName, setConfirmName] = useState(data.clientName || '');
   const [isConfirming, setIsConfirming] = useState(false);
@@ -1164,7 +1183,7 @@ export default function DiscoveryTheme({ data, onHeroImageChange, onDayImageChan
         onImageChange={onHeroImageChange ? handleHeroImageChange : undefined}
       />
       <IntroductionSection data={data} />
-      <JourneyOverview data={data} />
+      <JourneyOverview data={data} onDayTitleChange={onDayTitleChange} />
       <PricingSection data={data} onConfirm={openConfirmModal} />
 
       {data.itinerary.map((day, index) => (

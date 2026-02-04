@@ -164,14 +164,16 @@ export function transformBuilderToItineraryData(params: {
       };
     });
 
-    // Get destination name from map and capitalize it
+    // Get destination name only from a resolved national park
     const destinationData = day.destination ? nationalParksMap[day.destination] : null;
-    const destinationName = capitalize(destinationData?.name || day.destination || '');
+    const destinationName = destinationData?.name ? capitalize(destinationData.name) : '';
 
-    // Generate title with properly capitalized destination
-    let title = destinationName
-      ? `Explore ${destinationName}`
-      : capitalize(day.activities[0]?.name || '') || `Day ${day.dayNumber}`;
+    // Use user-set title if defined, otherwise generate from destination/activity
+    let title = day.title !== undefined
+      ? day.title
+      : (destinationName ? `Explore ${destinationName}` : '')
+        || capitalize(day.activities[0]?.name || '')
+        || `Day ${day.dayNumber}`;
 
     // Get accommodation name from map
     const accommodationData = day.accommodation ? accommodationsMap[day.accommodation] : null;
@@ -264,8 +266,9 @@ export function transformBuilderToItineraryData(params: {
     return 'rwanda';
   };
 
-  const country = getCountryFromDestination(firstDestination || tourTitle);
-  const location = country === 'rwanda' ? 'Rwanda' : firstDestination || 'Rwanda';
+  const country = countryParam || getCountryFromDestination(firstDestination || tourTitle);
+  const countryDisplayName = country.charAt(0).toUpperCase() + country.slice(1).toLowerCase();
+  const location = countryDisplayName;
 
   days.forEach((day) => {
     if (day.destination && !seenParks.has(day.destination)) {

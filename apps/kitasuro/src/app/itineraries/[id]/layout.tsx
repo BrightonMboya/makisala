@@ -475,6 +475,7 @@ function BuilderLayoutInner({ children }: { children: React.ReactNode }) {
         days: (proposal.days || []).map((day: any) => ({
           id: day.id,
           dayNumber: day.dayNumber,
+          title: day.title || undefined,
           date: undefined,
           destination: day.nationalParkId || null,
           accommodation: day.accommodations?.[0]?.accommodationId || null,

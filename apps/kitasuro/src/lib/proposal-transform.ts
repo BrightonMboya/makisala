@@ -170,11 +170,14 @@ export async function transformProposalToItineraryData(
   const tourTitle = proposal.tourTitle || proposal.name || 'Safari Adventure';
   const clientName = proposal.client?.name || '';
 
-  // Determine location from first day's national park or title
-  const firstDay = proposalDays[0];
-  const firstPark = firstDay?.nationalPark;
-  const firstDestination = firstPark?.name || firstDay?.title || '';
-  const location = firstDestination || 'Safari Adventure';
+  // Determine location from countries array, tour country, or fallback
+  const countries = proposal.countries?.filter(Boolean) || [];
+  const tourCountry = (proposal as any).tour?.country;
+  const location = countries.length > 0
+    ? countries.map((c: string) => c.charAt(0).toUpperCase() + c.slice(1).toLowerCase()).join(' & ')
+    : tourCountry
+      ? tourCountry.charAt(0).toUpperCase() + tourCountry.slice(1).toLowerCase()
+      : 'East Africa';
 
   // Helper to sanitize IDs from location
   const sanitizeLocation = (loc: string | null | undefined): string | undefined => {
@@ -202,16 +205,15 @@ export async function transformProposalToItineraryData(
       };
     });
 
-    // Generate title from national park, day title, or first activity
+    // Use stored title, or generate from destination/activity (same logic as builder-transform)
+    const destinationName = day.nationalPark ? capitalize(day.nationalPark.name) : '';
     let title = day.title || '';
-    if (!title && day.nationalPark) {
-      title = `${capitalize(day.nationalPark.name)} National Park`;
-    }
-    if (!title && activities.length > 0 && activities[0]) {
-      title = activities[0].activity; // Already capitalized above
-    }
-    if (!title) {
-      title = `Day ${day.dayNumber}`;
+    if (!title || title === `Day ${day.dayNumber}`) {
+      // Regenerate if title was never set or is just the default placeholder
+      title = destinationName
+        ? `Explore ${destinationName}`
+        : (activities.length > 0 && activities[0] ? activities[0].activity : '')
+          || `Day ${day.dayNumber}`;
     } else {
       title = capitalize(title);
     }
@@ -255,7 +257,7 @@ export async function transformProposalToItineraryData(
       date: dateStr,
       title,
       description: day.description || undefined,
-      destination: day.nationalPark?.name || day.title || undefined,
+      destination: day.nationalPark?.name ? capitalize(day.nationalPark.name) : undefined,
       nationalParkId: day.nationalPark?.id,
       activities,
       accommodation: accommodationName,

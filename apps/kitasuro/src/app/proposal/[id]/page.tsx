@@ -39,7 +39,7 @@ export default async function ItineraryPage({ params }: { params: Promise<{ id: 
           ) : (
             <MinimalisticTheme data={transformedData} />
           )}
-          <PDFDownloadButton proposalId={id} title={transformedData.title} />
+          {/* PDF download hidden until design is finalized */}
         </CommentsOverlay>
       </CommentsProvider>
     );
