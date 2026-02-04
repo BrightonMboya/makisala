@@ -169,6 +169,8 @@ export interface NationalParkInfo {
 export interface OrganizationInfo {
   name: string;
   logoUrl: string | null;
+  aboutDescription: string | null;
+  paymentTerms: string | null;
 }
 
 export interface TripOverview {

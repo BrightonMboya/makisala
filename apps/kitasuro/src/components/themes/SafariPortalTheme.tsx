@@ -673,6 +673,32 @@ export default function SafariPortalTheme({ data }: { data: ItineraryData }) {
               </div>
             </div>
 
+            {/* About & Payment Terms */}
+            {(data.organization?.aboutDescription || data.organization?.paymentTerms) && (
+              <div className="space-y-10 border-t border-stone-200 pt-12">
+                {data.organization.aboutDescription && (
+                  <div>
+                    <h3 className="mb-4 text-[10px] font-bold tracking-[0.3em] text-stone-400 uppercase">
+                      About {data.organization.name}
+                    </h3>
+                    <p className="text-sm leading-relaxed text-stone-400 whitespace-pre-line">
+                      {data.organization.aboutDescription}
+                    </p>
+                  </div>
+                )}
+                {data.organization.paymentTerms && (
+                  <div>
+                    <h3 className="mb-4 text-[10px] font-bold tracking-[0.3em] text-stone-400 uppercase">
+                      Payment Terms & Conditions
+                    </h3>
+                    <p className="text-sm leading-relaxed text-stone-400 whitespace-pre-line">
+                      {data.organization.paymentTerms}
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+
             {data.organization?.name && (
               <footer className="space-y-6 border-t border-stone-200 pt-12 text-center">
                 <div className="font-serif text-2xl text-stone-300 italic">

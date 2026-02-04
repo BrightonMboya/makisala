@@ -101,6 +101,8 @@ export async function transformProposalToItineraryData(
     organization?: {
       name: string;
       logoUrl: string | null;
+      aboutDescription: string | null;
+      paymentTerms: string | null;
     } | null;
     client?: {
       name: string;
@@ -445,6 +447,8 @@ export async function transformProposalToItineraryData(
       ? {
           name: proposal.organization.name,
           logoUrl: proposal.organization.logoUrl,
+          aboutDescription: proposal.organization.aboutDescription,
+          paymentTerms: proposal.organization.paymentTerms,
         }
       : undefined,
     tripOverview,

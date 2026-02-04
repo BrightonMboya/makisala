@@ -571,6 +571,8 @@ export async function getProposal(id: string) {
           columns: {
             name: true,
             logoUrl: true,
+            aboutDescription: true,
+            paymentTerms: true,
           },
         },
         tour: {

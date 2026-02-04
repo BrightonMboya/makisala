@@ -636,6 +636,34 @@ export default function KuduTheme({ data, onHeroImageChange, onDayImageChange }:
           </NarrativeSection>
         )}
 
+      {/* ABOUT & PAYMENT TERMS */}
+      {(organization?.aboutDescription || organization?.paymentTerms) && (
+        <NarrativeSection imageUrl={heroImage} imageRight={true}>
+          <div className="max-h-[80vh] overflow-y-auto pr-2">
+            {organization.aboutDescription && (
+              <div className="mb-10">
+                <h2 className="mb-6 font-serif text-4xl font-bold text-slate-900">
+                  About {organization.name}
+                </h2>
+                <p className="font-serif text-lg leading-relaxed text-slate-600 whitespace-pre-line">
+                  {organization.aboutDescription}
+                </p>
+              </div>
+            )}
+            {organization.paymentTerms && (
+              <div>
+                <h3 className="mb-4 text-[10px] font-bold tracking-[0.4em] text-emerald-800 uppercase">
+                  Payment Terms & Conditions
+                </h3>
+                <p className="text-sm leading-relaxed text-slate-600 whitespace-pre-line">
+                  {organization.paymentTerms}
+                </p>
+              </div>
+            )}
+          </div>
+        </NarrativeSection>
+      )}
+
       {/* FLOATING PAGE TRACKER */}
       <div className="fixed top-1/2 right-8 z-50 hidden -translate-y-1/2 flex-col gap-6 lg:flex">
         {[...Array(itinerary.length + (importantNotes ? 4 : 3))].map((_, i) => (

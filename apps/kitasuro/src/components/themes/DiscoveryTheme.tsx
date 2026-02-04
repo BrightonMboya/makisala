@@ -1099,6 +1099,34 @@ const Footer = ({ data, onConfirm }: { data: ItineraryData; onConfirm: () => voi
       </motion.div>
     </div>
 
+    {/* About & Payment Terms */}
+    {(data.organization?.aboutDescription || data.organization?.paymentTerms) && (
+      <div className="border-t border-stone-800 px-8 py-16 lg:px-16">
+        <div className="mx-auto max-w-4xl space-y-12">
+          {data.organization.aboutDescription && (
+            <div>
+              <p className="mb-4 text-xs font-light tracking-[0.3em] text-stone-500 uppercase">
+                About {data.organization.name}
+              </p>
+              <p className="text-base leading-relaxed font-light text-stone-400 whitespace-pre-line">
+                {data.organization.aboutDescription}
+              </p>
+            </div>
+          )}
+          {data.organization.paymentTerms && (
+            <div>
+              <p className="mb-4 text-xs font-light tracking-[0.3em] text-stone-500 uppercase">
+                Payment Terms & Conditions
+              </p>
+              <p className="text-sm leading-relaxed font-light text-stone-500 whitespace-pre-line">
+                {data.organization.paymentTerms}
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
+    )}
+
     {/* Brand Footer */}
     <div className="px-8 py-12 lg:px-16">
       <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-6 md:flex-row">

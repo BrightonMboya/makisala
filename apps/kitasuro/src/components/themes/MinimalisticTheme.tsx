@@ -975,6 +975,23 @@ export default function MinimalisticTheme({ data, onHeroImageChange, onDayImageC
                         </span>
                       </div>
                     </div>
+                    {data.organization.aboutDescription && (
+                      <p className="mt-4 text-xs leading-relaxed text-stone-500 whitespace-pre-line">
+                        {data.organization.aboutDescription}
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                {/* Payment Terms */}
+                {data.organization?.paymentTerms && (
+                  <div className="border-t border-stone-100 pt-6">
+                    <h4 className="mb-3 text-xs font-bold tracking-[0.2em] text-stone-800 uppercase">
+                      Payment Terms & Conditions
+                    </h4>
+                    <p className="text-xs leading-relaxed text-stone-500 whitespace-pre-line">
+                      {data.organization.paymentTerms}
+                    </p>
                   </div>
                 )}
               </div>
