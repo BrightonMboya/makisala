@@ -30,7 +30,7 @@ export function AppSidebar() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   const { data: orgSettings } = useQuery({
-    queryKey: ['org-logo'],
+    queryKey: ['organization-settings'],
     queryFn: () => getOrganizationSettings(),
   });
 
@@ -104,7 +104,7 @@ export function AppSidebar() {
             >
               <Link href="/dashboard">
                 {orgLogo ? (
-                  <img src={orgLogo} alt={orgName} className="h-10 w-10 rounded-full object-cover" />
+                  <img src={orgLogo} alt={orgName} className="h-10 w-10 rounded-full border-2 border-stone-200 object-cover" />
                 ) : (
                   <div className="flex h-10 w-10 items-center justify-center rounded-full bg-green-100 font-serif text-lg font-bold text-green-800">
                     {orgInitial}

@@ -116,7 +116,7 @@ export default function PreviewPage() {
   });
 
   const { data: orgSettings } = useQuery({
-    queryKey: ['org-logo'],
+    queryKey: ['organization-settings'],
     queryFn: () => getOrganizationSettings(),
   });
 

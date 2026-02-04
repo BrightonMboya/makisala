@@ -20,13 +20,23 @@ import { toast } from '@repo/ui/toast';
 import { Textarea } from '@repo/ui/textarea';
 import { useQueryClient } from '@tanstack/react-query';
 
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+
+function readFileAsDataURL(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(file);
+  });
+}
 
 const schema = z.object({
   name: z.string().min(1, 'Organization name is required'),
   logoUrl: z.string().url('Must be a valid URL').or(z.literal('')),
   primaryColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/, 'Valid hex color required'),
-  aboutDescription: z.string().optional(),
-  paymentTerms: z.string().optional(),
+  aboutDescription: z.string().max(2000, 'Description must be under 2000 characters').optional(),
+  paymentTerms: z.string().max(5000, 'Terms must be under 5000 characters').optional(),
 });
 
 type FormValues = z.infer<typeof schema>;
@@ -112,31 +122,32 @@ export function OrganizationSettings({ organization }: Props) {
                         onChange={async (e) => {
                           const file = e.target.files?.[0];
                           if (!file) return;
+
+                          if (file.size > MAX_FILE_SIZE) {
+                            toast({
+                              title: 'File too large',
+                              description: 'Please select an image under 5MB',
+                              variant: 'destructive',
+                            });
+                            e.target.value = '';
+                            return;
+                          }
+
                           setIsUploadingLogo(true);
                           try {
-                            const reader = new FileReader();
-                            reader.onload = async () => {
-                              try {
-                                const base64 = reader.result as string;
-                                const result = await uploadOrganizationLogo(base64);
-                                if (result.success && result.url) {
-                                  field.onChange(result.url);
-                                  toast({ title: 'Logo uploaded' });
-                                  queryClient.invalidateQueries({ queryKey: ['org-logo'] });
-                                }
-                              } catch {
-                                toast({ title: 'Failed to upload logo', variant: 'destructive' });
-                              } finally {
-                                setIsUploadingLogo(false);
-                              }
-                            };
-                            reader.readAsDataURL(file);
+                            const base64 = await readFileAsDataURL(file);
+                            const result = await uploadOrganizationLogo(base64);
+                            if (result.success && result.url) {
+                              field.onChange(result.url);
+                              toast({ title: 'Logo uploaded' });
+                              queryClient.invalidateQueries({ queryKey: ['organization-settings'] });
+                            }
                           } catch {
-                            toast({ title: 'Failed to read file', variant: 'destructive' });
+                            toast({ title: 'Failed to upload logo', variant: 'destructive' });
+                          } finally {
                             setIsUploadingLogo(false);
+                            e.target.value = '';
                           }
-                          // Reset so the same file can be re-selected
-                          e.target.value = '';
                         }}
                       />
                       <div className="flex items-center gap-5">
