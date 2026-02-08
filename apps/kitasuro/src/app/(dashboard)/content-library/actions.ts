@@ -166,6 +166,10 @@ export async function uploadOrganizationImage(data: z.infer<typeof uploadImageSc
       })
       .returning();
 
+    if (!newImage) {
+      return { success: false, error: 'Failed to create image record' };
+    }
+
     revalidatePath('/content-library');
     return {
       success: true,
