@@ -108,9 +108,11 @@ const uploadImageSchema = z.object({
   base64: z.string().min(1),
 });
 
-export async function getOrganizationImages() {
+export async function getOrganizationImages(options?: { limit?: number }) {
   const session = await getSessionWithOrg();
   if (!session) return [];
+
+  const limit = options?.limit ?? 100;
 
   try {
     const images = await db
@@ -122,7 +124,8 @@ export async function getOrganizationImages() {
       })
       .from(organizationImages)
       .where(eq(organizationImages.organizationId, session.orgId))
-      .orderBy(desc(organizationImages.createdAt));
+      .orderBy(desc(organizationImages.createdAt))
+      .limit(limit);
 
     return images.map((img) => ({
       ...img,
@@ -159,8 +162,9 @@ export async function uploadOrganizationImage(data: z.infer<typeof uploadImageSc
     let compressed;
     try {
       compressed = await compressImage(rawBuffer);
-    } catch {
-      return { success: false, error: 'Invalid image file' };
+    } catch (err) {
+      console.error('Image compression failed:', err);
+      return { success: false, error: 'Unable to process image. Please try a different file.' };
     }
     const compressedName = replaceExtension(name, compressed.extension);
     const key = `organizations/${session.orgId}/images/${Date.now()}-${compressedName}`;

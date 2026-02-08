@@ -6,16 +6,10 @@ import { Button } from '@repo/ui/button';
 import { Input } from '@repo/ui/input';
 import { Loader2, Plus, Trash2, Upload } from 'lucide-react';
 import { deleteOrganizationImage, uploadOrganizationImage } from '../actions';
+import type { OrganizationImage } from '@/app/(dashboard)/content-library/_components/ContentLibraryTabs';
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
-
-interface OrganizationImage {
-  id: string;
-  name: string;
-  url: string;
-  createdAt: Date;
-}
 
 interface OrganizationImagesProps {
   initialImages: OrganizationImage[];
@@ -77,9 +71,12 @@ export function OrganizationImages({ initialImages }: OrganizationImagesProps) {
 
   const handleDelete = async (imageId: string) => {
     setDeletingId(imageId);
+    setError(null);
     const result = await deleteOrganizationImage(imageId);
     if (result.success) {
       setImages((prev) => prev.filter((img) => img.id !== imageId));
+    } else {
+      setError(result.error ?? 'Failed to delete image');
     }
     setDeletingId(null);
   };

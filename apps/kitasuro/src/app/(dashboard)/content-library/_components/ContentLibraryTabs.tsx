@@ -15,7 +15,7 @@ interface Accommodation {
   imageUrl: string | null;
 }
 
-interface OrganizationImage {
+export interface OrganizationImage {
   id: string;
   name: string;
   url: string;

@@ -17,6 +17,13 @@ export const r2 = new S3Client({
   bucket: env.R2_BUCKET_NAME,
 });
 
+const ALLOWED_CONTENT_TYPES = [
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'image/gif',
+] as const;
+
 interface UploadToStorageParams {
   file: Buffer | Uint8Array | Blob;
   contentType: string;
@@ -29,6 +36,10 @@ export async function uploadToStorage({
   contentType,
   key,
 }: UploadToStorageParams): Promise<UploadResult> {
+  if (!ALLOWED_CONTENT_TYPES.includes(contentType as (typeof ALLOWED_CONTENT_TYPES)[number])) {
+    throw new Error(`Invalid content type: ${contentType}`);
+  }
+
   await r2.write(key, file, { type: contentType });
 
   const result: UploadResult = {
