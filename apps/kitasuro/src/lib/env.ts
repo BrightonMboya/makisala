@@ -3,11 +3,16 @@ import { z } from 'zod';
 
 export const env = createEnv({
   server: {
-    // Supabase
+    // Supabase (database only now - storage moved to R2)
     SUPABASE_URL: z.url(),
     SUPABASE_SERVICE_KEY: z.string().min(1),
-    SUPABASE_PUBLIC_BUCKET: z.string().default('public-assets'),
-    SUPABASE_PRIVATE_BUCKET: z.string().default('private-assets'),
+
+    // Cloudflare R2 Storage
+    R2_ACCESS_KEY_ID: z.string().min(1),
+    R2_SECRET_ACCESS_KEY: z.string().min(1),
+    R2_ACCOUNT_ID: z.string().min(1),
+    R2_BUCKET_NAME: z.string().min(1),
+    R2_PUBLIC_URL: z.url(), // Your R2 public URL (r2.dev or custom domain)
 
     // Cloudinary (legacy - may be removed)
     CLOUDINARY_CLOUD_NAME: z.string().optional(),
@@ -30,8 +35,11 @@ export const env = createEnv({
     // Server
     SUPABASE_URL: process.env.SUPABASE_URL,
     SUPABASE_SERVICE_KEY: process.env.SUPABASE_SERVICE_KEY,
-    SUPABASE_PUBLIC_BUCKET: process.env.SUPABASE_PUBLIC_BUCKET,
-    SUPABASE_PRIVATE_BUCKET: process.env.SUPABASE_PRIVATE_BUCKET,
+    R2_ACCESS_KEY_ID: process.env.R2_ACCESS_KEY_ID,
+    R2_SECRET_ACCESS_KEY: process.env.R2_SECRET_ACCESS_KEY,
+    R2_ACCOUNT_ID: process.env.R2_ACCOUNT_ID,
+    R2_BUCKET_NAME: process.env.R2_BUCKET_NAME,
+    R2_PUBLIC_URL: process.env.R2_PUBLIC_URL,
     CLOUDINARY_CLOUD_NAME: process.env.CLOUDINARY_CLOUD_NAME,
     CLOUDINARY_API_KEY: process.env.CLOUDINARY_API_KEY,
     CLOUDINARY_API_SECRET: process.env.CLOUDINARY_API_SECRET,

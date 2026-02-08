@@ -1,9 +1,6 @@
-import Link from 'next/link';
 import { Library } from 'lucide-react';
-import { Button } from '@repo/ui/button';
-import { getAccommodationsWithContentStatus } from './actions';
-import { AccommodationSelector } from './_components/AccommodationSelector';
-import { SearchInput } from './_components/SearchInput';
+import { getAccommodationsWithContentStatus, getOrganizationImages } from './actions';
+import { ContentLibraryTabs } from './_components/ContentLibraryTabs';
 
 export default async function Page({
   searchParams,
@@ -14,11 +11,10 @@ export default async function Page({
   const page = Number(filters.page) || 1;
   const query = filters.query as string;
 
-  const { accommodations, pagination } = await getAccommodationsWithContentStatus({
-    page,
-    limit: 20,
-    query,
-  });
+  const [{ accommodations, pagination }, organizationImages] = await Promise.all([
+    getAccommodationsWithContentStatus({ page, limit: 20, query }),
+    getOrganizationImages(),
+  ]);
 
   return (
     <div className="mt-10 min-h-screen bg-gray-50 p-4">
@@ -30,29 +26,18 @@ export default async function Page({
             <div>
               <h1 className="text-3xl font-bold text-gray-900">Content Library</h1>
               <p className="mt-1 text-gray-600">
-                Search through our curated list of accomodations
+                Manage your images and browse accommodation photos
               </p>
             </div>
           </div>
         </div>
 
-        <div className="mb-6 flex items-center gap-4">
-          <SearchInput />
-        </div>
-
-        {/* Accommodation selector */}
-        <AccommodationSelector accommodations={accommodations} />
-
-        {/* Pagination */}
-        {pagination.totalPages > 1 && (
-          <div className="mt-6 flex items-center justify-center gap-2">
-            {Array.from({ length: pagination.totalPages }, (_, i) => i + 1).map((p) => (
-              <Button key={p} variant={p === pagination.page ? 'default' : 'outline'} size="sm" asChild>
-                <Link href={`/content-library?page=${p}${query ? `&query=${query}` : ''}`}>{p}</Link>
-              </Button>
-            ))}
-          </div>
-        )}
+        <ContentLibraryTabs
+          accommodations={accommodations}
+          pagination={pagination}
+          organizationImages={organizationImages}
+          query={query}
+        />
       </div>
     </div>
   );

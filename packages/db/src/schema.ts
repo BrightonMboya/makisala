@@ -133,11 +133,30 @@ export const organizationsRelations = relations(organizations, ({ many }) => ({
   users: many(user),
   proposals: many(proposals),
   clients: many(clients),
+  images: many(organizationImages),
   // Legacy invitations (to be removed after migration)
   teamInvitations: many(teamInvitations),
   // Better Auth organization plugin relations
   members: many(member),
   invitations: many(invitation),
+}));
+
+// ---------- ORGANIZATION IMAGES (media library per org) ----------
+export const organizationImages = pgTable('organization_images', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  organizationId: uuid('organization_id')
+    .notNull()
+    .references(() => organizations.id, { onDelete: 'cascade' }),
+  name: text('name').notNull(), // Original filename or user-provided name
+  key: text('key').notNull(), // R2 object key
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+export const organizationImagesRelations = relations(organizationImages, ({ one }) => ({
+  organization: one(organizations, {
+    fields: [organizationImages.organizationId],
+    references: [organizations.id],
+  }),
 }));
 
 // ---------- CLIENTS ----------
