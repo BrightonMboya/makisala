@@ -4,6 +4,13 @@ import { format } from 'date-fns';
 
 export const size = { width: 1200, height: 630 };
 
+// Convert image URL to PNG via wsrv.nl proxy (next/og doesn't support WebP)
+function toOgSafeUrl(url: string | null | undefined): string | null {
+  if (!url) return null;
+  // Use wsrv.nl to convert to PNG format
+  return `https://wsrv.nl/?url=${encodeURIComponent(url)}&output=png`;
+}
+
 export default async function OGImage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const proposal = await getProposal(id);
@@ -30,9 +37,9 @@ export default async function OGImage({ params }: { params: Promise<{ id: string
 
   const title = proposal.tourTitle || proposal.name;
   const orgName = proposal.organization?.name;
-  const logoUrl = proposal.organization?.logoUrl;
+  const logoUrl = toOgSafeUrl(proposal.organization?.logoUrl);
   const dayCount = proposal.days.length;
-  const heroImage = proposal.heroImage;
+  const heroImage = toOgSafeUrl(proposal.heroImage);
 
   const details: string[] = [];
   if (dayCount > 0) details.push(`${dayCount} days`);
@@ -61,6 +68,8 @@ export default async function OGImage({ params }: { params: Promise<{ id: string
         <img
           src={heroImage}
           alt=""
+          width={1200}
+          height={630}
           style={{
             position: 'absolute',
             top: 0,
@@ -105,6 +114,8 @@ export default async function OGImage({ params }: { params: Promise<{ id: string
             <img
               src={logoUrl}
               alt=""
+              width={48}
+              height={48}
               style={{
                 width: 48,
                 height: 48,

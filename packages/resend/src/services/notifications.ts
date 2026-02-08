@@ -169,7 +169,7 @@ export async function sendCommentNotificationEmail(
 
     const result = await resend.emails.send({
       from: fromEmail,
-      to: data.recipientEmail || env.NOTIFICATION_EMAIL,
+      to: data.recipientEmail!,
       subject,
       html,
     });

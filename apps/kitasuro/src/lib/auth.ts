@@ -180,11 +180,6 @@ export const auth = betterAuth({
             createdAt: 'created_at',
           },
           additionalFields: {
-            primaryColor: {
-              type: 'string',
-              defaultValue: '#15803d',
-              input: true,
-            },
             notificationEmail: {
               type: 'string',
               input: true,

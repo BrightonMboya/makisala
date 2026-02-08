@@ -32,7 +32,7 @@ import {
 } from '@repo/resend';
 import { auth } from '@/lib/auth';
 import { headers } from 'next/headers';
-import { listStorageFolders, listStorageImages } from '@/lib/storage';
+import { getPublicUrl, listStorageFolders, listStorageImages } from '@/lib/storage';
 import { env } from '@/lib/env';
 
 async function getSession() {
@@ -296,7 +296,7 @@ export async function getAllAccommodations() {
       ...acc,
       images: acc.images.map((img) => ({
         ...img,
-        url: `${env.SUPABASE_URL}/storage/v1/object/public/${img.bucket}/${img.key}`,
+        url: getPublicUrl(img.bucket, img.key),
       })),
     }));
   } catch (error) {
@@ -1232,8 +1232,8 @@ export async function sendProposalToClient(proposalId: string, message?: string)
   }
 }
 
-// Storage Actions (Supabase)
-const STORAGE_BUCKET = env.SUPABASE_PUBLIC_BUCKET;
+// Storage Actions (R2) - bucket param ignored, uses R2_BUCKET_NAME from env
+const STORAGE_BUCKET = 'r2'; // Placeholder, actual bucket from env
 const ACCOMMODATIONS_BUCKET = 'accommodations';
 const ACCOMMODATIONS_FOLDER = 'accommodations';
 

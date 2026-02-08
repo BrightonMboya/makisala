@@ -18,7 +18,6 @@ interface Organization {
   id: string;
   name: string;
   logoUrl?: string | null;
-  primaryColor?: string | null;
   notificationEmail?: string | null;
   onboardingCompletedAt?: Date | null;
 }

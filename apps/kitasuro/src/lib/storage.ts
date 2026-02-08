@@ -1,147 +1,151 @@
-import { createClient } from '@supabase/supabase-js'
-import { env } from './env'
+import { S3Client } from 'bun';
+import { env } from './env';
 
-export type StorageVisibility = 'public' | 'private'
+export type StorageVisibility = 'public' | 'private';
 
 export interface UploadResult {
-  bucket: string
-  key: string
-  publicUrl?: string
+  bucket: string;
+  key: string;
+  publicUrl?: string;
 }
 
-export const supabase = createClient(
-  env.SUPABASE_URL,
-  env.SUPABASE_SERVICE_KEY
-)
+// Initialize R2 client
+export const r2 = new S3Client({
+  accessKeyId: env.R2_ACCESS_KEY_ID,
+  secretAccessKey: env.R2_SECRET_ACCESS_KEY,
+  endpoint: `https://${env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
+  bucket: env.R2_BUCKET_NAME,
+});
 
+const ALLOWED_CONTENT_TYPES = [
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'image/gif',
+] as const;
 
 interface UploadToStorageParams {
-  file: Buffer | Uint8Array | Blob
-  contentType: string
-  key: string
-  visibility: StorageVisibility
+  file: Buffer | Uint8Array | Blob;
+  contentType: string;
+  key: string;
+  visibility: StorageVisibility;
 }
 
 export async function uploadToStorage({
   file,
   contentType,
   key,
-  visibility,
 }: UploadToStorageParams): Promise<UploadResult> {
-  const bucket =
-    visibility === 'public'
-      ? env.SUPABASE_PUBLIC_BUCKET
-      : env.SUPABASE_PRIVATE_BUCKET
-
-  const { data, error } = await supabase.storage
-    .from(bucket)
-    .upload(key, file, { contentType, upsert: true })
-
-  if (error) {
-    console.error('Storage upload failed:', error)
-    throw error
+  if (!ALLOWED_CONTENT_TYPES.includes(contentType as (typeof ALLOWED_CONTENT_TYPES)[number])) {
+    throw new Error(`Invalid content type: ${contentType}`);
   }
 
-  const result: UploadResult = { bucket, key }
+  await r2.write(key, file, { type: contentType });
 
-  // If public, generate a public URL
-  if (visibility === 'public') {
-    const { data: urlData } = supabase.storage.from(bucket).getPublicUrl(key)
-    result.publicUrl = urlData.publicUrl
-  }
+  const result: UploadResult = {
+    bucket: env.R2_BUCKET_NAME,
+    key,
+    publicUrl: `${env.R2_PUBLIC_URL}/${key}`,
+  };
 
-  return result
+  return result;
 }
 
-export function getPublicUrl(bucket: string, key: string) {
-  const { data } = supabase.storage.from(bucket).getPublicUrl(key)
-  return data.publicUrl
+export function getPublicUrl(_bucket: string, key: string) {
+  // Bucket param kept for backwards compatibility but ignored - R2 uses single bucket
+  return `${env.R2_PUBLIC_URL}/${key}`;
+}
+
+export async function deleteFromStorage(key: string): Promise<void> {
+  await r2.delete(key);
 }
 
 export interface StorageFolder {
-  name: string
-  path: string
+  name: string;
+  path: string;
 }
 
 export interface StorageImage {
-  id: string
-  name: string
-  url: string
+  id: string;
+  name: string;
+  url: string;
 }
 
 /**
- * List folders in a Supabase storage bucket
- * Supabase doesn't have native folder support, so we extract unique prefixes from file paths
+ * List folders in R2 bucket by extracting unique prefixes from file paths
  */
 export async function listStorageFolders(
-  bucket: string,
+  _bucket: string,
   parentPath?: string
 ): Promise<StorageFolder[]> {
-  const path = parentPath || ''
+  const prefix = parentPath ? `${parentPath}/` : '';
 
-  const { data, error } = await supabase.storage
-    .from(bucket)
-    .list(path, {
-      limit: 100,
-      sortBy: { column: 'name', order: 'asc' },
-    })
+  // Use S3 list with delimiter to get "folders"
+  const response = await r2.list({
+    prefix,
+    delimiter: '/',
+  });
 
-  if (error) {
-    console.error('Error listing storage folders:', error)
-    return []
+  // CommonPrefixes contains the "folder" paths
+  const folders: StorageFolder[] = [];
+
+  if (response.commonPrefixes) {
+    for (const commonPrefix of response.commonPrefixes) {
+      const fullPath = commonPrefix.prefix;
+      // Remove trailing slash and get the folder name
+      const pathWithoutTrailingSlash = fullPath.endsWith('/')
+        ? fullPath.slice(0, -1)
+        : fullPath;
+      const name = pathWithoutTrailingSlash.split('/').pop() || '';
+
+      if (name) {
+        folders.push({
+          name,
+          path: pathWithoutTrailingSlash,
+        });
+      }
+    }
   }
 
-  // Filter to only include folders (items with null metadata)
-  const folders = (data || [])
-    .filter((item) => item.id === null) // Folders have null id in Supabase
-    .map((item) => ({
-      name: item.name,
-      path: path ? `${path}/${item.name}` : item.name,
-    }))
-
-  return folders
+  return folders.sort((a, b) => a.name.localeCompare(b.name));
 }
 
 /**
- * List images in a Supabase storage bucket folder
+ * List images in an R2 bucket folder
  */
 export async function listStorageImages(
-  bucket: string,
+  _bucket: string,
   folderPath?: string
 ): Promise<StorageImage[]> {
-  const path = folderPath || ''
+  const prefix = folderPath ? `${folderPath}/` : '';
 
-  const { data, error } = await supabase.storage
-    .from(bucket)
-    .list(path, {
-      limit: 50,
-      sortBy: { column: 'created_at', order: 'desc' },
-    })
+  const response = await r2.list({
+    prefix,
+    delimiter: '/',
+  });
 
-  if (error) {
-    console.error('Error listing storage images:', error)
-    return []
+  const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg', '.avif'];
+
+  const images: StorageImage[] = [];
+
+  if (response.contents) {
+    for (const item of response.contents) {
+      const key = item.key;
+      const name = key.split('/').pop() || '';
+
+      // Skip if it's a "folder" marker or doesn't have an image extension
+      if (!name || name === '') continue;
+
+      const ext = name.toLowerCase().slice(name.lastIndexOf('.'));
+      if (!imageExtensions.includes(ext)) continue;
+
+      images.push({
+        id: key,
+        name,
+        url: `${env.R2_PUBLIC_URL}/${key}`,
+      });
+    }
   }
 
-  // Filter to only include files (not folders) that are images
-  const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg', '.avif']
-  const images = (data || [])
-    .filter((item) => {
-      if (item.id === null) return false // Skip folders
-      const dotIndex = item.name.lastIndexOf('.')
-      if (dotIndex === -1) return false // No extension
-      const ext = item.name.toLowerCase().slice(dotIndex)
-      return imageExtensions.includes(ext)
-    })
-    .map((item) => {
-      const fullPath = path ? `${path}/${item.name}` : item.name
-      const { data: urlData } = supabase.storage.from(bucket).getPublicUrl(fullPath)
-      return {
-        id: item.id || fullPath,
-        name: item.name,
-        url: urlData.publicUrl,
-      }
-    })
-
-  return images
+  return images;
 }

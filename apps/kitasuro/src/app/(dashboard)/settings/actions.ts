@@ -82,7 +82,6 @@ export async function getOrganizationSettings() {
 export async function updateOrganizationSettings(data: {
   name?: string;
   logoUrl?: string;
-  primaryColor?: string;
   notificationEmail?: string;
   aboutDescription?: string;
   paymentTerms?: string;

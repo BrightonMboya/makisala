@@ -3,15 +3,17 @@
 import { Button } from '@repo/ui/button';
 import { Input } from '@repo/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@repo/ui/dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@repo/ui/tabs';
 import {
   getAllAccommodationFolders,
   getStorageFolders,
   getStorageImages,
   searchAccommodationFolders,
 } from '@/app/itineraries/actions';
+import { getOrganizationImages } from '@/app/(dashboard)/content-library/actions';
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
-import { ChevronRight, Folder, Home, Image as ImageIcon, Loader2, Search } from 'lucide-react';
+import { Building2, ChevronRight, Folder, Home, Image as ImageIcon, Loader2, Search } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useQuery } from '@tanstack/react-query';
 import { useDebouncedValue } from '@/hooks/use-debounced-value';
@@ -24,6 +26,8 @@ interface StorageFolder {
 
 const ACCOMMODATIONS_BUCKET = 'accomodations';
 
+type ImageSource = 'accommodations' | 'organization';
+
 interface ImagePickerContentProps {
   onSelect: (url: string) => void;
   value?: string;
@@ -32,6 +36,8 @@ interface ImagePickerContentProps {
   initialFolder?: string;
   /** Whether the picker is open (for controlled mode) */
   isOpen?: boolean;
+  /** Default tab to show */
+  defaultSource?: ImageSource;
 }
 
 /**
@@ -43,7 +49,9 @@ export function ImagePickerContent({
   bucket = ACCOMMODATIONS_BUCKET,
   initialFolder,
   isOpen = true,
+  defaultSource = 'accommodations',
 }: ImagePickerContentProps) {
+  const [activeSource, setActiveSource] = useState<ImageSource>(defaultSource);
   const [currentPath, setCurrentPath] = useState<string[]>([]);
   const [pathDisplayNames, setPathDisplayNames] = useState<Map<string, string>>(new Map());
   const [searchQuery, setSearchQuery] = useState('');
@@ -63,14 +71,13 @@ export function ImagePickerContent({
   const { data: initialFolderResult } = useQuery({
     queryKey: ['accommodationSearch', initialFolder],
     queryFn: () => searchAccommodationFolders(initialFolder || ''),
-    enabled: isAccommodationsBucket && !!initialFolder && isOpen && !hasInitialized,
+    enabled: isAccommodationsBucket && !!initialFolder && isOpen && !hasInitialized && activeSource === 'accommodations',
     staleTime: 5 * 60 * 1000,
   });
 
   // Auto-navigate to initial folder when picker opens
   useEffect(() => {
-    if (isOpen && initialFolder && initialFolderResult && initialFolderResult.length > 0 && !hasInitialized) {
-      // Find exact or close match
+    if (isOpen && initialFolder && initialFolderResult && initialFolderResult.length > 0 && !hasInitialized && activeSource === 'accommodations') {
       const exactMatch = initialFolderResult.find(
         (f) => f.displayName?.toLowerCase() === initialFolder.toLowerCase() ||
                f.name.toLowerCase() === initialFolder.toLowerCase()
@@ -81,7 +88,6 @@ export function ImagePickerContent({
         const pathParts = folder.path.split('/');
         setCurrentPath(pathParts);
 
-        // Store display name
         if (folder.displayName && folder.displayName !== folder.name) {
           setPathDisplayNames((prev) => {
             const newMap = new Map(prev);
@@ -92,7 +98,7 @@ export function ImagePickerContent({
       }
       setHasInitialized(true);
     }
-  }, [isOpen, initialFolder, initialFolderResult, hasInitialized]);
+  }, [isOpen, initialFolder, initialFolderResult, hasInitialized, activeSource]);
 
   // Reset initialization when picker closes
   useEffect(() => {
@@ -108,27 +114,37 @@ export function ImagePickerContent({
     queryKey: ['storageFolders', bucket, path, isAccommodationsRoot],
     queryFn: () =>
       isAccommodationsRoot ? getAllAccommodationFolders() : getStorageFolders(path, bucket),
-    enabled: isOpen,
+    enabled: isOpen && activeSource === 'accommodations',
     staleTime: 5 * 60 * 1000,
   });
 
-  // Query for images
-  const { data: images = [], isLoading: imagesLoading } = useQuery({
+  // Query for accommodation images
+  const { data: accommodationImages = [], isLoading: accommodationImagesLoading } = useQuery({
     queryKey: ['storageImages', bucket, path],
     queryFn: () => getStorageImages(path, bucket),
-    enabled: isOpen && !isAccommodationsRoot,
+    enabled: isOpen && activeSource === 'accommodations' && !isAccommodationsRoot,
     staleTime: 5 * 60 * 1000,
+  });
+
+  // Query for organization images
+  const { data: orgImages = [], isLoading: orgImagesLoading } = useQuery({
+    queryKey: ['organizationImages'],
+    queryFn: () => getOrganizationImages(),
+    enabled: isOpen && activeSource === 'organization',
+    staleTime: 2 * 60 * 1000,
   });
 
   // Query for search results
   const { data: searchResults = [], isLoading: isSearching } = useQuery({
     queryKey: ['accommodationSearch', debouncedSearchQuery],
     queryFn: () => searchAccommodationFolders(debouncedSearchQuery),
-    enabled: isAccommodationsBucket && debouncedSearchQuery.length >= 2,
+    enabled: isAccommodationsBucket && debouncedSearchQuery.length >= 2 && activeSource === 'accommodations',
     staleTime: 2 * 60 * 1000,
   });
 
-  const loading = foldersLoading || imagesLoading;
+  const loading = activeSource === 'accommodations'
+    ? (foldersLoading || accommodationImagesLoading)
+    : orgImagesLoading;
 
   const handleFolderClick = (folder: StorageFolder) => {
     const pathParts = folder.path.split('/');
@@ -160,120 +176,182 @@ export function ImagePickerContent({
 
   const displayFolders = debouncedSearchQuery.length >= 2 ? searchResults : folders;
 
+  const handleTabChange = (value: string) => {
+    setActiveSource(value as ImageSource);
+    setCurrentPath([]);
+    setSearchQuery('');
+  };
+
   return (
     <div className="flex h-[500px] flex-col">
-      {/* Search Input - Only for accommodations bucket */}
-      {isAccommodationsBucket && (
-        <div className="relative mb-4">
-          <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
-          <Input
-            placeholder="Search accommodations..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9"
-          />
-        </div>
-      )}
+      <Tabs value={activeSource} onValueChange={handleTabChange} className="flex h-full flex-col">
+        <TabsList className="mb-4 grid w-full grid-cols-2">
+          <TabsTrigger value="accommodations" className="gap-2">
+            <Building2 className="h-4 w-4" />
+            Accommodations
+          </TabsTrigger>
+          <TabsTrigger value="organization" className="gap-2">
+            <ImageIcon className="h-4 w-4" />
+            My Images
+          </TabsTrigger>
+        </TabsList>
 
-      {/* Breadcrumbs */}
-      <div className="text-muted-foreground mb-4 flex items-center gap-1 overflow-x-auto border-b pb-2 text-sm">
-        <Button
-          variant="ghost"
-          size="sm"
-          className="h-6 px-2"
-          onClick={() => handleBreadcrumbClick(-1)}
-        >
-          <Home className="h-4 w-4" />
-        </Button>
-        {currentPath.map((segment, index) => (
-          <div key={`${segment}-${index}`} className="flex shrink-0 items-center">
-            <ChevronRight className="h-4 w-4" />
+        <TabsContent value="accommodations" className="mt-0 flex min-h-0 flex-1 flex-col">
+          {/* Search Input */}
+          {isAccommodationsBucket && (
+            <div className="relative mb-4">
+              <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
+              <Input
+                placeholder="Search accommodations..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-9"
+              />
+            </div>
+          )}
+
+          {/* Breadcrumbs */}
+          <div className="text-muted-foreground mb-4 flex items-center gap-1 overflow-x-auto border-b pb-2 text-sm">
             <Button
               variant="ghost"
               size="sm"
               className="h-6 px-2"
-              onClick={() => handleBreadcrumbClick(index)}
+              onClick={() => handleBreadcrumbClick(-1)}
             >
-              {getDisplayNameForPathSegment(segment)}
+              <Home className="h-4 w-4" />
             </Button>
-          </div>
-        ))}
-      </div>
-
-      <div className="min-h-0 flex-1 overflow-y-auto">
-        {loading || isSearching ? (
-          <div className="flex h-full items-center justify-center">
-            <Loader2 className="h-8 w-8 animate-spin" />
-          </div>
-        ) : (
-          <div className="space-y-6">
-            {/* Search Results or Folders */}
-            {displayFolders.length > 0 && (
-              <div>
-                <h3 className="text-muted-foreground mb-2 text-sm font-medium">
-                  {debouncedSearchQuery.length >= 2 ? 'Search Results' : 'Folders'}
-                </h3>
-                <div className="flex flex-col gap-1">
-                  {displayFolders.map((folder) => (
-                    <Button
-                      key={folder.path}
-                      variant="ghost"
-                      className="h-auto justify-start px-3 py-2 font-normal"
-                      onClick={() => handleFolderClick(folder)}
-                    >
-                      <Folder className="mr-2 h-4 w-4 fill-blue-500/20 text-blue-500" />
-                      <span className="truncate">{folder.displayName || folder.name}</span>
-                    </Button>
-                  ))}
-                </div>
+            {currentPath.map((segment, index) => (
+              <div key={`${segment}-${index}`} className="flex shrink-0 items-center">
+                <ChevronRight className="h-4 w-4" />
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 px-2"
+                  onClick={() => handleBreadcrumbClick(index)}
+                >
+                  {getDisplayNameForPathSegment(segment)}
+                </Button>
               </div>
-            )}
+            ))}
+          </div>
 
-            {/* No search results message */}
-            {debouncedSearchQuery.length >= 2 &&
-              displayFolders.length === 0 &&
-              !isSearching && (
-                <div className="text-muted-foreground text-sm">
-                  No accommodations found matching "{debouncedSearchQuery}"
-                </div>
-              )}
-
-            {/* Images */}
-            {!searchQuery && (
-              <div>
-                <h3 className="text-muted-foreground mb-2 text-sm font-medium">Images</h3>
-                {images.length === 0 && currentPath.length > 0 ? (
-                  <div className="text-muted-foreground text-sm">No images in this folder.</div>
-                ) : images.length === 0 ? (
-                  <div className="text-muted-foreground text-sm">
-                    Navigate to a folder to see images.
+          <div className="min-h-0 flex-1 overflow-y-auto">
+            {loading || isSearching ? (
+              <div className="flex h-full items-center justify-center">
+                <Loader2 className="h-8 w-8 animate-spin" />
+              </div>
+            ) : (
+              <div className="space-y-6">
+                {/* Search Results or Folders */}
+                {displayFolders.length > 0 && (
+                  <div>
+                    <h3 className="text-muted-foreground mb-2 text-sm font-medium">
+                      {debouncedSearchQuery.length >= 2 ? 'Search Results' : 'Folders'}
+                    </h3>
+                    <div className="flex flex-col gap-1">
+                      {displayFolders.map((folder) => (
+                        <Button
+                          key={folder.path}
+                          variant="ghost"
+                          className="h-auto justify-start px-3 py-2 font-normal"
+                          onClick={() => handleFolderClick(folder)}
+                        >
+                          <Folder className="mr-2 h-4 w-4 fill-blue-500/20 text-blue-500" />
+                          <span className="truncate">{folder.displayName || folder.name}</span>
+                        </Button>
+                      ))}
+                    </div>
                   </div>
-                ) : (
-                  <div className="grid grid-cols-3 gap-4">
-                    {images.map((img) => (
-                      <div
-                        key={img.public_id}
-                        className={cn(
-                          'group hover:ring-primary relative aspect-video cursor-pointer overflow-hidden rounded-md border transition-all hover:ring-2',
-                          value === img.secure_url && 'ring-primary ring-2',
-                        )}
-                        onClick={() => onSelect(img.secure_url)}
-                      >
-                        <Image
-                          src={img.secure_url}
-                          alt={img.public_id}
-                          fill
-                          className="object-cover transition-transform group-hover:scale-105"
-                        />
+                )}
+
+                {/* No search results message */}
+                {debouncedSearchQuery.length >= 2 &&
+                  displayFolders.length === 0 &&
+                  !isSearching && (
+                    <div className="text-muted-foreground text-sm">
+                      No accommodations found matching "{debouncedSearchQuery}"
+                    </div>
+                  )}
+
+                {/* Images */}
+                {!searchQuery && (
+                  <div>
+                    <h3 className="text-muted-foreground mb-2 text-sm font-medium">Images</h3>
+                    {accommodationImages.length === 0 && currentPath.length > 0 ? (
+                      <div className="text-muted-foreground text-sm">No images in this folder.</div>
+                    ) : accommodationImages.length === 0 ? (
+                      <div className="text-muted-foreground text-sm">
+                        Navigate to a folder to see images.
                       </div>
-                    ))}
+                    ) : (
+                      <div className="grid grid-cols-3 gap-4">
+                        {accommodationImages.map((img) => (
+                          <div
+                            key={img.public_id}
+                            className={cn(
+                              'group hover:ring-primary relative aspect-video cursor-pointer overflow-hidden rounded-md border transition-all hover:ring-2',
+                              value === img.secure_url && 'ring-primary ring-2',
+                            )}
+                            onClick={() => onSelect(img.secure_url)}
+                          >
+                            <Image
+                              src={img.secure_url}
+                              alt={img.public_id}
+                              fill
+                              className="object-cover transition-transform group-hover:scale-105"
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
             )}
           </div>
-        )}
-      </div>
+        </TabsContent>
+
+        <TabsContent value="organization" className="mt-0 flex min-h-0 flex-1 flex-col">
+          <div className="min-h-0 flex-1 overflow-y-auto">
+            {orgImagesLoading ? (
+              <div className="flex h-full items-center justify-center">
+                <Loader2 className="h-8 w-8 animate-spin" />
+              </div>
+            ) : orgImages.length === 0 ? (
+              <div className="flex h-full flex-col items-center justify-center text-center">
+                <ImageIcon className="mb-2 h-12 w-12 text-gray-300" />
+                <p className="text-muted-foreground text-sm">No images uploaded yet</p>
+                <p className="text-muted-foreground text-xs">
+                  Go to Content Library to upload images
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-3 gap-4">
+                {orgImages.map((img) => (
+                  <div
+                    key={img.id}
+                    className={cn(
+                      'group hover:ring-primary relative aspect-video cursor-pointer overflow-hidden rounded-md border transition-all hover:ring-2',
+                      value === img.url && 'ring-primary ring-2',
+                    )}
+                    onClick={() => onSelect(img.url)}
+                  >
+                    <Image
+                      src={img.url}
+                      alt={img.name}
+                      fill
+                      className="object-cover transition-transform group-hover:scale-105"
+                    />
+                    <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent p-2 opacity-0 transition-opacity group-hover:opacity-100">
+                      <p className="truncate text-xs text-white">{img.name}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
@@ -285,6 +363,8 @@ interface ImagePickerProps {
   bucket?: string;
   /** Initial folder to navigate to when picker opens (e.g., accommodation name) */
   initialFolder?: string;
+  /** Default tab to show */
+  defaultSource?: ImageSource;
 }
 
 /**
@@ -296,6 +376,7 @@ export function ImagePicker({
   triggerLabel,
   bucket = ACCOMMODATIONS_BUCKET,
   initialFolder,
+  defaultSource = 'accommodations',
 }: ImagePickerProps) {
   const [open, setOpen] = useState(false);
 
@@ -328,6 +409,7 @@ export function ImagePicker({
             bucket={bucket}
             initialFolder={initialFolder}
             isOpen={open}
+            defaultSource={defaultSource}
           />
         </DialogContent>
       </Dialog>
