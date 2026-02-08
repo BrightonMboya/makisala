@@ -10,7 +10,7 @@ export interface UploadResult {
 }
 
 // Initialize R2 client
-const r2 = new S3Client({
+export const r2 = new S3Client({
   accessKeyId: env.R2_ACCESS_KEY_ID,
   secretAccessKey: env.R2_SECRET_ACCESS_KEY,
   endpoint: `https://${env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
@@ -43,6 +43,10 @@ export async function uploadToStorage({
 export function getPublicUrl(_bucket: string, key: string) {
   // Bucket param kept for backwards compatibility but ignored - R2 uses single bucket
   return `${env.R2_PUBLIC_URL}/${key}`;
+}
+
+export async function deleteFromStorage(key: string): Promise<void> {
+  await r2.delete(key);
 }
 
 export interface StorageFolder {

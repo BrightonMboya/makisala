@@ -122,7 +122,6 @@ export const organizations = pgTable('organizations', {
   logoUrl: text('logo_url'),
   aboutDescription: text('about_description'),
   paymentTerms: text('payment_terms'),
-  primaryColor: text('primary_color').default('#15803d'), // Default green
   notificationEmail: text('notification_email'),
   onboardingCompletedAt: timestamp('onboarding_completed_at'), // Set when org completes onboarding
   createdAt: timestamp('created_at').defaultNow().notNull(),

@@ -34,7 +34,6 @@ function readFileAsDataURL(file: File): Promise<string> {
 const schema = z.object({
   name: z.string().min(1, 'Organization name is required'),
   logoUrl: z.string().url('Must be a valid URL').or(z.literal('')),
-  primaryColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/, 'Valid hex color required'),
   aboutDescription: z.string().max(2000, 'Description must be under 2000 characters').optional(),
   paymentTerms: z.string().max(5000, 'Terms must be under 5000 characters').optional(),
 });
@@ -46,7 +45,6 @@ interface Props {
     id: string;
     name: string;
     logoUrl: string | null;
-    primaryColor: string | null;
     aboutDescription: string | null;
     paymentTerms: string | null;
   };
@@ -63,7 +61,6 @@ export function OrganizationSettings({ organization }: Props) {
     defaultValues: {
       name: organization.name,
       logoUrl: organization.logoUrl || '',
-      primaryColor: organization.primaryColor || '#15803d',
       aboutDescription: organization.aboutDescription || '',
       paymentTerms: organization.paymentTerms || '',
     },
@@ -185,23 +182,6 @@ export function OrganizationSettings({ organization }: Props) {
                           )}
                         </div>
                       </div>
-                    </div>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="primaryColor"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Brand Color</FormLabel>
-                  <FormControl>
-                    <div className="flex gap-3">
-                      <Input type="color" {...field} className="h-10 w-14 p-1 cursor-pointer" />
-                      <Input {...field} className="flex-1" placeholder="#15803d" />
                     </div>
                   </FormControl>
                   <FormMessage />

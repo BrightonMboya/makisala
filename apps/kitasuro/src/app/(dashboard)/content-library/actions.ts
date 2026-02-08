@@ -2,7 +2,7 @@
 
 import { accommodations, db, member, organizationImages } from '@repo/db';
 import { and, asc, desc, eq, ilike, sql } from 'drizzle-orm';
-import { getPublicUrl, uploadToStorage } from '@/lib/storage';
+import { deleteFromStorage, getPublicUrl, uploadToStorage } from '@/lib/storage';
 import { auth } from '@/lib/auth';
 import { headers } from 'next/headers';
 import { revalidatePath } from 'next/cache';
@@ -99,9 +99,12 @@ export async function getAccommodationsWithContentStatus(options?: {
 
 // ============ ORGANIZATION IMAGES ============
 
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'] as const;
+
 const uploadImageSchema = z.object({
-  name: z.string().min(1),
-  type: z.string().min(1),
+  name: z.string().min(1).max(255),
+  type: z.enum(ALLOWED_IMAGE_TYPES),
   base64: z.string().min(1),
 });
 
@@ -139,14 +142,26 @@ export async function uploadOrganizationImage(data: z.infer<typeof uploadImageSc
 
   const parsed = uploadImageSchema.safeParse(data);
   if (!parsed.success) {
-    return { success: false, error: 'Invalid input data' };
+    return { success: false, error: 'Invalid file type. Allowed: JPEG, PNG, WebP, GIF' };
   }
 
   const { name, base64 } = parsed.data;
 
   try {
     const rawBuffer = Buffer.from(base64, 'base64');
-    const compressed = await compressImage(rawBuffer);
+
+    // Validate file size
+    if (rawBuffer.length > MAX_FILE_SIZE) {
+      return { success: false, error: 'File size exceeds 10MB limit' };
+    }
+
+    // Validate actual image content using sharp
+    let compressed;
+    try {
+      compressed = await compressImage(rawBuffer);
+    } catch {
+      return { success: false, error: 'Invalid image file' };
+    }
     const compressedName = replaceExtension(name, compressed.extension);
     const key = `organizations/${session.orgId}/images/${Date.now()}-${compressedName}`;
 
@@ -192,9 +207,9 @@ export async function deleteOrganizationImage(imageId: string) {
   }
 
   try {
-    // Verify the image belongs to this organization
+    // Get the image key before deleting
     const [image] = await db
-      .select({ id: organizationImages.id })
+      .select({ id: organizationImages.id, key: organizationImages.key })
       .from(organizationImages)
       .where(
         and(
@@ -206,6 +221,14 @@ export async function deleteOrganizationImage(imageId: string) {
 
     if (!image) {
       return { success: false, error: 'Image not found' };
+    }
+
+    // Delete from R2 first
+    try {
+      await deleteFromStorage(image.key);
+    } catch (error) {
+      console.error('Failed to delete from R2:', error);
+      // Continue with DB deletion to avoid orphaned records
     }
 
     await db.delete(organizationImages).where(eq(organizationImages.id, imageId));
