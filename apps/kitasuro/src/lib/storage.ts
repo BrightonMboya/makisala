@@ -1,4 +1,9 @@
-import { S3Client } from 'bun';
+import {
+  S3Client,
+  PutObjectCommand,
+  DeleteObjectCommand,
+  ListObjectsV2Command,
+} from '@aws-sdk/client-s3';
 import { env } from './env';
 
 export type StorageVisibility = 'public' | 'private';
@@ -11,10 +16,12 @@ export interface UploadResult {
 
 // Initialize R2 client
 export const r2 = new S3Client({
-  accessKeyId: env.R2_ACCESS_KEY_ID,
-  secretAccessKey: env.R2_SECRET_ACCESS_KEY,
+  region: 'auto',
+  credentials: {
+    accessKeyId: env.R2_ACCESS_KEY_ID,
+    secretAccessKey: env.R2_SECRET_ACCESS_KEY,
+  },
   endpoint: `https://${env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
-  bucket: env.R2_BUCKET_NAME,
 });
 
 const ALLOWED_CONTENT_TYPES = [
@@ -40,7 +47,16 @@ export async function uploadToStorage({
     throw new Error(`Invalid content type: ${contentType}`);
   }
 
-  await r2.write(key, file, { type: contentType });
+  const body = file instanceof Blob ? Buffer.from(await file.arrayBuffer()) : file;
+
+  await r2.send(
+    new PutObjectCommand({
+      Bucket: env.R2_BUCKET_NAME,
+      Key: key,
+      Body: body,
+      ContentType: contentType,
+    })
+  );
 
   const result: UploadResult = {
     bucket: env.R2_BUCKET_NAME,
@@ -57,7 +73,12 @@ export function getPublicUrl(_bucket: string, key: string) {
 }
 
 export async function deleteFromStorage(key: string): Promise<void> {
-  await r2.delete(key);
+  await r2.send(
+    new DeleteObjectCommand({
+      Bucket: env.R2_BUCKET_NAME,
+      Key: key,
+    })
+  );
 }
 
 export interface StorageFolder {
@@ -80,18 +101,19 @@ export async function listStorageFolders(
 ): Promise<StorageFolder[]> {
   const prefix = parentPath ? `${parentPath}/` : '';
 
-  // Use S3 list with delimiter to get "folders"
-  const response = await r2.list({
-    prefix,
-    delimiter: '/',
-  });
+  const response = await r2.send(
+    new ListObjectsV2Command({
+      Bucket: env.R2_BUCKET_NAME,
+      Prefix: prefix,
+      Delimiter: '/',
+    })
+  );
 
-  // CommonPrefixes contains the "folder" paths
   const folders: StorageFolder[] = [];
 
-  if (response.commonPrefixes) {
-    for (const commonPrefix of response.commonPrefixes) {
-      const fullPath = commonPrefix.prefix;
+  if (response.CommonPrefixes) {
+    for (const commonPrefix of response.CommonPrefixes) {
+      const fullPath = commonPrefix.Prefix ?? '';
       // Remove trailing slash and get the folder name
       const pathWithoutTrailingSlash = fullPath.endsWith('/')
         ? fullPath.slice(0, -1)
@@ -119,18 +141,21 @@ export async function listStorageImages(
 ): Promise<StorageImage[]> {
   const prefix = folderPath ? `${folderPath}/` : '';
 
-  const response = await r2.list({
-    prefix,
-    delimiter: '/',
-  });
+  const response = await r2.send(
+    new ListObjectsV2Command({
+      Bucket: env.R2_BUCKET_NAME,
+      Prefix: prefix,
+      Delimiter: '/',
+    })
+  );
 
   const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg', '.avif'];
 
   const images: StorageImage[] = [];
 
-  if (response.contents) {
-    for (const item of response.contents) {
-      const key = item.key;
+  if (response.Contents) {
+    for (const item of response.Contents) {
+      const key = item.Key ?? '';
       const name = key.split('/').pop() || '';
 
       // Skip if it's a "folder" marker or doesn't have an image extension
