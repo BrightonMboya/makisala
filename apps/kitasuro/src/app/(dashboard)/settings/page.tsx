@@ -1,9 +1,10 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@repo/ui/tabs';
-import { Building2, Users, Bell, User } from 'lucide-react';
+import { Building2, Users, Bell, User, CreditCard } from 'lucide-react';
 import { OrganizationSettings } from './_components/organization-settings';
 import { TeamManagement } from './_components/team-management';
 import { NotificationSettings } from './_components/notification-settings';
 import { ProfileSettings } from './_components/profile-settings';
+import { BillingSettings } from './_components/billing-settings';
 import {
   getOrganizationSettings,
   getTeamMembers,
@@ -33,7 +34,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
   }
 
   // Determine default tab from URL param or based on admin status
-  const validTabs = ['organization', 'team', 'notifications', 'profile'];
+  const validTabs = ['organization', 'team', 'billing', 'notifications', 'profile'];
   const requestedTab = params.tab;
   const defaultTab = requestedTab && validTabs.includes(requestedTab)
     ? requestedTab
@@ -48,7 +49,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
         </div>
 
         <Tabs defaultValue={defaultTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4 h-auto p-1">
+          <TabsList className="grid w-full grid-cols-5 h-auto p-1">
             <TabsTrigger
               value="organization"
               className="gap-2 py-2"
@@ -64,6 +65,14 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
             >
               <Users className="h-4 w-4" />
               <span className="hidden sm:inline">Team</span>
+            </TabsTrigger>
+            <TabsTrigger
+              value="billing"
+              className="gap-2 py-2"
+              disabled={!isAdmin}
+            >
+              <CreditCard className="h-4 w-4" />
+              <span className="hidden sm:inline">Billing</span>
             </TabsTrigger>
             <TabsTrigger value="notifications" className="gap-2 py-2">
               <Bell className="h-4 w-4" />
@@ -95,6 +104,16 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
             ) : (
               <div className="text-center py-12 text-gray-500">
                 Only admins can manage team members.
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="billing">
+            {isAdmin ? (
+              <BillingSettings />
+            ) : (
+              <div className="text-center py-12 text-gray-500">
+                Only admins can manage billing settings.
               </div>
             )}
           </TabsContent>

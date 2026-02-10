@@ -3,10 +3,18 @@ import { db, invitation, member, organizations } from '@repo/db';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { organization } from 'better-auth/plugins';
 import { passkey } from '@better-auth/passkey';
+import { polar, checkout, portal, webhooks } from '@polar-sh/better-auth';
+import { Polar } from '@polar-sh/sdk';
 import { sendEmailVerificationEmail, sendTeamInvitationEmail } from '@repo/resend';
 import { and, eq } from 'drizzle-orm';
 import { randomBytes } from 'crypto';
 import { env } from './env';
+
+// Initialize Polar client
+const polarClient = new Polar({
+  accessToken: env.POLAR_ACCESS_TOKEN,
+  server: 'sandbox', // Change to 'production' when ready
+});
 
 // Constants
 const SLUG_RANDOM_BYTES = 8;
@@ -187,6 +195,29 @@ export const auth = betterAuth({
           },
         },
       },
+    }),
+    polar({
+      client: polarClient,
+      createCustomerOnSignUp: true,
+      use: [
+        checkout({
+          products: [
+            {
+              productId: env.POLAR_PRODUCT_ID,
+              slug: 'pro',
+            },
+          ],
+          successUrl: '/dashboard/settings/billing?checkout=success',
+          authenticatedUsersOnly: true,
+        }),
+        portal(),
+        webhooks({
+          secret: env.POLAR_WEBHOOK_SECRET,
+          onPayload: async (payload) => {
+            console.log('Polar webhook received:', payload.type);
+          },
+        }),
+      ],
     }),
   ],
 });

@@ -25,6 +25,11 @@ export const env = createEnv({
     // Google OAuth
     GOOGLE_CLIENT_ID: z.string().min(1),
     GOOGLE_CLIENT_SECRET: z.string().min(1),
+
+    // Polar billing
+    POLAR_ACCESS_TOKEN: z.string().min(1),
+    POLAR_PRODUCT_ID: z.string().min(1),
+    POLAR_WEBHOOK_SECRET: z.string().min(1),
   },
 
   client: {
@@ -46,6 +51,9 @@ export const env = createEnv({
     RESEND_FROM_EMAIL: process.env.RESEND_FROM_EMAIL,
     GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
     GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET,
+    POLAR_ACCESS_TOKEN: process.env.POLAR_ACCESS_TOKEN,
+    POLAR_PRODUCT_ID: process.env.POLAR_PRODUCT_ID,
+    POLAR_WEBHOOK_SECRET: process.env.POLAR_WEBHOOK_SECRET,
 
     // Client
     NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
