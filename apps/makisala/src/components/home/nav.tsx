@@ -26,7 +26,7 @@ export default function Nav() {
             <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                 <div className="flex h-16 items-center justify-between">
                     {/* Logo */}
-                    <Link href="/apps/makisala/public">
+                    <Link href="/">
                         <div className="flex items-center space-x-2 pl-10">
                             <div className="flex h-8 w-8 items-center justify-center gap-3 rounded-sm">
                                 {/*<span className="text-white font-bold text-xs">MS</span>*/}

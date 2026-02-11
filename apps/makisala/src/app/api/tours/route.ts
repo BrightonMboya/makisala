@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from 'next/server'
 import { db } from '@repo/db'
 import { itineraryDays, nationalParks, tours } from '@repo/db/schema'
-import { and, eq, exists, gte, ilike, inArray, lte, or, sql } from 'drizzle-orm'
+import { and, exists, gte, ilike, inArray, isNull, lte, or, sql } from 'drizzle-orm'
 
 export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
@@ -29,6 +29,7 @@ export async function GET(request: NextRequest) {
         lte(tours.pricing, String(maxPrice)),
         gte(tours.number_of_days, minDays),
         lte(tours.number_of_days, maxDays),
+        isNull(tours.organizationId),
         tags && tags.length > 0
             ? sql`${tours.tags}
             &&
