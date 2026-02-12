@@ -288,8 +288,8 @@ export async function transformProposalToItineraryData(
           images: allImages.length > 0 ? allImages : undefined,
           description:
             accommodation.overview ||
-            `Luxury accommodation in ${day.nationalPark?.name || 'Rwanda'}`,
-          location: day.nationalPark?.name || 'Rwanda',
+            `Luxury accommodation in ${day.nationalPark?.name || location}`,
+          location: day.nationalPark?.name || location,
         });
       }
     });

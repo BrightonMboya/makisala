@@ -225,6 +225,15 @@ export function transformBuilderToItineraryData(params: {
     };
   });
 
+  // Determine country/location from param or first day's national park
+  const firstDay = days[0];
+  const firstParkId = firstDay?.destination;
+  const firstDestination = firstParkId ? nationalParksMap[firstParkId]?.name : null;
+
+  const country = countryParam || (firstDestination ? firstDestination.toLowerCase() : tourTitle.toLowerCase());
+  const countryDisplayName = country.charAt(0).toUpperCase() + country.slice(1).toLowerCase();
+  const location = countryDisplayName;
+
   // Extract accommodations
   const accommodationsList: Accommodation[] = [];
   const seenAccommodations = new Set<string>();
@@ -242,7 +251,7 @@ export function transformBuilderToItineraryData(params: {
           image: accData.image || defaultImage,
           images: accData.images && accData.images.length > 0 ? accData.images : undefined,
           description: accData.description || 'Luxury accommodation',
-          location: nationalParksMap[day.destination || '']?.name || 'Rwanda',
+          location: nationalParksMap[day.destination || '']?.name || countryDisplayName,
         });
       }
     }
@@ -254,24 +263,6 @@ export function transformBuilderToItineraryData(params: {
   // Generate map data (simplified for preview)
   const mapLocations: Location[] = [];
   const seenParks = new Set<string>();
-
-  // Determine country/location from first day's national park or title
-  const firstDay = days[0];
-  const firstParkId = firstDay?.destination;
-  const firstDestination = firstParkId ? nationalParksMap[firstParkId]?.name : null;
-
-  const getCountryFromDestination = (dest: string | null): string => {
-    if (!dest) return 'rwanda';
-    const d = dest.toLowerCase();
-    if (d.includes('tanzania') || d.includes('serengeti') || d.includes('kilimanjaro'))
-      return 'tanzania';
-    if (d.includes('botswana') || d.includes('okavango') || d.includes('chobe')) return 'botswana';
-    return 'rwanda';
-  };
-
-  const country = countryParam || getCountryFromDestination(firstDestination || tourTitle);
-  const countryDisplayName = country.charAt(0).toUpperCase() + country.slice(1).toLowerCase();
-  const location = countryDisplayName;
 
   days.forEach((day) => {
     if (day.destination && !seenParks.has(day.destination)) {

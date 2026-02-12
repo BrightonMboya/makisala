@@ -21,7 +21,15 @@
       "WebSearch",
       "Bash(cat:*)",
       "Bash(npx next lint:*)",
-      "Bash(timeout 15 bun:*)"
+      "Bash(timeout 15 bun:*)",
+      "Bash(psql:*)",
+      "Bash(while read hash rest)",
+      "Bash(do if git show \"$hash:apps/kitasuro/src/app/itineraries/actions.ts\")",
+      "Bash(then)",
+      "Bash(echo:*)",
+      "Bash(break)",
+      "Bash(fi)",
+      "Bash(done)"
     ]
   }
 }
