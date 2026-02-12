@@ -11,9 +11,9 @@ export default async function Page({
   const page = Number(filters.page) || 1;
   const query = filters.query as string;
 
-  const [{ accommodations, pagination }, organizationImages] = await Promise.all([
+  const [{ accommodations, pagination }, orgImagesResult] = await Promise.all([
     getAccommodationsWithContentStatus({ page, limit: 20, query }),
-    getOrganizationImages(),
+    getOrganizationImages({ limit: 20 }),
   ]);
 
   return (
@@ -35,7 +35,8 @@ export default async function Page({
         <ContentLibraryTabs
           accommodations={accommodations}
           pagination={pagination}
-          organizationImages={organizationImages}
+          organizationImages={orgImagesResult.images}
+          organizationImagesNextCursor={orgImagesResult.nextCursor}
           query={query}
         />
       </div>

@@ -16,6 +16,7 @@ import Image from 'next/image';
 import { Building2, ChevronRight, Folder, Home, Image as ImageIcon, Loader2, Search } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useQuery } from '@tanstack/react-query';
+import { queryKeys, staleTimes } from '@/lib/query-keys';
 import { useDebouncedValue } from '@/hooks/use-debounced-value';
 
 interface StorageFolder {
@@ -126,13 +127,14 @@ export function ImagePickerContent({
     staleTime: 5 * 60 * 1000,
   });
 
-  // Query for organization images
-  const { data: orgImages = [], isLoading: orgImagesLoading } = useQuery({
-    queryKey: ['organizationImages'],
-    queryFn: () => getOrganizationImages(),
+  // Query for organization images (separate key from the infinite query in content library)
+  const { data: orgImagesData, isLoading: orgImagesLoading } = useQuery({
+    queryKey: [...queryKeys.organizationImages, 'picker'],
+    queryFn: () => getOrganizationImages({ limit: 100 }),
     enabled: isOpen && activeSource === 'organization',
-    staleTime: 2 * 60 * 1000,
+    staleTime: staleTimes.organizationImages,
   });
+  const orgImages = orgImagesData?.images ?? [];
 
   // Query for search results
   const { data: searchResults = [], isLoading: isSearching } = useQuery({

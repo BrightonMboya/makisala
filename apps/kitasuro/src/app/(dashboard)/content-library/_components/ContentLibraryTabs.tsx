@@ -33,6 +33,7 @@ interface ContentLibraryTabsProps {
   accommodations: Accommodation[];
   pagination: Pagination;
   organizationImages: OrganizationImage[];
+  organizationImagesNextCursor: string | null;
   query?: string;
 }
 
@@ -40,6 +41,7 @@ export function ContentLibraryTabs({
   accommodations,
   pagination,
   organizationImages,
+  organizationImagesNextCursor,
   query,
 }: ContentLibraryTabsProps) {
   return (
@@ -56,7 +58,7 @@ export function ContentLibraryTabs({
       </TabsList>
 
       <TabsContent value="my-images">
-        <OrganizationImages initialImages={organizationImages} />
+        <OrganizationImages initialImages={organizationImages} initialNextCursor={organizationImagesNextCursor} />
       </TabsContent>
 
       <TabsContent value="accommodations">

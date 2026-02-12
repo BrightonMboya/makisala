@@ -41,6 +41,9 @@ export const queryKeys = {
     byIds: (ids: string[]) => ['accommodations', 'batch', ids] as const,
   },
 
+  // Organization Images (content library)
+  organizationImages: ['organizationImages'] as const,
+
   // Comments
   comments: (proposalId: string) => ['comments', proposalId] as const,
 
@@ -56,6 +59,7 @@ export const staleTimes = {
   tours: 60 * 1000, // 1 minute
   clients: 60 * 1000, // 1 minute
   toursAndClients: 60 * 1000, // 1 minute
+  organizationImages: 60 * 1000, // 1 minute
   comments: 30 * 1000, // 30 seconds
   notes: 30 * 1000, // 30 seconds
   dashboardData: 60 * 1000, // 1 minute

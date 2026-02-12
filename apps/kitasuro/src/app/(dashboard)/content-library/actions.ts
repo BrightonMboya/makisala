@@ -1,7 +1,7 @@
 'use server';
 
 import { accommodations, db, member, organizationImages } from '@repo/db';
-import { and, asc, desc, eq, ilike, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, ilike, lt, or, sql } from 'drizzle-orm';
 import { deleteFromStorage, getPublicUrl, uploadToStorage } from '@/lib/storage';
 import { auth } from '@/lib/auth';
 import { headers } from 'next/headers';
@@ -108,13 +108,50 @@ const uploadImageSchema = z.object({
   base64: z.string().min(1),
 });
 
-export async function getOrganizationImages(options?: { limit?: number }) {
-  const session = await getSessionWithOrg();
-  if (!session) return [];
+// Cursor encodes both id and createdAt so we skip the extra lookup query
+function encodeCursor(id: string, createdAt: Date): string {
+  return Buffer.from(`${id}:${createdAt.toISOString()}`).toString('base64url');
+}
 
-  const limit = options?.limit ?? 100;
+function decodeCursor(cursor: string): { id: string; createdAt: Date } | null {
+  try {
+    const decoded = Buffer.from(cursor, 'base64url').toString();
+    const sepIndex = decoded.indexOf(':');
+    if (sepIndex === -1) return null;
+    const id = decoded.slice(0, sepIndex);
+    const createdAt = new Date(decoded.slice(sepIndex + 1));
+    if (isNaN(createdAt.getTime())) return null;
+    return { id, createdAt };
+  } catch {
+    return null;
+  }
+}
+
+export async function getOrganizationImages(options?: {
+  cursor?: string;
+  limit?: number;
+}) {
+  const session = await getSessionWithOrg();
+  if (!session) return { images: [], nextCursor: null };
+
+  const limit = options?.limit ?? 20;
+  const cursor = options?.cursor ? decodeCursor(options.cursor) : null;
 
   try {
+    const conditions = [eq(organizationImages.organizationId, session.orgId)];
+
+    if (cursor) {
+      conditions.push(
+        or(
+          lt(organizationImages.createdAt, cursor.createdAt),
+          and(
+            eq(organizationImages.createdAt, cursor.createdAt),
+            lt(organizationImages.id, cursor.id)
+          )
+        )!
+      );
+    }
+
     const images = await db
       .select({
         id: organizationImages.id,
@@ -123,17 +160,27 @@ export async function getOrganizationImages(options?: { limit?: number }) {
         createdAt: organizationImages.createdAt,
       })
       .from(organizationImages)
-      .where(eq(organizationImages.organizationId, session.orgId))
-      .orderBy(desc(organizationImages.createdAt))
-      .limit(limit);
+      .where(and(...conditions))
+      .orderBy(desc(organizationImages.createdAt), desc(organizationImages.id))
+      .limit(limit + 1);
 
-    return images.map((img) => ({
-      ...img,
-      url: getPublicUrl('', img.key),
-    }));
+    const hasMore = images.length > limit;
+    const page = hasMore ? images.slice(0, limit) : images;
+    const lastItem = page[page.length - 1];
+    const nextCursor = hasMore && lastItem
+      ? encodeCursor(lastItem.id, lastItem.createdAt)
+      : null;
+
+    return {
+      images: page.map((img) => ({
+        ...img,
+        url: getPublicUrl('', img.key),
+      })),
+      nextCursor,
+    };
   } catch (error) {
     console.error('Error fetching organization images:', error);
-    return [];
+    return { images: [], nextCursor: null };
   }
 }
 
