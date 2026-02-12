@@ -28,7 +28,9 @@ export const env = createEnv({
 
     // Polar billing
     POLAR_ACCESS_TOKEN: z.string().min(1),
-    POLAR_PRODUCT_ID: z.string().min(1),
+    POLAR_PRODUCT_ID: z.string().min(1), // Pro tier
+    POLAR_STARTER_PRODUCT_ID: z.string().min(1),
+    POLAR_BUSINESS_PRODUCT_ID: z.string().min(1),
     POLAR_WEBHOOK_SECRET: z.string().min(1),
   },
 
@@ -53,6 +55,8 @@ export const env = createEnv({
     GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET,
     POLAR_ACCESS_TOKEN: process.env.POLAR_ACCESS_TOKEN,
     POLAR_PRODUCT_ID: process.env.POLAR_PRODUCT_ID,
+    POLAR_STARTER_PRODUCT_ID: process.env.POLAR_STARTER_PRODUCT_ID,
+    POLAR_BUSINESS_PRODUCT_ID: process.env.POLAR_BUSINESS_PRODUCT_ID,
     POLAR_WEBHOOK_SECRET: process.env.POLAR_WEBHOOK_SECRET,
 
     // Client

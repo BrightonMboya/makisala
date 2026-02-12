@@ -123,12 +123,13 @@ export const auth = betterAuth({
           const sanitizedName = sanitizeSlug(userName) || 'user';
           const slug = `${sanitizedName}-${randomBytes(SLUG_RANDOM_BYTES).toString('hex')}`;
 
-          // Create the organization
+          // Create the organization with 14-day trial
           const [org] = await db
             .insert(organizations)
             .values({
               name: orgName,
               slug: slug,
+              trialEndsAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
             })
             .returning();
 
@@ -203,8 +204,16 @@ export const auth = betterAuth({
         checkout({
           products: [
             {
+              productId: env.POLAR_STARTER_PRODUCT_ID,
+              slug: 'starter',
+            },
+            {
               productId: env.POLAR_PRODUCT_ID,
               slug: 'pro',
+            },
+            {
+              productId: env.POLAR_BUSINESS_PRODUCT_ID,
+              slug: 'business',
             },
           ],
           successUrl: '/dashboard/settings/billing?checkout=success',
@@ -214,7 +223,75 @@ export const auth = betterAuth({
         webhooks({
           secret: env.POLAR_WEBHOOK_SECRET,
           onPayload: async (payload) => {
-            console.log('Polar webhook received:', payload.type);
+            // Map Polar product IDs to plan tiers
+            const productToTier: Record<string, 'starter' | 'pro' | 'business'> = {
+              [env.POLAR_STARTER_PRODUCT_ID]: 'starter',
+              [env.POLAR_PRODUCT_ID]: 'pro',
+              [env.POLAR_BUSINESS_PRODUCT_ID]: 'business',
+            };
+
+            if (
+              payload.type === 'subscription.created' ||
+              payload.type === 'subscription.updated'
+            ) {
+              const sub = payload.data;
+              const customerId = sub.customerId;
+              const productId = sub.productId;
+              const tier = productToTier[productId];
+
+              if (!tier || !customerId) return;
+
+              // Determine if this is an active subscription
+              const isActive = sub.status === 'active';
+
+              // Find user by Polar customer ID (stored in account table by polar plugin)
+              const { account: accountTable } = await import('@repo/db/schema');
+              const [acct] = await db
+                .select({ userId: accountTable.userId })
+                .from(accountTable)
+                .where(
+                  and(
+                    eq(accountTable.providerId, 'polar'),
+                    eq(accountTable.accountId, customerId),
+                  ),
+                )
+                .limit(1);
+
+              if (!acct) return;
+
+              // Find user's organization via member table
+              const [membership] = await db
+                .select({ organizationId: member.organizationId })
+                .from(member)
+                .where(eq(member.userId, acct.userId))
+                .limit(1);
+
+              if (!membership) return;
+
+              // Update organization plan
+              await db
+                .update(organizations)
+                .set({
+                  planTier: isActive ? tier : 'free',
+                  polarSubscriptionId: sub.id,
+                  updatedAt: new Date(),
+                })
+                .where(eq(organizations.id, membership.organizationId));
+            }
+
+            if (payload.type === 'subscription.canceled') {
+              const sub = payload.data;
+              // Downgrade to free when subscription is canceled
+              if (sub.id) {
+                await db
+                  .update(organizations)
+                  .set({
+                    planTier: 'free',
+                    updatedAt: new Date(),
+                  })
+                  .where(eq(organizations.polarSubscriptionId, sub.id));
+              }
+            }
           },
         }),
       ],

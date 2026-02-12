@@ -11,6 +11,7 @@ import { CommentsOverlay } from '@/components/comments/CommentsOverlay';
 import { PDFDownloadButton } from '@/components/pdf-download-button';
 import { getProposal } from '@/app/itineraries/actions';
 import { transformProposalToItineraryData } from '@/lib/proposal-transform';
+import { getOrgPlan, PLAN_CONFIG } from '@/lib/plans';
 
 type Props = {
   params: Promise<{ id: string }>;
@@ -77,8 +78,14 @@ export default async function ItineraryPage({ params }: Props) {
       notFound();
     }
 
+    // Determine plan features for this proposal's organization
+    const orgId = proposal.organizationId;
+    const orgPlan = orgId ? await getOrgPlan(orgId) : null;
+    const commentsEnabled = orgPlan ? orgPlan.limits.comments : false;
+    const showWatermark = orgPlan ? !orgPlan.limits.noWatermark : true;
+
     return (
-      <CommentsProvider proposalId={id}>
+      <CommentsProvider proposalId={id} readOnly={!commentsEnabled}>
         <CommentsOverlay>
           {transformedData.theme === 'safari-portal' ? (
             <SafariPortalTheme data={transformedData} />
@@ -89,7 +96,11 @@ export default async function ItineraryPage({ params }: Props) {
           ) : (
             <MinimalisticTheme data={transformedData} />
           )}
-          {/* PDF download hidden until design is finalized */}
+          {showWatermark && (
+            <div className="fixed bottom-4 right-4 z-40 rounded-full bg-black/70 px-4 py-2 text-xs text-white shadow-lg backdrop-blur-sm">
+              Powered by Kitasuro
+            </div>
+          )}
         </CommentsOverlay>
       </CommentsProvider>
     );

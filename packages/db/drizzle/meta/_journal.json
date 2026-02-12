@@ -204,6 +204,13 @@
       "when": 1770904147890,
       "tag": "0028_chemical_prima",
       "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1770920030906,
+      "tag": "0029_wooden_molten_man",
+      "breakpoints": true
     }
   ]
 }

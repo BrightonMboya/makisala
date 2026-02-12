@@ -7,6 +7,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@repo/ui/tabs';
 import { AccommodationSelector } from './AccommodationSelector';
 import { SearchInput } from './SearchInput';
 import { OrganizationImages } from './OrganizationImages';
+import { usePlan } from '@/components/plan-context';
+import { UpgradePrompt } from '@/components/upgrade-prompt';
 
 interface Accommodation {
   id: string;
@@ -44,6 +46,9 @@ export function ContentLibraryTabs({
   organizationImagesNextCursor,
   query,
 }: ContentLibraryTabsProps) {
+  const { canAccess } = usePlan();
+  const canUploadImages = canAccess('uploadImages');
+
   return (
     <Tabs defaultValue="my-images" className="w-full">
       <TabsList className="mb-6">
@@ -58,7 +63,15 @@ export function ContentLibraryTabs({
       </TabsList>
 
       <TabsContent value="my-images">
-        <OrganizationImages initialImages={organizationImages} initialNextCursor={organizationImagesNextCursor} />
+        {canUploadImages ? (
+          <OrganizationImages initialImages={organizationImages} initialNextCursor={organizationImagesNextCursor} />
+        ) : (
+          <UpgradePrompt
+            feature="Own Image Uploads"
+            reason="Upload and manage your own images with the Pro plan or above."
+            upgradeToTier="pro"
+          />
+        )}
       </TabsContent>
 
       <TabsContent value="accommodations">

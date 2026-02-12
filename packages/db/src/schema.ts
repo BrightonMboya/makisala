@@ -116,6 +116,8 @@ export const itinerariesRelations = relations(itineraries, ({ one }) => ({
 }));
 
 // ---------- ORGANIZATIONS ----------
+export const PlanTier = pgEnum('plan_tier', ['free', 'starter', 'pro', 'business']);
+
 export const organizations = pgTable('organizations', {
   id: uuid('id').defaultRandom().primaryKey(),
   name: text('name').notNull(),
@@ -124,6 +126,9 @@ export const organizations = pgTable('organizations', {
   aboutDescription: text('about_description'),
   paymentTerms: text('payment_terms'),
   notificationEmail: text('notification_email'),
+  planTier: PlanTier('plan_tier').default('free').notNull(),
+  trialEndsAt: timestamp('trial_ends_at'),
+  polarSubscriptionId: text('polar_subscription_id'),
   onboardingCompletedAt: timestamp('onboarding_completed_at'), // Set when org completes onboarding
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),

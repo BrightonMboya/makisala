@@ -8,6 +8,7 @@ import { addDays, format } from 'date-fns';
 import { auth } from '@/lib/auth';
 import { headers } from 'next/headers';
 import { z } from 'zod';
+import { checkFeatureAccess } from '@/lib/plans';
 
 // Helper to get organization ID from session or member table
 async function getOrganizationId(session: Awaited<ReturnType<typeof auth.api.getSession>>): Promise<string | null> {
@@ -45,6 +46,12 @@ export async function GET(
     const orgId = await getOrganizationId(session);
     if (!orgId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Check plan access for PDF export
+    const access = await checkFeatureAccess(orgId, 'pdfExport');
+    if (!access.allowed) {
+      return NextResponse.json({ error: access.reason }, { status: 403 });
     }
 
     // Fetch the proposal with all related data, scoped to user's organization
