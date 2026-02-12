@@ -8,6 +8,7 @@ import {
   text,
   timestamp,
   index,
+  uniqueIndex,
   uuid,
   varchar,
 } from 'drizzle-orm/pg-core';
@@ -700,6 +701,41 @@ export const proposalTransportation = pgTable('proposal_transportation', {
     .notNull(),
 });
 
+// ---------- PROPOSAL ASSIGNMENTS (many-to-many: proposals ↔ users) ----------
+export const proposalAssignments = pgTable('proposal_assignments', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  proposalId: text('proposal_id')
+    .notNull()
+    .references(() => proposals.id, { onDelete: 'cascade' }),
+  userId: text('user_id')
+    .notNull()
+    .references(() => user.id, { onDelete: 'cascade' }),
+  assignedBy: text('assigned_by').references(() => user.id, { onDelete: 'set null' }),
+  createdAt: timestamp('created_at', { precision: 3, mode: 'string' })
+    .default(sql`CURRENT_TIMESTAMP`)
+    .notNull(),
+}, (table) => [
+  uniqueIndex('proposal_assignments_proposal_user_idx').on(table.proposalId, table.userId),
+  index('proposal_assignments_proposal_idx').on(table.proposalId),
+  index('proposal_assignments_user_idx').on(table.userId),
+]);
+
+export const proposalAssignmentsRelations = relations(proposalAssignments, ({ one }) => ({
+  proposal: one(proposals, {
+    fields: [proposalAssignments.proposalId],
+    references: [proposals.id],
+  }),
+  user: one(user, {
+    fields: [proposalAssignments.userId],
+    references: [user.id],
+  }),
+  assigner: one(user, {
+    fields: [proposalAssignments.assignedBy],
+    references: [user.id],
+    relationName: 'assignedByUser',
+  }),
+}));
+
 // Relations
 export const proposalsRelations = relations(proposals, ({ one, many }) => ({
   tour: one(tours, {
@@ -717,6 +753,7 @@ export const proposalsRelations = relations(proposals, ({ one, many }) => ({
   days: many(proposalDays),
   comments: many(comments),
   notes: many(proposalNotes),
+  assignments: many(proposalAssignments),
 }));
 
 export const proposalDaysRelations = relations(proposalDays, ({ one, many }) => ({
@@ -903,6 +940,10 @@ export type NewInvitation = typeof invitation.$inferInsert;
 // Better Auth passkey plugin types
 export type Passkey = typeof passkey.$inferSelect;
 export type NewPasskey = typeof passkey.$inferInsert;
+
+// Proposal assignment types
+export type ProposalAssignment = typeof proposalAssignments.$inferSelect;
+export type NewProposalAssignment = typeof proposalAssignments.$inferInsert;
 
 // ---------- ACTIVITY LIBRARY ----------
 export const activityLibrary = pgTable('activity_library', {

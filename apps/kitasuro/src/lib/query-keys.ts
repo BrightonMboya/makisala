@@ -8,7 +8,7 @@ export const queryKeys = {
   // Proposals
   proposals: {
     all: ['proposals'] as const,
-    list: (userId?: string) => ['proposals', userId] as const,
+    list: (userId?: string, filter?: 'mine' | 'all') => ['proposals', userId, filter ?? 'mine'] as const,
     detail: (id: string) => ['proposals', id] as const,
     forBuilder: (id: string) => ['proposals', 'builder', id] as const,
   },

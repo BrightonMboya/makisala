@@ -19,8 +19,8 @@ export default function ItinerariesPage() {
   const { data: session } = authClient.useSession();
 
   const { data: proposals = [], isLoading } = useQuery({
-    queryKey: queryKeys.proposals.list(session?.user?.id),
-    queryFn: getProposalsForDashboard,
+    queryKey: queryKeys.proposals.list(session?.user?.id, 'all'),
+    queryFn: () => getProposalsForDashboard('all'),
     staleTime: staleTimes.proposals,
     enabled: !!session?.user?.id,
   });
@@ -35,6 +35,7 @@ export default function ItinerariesPage() {
     received: new Date(p.createdAt).toLocaleDateString(),
     source: 'Manual',
     status: p.status === 'shared' ? 'shared' : 'draft',
+    assignees: [],
   }));
 
   return (

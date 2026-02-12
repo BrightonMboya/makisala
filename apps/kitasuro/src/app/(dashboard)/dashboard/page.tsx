@@ -11,13 +11,15 @@ import {
   getProposalsForDashboard,
   markOnboardingComplete,
 } from '@/app/itineraries/actions';
+import { checkIsAdmin } from '@/app/(dashboard)/settings/actions';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { queryKeys, staleTimes } from '@/lib/query-keys';
-import type { RequestItem } from '@/types/dashboard';
+import type { AssignedUser, RequestItem } from '@/types/dashboard';
 import { checkOnboardingStatus } from '@/lib/onboarding';
 import { Onboarding } from '../_components/onboarding';
 import { authClient } from '@/lib/auth-client';
 import { NotesPanel } from '@/components/notes-panel';
+import { ProposalAssignPopover } from '@/components/proposal-assign-popover';
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -26,10 +28,18 @@ export default function DashboardPage() {
   const userId = session?.user?.id;
   const [searchQuery, setSearchQuery] = useState('');
   const debouncedQuery = useDebounce(searchQuery, 300);
+  const [activeFilter, setActiveFilter] = useState<'mine' | 'all'>('mine');
+
+  const { data: isAdmin = false } = useQuery({
+    queryKey: ['isAdmin', userId],
+    queryFn: checkIsAdmin,
+    staleTime: 5 * 60 * 1000,
+    enabled: !!userId,
+  });
 
   const { data: proposals = [], isLoading: proposalsLoading } = useQuery({
-    queryKey: queryKeys.proposals.list(userId),
-    queryFn: getProposalsForDashboard,
+    queryKey: queryKeys.proposals.list(userId, activeFilter),
+    queryFn: () => getProposalsForDashboard(activeFilter),
     staleTime: staleTimes.proposals,
     enabled: !!userId,
   });
@@ -77,6 +87,11 @@ export default function DashboardPage() {
       received: new Date(p.createdAt).toLocaleDateString(),
       source: 'Manual',
       status: p.status === 'shared' ? 'shared' : 'draft',
+      assignees: (p.assignments || []).map((a: any): AssignedUser => ({
+        id: a.user.id,
+        name: a.user.name,
+        image: a.user.image,
+      })),
     }))
     .filter((req) => {
       if (!debouncedQuery.trim()) return true;
@@ -112,7 +127,31 @@ export default function DashboardPage() {
   return (
     <div className="flex h-full flex-col bg-stone-50">
       <header className="flex items-center justify-between border-b border-stone-200 bg-white px-8 py-4">
-        <h2 className="font-serif text-2xl font-bold text-stone-900">Dashboard</h2>
+        <div className="flex items-center gap-4">
+          <h2 className="font-serif text-2xl font-bold text-stone-900">Dashboard</h2>
+          <div className="flex rounded-lg border border-stone-200 bg-stone-50 p-0.5">
+            <button
+              className={`rounded-md px-3 py-1 text-sm font-medium transition-colors ${
+                activeFilter === 'mine'
+                  ? 'bg-white text-stone-900 shadow-sm'
+                  : 'text-stone-500 hover:text-stone-700'
+              }`}
+              onClick={() => setActiveFilter('mine')}
+            >
+              My Proposals
+            </button>
+            <button
+              className={`rounded-md px-3 py-1 text-sm font-medium transition-colors ${
+                activeFilter === 'all'
+                  ? 'bg-white text-stone-900 shadow-sm'
+                  : 'text-stone-500 hover:text-stone-700'
+              }`}
+              onClick={() => setActiveFilter('all')}
+            >
+              All Proposals
+            </button>
+          </div>
+        </div>
         <div className="flex items-center gap-4">
           <div className="relative w-64">
             <Search className="absolute top-2.5 left-2.5 h-4 w-4 text-stone-400" />
@@ -133,12 +172,18 @@ export default function DashboardPage() {
               <FileText className="h-full w-full" />
             </div>
             <h3 className="text-lg font-medium text-stone-900">
-              {debouncedQuery.trim() ? 'No matching proposals' : 'No proposals yet'}
+              {debouncedQuery.trim()
+                ? 'No matching proposals'
+                : activeFilter === 'mine'
+                  ? 'No proposals assigned to you'
+                  : 'No proposals yet'}
             </h3>
             <p className="mt-1 text-stone-500">
               {debouncedQuery.trim()
                 ? 'Try adjusting your search terms.'
-                : 'Create your first proposal using the sidebar button.'}
+                : activeFilter === 'mine'
+                  ? 'Switch to "All Proposals" to see everything, or create a new proposal.'
+                  : 'Create your first proposal using the sidebar button.'}
             </p>
           </div>
         ) : (
@@ -167,16 +212,53 @@ export default function DashboardPage() {
                     </div>
                     <p className="mt-1 text-sm text-stone-600">{req.title}</p>
                   </div>
-                  <div className="text-right text-sm text-stone-500">
-                    <div className="flex items-center justify-end gap-1.5">
-                      <Clock className="h-3.5 w-3.5" />
-                      Starts {req.startDate}
+                  <div className="flex items-start gap-3">
+                    {req.assignees.length > 0 && (
+                      <div className="flex -space-x-1.5">
+                        {req.assignees.slice(0, 3).map((assignee) => (
+                          assignee.image ? (
+                            <img
+                              key={assignee.id}
+                              src={assignee.image}
+                              alt={assignee.name}
+                              title={assignee.name}
+                              className="h-6 w-6 rounded-full border-2 border-white object-cover"
+                            />
+                          ) : (
+                            <span
+                              key={assignee.id}
+                              title={assignee.name}
+                              className="flex h-6 w-6 items-center justify-center rounded-full border-2 border-white bg-stone-200 text-[10px] font-medium text-stone-600"
+                            >
+                              {assignee.name?.charAt(0)?.toUpperCase() || '?'}
+                            </span>
+                          )
+                        ))}
+                        {req.assignees.length > 3 && (
+                          <span className="flex h-6 w-6 items-center justify-center rounded-full border-2 border-white bg-stone-100 text-[10px] font-medium text-stone-500">
+                            +{req.assignees.length - 3}
+                          </span>
+                        )}
+                      </div>
+                    )}
+                    <div className="text-right text-sm text-stone-500">
+                      <div className="flex items-center justify-end gap-1.5">
+                        <Clock className="h-3.5 w-3.5" />
+                        Starts {req.startDate}
+                      </div>
+                      <div className="mt-1">Created {req.received}</div>
                     </div>
-                    <div className="mt-1">Created {req.received}</div>
                   </div>
                 </div>
                 <div className="mt-4 flex items-center justify-end gap-3 border-t border-stone-100 pt-3">
                   <NotesPanel proposalId={req.id} compact />
+                  {isAdmin && (
+                    <ProposalAssignPopover
+                      proposalId={req.id}
+                      userId={userId}
+                      activeFilter={activeFilter}
+                    />
+                  )}
                   <button
                     className="text-xs font-medium text-green-700 hover:text-green-800 hover:underline"
                     onClick={(e) => {

@@ -15,6 +15,7 @@ import {
   pages,
   proposalAccommodations,
   proposalActivities,
+  proposalAssignments,
   proposalDays,
   proposalMeals,
   proposalNotes,
@@ -484,17 +485,42 @@ export async function getToursAndClients() {
 }
 
 // Lightweight fetch for dashboard proposals only
-export async function getProposalsForDashboard() {
+export async function getProposalsForDashboard(filter: 'mine' | 'all' = 'mine') {
   try {
     const session = await getSession();
     const orgId = await getOrganizationId(session);
     if (!orgId) return [];
 
+    // For 'mine' filter, scope to assigned proposals only
+    let whereClause = eq(proposals.organizationId, orgId);
+
+    if (filter === 'mine' && session?.user?.id) {
+      const assignedRows = await db
+        .select({ proposalId: proposalAssignments.proposalId })
+        .from(proposalAssignments)
+        .where(eq(proposalAssignments.userId, session.user.id));
+
+      const assignedIds = assignedRows.map((r) => r.proposalId);
+      if (assignedIds.length === 0) return [];
+
+      whereClause = and(
+        eq(proposals.organizationId, orgId),
+        inArray(proposals.id, assignedIds),
+      )!;
+    }
+
     return await db.query.proposals.findMany({
-      where: eq(proposals.organizationId, orgId),
+      where: whereClause,
       orderBy: desc(proposals.updatedAt),
       with: {
         client: true,
+        assignments: {
+          with: {
+            user: {
+              columns: { id: true, name: true, image: true },
+            },
+          },
+        },
       },
       columns: {
         id: true,
@@ -509,6 +535,98 @@ export async function getProposalsForDashboard() {
   } catch (error) {
     console.error('Error fetching proposals:', error);
     return [];
+  }
+}
+
+// Assign a user to a proposal (admin-only)
+export async function assignProposal(proposalId: string, userId: string) {
+  try {
+    const session = await getSession();
+    const orgId = await getOrganizationId(session);
+    if (!orgId || !session?.user?.id) {
+      return { success: false, error: 'Unauthorized' };
+    }
+
+    // Check caller is admin
+    const [callerMembership] = await db
+      .select({ role: member.role })
+      .from(member)
+      .where(and(eq(member.userId, session.user.id), eq(member.organizationId, orgId)))
+      .limit(1);
+
+    if (callerMembership?.role !== 'admin') {
+      return { success: false, error: 'Only admins can assign proposals' };
+    }
+
+    // Verify proposal belongs to org
+    const proposal = await db.query.proposals.findFirst({
+      where: and(eq(proposals.id, proposalId), eq(proposals.organizationId, orgId)),
+      columns: { id: true },
+    });
+    if (!proposal) {
+      return { success: false, error: 'Proposal not found' };
+    }
+
+    // Verify target user is org member
+    const [targetMembership] = await db
+      .select({ userId: member.userId })
+      .from(member)
+      .where(and(eq(member.userId, userId), eq(member.organizationId, orgId)))
+      .limit(1);
+
+    if (!targetMembership) {
+      return { success: false, error: 'User is not a member of this organization' };
+    }
+
+    await db
+      .insert(proposalAssignments)
+      .values({
+        proposalId,
+        userId,
+        assignedBy: session.user.id,
+      })
+      .onConflictDoNothing();
+
+    return { success: true };
+  } catch (error) {
+    console.error('Error assigning proposal:', error);
+    return { success: false, error: 'Failed to assign proposal' };
+  }
+}
+
+// Unassign a user from a proposal (admin-only)
+export async function unassignProposal(proposalId: string, userId: string) {
+  try {
+    const session = await getSession();
+    const orgId = await getOrganizationId(session);
+    if (!orgId || !session?.user?.id) {
+      return { success: false, error: 'Unauthorized' };
+    }
+
+    // Check caller is admin
+    const [callerMembership] = await db
+      .select({ role: member.role })
+      .from(member)
+      .where(and(eq(member.userId, session.user.id), eq(member.organizationId, orgId)))
+      .limit(1);
+
+    if (callerMembership?.role !== 'admin') {
+      return { success: false, error: 'Only admins can unassign proposals' };
+    }
+
+    await db
+      .delete(proposalAssignments)
+      .where(
+        and(
+          eq(proposalAssignments.proposalId, proposalId),
+          eq(proposalAssignments.userId, userId),
+        ),
+      );
+
+    return { success: true };
+  } catch (error) {
+    console.error('Error unassigning proposal:', error);
+    return { success: false, error: 'Failed to unassign proposal' };
   }
 }
 
@@ -968,6 +1086,25 @@ export async function saveProposal(data: {
             distanceKm: day.transfer.distanceKm || null,
             notes: day.transfer.notes || null,
           });
+        }
+      }
+
+      // Auto-assign creator if no assignments exist yet
+      if (session?.user?.id) {
+        const existingAssignments = await tx
+          .select({ id: proposalAssignments.id })
+          .from(proposalAssignments)
+          .where(eq(proposalAssignments.proposalId, proposalId))
+          .limit(1);
+
+        if (existingAssignments.length === 0) {
+          await tx
+            .insert(proposalAssignments)
+            .values({
+              proposalId,
+              userId: session.user.id,
+            })
+            .onConflictDoNothing();
         }
       }
     });

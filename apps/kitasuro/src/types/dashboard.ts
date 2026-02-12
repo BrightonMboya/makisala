@@ -1,3 +1,9 @@
+export type AssignedUser = {
+  id: string
+  name: string
+  image: string | null
+}
+
 export type RequestItem = {
   id: string
   client: string
@@ -8,4 +14,5 @@ export type RequestItem = {
   received: string
   source: string
   status: 'new' | 'working' | 'draft' | 'shared'
+  assignees: AssignedUser[]
 }
