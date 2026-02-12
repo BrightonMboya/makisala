@@ -14,12 +14,13 @@ import {
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useState } from 'react';
-import { updateUserProfile } from '../actions';
+import { useRef, useState } from 'react';
+import { updateUserProfile, uploadProfilePicture } from '../actions';
 import { toast } from '@repo/ui/toast';
-import { ImagePicker } from '@/components/image-picker';
 import { Badge } from '@repo/ui/badge';
 import { PasskeySettings } from './passkey-settings';
+import { Loader2, Upload } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
 
 const schema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -34,12 +35,15 @@ interface Props {
     name: string;
     email: string;
     image: string | null;
-    role: 'admin' | 'member';
   };
+  isAdmin: boolean;
 }
 
-export function ProfileSettings({ user }: Props) {
-  const [isSubmitting, setIsSubmitting] = useState(false)
+export function ProfileSettings({ user, isAdmin }: Props) {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const queryClient = useQueryClient();
 
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -49,11 +53,54 @@ export function ProfileSettings({ user }: Props) {
     },
   });
 
+  const currentImage = form.watch('image');
+
+  async function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast({ title: 'Please select an image file', variant: 'destructive' });
+      return;
+    }
+
+    // Validate file size (5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast({ title: 'Image must be less than 5MB', variant: 'destructive' });
+      return;
+    }
+
+    setIsUploading(true);
+    try {
+      const reader = new FileReader();
+      const base64 = await new Promise<string>((resolve, reject) => {
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+
+      const result = await uploadProfilePicture(base64);
+      if (result.success && result.url) {
+        form.setValue('image', result.url);
+        queryClient.invalidateQueries({ queryKey: ['user-profile'] });
+        toast({ title: 'Profile picture uploaded' });
+      }
+    } catch {
+      toast({ title: 'Failed to upload profile picture', variant: 'destructive' });
+    } finally {
+      setIsUploading(false);
+      // Reset file input so the same file can be re-selected
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  }
+
   async function onSubmit(data: FormValues) {
     setIsSubmitting(true);
     try {
       const result = await updateUserProfile(data);
       if (result.success) {
+        queryClient.invalidateQueries({ queryKey: ['user-profile'] });
         toast({ title: 'Profile updated successfully' });
       }
     } catch {
@@ -74,13 +121,21 @@ export function ProfileSettings({ user }: Props) {
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
               <div className="flex items-center gap-4 pb-4 border-b">
-                <div className="h-16 w-16 rounded-full bg-green-100 flex items-center justify-center text-green-800 text-2xl font-bold">
-                  {user.name?.[0]?.toUpperCase()}
-                </div>
+                {currentImage ? (
+                  <img
+                    src={currentImage}
+                    alt={user.name}
+                    className="h-16 w-16 rounded-full object-cover border"
+                  />
+                ) : (
+                  <div className="h-16 w-16 rounded-full bg-green-100 flex items-center justify-center text-green-800 text-2xl font-bold">
+                    {user.name?.[0]?.toUpperCase()}
+                  </div>
+                )}
                 <div>
                   <p className="font-medium">{user.email}</p>
-                  <Badge variant={user.role === 'admin' ? 'default' : 'secondary'}>
-                    {user.role === 'admin' ? 'Admin' : 'Team Member'}
+                  <Badge variant={isAdmin ? 'default' : 'secondary'}>
+                    {isAdmin ? 'Admin' : 'Team Member'}
                   </Badge>
                 </div>
               </div>
@@ -107,27 +162,52 @@ export function ProfileSettings({ user }: Props) {
                     <FormLabel>Profile Picture</FormLabel>
                     <FormControl>
                       <div className="space-y-3">
-                        <ImagePicker
-                          value={field.value}
-                          onSelect={(url) => field.onChange(url)}
-                          triggerLabel="Change Picture"
+                        <input
+                          ref={fileInputRef}
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={handleFileSelect}
+                          disabled={isUploading}
                         />
-                        {field.value && (
-                          <div className="flex items-center gap-4">
-                            <img
-                              src={field.value}
-                              alt="Profile preview"
-                              className="h-16 w-16 object-cover rounded-full border"
-                            />
+                        <div className="flex items-center gap-3">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => fileInputRef.current?.click()}
+                            disabled={isUploading}
+                          >
+                            {isUploading ? (
+                              <>
+                                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                                Uploading...
+                              </>
+                            ) : (
+                              <>
+                                <Upload className="h-4 w-4 mr-2" />
+                                {field.value ? 'Change Picture' : 'Upload Picture'}
+                              </>
+                            )}
+                          </Button>
+                          {field.value && (
                             <Button
                               type="button"
                               variant="outline"
                               size="sm"
                               onClick={() => field.onChange('')}
+                              disabled={isUploading}
                             >
                               Remove
                             </Button>
-                          </div>
+                          )}
+                        </div>
+                        {field.value && (
+                          <img
+                            src={field.value}
+                            alt="Profile preview"
+                            className="h-16 w-16 object-cover rounded-full border"
+                          />
                         )}
                       </div>
                     </FormControl>

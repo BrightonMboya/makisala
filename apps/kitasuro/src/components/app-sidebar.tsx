@@ -18,7 +18,7 @@ import {
 } from '@repo/ui/sidebar';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { authClient, useActiveOrganization } from '@/lib/auth-client';
-import { getOrganizationSettings } from '@/app/(dashboard)/settings/actions';
+import { getOrganizationSettings, getCurrentUser } from '@/app/(dashboard)/settings/actions';
 import { NewRequestDialog } from './new-request-dialog';
 
 export function AppSidebar() {
@@ -34,12 +34,18 @@ export function AppSidebar() {
     queryFn: () => getOrganizationSettings(),
   });
 
+  const { data: userProfile } = useQuery({
+    queryKey: ['user-profile'],
+    queryFn: () => getCurrentUser(),
+  });
+
   // Get org info from active organization
   const orgName = activeOrg?.name || 'Dashboard';
   const orgLogo = orgSettings?.logoUrl;
   const orgInitial = orgName[0]?.toUpperCase();
-  const userName = session?.user?.name || '';
+  const userName = userProfile?.name || session?.user?.name || '';
   const userEmail = session?.user?.email || '';
+  const userImage = userProfile?.image;
 
   const handleSignOut = async () => {
     queryClient.clear();
@@ -165,9 +171,13 @@ export function AppSidebar() {
               tooltip={userName}
               className="group-data-[collapsible=icon]:!p-2"
             >
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-green-100 font-bold text-green-800">
-                {userName[0] || '?'}
-              </div>
+              {userImage ? (
+                <img src={userImage} alt={userName} className="h-8 w-8 rounded-full object-cover" />
+              ) : (
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-green-100 font-bold text-green-800">
+                  {userName[0] || '?'}
+                </div>
+              )}
               <div className="flex flex-col items-start group-data-[collapsible=icon]:hidden">
                 <span className="truncate text-sm font-medium">{userName}</span>
                 <span className="truncate text-xs text-stone-500">{userEmail}</span>

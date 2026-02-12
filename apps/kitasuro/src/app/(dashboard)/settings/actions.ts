@@ -341,6 +341,56 @@ export async function updateMemberRole(memberId: string, role: 'admin' | 'member
 
 // === PROFILE ===
 
+export async function uploadProfilePicture(base64Data: string) {
+  const session = await getSessionWithOrg();
+  if (!session) throw new Error('Unauthorized');
+
+  try {
+    // Validate size (rough check: base64 is ~33% larger than binary, so 5MB ≈ 6.67MB base64)
+    const base64 = base64Data.replace(/^data:[^;]+;base64,/, '');
+    if (base64.length > 7 * 1024 * 1024) {
+      throw new Error('Image too large. Maximum size is 5MB.');
+    }
+
+    const buffer = Buffer.from(base64, 'base64');
+
+    // Compress to WebP, max 256x256 for avatars
+    const compressed = await compressImage(buffer, {
+      quality: 85,
+      maxWidth: 256,
+      maxHeight: 256,
+    });
+
+    const key = `organizations/${session.orgId}/user-profiles/${session.user.id}-avatar.webp`;
+
+    const result = await uploadToStorage({
+      file: compressed.buffer,
+      contentType: compressed.contentType,
+      key,
+      visibility: 'public',
+    });
+
+    if (!result.publicUrl) {
+      throw new Error('Failed to get public URL for uploaded avatar');
+    }
+
+    // Append cache-busting param so browser/CDN serves the new image
+    const imageUrl = `${result.publicUrl}?v=${Date.now()}`;
+
+    // Update user's image field
+    await db
+      .update(user)
+      .set({ image: imageUrl, updatedAt: new Date() })
+      .where(eq(user.id, session.user.id));
+
+    revalidatePath('/settings');
+    return { success: true, url: imageUrl };
+  } catch (error) {
+    console.error('Profile picture upload failed:', error);
+    throw error;
+  }
+}
+
 export async function getCurrentUser() {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session?.user?.id) return null;

@@ -104,7 +104,7 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
           </TabsContent>
 
           <TabsContent value="profile">
-            <ProfileSettings user={currentUser} />
+            <ProfileSettings user={currentUser} isAdmin={isAdmin} />
           </TabsContent>
         </Tabs>
       </div>
