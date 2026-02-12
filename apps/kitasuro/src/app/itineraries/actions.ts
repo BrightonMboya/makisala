@@ -1406,6 +1406,15 @@ export async function getStorageFolders(parent_folder?: string, bucket?: string)
     const targetBucket = bucket || STORAGE_BUCKET;
     const folders = await listStorageFolders(targetBucket, parent_folder);
 
+    // At root level, only expose the accommodations folder to prevent leaking other folders (e.g. organizations)
+    if (targetBucket === ACCOMMODATIONS_BUCKET && !parent_folder) {
+      const filtered = folders.filter((f) => f.name === ACCOMMODATIONS_FOLDER);
+      return filtered.map((folder) => ({
+        ...folder,
+        displayName: folder.name,
+      }));
+    }
+
     // If we're in the accommodations folder, map UUIDs to names
     if (targetBucket === ACCOMMODATIONS_BUCKET && parent_folder === ACCOMMODATIONS_FOLDER) {
       const uuidFolders = folders.filter((f) => UUID_PATTERN.test(f.name));
@@ -1465,30 +1474,6 @@ export async function searchAccommodationFolders(query: string) {
   }
 }
 
-// Get all accommodations for browsing
-export async function getAllAccommodationFolders() {
-  try {
-    const session = await getSession();
-    if (!session?.user) {
-      return [];
-    }
-
-    const results = await db
-      .select({ id: accommodations.id, name: accommodations.name })
-      .from(accommodations)
-      .orderBy(accommodations.name)
-      .limit(10);
-
-    return results.map((acc) => ({
-      name: acc.id,
-      path: `${ACCOMMODATIONS_FOLDER}/${acc.id}`,
-      displayName: acc.name,
-    }));
-  } catch (error) {
-    console.error('Error fetching all accommodations:', error);
-    return [];
-  }
-}
 
 export async function confirmProposal(proposalId: string, clientName: string) {
   try {

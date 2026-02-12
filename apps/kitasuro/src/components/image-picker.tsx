@@ -5,7 +5,6 @@ import { Input } from '@repo/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@repo/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@repo/ui/tabs';
 import {
-  getAllAccommodationFolders,
   getStorageFolders,
   getStorageImages,
   searchAccommodationFolders,
@@ -53,7 +52,10 @@ export function ImagePickerContent({
   defaultSource = 'accommodations',
 }: ImagePickerContentProps) {
   const [activeSource, setActiveSource] = useState<ImageSource>(defaultSource);
-  const [currentPath, setCurrentPath] = useState<string[]>([]);
+  // Start inside the accommodations folder to avoid exposing other root-level folders
+  const [currentPath, setCurrentPath] = useState<string[]>(
+    bucket === ACCOMMODATIONS_BUCKET ? ['accommodations'] : []
+  );
   const [pathDisplayNames, setPathDisplayNames] = useState<Map<string, string>>(new Map());
   const [searchQuery, setSearchQuery] = useState('');
   const [hasInitialized, setHasInitialized] = useState(false);
@@ -105,17 +107,16 @@ export function ImagePickerContent({
   useEffect(() => {
     if (!isOpen) {
       setHasInitialized(false);
-      setCurrentPath([]);
+      setCurrentPath(isAccommodationsBucket ? ['accommodations'] : []);
       setSearchQuery('');
     }
-  }, [isOpen]);
+  }, [isOpen, isAccommodationsBucket]);
 
-  // Query for folders - uses DB for accommodations root, storage for others
+  // Query for folders - only when navigating inside a specific accommodation
   const { data: folders = [], isLoading: foldersLoading } = useQuery({
-    queryKey: ['storageFolders', bucket, path, isAccommodationsRoot],
-    queryFn: () =>
-      isAccommodationsRoot ? getAllAccommodationFolders() : getStorageFolders(path, bucket),
-    enabled: isOpen && activeSource === 'accommodations',
+    queryKey: ['storageFolders', bucket, path],
+    queryFn: () => getStorageFolders(path, bucket),
+    enabled: isOpen && activeSource === 'accommodations' && !isAccommodationsRoot,
     staleTime: 5 * 60 * 1000,
   });
 
@@ -145,7 +146,7 @@ export function ImagePickerContent({
   });
 
   const loading = activeSource === 'accommodations'
-    ? (foldersLoading || accommodationImagesLoading)
+    ? (!isAccommodationsRoot && (foldersLoading || accommodationImagesLoading))
     : orgImagesLoading;
 
   const handleFolderClick = (folder: StorageFolder) => {
@@ -165,7 +166,8 @@ export function ImagePickerContent({
 
   const handleBreadcrumbClick = (index: number) => {
     if (index === -1) {
-      setCurrentPath([]);
+      // Go to accommodations root instead of bucket root to avoid exposing other folders
+      setCurrentPath(isAccommodationsBucket ? ['accommodations'] : []);
     } else {
       setCurrentPath(currentPath.slice(0, index + 1));
     }
@@ -176,11 +178,15 @@ export function ImagePickerContent({
     return pathDisplayNames.get(segment) || segment;
   };
 
-  const displayFolders = debouncedSearchQuery.length >= 2 ? searchResults : folders;
+  const displayFolders = debouncedSearchQuery.length >= 2
+    ? searchResults
+    : isAccommodationsRoot
+      ? []
+      : folders;
 
   const handleTabChange = (value: string) => {
     setActiveSource(value as ImageSource);
-    setCurrentPath([]);
+    setCurrentPath(value === 'accommodations' && isAccommodationsBucket ? ['accommodations'] : []);
     setSearchQuery('');
   };
 
@@ -222,19 +228,25 @@ export function ImagePickerContent({
             >
               <Home className="h-4 w-4" />
             </Button>
-            {currentPath.map((segment, index) => (
-              <div key={`${segment}-${index}`} className="flex shrink-0 items-center">
+            {currentPath
+              .filter((segment) => !(isAccommodationsBucket && segment === 'accommodations'))
+              .map((segment, _filteredIndex) => {
+                // Find the real index in currentPath for correct breadcrumb navigation
+                const realIndex = currentPath.indexOf(segment);
+                return (
+              <div key={`${segment}-${realIndex}`} className="flex shrink-0 items-center">
                 <ChevronRight className="h-4 w-4" />
                 <Button
                   variant="ghost"
                   size="sm"
                   className="h-6 px-2"
-                  onClick={() => handleBreadcrumbClick(index)}
+                  onClick={() => handleBreadcrumbClick(realIndex)}
                 >
                   {getDisplayNameForPathSegment(segment)}
                 </Button>
               </div>
-            ))}
+                );
+              })}
           </div>
 
           <div className="min-h-0 flex-1 overflow-y-auto">
@@ -244,6 +256,14 @@ export function ImagePickerContent({
               </div>
             ) : (
               <div className="space-y-6">
+                {/* Search prompt at accommodations root */}
+                {isAccommodationsRoot && debouncedSearchQuery.length < 2 && (
+                  <div className="flex h-40 flex-col items-center justify-center text-center">
+                    <Search className="mb-2 h-10 w-10 text-gray-300" />
+                    <p className="text-muted-foreground text-sm">Search for an accommodation above</p>
+                  </div>
+                )}
+
                 {/* Search Results or Folders */}
                 {displayFolders.length > 0 && (
                   <div>
@@ -271,20 +291,16 @@ export function ImagePickerContent({
                   displayFolders.length === 0 &&
                   !isSearching && (
                     <div className="text-muted-foreground text-sm">
-                      No accommodations found matching "{debouncedSearchQuery}"
+                      No accommodations found matching &ldquo;{debouncedSearchQuery}&rdquo;
                     </div>
                   )}
 
-                {/* Images */}
-                {!searchQuery && (
+                {/* Images - only show when inside a specific accommodation folder */}
+                {!searchQuery && !isAccommodationsRoot && (
                   <div>
                     <h3 className="text-muted-foreground mb-2 text-sm font-medium">Images</h3>
-                    {accommodationImages.length === 0 && currentPath.length > 0 ? (
+                    {accommodationImages.length === 0 ? (
                       <div className="text-muted-foreground text-sm">No images in this folder.</div>
-                    ) : accommodationImages.length === 0 ? (
-                      <div className="text-muted-foreground text-sm">
-                        Navigate to a folder to see images.
-                      </div>
                     ) : (
                       <div className="grid grid-cols-3 gap-4">
                         {accommodationImages.map((img) => (
