@@ -216,7 +216,7 @@ export const auth = betterAuth({
               slug: 'business',
             },
           ],
-          successUrl: '/dashboard/settings/billing?checkout=success',
+          successUrl: '/settings?tab=billing&checkout=success',
           authenticatedUsersOnly: true,
         }),
         portal(),
