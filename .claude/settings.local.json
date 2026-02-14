@@ -31,7 +31,8 @@
       "Bash(fi)",
       "Bash(done)",
       "Bash(git checkout:*)",
-      "Bash(bun install:*)"
+      "Bash(bun install:*)",
+      "Bash(gh pr list:*)"
     ]
   }
 }

@@ -3,7 +3,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@repo/ui/card';
 import { Button } from '@repo/ui/button';
 import { Badge } from '@repo/ui/badge';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { checkout, customer } from '@/lib/auth-client';
 import { toast } from '@repo/ui/toast';
 import {
@@ -71,16 +71,7 @@ export function BillingSettings() {
   const searchParams = useSearchParams();
   const { plan, isLoading: isPlanLoading, refreshPlan } = usePlan();
 
-  useEffect(() => {
-    if (searchParams.get('checkout') === 'success') {
-      toast({ title: 'Subscription activated successfully!' });
-      window.history.replaceState({}, '', '/settings?tab=billing');
-      refreshPlan();
-    }
-    fetchCustomerState();
-  }, [searchParams]);
-
-  async function fetchCustomerState() {
+  const fetchCustomerState = useCallback(async () => {
     try {
       const { data } = await customer.state();
       const subscription = data?.activeSubscriptions?.[0];
@@ -96,7 +87,22 @@ export function BillingSettings() {
     } finally {
       setIsLoadingCustomer(false);
     }
-  }
+  }, []);
+
+  // Fetch customer state on mount
+  useEffect(() => {
+    fetchCustomerState();
+  }, [fetchCustomerState]);
+
+  // Handle checkout success redirect
+  useEffect(() => {
+    if (searchParams.get('checkout') === 'success') {
+      toast({ title: 'Subscription activated successfully!' });
+      window.history.replaceState({}, '', '/settings?tab=billing');
+      refreshPlan();
+      fetchCustomerState();
+    }
+  }, [searchParams, refreshPlan, fetchCustomerState]);
 
   async function handleCheckout(slug: string) {
     setCheckingOutSlug(slug);

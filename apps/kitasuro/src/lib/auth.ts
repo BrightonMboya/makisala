@@ -13,7 +13,7 @@ import { env } from './env';
 // Initialize Polar client
 const polarClient = new Polar({
   accessToken: env.POLAR_ACCESS_TOKEN,
-  server: 'sandbox', // Change to 'production' when ready
+  server: env.POLAR_SERVER_MODE,
 });
 
 // Constants
@@ -21,6 +21,7 @@ const SLUG_RANDOM_BYTES = 8;
 const MEMBER_ID_BYTES = 16;
 const INVITATION_EXPIRY_SECONDS = 60 * 60 * 24 * 7; // 7 days
 const INVITATION_EXPIRY_MS = INVITATION_EXPIRY_SECONDS * 1000;
+const TRIAL_DURATION_MS = 14 * 24 * 60 * 60 * 1000; // 14 days
 
 /**
  * Sanitizes a string for use in URL slugs.
@@ -129,7 +130,7 @@ export const auth = betterAuth({
             .values({
               name: orgName,
               slug: slug,
-              trialEndsAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
+              trialEndsAt: new Date(Date.now() + TRIAL_DURATION_MS),
             })
             .returning();
 
@@ -216,7 +217,7 @@ export const auth = betterAuth({
               slug: 'business',
             },
           ],
-          successUrl: '/settings?tab=billing&checkout=success',
+          successUrl: `${env.NEXT_PUBLIC_APP_URL}/settings?tab=billing&checkout=success`,
           authenticatedUsersOnly: true,
         }),
         portal(),
@@ -244,39 +245,43 @@ export const auth = betterAuth({
               // Determine if this is an active subscription
               const isActive = sub.status === 'active';
 
-              // Find user by Polar customer ID (stored in account table by polar plugin)
               const { account: accountTable } = await import('@repo/db/schema');
-              const [acct] = await db
-                .select({ userId: accountTable.userId })
-                .from(accountTable)
-                .where(
-                  and(
-                    eq(accountTable.providerId, 'polar'),
-                    eq(accountTable.accountId, customerId),
-                  ),
-                )
-                .limit(1);
 
-              if (!acct) return;
+              // Use transaction to prevent race conditions between concurrent webhooks
+              await db.transaction(async (tx) => {
+                // Find user by Polar customer ID (stored in account table by polar plugin)
+                const [acct] = await tx
+                  .select({ userId: accountTable.userId })
+                  .from(accountTable)
+                  .where(
+                    and(
+                      eq(accountTable.providerId, 'polar'),
+                      eq(accountTable.accountId, customerId),
+                    ),
+                  )
+                  .limit(1);
 
-              // Find user's organization via member table
-              const [membership] = await db
-                .select({ organizationId: member.organizationId })
-                .from(member)
-                .where(eq(member.userId, acct.userId))
-                .limit(1);
+                if (!acct) return;
 
-              if (!membership) return;
+                // Find user's organization via member table
+                const [membership] = await tx
+                  .select({ organizationId: member.organizationId })
+                  .from(member)
+                  .where(eq(member.userId, acct.userId))
+                  .limit(1);
 
-              // Update organization plan
-              await db
-                .update(organizations)
-                .set({
-                  planTier: isActive ? tier : 'free',
-                  polarSubscriptionId: sub.id,
-                  updatedAt: new Date(),
-                })
-                .where(eq(organizations.id, membership.organizationId));
+                if (!membership) return;
+
+                // Update organization plan
+                await tx
+                  .update(organizations)
+                  .set({
+                    planTier: isActive ? tier : 'free',
+                    polarSubscriptionId: sub.id,
+                    updatedAt: new Date(),
+                  })
+                  .where(eq(organizations.id, membership.organizationId));
+              });
             }
 
             if (payload.type === 'subscription.canceled') {

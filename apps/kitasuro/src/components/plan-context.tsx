@@ -1,8 +1,7 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
-import type { PlanTier, Feature } from '@/lib/plans-config';
-import { PLAN_CONFIG } from '@/lib/plans-config';
+import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
+import type { PlanTier, PlanLimits, Feature } from '@/lib/plans-config';
 
 interface PlanInfo {
   tier: PlanTier;
@@ -10,16 +9,7 @@ interface PlanInfo {
   isTrialing: boolean;
   trialEndsAt: string | null;
   trialDaysRemaining: number | null;
-  limits: {
-    activeProposals: number;
-    teamMembers: number;
-    uploadImages: boolean;
-    allThemes: boolean;
-    noWatermark: boolean;
-    pdfExport: boolean;
-    comments: boolean;
-    customDomains: boolean;
-  };
+  limits: PlanLimits;
 }
 
 interface PlanContextType {
@@ -35,7 +25,7 @@ export function PlanProvider({ children }: { children: ReactNode }) {
   const [plan, setPlan] = useState<PlanInfo | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  const fetchPlan = async () => {
+  const fetchPlan = useCallback(async () => {
     try {
       const res = await fetch('/api/plan');
       if (res.ok) {
@@ -47,36 +37,19 @@ export function PlanProvider({ children }: { children: ReactNode }) {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchPlan();
-  }, []);
+  }, [fetchPlan]);
 
   const canAccess = (feature: Feature): boolean => {
     if (!plan) return false;
-    const limits = plan.limits;
-
-    switch (feature) {
-      case 'activeProposals':
-        return limits.activeProposals === -1;
-      case 'teamMembers':
-        return limits.teamMembers !== 0;
-      case 'uploadImages':
-        return limits.uploadImages;
-      case 'allThemes':
-        return limits.allThemes;
-      case 'noWatermark':
-        return limits.noWatermark;
-      case 'pdfExport':
-        return limits.pdfExport;
-      case 'comments':
-        return limits.comments;
-      case 'customDomains':
-        return limits.customDomains;
-      default:
-        return false;
-    }
+    const value = plan.limits[feature];
+    // Numeric limits: -1 = unlimited, 0 = disabled, >0 = has access
+    if (typeof value === 'number') return value !== 0;
+    // Boolean limits
+    return value;
   };
 
   return (

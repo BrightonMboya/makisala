@@ -32,14 +32,21 @@ export async function GET() {
       return NextResponse.json({ error: 'Organization not found' }, { status: 404 });
     }
 
-    return NextResponse.json({
-      tier: plan.tier,
-      effectiveTier: plan.effectiveTier,
-      isTrialing: plan.isTrialing,
-      trialEndsAt: plan.trialEndsAt?.toISOString() ?? null,
-      trialDaysRemaining: plan.trialDaysRemaining,
-      limits: plan.limits,
-    });
+    return NextResponse.json(
+      {
+        tier: plan.tier,
+        effectiveTier: plan.effectiveTier,
+        isTrialing: plan.isTrialing,
+        trialEndsAt: plan.trialEndsAt?.toISOString() ?? null,
+        trialDaysRemaining: plan.trialDaysRemaining,
+        limits: plan.limits,
+      },
+      {
+        headers: {
+          'Cache-Control': 'private, max-age=60, stale-while-revalidate=30',
+        },
+      },
+    );
   } catch (error) {
     console.error('Error fetching plan:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
