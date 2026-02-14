@@ -5,6 +5,8 @@
 
 export type PlanTier = 'free' | 'starter' | 'pro' | 'business';
 
+export const TIER_ORDER: PlanTier[] = ['free', 'starter', 'pro', 'business'];
+
 export type Feature =
   | 'activeProposals'
   | 'uploadImages'
@@ -49,7 +51,7 @@ export const PLAN_CONFIG: Record<PlanTier, PlanConfig> = {
   },
   starter: {
     name: 'Starter',
-    price: 15,
+    price: 49,
     limits: {
       activeProposals: 5,
       teamMembers: 0,
@@ -63,7 +65,7 @@ export const PLAN_CONFIG: Record<PlanTier, PlanConfig> = {
   },
   pro: {
     name: 'Pro',
-    price: 30,
+    price: 99,
     limits: {
       activeProposals: -1,
       teamMembers: 3,
@@ -77,7 +79,7 @@ export const PLAN_CONFIG: Record<PlanTier, PlanConfig> = {
   },
   business: {
     name: 'Business',
-    price: 50,
+    price: 249,
     limits: {
       activeProposals: -1,
       teamMembers: -1,

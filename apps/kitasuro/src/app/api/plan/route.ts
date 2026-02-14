@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { headers } from 'next/headers';
 import { db, member } from '@repo/db';
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { getOrgPlan } from '@/lib/plans';
 
 export async function GET() {
@@ -14,6 +14,20 @@ export async function GET() {
 
     // Get organization ID
     let orgId = session.session?.activeOrganizationId as string | undefined;
+
+    // Verify the user is actually a member of this org
+    if (orgId) {
+      const [membership] = await db
+        .select({ organizationId: member.organizationId })
+        .from(member)
+        .where(and(eq(member.userId, session.user.id), eq(member.organizationId, orgId)))
+        .limit(1);
+      if (!membership) {
+        // User is not a member of the active org — fall back to their actual org
+        orgId = undefined;
+      }
+    }
+
     if (!orgId) {
       const [membership] = await db
         .select({ organizationId: member.organizationId })
@@ -49,6 +63,9 @@ export async function GET() {
     );
   } catch (error) {
     console.error('Error fetching plan:', error);
+    if (error instanceof Error && error.message.includes('connect')) {
+      return NextResponse.json({ error: 'Service unavailable' }, { status: 503 });
+    }
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

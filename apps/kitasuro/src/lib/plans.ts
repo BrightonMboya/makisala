@@ -4,14 +4,11 @@
  */
 import { db, organizations, member, invitation, proposals } from '@repo/db';
 import { and, eq, sql } from 'drizzle-orm';
-import { PLAN_CONFIG, type PlanTier, type Feature } from './plans-config';
+import { PLAN_CONFIG, TIER_ORDER, type PlanTier, type Feature } from './plans-config';
 
 // Re-export config and types for convenience from server code
-export { PLAN_CONFIG, ALLOWED_THEMES_BY_TIER } from './plans-config';
+export { PLAN_CONFIG, ALLOWED_THEMES_BY_TIER, TIER_ORDER } from './plans-config';
 export type { PlanTier, Feature, PlanLimits, PlanConfig } from './plans-config';
-
-// Tier hierarchy for upgrade recommendations
-const TIER_ORDER: PlanTier[] = ['free', 'starter', 'pro', 'business'];
 
 export interface OrgPlan {
   tier: PlanTier;
@@ -108,17 +105,16 @@ export async function checkFeatureAccess(
 
     case 'teamMembers': {
       if (limits.teamMembers === -1) return { allowed: true };
-      const count =
+      // Count only non-admin members (admins/owners don't count toward the limit)
+      const nonAdminCount =
         context?.currentCount ??
         (
           await db
             .select({ count: sql<number>`count(*)::int` })
             .from(member)
-            .where(eq(member.organizationId, orgId))
+            .where(and(eq(member.organizationId, orgId), eq(member.role, 'member')))
         )[0]?.count ??
         0;
-      // Subtract 1 for the admin (owner)
-      const nonAdminCount = Math.max(0, count - 1);
       // Also count pending invitations
       const pendingCount =
         (

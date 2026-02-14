@@ -9,6 +9,7 @@ import { sendEmailVerificationEmail, sendTeamInvitationEmail } from '@repo/resen
 import { and, eq } from 'drizzle-orm';
 import { randomBytes } from 'crypto';
 import { env } from './env';
+import type { PlanTier } from './plans-config';
 
 // Initialize Polar client
 const polarClient = new Polar({
@@ -225,7 +226,7 @@ export const auth = betterAuth({
           secret: env.POLAR_WEBHOOK_SECRET,
           onPayload: async (payload) => {
             // Map Polar product IDs to plan tiers
-            const productToTier: Record<string, 'starter' | 'pro' | 'business'> = {
+            const productToTier: Record<string, Exclude<PlanTier, 'free'>> = {
               [env.POLAR_STARTER_PRODUCT_ID]: 'starter',
               [env.POLAR_PRODUCT_ID]: 'pro',
               [env.POLAR_BUSINESS_PRODUCT_ID]: 'business',
@@ -286,7 +287,32 @@ export const auth = betterAuth({
 
             if (payload.type === 'subscription.canceled') {
               const sub = payload.data;
-              // Downgrade to free when subscription is canceled
+              if (sub.id) {
+                // If the subscription has a period end date, the user retains access
+                // until then. Polar will send subscription.revoked when access should end.
+                // Only downgrade immediately if there's no period end (e.g. immediate cancel).
+                const periodEnd = sub.currentPeriodEnd
+                  ? new Date(sub.currentPeriodEnd)
+                  : null;
+                const shouldDowngradeNow = !periodEnd || periodEnd <= new Date();
+
+                if (shouldDowngradeNow) {
+                  await db
+                    .update(organizations)
+                    .set({
+                      planTier: 'free',
+                      updatedAt: new Date(),
+                    })
+                    .where(eq(organizations.polarSubscriptionId, sub.id));
+                }
+                // If periodEnd is in the future, user keeps access until then.
+                // The subscription.revoked webhook will handle the final downgrade.
+              }
+            }
+
+            if (payload.type === 'subscription.revoked') {
+              const sub = payload.data;
+              // Access has been fully revoked — downgrade to free
               if (sub.id) {
                 await db
                   .update(organizations)

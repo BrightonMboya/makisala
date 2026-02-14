@@ -16,9 +16,7 @@ import {
 } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 import { usePlan } from '@/components/plan-context';
-import { PLAN_CONFIG, type PlanTier } from '@/lib/plans-config';
-
-const TIER_ORDER: PlanTier[] = ['free', 'starter', 'pro', 'business'];
+import { PLAN_CONFIG, TIER_ORDER, type PlanTier } from '@/lib/plans-config';
 
 const TIER_FEATURES: { label: string; tiers: Record<PlanTier, string> }[] = [
   {
@@ -97,12 +95,17 @@ export function BillingSettings() {
   // Handle checkout success redirect
   useEffect(() => {
     if (searchParams.get('checkout') === 'success') {
-      toast({ title: 'Subscription activated successfully!' });
+      // Clear the query param first to prevent re-showing on remount
       window.history.replaceState({}, '', '/settings?tab=billing');
-      refreshPlan();
+      toast({ title: 'Subscription activated successfully!' });
+      refreshPlan().catch(() => {
+        toast({ title: 'Failed to refresh plan status', variant: 'destructive' });
+      });
       fetchCustomerState();
     }
-  }, [searchParams, refreshPlan, fetchCustomerState]);
+    // Only run once on mount when checkout=success is present
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   async function handleCheckout(slug: string) {
     setCheckingOutSlug(slug);

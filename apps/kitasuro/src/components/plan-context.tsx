@@ -16,7 +16,7 @@ interface PlanContextType {
   plan: PlanInfo | null;
   isLoading: boolean;
   canAccess: (feature: Feature) => boolean;
-  refreshPlan: () => void;
+  refreshPlan: () => Promise<void>;
 }
 
 const PlanContext = createContext<PlanContextType | undefined>(undefined);

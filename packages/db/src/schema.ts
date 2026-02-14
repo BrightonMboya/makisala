@@ -132,7 +132,10 @@ export const organizations = pgTable('organizations', {
   onboardingCompletedAt: timestamp('onboarding_completed_at'), // Set when org completes onboarding
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
-});
+}, (table) => [
+  index('idx_organizations_polar_subscription_id').on(table.polarSubscriptionId),
+  index('idx_organizations_trial_ends_at').on(table.trialEndsAt),
+]);
 
 export const organizationsRelations = relations(organizations, ({ many }) => ({
   users: many(user),
