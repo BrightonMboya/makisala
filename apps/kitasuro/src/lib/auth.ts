@@ -3,16 +3,26 @@ import { db, invitation, member, organizations } from '@repo/db';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { organization } from 'better-auth/plugins';
 import { passkey } from '@better-auth/passkey';
+import { polar, checkout, portal, webhooks } from '@polar-sh/better-auth';
+import { Polar } from '@polar-sh/sdk';
 import { sendEmailVerificationEmail, sendTeamInvitationEmail } from '@repo/resend';
 import { and, eq } from 'drizzle-orm';
 import { randomBytes } from 'crypto';
 import { env } from './env';
+import type { PlanTier } from './plans-config';
+
+// Initialize Polar client
+const polarClient = new Polar({
+  accessToken: env.POLAR_ACCESS_TOKEN,
+  server: env.POLAR_SERVER_MODE,
+});
 
 // Constants
 const SLUG_RANDOM_BYTES = 8;
 const MEMBER_ID_BYTES = 16;
 const INVITATION_EXPIRY_SECONDS = 60 * 60 * 24 * 7; // 7 days
 const INVITATION_EXPIRY_MS = INVITATION_EXPIRY_SECONDS * 1000;
+const TRIAL_DURATION_MS = 14 * 24 * 60 * 60 * 1000; // 14 days
 
 /**
  * Sanitizes a string for use in URL slugs.
@@ -115,12 +125,13 @@ export const auth = betterAuth({
           const sanitizedName = sanitizeSlug(userName) || 'user';
           const slug = `${sanitizedName}-${randomBytes(SLUG_RANDOM_BYTES).toString('hex')}`;
 
-          // Create the organization
+          // Create the organization with 14-day trial
           const [org] = await db
             .insert(organizations)
             .values({
               name: orgName,
               slug: slug,
+              trialEndsAt: new Date(Date.now() + TRIAL_DURATION_MS),
             })
             .returning();
 
@@ -187,6 +198,134 @@ export const auth = betterAuth({
           },
         },
       },
+    }),
+    polar({
+      client: polarClient,
+      createCustomerOnSignUp: true,
+      use: [
+        checkout({
+          products: [
+            {
+              productId: env.POLAR_STARTER_PRODUCT_ID,
+              slug: 'starter',
+            },
+            {
+              productId: env.POLAR_PRODUCT_ID,
+              slug: 'pro',
+            },
+            {
+              productId: env.POLAR_BUSINESS_PRODUCT_ID,
+              slug: 'business',
+            },
+          ],
+          successUrl: `${env.NEXT_PUBLIC_APP_URL}/settings?tab=billing&checkout=success`,
+          authenticatedUsersOnly: true,
+        }),
+        portal(),
+        webhooks({
+          secret: env.POLAR_WEBHOOK_SECRET,
+          onPayload: async (payload) => {
+            // Map Polar product IDs to plan tiers
+            const productToTier: Record<string, Exclude<PlanTier, 'free'>> = {
+              [env.POLAR_STARTER_PRODUCT_ID]: 'starter',
+              [env.POLAR_PRODUCT_ID]: 'pro',
+              [env.POLAR_BUSINESS_PRODUCT_ID]: 'business',
+            };
+
+            if (
+              payload.type === 'subscription.created' ||
+              payload.type === 'subscription.updated'
+            ) {
+              const sub = payload.data;
+              const customerId = sub.customerId;
+              const productId = sub.productId;
+              const tier = productToTier[productId];
+
+              if (!tier || !customerId) return;
+
+              // Determine if this is an active subscription
+              const isActive = sub.status === 'active';
+
+              const { account: accountTable } = await import('@repo/db/schema');
+
+              // Use transaction to prevent race conditions between concurrent webhooks
+              await db.transaction(async (tx) => {
+                // Find user by Polar customer ID (stored in account table by polar plugin)
+                const [acct] = await tx
+                  .select({ userId: accountTable.userId })
+                  .from(accountTable)
+                  .where(
+                    and(
+                      eq(accountTable.providerId, 'polar'),
+                      eq(accountTable.accountId, customerId),
+                    ),
+                  )
+                  .limit(1);
+
+                if (!acct) return;
+
+                // Find user's organization via member table
+                const [membership] = await tx
+                  .select({ organizationId: member.organizationId })
+                  .from(member)
+                  .where(eq(member.userId, acct.userId))
+                  .limit(1);
+
+                if (!membership) return;
+
+                // Update organization plan
+                await tx
+                  .update(organizations)
+                  .set({
+                    planTier: isActive ? tier : 'free',
+                    polarSubscriptionId: sub.id,
+                    updatedAt: new Date(),
+                  })
+                  .where(eq(organizations.id, membership.organizationId));
+              });
+            }
+
+            if (payload.type === 'subscription.canceled') {
+              const sub = payload.data;
+              if (sub.id) {
+                // If the subscription has a period end date, the user retains access
+                // until then. Polar will send subscription.revoked when access should end.
+                // Only downgrade immediately if there's no period end (e.g. immediate cancel).
+                const periodEnd = sub.currentPeriodEnd
+                  ? new Date(sub.currentPeriodEnd)
+                  : null;
+                const shouldDowngradeNow = !periodEnd || periodEnd <= new Date();
+
+                if (shouldDowngradeNow) {
+                  await db
+                    .update(organizations)
+                    .set({
+                      planTier: 'free',
+                      updatedAt: new Date(),
+                    })
+                    .where(eq(organizations.polarSubscriptionId, sub.id));
+                }
+                // If periodEnd is in the future, user keeps access until then.
+                // The subscription.revoked webhook will handle the final downgrade.
+              }
+            }
+
+            if (payload.type === 'subscription.revoked') {
+              const sub = payload.data;
+              // Access has been fully revoked — downgrade to free
+              if (sub.id) {
+                await db
+                  .update(organizations)
+                  .set({
+                    planTier: 'free',
+                    updatedAt: new Date(),
+                  })
+                  .where(eq(organizations.polarSubscriptionId, sub.id));
+              }
+            }
+          },
+        }),
+      ],
     }),
   ],
 });

@@ -2,6 +2,7 @@ import { Navbar } from '@/components/landing/Navbar';
 import { Hero } from '@/components/landing/Hero';
 import { FeatureGrid } from '@/components/landing/FeatureGrid';
 import { FeatureHighlight } from '@/components/landing/FeatureHighlight';
+import { Pricing } from '@/components/landing/Pricing';
 import { Footer } from '@/components/landing/Footer';
 import { Compass, Globe, Layout, Library, Share2, Sparkles } from 'lucide-react';
 import Link from 'next/link';
@@ -110,6 +111,9 @@ export default function LandingPage() {
           imageSrc="/proposal_preivew-1.png" // Placeholder
           imageAlt="Digital Proposal Example"
         />
+
+        {/* Pricing Section */}
+        <Pricing />
 
         {/* CTA Section */}
         <section className="relative overflow-hidden py-24">

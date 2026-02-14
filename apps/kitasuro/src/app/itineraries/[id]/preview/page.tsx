@@ -26,6 +26,9 @@ import { Popover, PopoverContent, PopoverTrigger } from '@repo/ui/popover';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@repo/ui/dialog';
 import { ImagePicker, ImagePickerContent } from '@/components/image-picker';
 import type { ThemeType } from '@/types/itinerary-types';
+import { usePlan } from '@/components/plan-context';
+import { ALLOWED_THEMES_BY_TIER } from '@/lib/plans-config';
+import { Lock } from 'lucide-react';
 
 const THEME_OPTIONS: { value: ThemeType; label: string; description: string }[] = [
   {
@@ -73,6 +76,8 @@ export default function PreviewPage() {
   const [isHeroPickerOpen, setIsHeroPickerOpen] = useState(false);
   const [dayPickerOpen, setDayPickerOpen] = useState<{ dayNumber: number; accommodationName?: string } | null>(null);
   const [isThemePopoverOpen, setIsThemePopoverOpen] = useState(false);
+  const { plan } = usePlan();
+  const allowedThemes = plan ? ALLOWED_THEMES_BY_TIER[plan.effectiveTier] : ['minimalistic'];
 
   // Listen for hero image picker event from themes
   useEffect(() => {
@@ -414,23 +419,35 @@ export default function PreviewPage() {
                 <div className="space-y-3">
                   <h4 className="text-sm font-medium">Select Theme</h4>
                   <div className="space-y-2">
-                    {THEME_OPTIONS.map((theme) => (
-                      <button
-                        key={theme.value}
-                        onClick={() => {
-                          setSelectedTheme(theme.value);
-                          setIsThemePopoverOpen(false);
-                        }}
-                        className={`w-full rounded-lg border p-3 text-left transition-colors ${
-                          selectedTheme === theme.value
-                            ? 'border-green-600 bg-green-50'
-                            : 'border-stone-200 hover:border-stone-300 hover:bg-stone-50'
-                        }`}
-                      >
-                        <div className="text-sm font-medium">{theme.label}</div>
-                        <div className="text-xs text-stone-500">{theme.description}</div>
-                      </button>
-                    ))}
+                    {THEME_OPTIONS.map((theme) => {
+                      const isLocked = !allowedThemes.includes(theme.value);
+                      return (
+                        <button
+                          key={theme.value}
+                          onClick={() => {
+                            if (isLocked) return;
+                            setSelectedTheme(theme.value);
+                            setIsThemePopoverOpen(false);
+                          }}
+                          disabled={isLocked}
+                          className={`w-full rounded-lg border p-3 text-left transition-colors ${
+                            isLocked
+                              ? 'cursor-not-allowed border-stone-100 bg-stone-50 opacity-60'
+                              : selectedTheme === theme.value
+                                ? 'border-green-600 bg-green-50'
+                                : 'border-stone-200 hover:border-stone-300 hover:bg-stone-50'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="text-sm font-medium">{theme.label}</div>
+                            {isLocked && <Lock className="h-3.5 w-3.5 text-stone-400" />}
+                          </div>
+                          <div className="text-xs text-stone-500">
+                            {isLocked ? 'Requires Pro plan' : theme.description}
+                          </div>
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
               </PopoverContent>

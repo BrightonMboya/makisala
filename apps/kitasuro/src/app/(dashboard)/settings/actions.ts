@@ -7,6 +7,7 @@ import { headers } from 'next/headers';
 import { revalidatePath } from 'next/cache';
 import { uploadToStorage } from '@/lib/storage';
 import { compressImage } from '@/lib/image-utils';
+import { checkFeatureAccess } from '@/lib/plans';
 
 // Helper: Get authenticated session with active organization
 async function getSessionWithOrg() {
@@ -215,6 +216,12 @@ export async function getPendingInvitations() {
 export async function inviteTeamMember(data: { email: string; role: 'admin' | 'member' }) {
   const session = await requireAdmin();
   const hdrs = await headers();
+
+  // Check plan access for team members
+  const access = await checkFeatureAccess(session.orgId, 'teamMembers');
+  if (!access.allowed) {
+    return { success: false, error: access.reason };
+  }
 
   try {
     // Use Better Auth's organization invite API

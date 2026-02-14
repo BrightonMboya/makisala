@@ -8,6 +8,7 @@ import { headers } from 'next/headers';
 import { revalidatePath } from 'next/cache';
 import { compressImage, replaceExtension } from '@/lib/image-utils';
 import { z } from 'zod';
+import { checkFeatureAccess } from '@/lib/plans';
 
 // Helper: Get authenticated session with active organization
 async function getSessionWithOrg() {
@@ -188,6 +189,12 @@ export async function uploadOrganizationImage(data: z.infer<typeof uploadImageSc
   const session = await getSessionWithOrg();
   if (!session) {
     return { success: false, error: 'Unauthorized' };
+  }
+
+  // Check plan access for image uploads
+  const access = await checkFeatureAccess(session.orgId, 'uploadImages');
+  if (!access.allowed) {
+    return { success: false, error: access.reason };
   }
 
   const parsed = uploadImageSchema.safeParse(data);

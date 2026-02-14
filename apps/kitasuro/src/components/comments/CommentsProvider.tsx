@@ -34,6 +34,7 @@ interface CommentsContextType {
   addComment: (posX: number, posY: number, content: string, width?: number, height?: number) => Promise<void>;
   addReply: (commentId: string, content: string) => Promise<void>;
   resolveComment: (commentId: string) => Promise<void>;
+  readOnly: boolean;
 }
 
 const CommentsContext = createContext<CommentsContextType | undefined>(undefined);
@@ -41,9 +42,10 @@ const CommentsContext = createContext<CommentsContextType | undefined>(undefined
 interface CommentsProviderProps {
   children: React.ReactNode;
   proposalId: string;
+  readOnly?: boolean;
 }
 
-export function CommentsProvider({ children, proposalId }: CommentsProviderProps) {
+export function CommentsProvider({ children, proposalId, readOnly = false }: CommentsProviderProps) {
   const queryClient = useQueryClient();
   const [isCommenting, setIsCommenting] = useState(false);
   const [activeCommentId, setActiveCommentId] = useState<string | null>(null);
@@ -207,14 +209,15 @@ export function CommentsProvider({ children, proposalId }: CommentsProviderProps
   return (
     <CommentsContext.Provider
       value={{
-        isCommenting,
-        setIsCommenting,
+        isCommenting: readOnly ? false : isCommenting,
+        setIsCommenting: readOnly ? () => {} : setIsCommenting,
         comments,
         activeCommentId,
         setActiveCommentId,
         addComment,
         addReply,
         resolveComment,
+        readOnly,
       }}
     >
       {children}

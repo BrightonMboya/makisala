@@ -16,6 +16,8 @@
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
     "@hookform/resolvers": "^5.1.1",
+    "@polar-sh/better-auth": "^1.8.0",
+    "@polar-sh/sdk": "^0.42.5",
     "@react-pdf/renderer": "^4.3.2",
     "@repo/db": "workspace:*",
     "@repo/lint": "workspace:*",

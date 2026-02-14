@@ -29,7 +29,10 @@
       "Bash(echo:*)",
       "Bash(break)",
       "Bash(fi)",
-      "Bash(done)"
+      "Bash(done)",
+      "Bash(git checkout:*)",
+      "Bash(bun install:*)",
+      "Bash(gh pr list:*)"
     ]
   }
 }

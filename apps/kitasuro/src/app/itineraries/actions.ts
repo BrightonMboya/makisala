@@ -35,6 +35,7 @@ import { auth } from '@/lib/auth';
 import { headers } from 'next/headers';
 import { getPublicUrl, listStorageFolders, listStorageImages } from '@/lib/storage';
 import { env } from '@/lib/env';
+import { checkFeatureAccess, ALLOWED_THEMES_BY_TIER, getOrgPlan } from '@/lib/plans';
 
 async function getSession() {
   return await auth.api.getSession({
@@ -908,6 +909,26 @@ export async function saveProposal(data: {
       return { success: false, error: 'User must be associated with an organization' };
     }
 
+    // Check if this is a new proposal (not an update)
+    const existingProposal = await db.query.proposals.findFirst({
+      where: eq(proposals.id, proposalId),
+      columns: { id: true },
+    });
+
+    if (!existingProposal) {
+      // New proposal — check active proposals limit
+      const access = await checkFeatureAccess(orgId, 'activeProposals');
+      if (!access.allowed) {
+        return { success: false, error: access.reason };
+      }
+    }
+
+    // Validate theme against plan
+    const selectedTheme = builderData.selectedTheme || 'minimalistic';
+    const plan = await getOrgPlan(orgId);
+    const allowedThemes = plan ? ALLOWED_THEMES_BY_TIER[plan.effectiveTier] : ['minimalistic'];
+    const validatedTheme = allowedThemes.includes(selectedTheme) ? selectedTheme : 'minimalistic';
+
     // Extract proposal-level data
     const proposalData = {
       id: proposalId,
@@ -917,7 +938,7 @@ export async function saveProposal(data: {
       clientId: builderData.clientId || null,
       tourTitle: builderData.tourTitle || data.name,
       tourType: builderData.tourType || null,
-      theme: builderData.selectedTheme || 'minimalistic',
+      theme: validatedTheme,
       heroImage: builderData.heroImage || null,
       startDate: builderData.startDate ? new Date(builderData.startDate).toISOString() : null,
       startCity: builderData.startCity || null,
@@ -1126,6 +1147,18 @@ export async function createComment(data: {
   height?: number;
 }) {
   try {
+    // Check if proposal's organization allows comments
+    const proposal = await db.query.proposals.findFirst({
+      where: eq(proposals.id, data.proposalId),
+      columns: { organizationId: true },
+    });
+    if (proposal?.organizationId) {
+      const access = await checkFeatureAccess(proposal.organizationId, 'comments');
+      if (!access.allowed) {
+        return { success: false, error: access.reason };
+      }
+    }
+
     const [comment] = await db
       .insert(comments)
       .values({
