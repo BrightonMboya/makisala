@@ -67,7 +67,7 @@ export function BillingSettings() {
     cancelAtPeriodEnd: boolean;
   } | null>(null);
   const searchParams = useSearchParams();
-  const { plan, isLoading: isPlanLoading, refreshPlan } = usePlan();
+  const { plan, isLoading: isPlanLoading, refreshPlan, waitForPlanUpdate } = usePlan();
 
   const fetchCustomerState = useCallback(async () => {
     try {
@@ -97,10 +97,15 @@ export function BillingSettings() {
     if (searchParams.get('checkout') === 'success') {
       // Clear the query param first to prevent re-showing on remount
       window.history.replaceState({}, '', '/settings?tab=billing');
-      toast({ title: 'Subscription activated successfully!' });
-      refreshPlan().catch(() => {
-        toast({ title: 'Failed to refresh plan status', variant: 'destructive' });
-      });
+      toast({ title: 'Activating subscription...' });
+      // Poll until the webhook updates the DB, then refresh
+      waitForPlanUpdate()
+        .then(() => {
+          toast({ title: 'Subscription activated successfully!' });
+        })
+        .catch(() => {
+          toast({ title: 'Failed to refresh plan status', variant: 'destructive' });
+        });
       fetchCustomerState();
     }
     // Only run once on mount when checkout=success is present

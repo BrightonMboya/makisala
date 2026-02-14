@@ -17,6 +17,8 @@ interface PlanContextType {
   isLoading: boolean;
   canAccess: (feature: Feature) => boolean;
   refreshPlan: () => Promise<void>;
+  /** Poll until the plan tier changes from current, useful after checkout */
+  waitForPlanUpdate: () => Promise<void>;
 }
 
 const PlanContext = createContext<PlanContextType | undefined>(undefined);
@@ -25,23 +27,37 @@ export function PlanProvider({ children }: { children: ReactNode }) {
   const [plan, setPlan] = useState<PlanInfo | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  const fetchPlan = useCallback(async () => {
+  const fetchPlan = useCallback(async (bustCache = false) => {
     try {
-      const res = await fetch('/api/plan');
+      const res = await fetch('/api/plan', bustCache ? { cache: 'no-store' } : undefined);
       if (res.ok) {
         const data = await res.json();
         setPlan(data);
+        return data as PlanInfo;
       }
     } catch (error) {
       console.error('Failed to fetch plan:', error);
     } finally {
       setIsLoading(false);
     }
+    return null;
   }, []);
 
   useEffect(() => {
     fetchPlan();
   }, [fetchPlan]);
+
+  const waitForPlanUpdate = useCallback(async () => {
+    const currentTier = plan?.tier ?? 'free';
+    const maxAttempts = 10;
+    const delayMs = 1500;
+
+    for (let i = 0; i < maxAttempts; i++) {
+      await new Promise((r) => setTimeout(r, delayMs));
+      const updated = await fetchPlan(true);
+      if (updated && updated.tier !== currentTier) return;
+    }
+  }, [plan?.tier, fetchPlan]);
 
   const canAccess = (feature: Feature): boolean => {
     if (!plan) return false;
@@ -52,8 +68,10 @@ export function PlanProvider({ children }: { children: ReactNode }) {
     return value;
   };
 
+  const refreshPlan = useCallback(() => fetchPlan(true).then(() => undefined), [fetchPlan]);
+
   return (
-    <PlanContext.Provider value={{ plan, isLoading, canAccess, refreshPlan: fetchPlan }}>
+    <PlanContext.Provider value={{ plan, isLoading, canAccess, refreshPlan, waitForPlanUpdate }}>
       {children}
     </PlanContext.Provider>
   );
