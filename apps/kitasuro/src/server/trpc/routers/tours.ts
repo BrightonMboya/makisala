@@ -1,5 +1,4 @@
 import { z } from 'zod';
-import { db } from '@repo/db';
 import {
   tours,
   itineraryDays,
@@ -12,7 +11,7 @@ import { router, protectedProcedure, publicProcedure } from '../init';
 
 export const toursRouter = router({
   list: protectedProcedure.query(async ({ ctx }) => {
-    return await db
+    return await ctx.db
       .select({
         id: tours.id,
         name: tours.tourName,
@@ -31,7 +30,7 @@ export const toursRouter = router({
   getById: protectedProcedure
     .input(z.object({ id: z.string() }))
     .query(async ({ ctx, input }) => {
-      const tour = await db.query.tours.findFirst({
+      const tour = await ctx.db.query.tours.findFirst({
         where: eq(tours.id, input.id),
         with: {
           days: {
@@ -60,8 +59,8 @@ export const toursRouter = router({
 
   getDetails: publicProcedure
     .input(z.object({ id: z.string() }))
-    .query(async ({ input }) => {
-      const tour = await db.query.tours.findFirst({
+    .query(async ({ ctx, input }) => {
+      const tour = await ctx.db.query.tours.findFirst({
         where: eq(tours.id, input.id),
         with: {
           days: {
@@ -120,7 +119,7 @@ export const toursRouter = router({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const tour = await db.query.tours.findFirst({
+      const tour = await ctx.db.query.tours.findFirst({
         where: eq(tours.id, input.id),
         columns: { organizationId: true },
       });
@@ -150,7 +149,7 @@ export const toursRouter = router({
         }
       }
 
-      await db.transaction(async (tx) => {
+      await ctx.db.transaction(async (tx) => {
         await tx
           .update(tours)
           .set({ ...tourData, updatedAt: new Date() })
@@ -187,7 +186,7 @@ export const toursRouter = router({
   delete: protectedProcedure
     .input(z.object({ id: z.string() }))
     .mutation(async ({ ctx, input }) => {
-      const tour = await db.query.tours.findFirst({
+      const tour = await ctx.db.query.tours.findFirst({
         where: eq(tours.id, input.id),
         columns: { organizationId: true },
       });
@@ -196,7 +195,7 @@ export const toursRouter = router({
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Tour not found or unauthorized' });
       }
 
-      await db.delete(tours).where(eq(tours.id, input.id));
+      await ctx.db.delete(tours).where(eq(tours.id, input.id));
       return { success: true };
     }),
 
@@ -204,7 +203,7 @@ export const toursRouter = router({
     const { clients } = await import('@repo/db/schema');
 
     const [toursData, clientsData] = await Promise.all([
-      db
+      ctx.db
         .select({
           id: tours.id,
           name: tours.tourName,
@@ -213,7 +212,7 @@ export const toursRouter = router({
         .from(tours)
         .where(eq(tours.organizationId, ctx.orgId))
         .orderBy(tours.tourName),
-      db
+      ctx.db
         .select({ id: clients.id, name: clients.name })
         .from(clients)
         .where(eq(clients.organizationId, ctx.orgId))
@@ -223,8 +222,8 @@ export const toursRouter = router({
     return { tours: toursData, clients: clientsData };
   }),
 
-  getSharedTemplates: publicProcedure.query(async () => {
-    return await db
+  getSharedTemplates: publicProcedure.query(async ({ ctx }) => {
+    return await ctx.db
       .select({
         id: tours.id,
         name: tours.tourName,
@@ -243,7 +242,7 @@ export const toursRouter = router({
   cloneTemplate: protectedProcedure
     .input(z.object({ templateId: z.string() }))
     .mutation(async ({ ctx, input }) => {
-      const template = await db.query.tours.findFirst({
+      const template = await ctx.db.query.tours.findFirst({
         where: eq(tours.id, input.templateId),
         with: {
           days: {
@@ -260,7 +259,7 @@ export const toursRouter = router({
         throw new TRPCError({ code: 'FORBIDDEN', message: 'Unauthorized to clone this template' });
       }
 
-      const result = await db.transaction(async (tx) => {
+      const result = await ctx.db.transaction(async (tx) => {
         const newTourResult = await tx
           .insert(tours)
           .values({
@@ -324,10 +323,10 @@ export const toursRouter = router({
         excludeDescriptions: z.array(z.string()).max(100).optional(),
       }),
     )
-    .query(async ({ input }) => {
+    .query(async ({ ctx, input }) => {
       const { dayContentTemplates } = await import('@repo/db/schema');
 
-      const templates = await db
+      const templates = await ctx.db
         .select({
           id: dayContentTemplates.id,
           dayType: dayContentTemplates.dayType,
@@ -355,10 +354,10 @@ export const toursRouter = router({
 
   getPageImages: publicProcedure
     .input(z.object({ pageIds: z.array(z.string()).max(100) }))
-    .query(async ({ input }) => {
+    .query(async ({ ctx, input }) => {
       if (input.pageIds.length === 0) return [];
 
-      return await db
+      return await ctx.db
         .select({ id: pages.id, featured_image_url: pages.featured_image_url })
         .from(pages)
         .where(inArray(pages.id, input.pageIds));

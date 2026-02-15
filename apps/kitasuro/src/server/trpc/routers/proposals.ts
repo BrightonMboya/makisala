@@ -1,5 +1,4 @@
 import { z } from 'zod';
-import { db } from '@repo/db';
 import {
   proposals,
   proposalAssignments,
@@ -80,7 +79,7 @@ export const proposalsRouter = router({
       let whereClause = eq(proposals.organizationId, ctx.orgId);
 
       if (input.filter === 'mine') {
-        const assignedRows = await db
+        const assignedRows = await ctx.db
           .select({ proposalId: proposalAssignments.proposalId })
           .from(proposalAssignments)
           .where(eq(proposalAssignments.userId, ctx.user.id));
@@ -94,7 +93,7 @@ export const proposalsRouter = router({
         )!;
       }
 
-      return await db.query.proposals.findMany({
+      return await ctx.db.query.proposals.findMany({
         where: whereClause,
         orderBy: desc(proposals.updatedAt),
         with: {
@@ -121,8 +120,8 @@ export const proposalsRouter = router({
 
   getById: publicProcedure
     .input(z.object({ id: z.string() }))
-    .query(async ({ input }) => {
-      const result = await db.query.proposals.findFirst({
+    .query(async ({ ctx, input }) => {
+      const result = await ctx.db.query.proposals.findFirst({
         where: eq(proposals.id, input.id),
         with: {
           organization: {
@@ -163,7 +162,7 @@ export const proposalsRouter = router({
   getForBuilder: protectedProcedure
     .input(z.object({ id: z.string() }))
     .query(async ({ ctx, input }) => {
-      const result = await db.query.proposals.findFirst({
+      const result = await ctx.db.query.proposals.findFirst({
         where: and(eq(proposals.id, input.id), eq(proposals.organizationId, ctx.orgId)),
         columns: {
           id: true,
@@ -253,7 +252,7 @@ export const proposalsRouter = router({
 
       const builderData = input.data as unknown as BuilderData;
 
-      const existingProposal = await db.query.proposals.findFirst({
+      const existingProposal = await ctx.db.query.proposals.findFirst({
         where: eq(proposals.id, proposalId),
         columns: { id: true, organizationId: true },
       });
@@ -299,7 +298,7 @@ export const proposalsRouter = router({
         updatedAt: new Date().toISOString(),
       };
 
-      await db.transaction(async (tx) => {
+      await ctx.db.transaction(async (tx) => {
         await tx
           .insert(proposals)
           .values({
@@ -454,7 +453,7 @@ export const proposalsRouter = router({
   assign: adminProcedure
     .input(z.object({ proposalId: z.string(), userId: z.string() }))
     .mutation(async ({ ctx, input }) => {
-      const proposal = await db.query.proposals.findFirst({
+      const proposal = await ctx.db.query.proposals.findFirst({
         where: and(eq(proposals.id, input.proposalId), eq(proposals.organizationId, ctx.orgId)),
         columns: { id: true },
       });
@@ -463,7 +462,7 @@ export const proposalsRouter = router({
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Proposal not found' });
       }
 
-      const [targetMembership] = await db
+      const [targetMembership] = await ctx.db
         .select({ userId: member.userId })
         .from(member)
         .where(and(eq(member.userId, input.userId), eq(member.organizationId, ctx.orgId)))
@@ -473,7 +472,7 @@ export const proposalsRouter = router({
         throw new TRPCError({ code: 'BAD_REQUEST', message: 'User is not a member of this organization' });
       }
 
-      await db
+      await ctx.db
         .insert(proposalAssignments)
         .values({
           proposalId: input.proposalId,
@@ -487,8 +486,8 @@ export const proposalsRouter = router({
 
   unassign: adminProcedure
     .input(z.object({ proposalId: z.string(), userId: z.string() }))
-    .mutation(async ({ input }) => {
-      await db
+    .mutation(async ({ ctx, input }) => {
+      await ctx.db
         .delete(proposalAssignments)
         .where(
           and(
@@ -503,7 +502,7 @@ export const proposalsRouter = router({
   sendToClient: protectedProcedure
     .input(z.object({ proposalId: z.string(), message: z.string().max(5000).optional() }))
     .mutation(async ({ ctx, input }) => {
-      const proposal = await db.query.proposals.findFirst({
+      const proposal = await ctx.db.query.proposals.findFirst({
         where: and(eq(proposals.id, input.proposalId), eq(proposals.organizationId, ctx.orgId)),
         with: { client: true, organization: true },
       });
@@ -516,7 +515,7 @@ export const proposalsRouter = router({
         throw new TRPCError({ code: 'BAD_REQUEST', message: 'Client does not have an email address' });
       }
 
-      const daysCountResult = await db
+      const daysCountResult = await ctx.db
         .select({ count: sql<number>`count(*)::int` })
         .from(proposalDays)
         .where(eq(proposalDays.proposalId, input.proposalId));
@@ -554,13 +553,13 @@ export const proposalsRouter = router({
 
   confirm: publicProcedure
     .input(z.object({ proposalId: z.string(), clientName: z.string().max(255) }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
       const [proposal, daysCountResult] = await Promise.all([
-        db.query.proposals.findFirst({
+        ctx.db.query.proposals.findFirst({
           where: eq(proposals.id, input.proposalId),
           with: { organization: true, client: true },
         }),
-        db
+        ctx.db
           .select({ count: sql<number>`count(*)::int` })
           .from(proposalDays)
           .where(eq(proposalDays.proposalId, input.proposalId)),
