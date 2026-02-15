@@ -8,7 +8,7 @@ import { auth } from '@/lib/auth';
 import { uploadToStorage } from '@/lib/storage';
 import { compressImage } from '@/lib/image-utils';
 import { checkFeatureAccess } from '@/lib/plans';
-import { revalidatePath } from 'next/cache';
+
 
 export const settingsRouter = router({
   getOrg: protectedProcedure.query(async ({ ctx }) => {
@@ -35,7 +35,6 @@ export const settingsRouter = router({
         .update(organizations)
         .set({ ...input, updatedAt: new Date() })
         .where(eq(organizations.id, ctx.orgId));
-      revalidatePath('/settings');
       return { success: true };
     }),
 
@@ -73,7 +72,6 @@ export const settingsRouter = router({
         .set({ logoUrl, updatedAt: new Date() })
         .where(eq(organizations.id, ctx.orgId));
 
-      revalidatePath('/settings');
       return { success: true, url: logoUrl };
     }),
 
@@ -155,7 +153,6 @@ export const settingsRouter = router({
         headers: hdrs,
       });
 
-      revalidatePath('/settings');
       return { success: true, invitation: result };
     }),
 
@@ -167,7 +164,6 @@ export const settingsRouter = router({
         body: { invitationId: input.invitationId },
         headers: hdrs,
       });
-      revalidatePath('/settings');
       return { success: true };
     }),
 
@@ -193,7 +189,6 @@ export const settingsRouter = router({
         headers: hdrs,
       });
 
-      revalidatePath('/settings');
       return { success: true };
     }),
 
@@ -240,7 +235,6 @@ export const settingsRouter = router({
         headers: hdrs,
       });
 
-      revalidatePath('/settings');
       return { success: true };
     }),
 
@@ -256,18 +250,15 @@ export const settingsRouter = router({
         .update(user)
         .set({ ...input, updatedAt: new Date() })
         .where(eq(user.id, ctx.user.id));
-      revalidatePath('/settings');
       return { success: true };
     }),
 
   uploadAvatar: protectedProcedure
-    .input(z.object({ base64Data: z.string() }))
+    .input(z.object({
+      base64Data: z.string().max(7 * 1024 * 1024, 'Image too large. Maximum size is 5MB.'),
+    }))
     .mutation(async ({ ctx, input }) => {
       const base64 = input.base64Data.replace(/^data:[^;]+;base64,/, '');
-      if (base64.length > 7 * 1024 * 1024) {
-        throw new TRPCError({ code: 'BAD_REQUEST', message: 'Image too large. Maximum size is 5MB.' });
-      }
-
       const buffer = Buffer.from(base64, 'base64');
 
       const compressed = await compressImage(buffer, {
@@ -296,7 +287,6 @@ export const settingsRouter = router({
         .set({ image: imageUrl, updatedAt: new Date() })
         .where(eq(user.id, ctx.user.id));
 
-      revalidatePath('/settings');
       return { success: true, url: imageUrl };
     }),
 
@@ -393,7 +383,6 @@ export const settingsRouter = router({
         headers: hdrs,
       });
 
-      revalidatePath('/settings');
       return { success: true };
     }),
 });

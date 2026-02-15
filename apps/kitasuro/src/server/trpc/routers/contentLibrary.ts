@@ -6,7 +6,7 @@ import { router, protectedProcedure } from '../init';
 import { deleteFromStorage, getPublicUrl, uploadToStorage } from '@/lib/storage';
 import { compressImage, replaceExtension } from '@/lib/image-utils';
 import { checkFeatureAccess } from '@/lib/plans';
-import { revalidatePath } from 'next/cache';
+
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'] as const;
@@ -179,7 +179,6 @@ export const contentLibraryRouter = router({
         });
       }
 
-      revalidatePath('/content-library');
       return {
         id: newImage.id,
         name: newImage.name,
@@ -213,7 +212,6 @@ export const contentLibraryRouter = router({
 
       await ctx.db.delete(organizationImages).where(eq(organizationImages.id, input.imageId));
 
-      revalidatePath('/content-library');
       return { success: true };
     }),
 });

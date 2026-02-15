@@ -5,7 +5,7 @@ import { TRPCError } from '@trpc/server';
 import { router, publicProcedure, protectedProcedure } from '../init';
 import { getPublicUrl, uploadToStorage } from '@/lib/storage';
 import { compressImage, replaceExtension } from '@/lib/image-utils';
-import { revalidatePath } from 'next/cache';
+
 
 const imageSchema = z.object({
   name: z.string().min(1),
@@ -192,7 +192,6 @@ export const accommodationsRouter = router({
         }
       }
 
-      revalidatePath('/accomodations');
       return { id: newAcc.id };
     }),
 
@@ -255,8 +254,6 @@ export const accommodationsRouter = router({
         }
       }
 
-      revalidatePath('/accomodations');
-      revalidatePath(`/accomodations/${id}/edit`);
       return { success: true };
     }),
 });

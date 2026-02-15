@@ -9,6 +9,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useToast } from '@repo/ui/use-toast';
+import { TRPCClientError } from '@trpc/client';
 import { trpc } from '@/lib/trpc';
 
 const clientSchema = z.object({
@@ -72,7 +73,7 @@ export function ClientForm({ client }: ClientFormProps) {
       }
       router.push('/clients');
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Something went wrong';
+      const message = error instanceof TRPCClientError ? error.message :'Something went wrong';
       toast({ title: message, variant: 'destructive' });
     }
   };
@@ -85,7 +86,7 @@ export function ClientForm({ client }: ClientFormProps) {
       toast({ title: 'Client deleted successfully' });
       router.push('/clients');
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to delete client';
+      const message = error instanceof TRPCClientError ? error.message :'Failed to delete client';
       toast({ title: message, variant: 'destructive' });
     }
   }

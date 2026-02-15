@@ -20,6 +20,59 @@ import { router, protectedProcedure, adminProcedure, publicProcedure } from '../
 import { checkFeatureAccess, getOrgPlan, ALLOWED_THEMES_BY_TIER } from '@/lib/plans';
 import { env } from '@/lib/env';
 
+interface BuilderData {
+  selectedTheme?: string;
+  tourId?: string;
+  clientId?: string | null;
+  tourTitle?: string;
+  tourType?: string | null;
+  heroImage?: string | null;
+  startDate?: string | null;
+  startCity?: string | null;
+  endCity?: string | null;
+  pickupPoint?: string | null;
+  transferIncluded?: string | null;
+  travelerGroups?: Array<{ id: string; count: number; type: string }> | null;
+  pricingRows?: Array<{ id: string; count: number; type: string; unitPrice: number }> | null;
+  extras?: Array<{ id: string; name: string; price: number; selected: boolean }> | null;
+  countries?: string[] | null;
+  inclusions?: string[] | null;
+  exclusions?: string[] | null;
+  days?: BuilderDay[];
+}
+
+interface BuilderActivity {
+  name: string;
+  description?: string | null;
+  location?: string | null;
+  moment?: string | null;
+  isOptional?: boolean;
+  imageUrl?: string | null;
+}
+
+interface BuilderTransfer {
+  originName: string;
+  originId?: string | null;
+  destinationName: string;
+  destinationId?: string | null;
+  mode: 'road_4x4' | 'road_shuttle' | 'road_bus' | 'flight_domestic' | 'flight_bush';
+  durationMinutes?: number | null;
+  distanceKm?: number | null;
+  notes?: string | null;
+}
+
+interface BuilderDay {
+  dayNumber: number;
+  title?: string;
+  description?: string | null;
+  previewImage?: string | null;
+  destination?: string;
+  accommodation?: string;
+  activities?: BuilderActivity[];
+  meals?: { breakfast?: boolean; lunch?: boolean; dinner?: boolean };
+  transfer?: BuilderTransfer;
+}
+
 export const proposalsRouter = router({
   listForDashboard: protectedProcedure
     .input(z.object({ filter: z.enum(['mine', 'all']).default('mine') }))
@@ -186,7 +239,7 @@ export const proposalsRouter = router({
       z.object({
         id: z.string(),
         name: z.string(),
-        data: z.any(),
+        data: z.object({}).passthrough(),
         status: z.enum(['draft', 'shared']).optional(),
         tourId: z.string(),
       }),
@@ -198,7 +251,7 @@ export const proposalsRouter = router({
         proposalId = randomUUID();
       }
 
-      const builderData = input.data;
+      const builderData = input.data as unknown as BuilderData;
 
       const existingProposal = await db.query.proposals.findFirst({
         where: eq(proposals.id, proposalId),
@@ -224,7 +277,7 @@ export const proposalsRouter = router({
       const proposalData = {
         id: proposalId,
         name: input.name,
-        tourId: input.tourId || builderData.tourId,
+        tourId: input.tourId || builderData.tourId!,
         organizationId: ctx.orgId,
         clientId: builderData.clientId || null,
         tourTitle: builderData.tourTitle || input.name,
@@ -302,7 +355,7 @@ export const proposalsRouter = router({
 
         await tx.delete(proposalDays).where(eq(proposalDays.proposalId, proposalId));
 
-        const days: any[] = builderData.days || [];
+        const days = builderData.days || [];
 
         for (const day of days) {
           let nationalParkId: string | null = null;
@@ -326,7 +379,7 @@ export const proposalsRouter = router({
             })
             .returning();
 
-          if (!proposalDay) throw new Error(`Failed to create proposal day ${day.dayNumber}`);
+          if (!proposalDay) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: `Failed to create proposal day ${day.dayNumber}` });
 
           if (day.accommodation) {
             const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(

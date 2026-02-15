@@ -51,8 +51,9 @@ export const toursRouter = router({
         },
       });
 
-      if (!tour) return null;
-      if (tour.organizationId !== ctx.orgId) return null;
+      if (!tour || tour.organizationId !== ctx.orgId) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Tour not found' });
+      }
 
       return tour;
     }),
@@ -279,7 +280,7 @@ export const toursRouter = router({
           .returning({ id: tours.id });
 
         const newTour = newTourResult[0];
-        if (!newTour) throw new Error('Failed to create tour');
+        if (!newTour) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to create tour' });
 
         if (template.days && template.days.length > 0) {
           for (const day of template.days) {
@@ -295,7 +296,7 @@ export const toursRouter = router({
               .returning({ id: itineraryDays.id });
 
             const newDay = newDayResult[0];
-            if (!newDay) throw new Error('Failed to create itinerary day');
+            if (!newDay) throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to create itinerary day' });
 
             if (day.itineraryAccommodations && day.itineraryAccommodations.length > 0) {
               await tx.insert(itineraryAccommodations).values(

@@ -33,13 +33,20 @@ export function ProposalAssignPopover({
       const member = teamMembers.find((m) => m.id === memberId);
       if (member) {
         utils.proposals.listForDashboard.setData({ filter: activeFilter }, (old) =>
-          old?.map((p: any) =>
+          old?.map((p) =>
             p.id === proposalId
               ? {
                   ...p,
                   assignments: [
                     ...(p.assignments || []),
-                    { user: { id: member.id, name: member.name, image: member.image } },
+                    {
+                      id: `optimistic-${member.id}`,
+                      createdAt: new Date().toISOString(),
+                      userId: member.id,
+                      proposalId,
+                      assignedBy: null,
+                      user: { id: member.id, name: member.name, image: member.image },
+                    },
                   ],
                 }
               : p,
@@ -70,12 +77,12 @@ export function ProposalAssignPopover({
       const previousData = utils.proposals.listForDashboard.getData({ filter: activeFilter });
 
       utils.proposals.listForDashboard.setData({ filter: activeFilter }, (old) =>
-        old?.map((p: any) =>
+        old?.map((p) =>
           p.id === proposalId
             ? {
                 ...p,
                 assignments: (p.assignments || []).filter(
-                  (a: any) => a.user.id !== memberId,
+                  (a) => a.user.id !== memberId,
                 ),
               }
             : p,
@@ -109,9 +116,9 @@ export function ProposalAssignPopover({
 
   // Read optimistic assignee set from tRPC cache
   const cachedProposals = utils.proposals.listForDashboard.getData({ filter: activeFilter });
-  const currentProposal = (cachedProposals as any[])?.find((p: any) => p.id === proposalId);
+  const currentProposal = cachedProposals?.find((p) => p.id === proposalId);
   const optimisticAssignedIds = new Set(
-    (currentProposal?.assignments || []).map((a: any) => a.user.id),
+    (currentProposal?.assignments || []).map((a) => a.user.id),
   );
 
   return (
