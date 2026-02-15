@@ -34,7 +34,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { CreatableAsyncCombobox } from './creatable-async-combobox';
-import { searchActivities, createActivity, searchNationalParks } from '@/app/itineraries/actions';
+import { trpc } from '@/lib/trpc';
 
 const moments = ['Morning', 'Afternoon', 'Evening', 'Half Day', 'Full Day', 'Night'] as const;
 
@@ -52,27 +52,26 @@ export function ActivityModal({
   onSave: (activities: Activity[]) => void;
 }) {
   const [activities, setActivities] = useState<Activity[]>([]);
+  const utils = trpc.useUtils();
+  const createActivityMutation = trpc.activities.create.useMutation();
 
   // Activity search handler
   const handleActivitySearch = useCallback(async (query: string) => {
-    const results = await searchActivities(query, 10);
+    const results = await utils.activities.search.fetch({ query, limit: 10 });
     return results.map((a) => ({ value: a.name, label: a.name }));
-  }, []);
+  }, [utils]);
 
   // Activity create handler
   const handleActivityCreate = useCallback(async (name: string) => {
-    const result = await createActivity(name);
-    if (result.success && result.activity) {
-      return { value: result.activity.name, label: result.activity.name };
-    }
-    return null;
-  }, []);
+    const activity = await createActivityMutation.mutateAsync({ name });
+    return { value: activity.name, label: activity.name };
+  }, [createActivityMutation]);
 
   // Location search handler
   const handleLocationSearch = useCallback(async (query: string) => {
-    const results = await searchNationalParks(query, 10);
+    const results = await utils.nationalParks.search.fetch({ query, limit: 10 });
     return results.map((p) => ({ value: p.id, label: p.name }));
-  }, []);
+  }, [utils]);
 
   useEffect(() => {
     if (isOpen) {

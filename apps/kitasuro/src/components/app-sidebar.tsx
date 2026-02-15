@@ -16,9 +16,9 @@ import {
   SidebarMenuItem,
   SidebarRail,
 } from '@repo/ui/sidebar';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import { authClient, useActiveOrganization } from '@/lib/auth-client';
-import { getOrganizationSettings, getCurrentUser } from '@/app/(dashboard)/settings/actions';
+import { trpc } from '@/lib/trpc';
 import { NewRequestDialog } from './new-request-dialog';
 
 export function AppSidebar() {
@@ -29,15 +29,9 @@ export function AppSidebar() {
   const { data: activeOrg } = useActiveOrganization();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
-  const { data: orgSettings } = useQuery({
-    queryKey: ['organization-settings'],
-    queryFn: () => getOrganizationSettings(),
-  });
+  const { data: orgSettings } = trpc.settings.getOrg.useQuery();
 
-  const { data: userProfile } = useQuery({
-    queryKey: ['user-profile'],
-    queryFn: () => getCurrentUser(),
-  });
+  const { data: userProfile } = trpc.settings.getCurrentUser.useQuery();
 
   // Get org info from active organization
   const orgName = activeOrg?.name || 'Dashboard';

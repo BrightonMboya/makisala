@@ -12,7 +12,7 @@ import {
   MarkerTooltip,
 } from '@repo/ui/map';
 import type { ItineraryData, NationalParkInfo } from '@/types/itinerary-types';
-import { confirmProposal } from '@/app/itineraries/actions';
+import { trpc } from '@/lib/trpc';
 
 function TripMap({ data }: { data: ItineraryData['mapData'] }) {
   const { locations, startLocation, endLocation } = data;
@@ -163,6 +163,8 @@ export default function MinimalisticTheme({ data, onHeroImageChange, onDayImageC
   const [confirmStatus, setConfirmStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [confirmError, setConfirmError] = useState('');
 
+  const confirmMutation = trpc.proposals.confirm.useMutation();
+
   const handleConfirmProposal = async () => {
     if (!confirmName.trim()) return;
 
@@ -170,17 +172,11 @@ export default function MinimalisticTheme({ data, onHeroImageChange, onDayImageC
     setConfirmError('');
 
     try {
-      const result = await confirmProposal(data.id, confirmName.trim());
-
-      if (result.success) {
-        setConfirmStatus('success');
-      } else {
-        setConfirmStatus('error');
-        setConfirmError(result.error || 'Failed to confirm proposal');
-      }
-    } catch {
+      await confirmMutation.mutateAsync({ proposalId: data.id, clientName: confirmName.trim() });
+      setConfirmStatus('success');
+    } catch (err: any) {
       setConfirmStatus('error');
-      setConfirmError('An unexpected error occurred');
+      setConfirmError(err?.message || 'An unexpected error occurred');
     } finally {
       setIsConfirming(false);
     }

@@ -17,11 +17,10 @@ import {
 import { useBuilder } from '@/components/itinerary-builder/builder-context';
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
-import { getClientById } from '@/app/(dashboard)/clients/actions';
-import { saveProposal } from '@/app/itineraries/actions';
 import { toast } from '@repo/ui/toast';
-import { useMutation, useQuery } from '@tanstack/react-query';
-import { queryKeys, staleTimes } from '@/lib/query-keys';
+import { useMutation } from '@tanstack/react-query';
+import { trpc } from '@/lib/trpc';
+import { staleTimes } from '@/lib/query-keys';
 import Link from 'next/link';
 
 const DEFAULT_MESSAGE = `Thank you for choosing us to plan your unforgettable journey! We've carefully crafted this personalized travel proposal based on your preferences and dreams.
@@ -64,13 +63,13 @@ export default function SharePage() {
   const [isProposalSaved, setIsProposalSaved] = useState(false);
   const [proposalLink, setProposalLink] = useState('');
 
+  const saveProposalMutation = trpc.proposals.save.useMutation();
+
   // Fetch client info
-  const { data: clientData } = useQuery({
-    queryKey: queryKeys.clients.detail(clientId || ''),
-    queryFn: () => (clientId ? getClientById(clientId) : null),
-    enabled: !!clientId,
-    staleTime: staleTimes.clients,
-  });
+  const { data: clientData } = trpc.clients.getById.useQuery(
+    { id: clientId || '' },
+    { enabled: !!clientId, staleTime: staleTimes.clients },
+  );
 
   // Set default values when client data loads
   useEffect(() => {
@@ -119,19 +118,13 @@ export default function SharePage() {
         heroImage,
       };
 
-      const result = await saveProposal({
+      return await saveProposalMutation.mutateAsync({
         id: proposalId,
         name: tourTitle || 'Untitled Safari',
         data: proposalData,
         status: 'shared',
         tourId: tourId,
       });
-
-      if (!result.success) {
-        throw new Error('Failed to publish proposal.');
-      }
-
-      return result;
     },
     onSuccess: () => {
       setIsProposalSaved(true);

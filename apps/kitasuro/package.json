@@ -26,6 +26,9 @@
     "@supabase/supabase-js": "^2.89.0",
     "@t3-oss/env-nextjs": "^0.13.10",
     "@tanstack/react-query": "^5.90.16",
+    "@trpc/client": "^11",
+    "@trpc/react-query": "^11",
+    "@trpc/server": "^11",
     "better-auth": "^1.4.9",
     "cloudinary": "^2.7.0",
     "clsx": "^2.1.1",
@@ -33,6 +36,7 @@
     "drizzle-orm": "^0.44.3",
     "framer-motion": "^12.23.26",
     "sharp": "^0.34.5",
+    "superjson": "^2.2.6",
     "tailwind-merge": "^3.4.0"
   },
   "devDependencies": {

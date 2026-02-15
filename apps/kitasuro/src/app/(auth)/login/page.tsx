@@ -11,7 +11,7 @@ import { authClient } from '@/lib/auth-client';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useToast } from '@repo/ui/use-toast';
 import Link from 'next/link';
-import { acceptInvitation } from '@/app/(dashboard)/settings/actions';
+import { trpc } from '@/lib/trpc';
 import { Mail, CheckCircle, AlertCircle } from 'lucide-react';
 
 const LoginSchema = z.object({
@@ -57,6 +57,7 @@ function LoginForm() {
 
   // Get invite token from URL params (for accepting invitation after login)
   const inviteToken = searchParams.get('invite');
+  const acceptInvitationMutation = trpc.settings.acceptInvitation.useMutation();
 
   // Check for email verification status from callback
   const verificationError = searchParams.get('error');
@@ -70,21 +71,14 @@ function LoginForm() {
       hasHandledSession.current = true;
       if (inviteToken) {
         // Accept invitation for already-logged-in user
-        acceptInvitation(inviteToken)
-          .then((result) => {
-            if (result.success) {
-              toast('Success!', { description: 'Invitation accepted.' });
-            } else {
-              toast('Warning', {
-                description: result.error || 'Could not accept invitation.',
-                variant: 'destructive',
-              });
-            }
+        acceptInvitationMutation.mutateAsync({ invitationId: inviteToken })
+          .then(() => {
+            toast('Success!', { description: 'Invitation accepted.' });
             router.push('/dashboard');
           })
-          .catch(() => {
+          .catch((err: any) => {
             toast('Error', {
-              description: 'Unexpected error accepting invitation.',
+              description: err?.message || 'Unexpected error accepting invitation.',
               variant: 'destructive',
             });
             router.push('/dashboard');
@@ -114,12 +108,10 @@ function LoginForm() {
           onSuccess: async () => {
             // If there's an invite token, accept the invitation directly
             if (inviteToken) {
-              const result = await acceptInvitation(inviteToken);
-              if (result.success) {
-                toast('Success!', {
-                  description: 'Logged in and invitation accepted.',
-                });
-              } else {
+              try {
+                await acceptInvitationMutation.mutateAsync({ invitationId: inviteToken });
+                toast('Success!', { description: 'Logged in and invitation accepted.' });
+              } catch {
                 toast('Logged in', {
                   description: 'But there was an issue with the invitation.',
                   variant: 'destructive',
@@ -288,12 +280,10 @@ function LoginForm() {
                   fetchOptions: {
                     onSuccess: async () => {
                       if (inviteToken) {
-                        const result = await acceptInvitation(inviteToken);
-                        if (result.success) {
-                          toast('Success!', {
-                            description: 'Logged in and invitation accepted.',
-                          });
-                        } else {
+                        try {
+                          await acceptInvitationMutation.mutateAsync({ invitationId: inviteToken });
+                          toast('Success!', { description: 'Logged in and invitation accepted.' });
+                        } catch {
                           toast('Logged in', {
                             description: 'But there was an issue with the invitation.',
                             variant: 'destructive',

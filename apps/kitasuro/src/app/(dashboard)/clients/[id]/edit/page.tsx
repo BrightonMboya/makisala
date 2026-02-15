@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation'
-import { getClientById } from '../../actions'
+import { createServerCaller } from '@/server/trpc/caller'
 import { ClientForm } from '../../client-form'
 
 export default async function EditClientPage({
@@ -8,7 +8,8 @@ export default async function EditClientPage({
   params: Promise<{ id: string }>
 }) {
   const { id } = await params
-  const client = await getClientById(id)
+  const trpc = await createServerCaller()
+  const client = await trpc.clients.getById({ id }).catch(() => null)
 
   if (!client) {
     notFound()

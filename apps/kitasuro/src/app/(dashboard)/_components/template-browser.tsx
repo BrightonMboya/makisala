@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Dialog,
   DialogContent,
@@ -13,8 +12,7 @@ import { Button } from '@repo/ui/button';
 import { Input } from '@repo/ui/input';
 import { Badge } from '@repo/ui/badge';
 import { Search, MapPin, Calendar, Plus, Check, Loader2 } from 'lucide-react';
-import { getSharedTemplates, cloneTemplate } from '@/app/itineraries/actions';
-import { authClient } from '@/lib/auth-client';
+import { trpc } from '@/lib/trpc';
 import { toast } from '@repo/ui/toast';
 import Image from 'next/image';
 
@@ -38,8 +36,7 @@ export function TemplateBrowser({ trigger, onTemplateCloned }: TemplateBrowserPr
   const [searchQuery, setSearchQuery] = useState('');
   const [cloningId, setCloningId] = useState<string | null>(null);
   const [clonedIds, setClonedIds] = useState<Set<string>>(new Set());
-  const queryClient = useQueryClient();
-  const { data: session } = authClient.useSession();
+  const utils = trpc.useUtils();
 
   // Reset state when dialog closes to prevent memory leak
   const handleOpenChange = (isOpen: boolean) => {
@@ -51,32 +48,22 @@ export function TemplateBrowser({ trigger, onTemplateCloned }: TemplateBrowserPr
     }
   };
 
-  const { data: templates = [], isLoading } = useQuery<Template[]>({
-    queryKey: ['sharedTemplates'],
-    queryFn: getSharedTemplates,
+  const { data: templates = [], isLoading } = trpc.tours.getSharedTemplates.useQuery(undefined, {
     enabled: open,
   });
 
-  const cloneMutation = useMutation({
-    mutationFn: cloneTemplate,
-    onSuccess: async (result, templateId) => {
+  const cloneMutation = trpc.tours.cloneTemplate.useMutation({
+    onSuccess: async (result, { templateId }) => {
       if (result.success) {
         setClonedIds((prev) => new Set([...prev, templateId]));
-        // Invalidate dashboard data to refresh tour count (invalidation triggers refetch automatically)
-        await queryClient.invalidateQueries({ queryKey: ['dashboardData', session?.user?.id] });
+        await utils.onboarding.getData.invalidate();
         onTemplateCloned?.();
-      } else {
-        toast({
-          title: 'Failed to add template',
-          description: result.error || 'Please try again',
-          variant: 'destructive',
-        });
       }
     },
     onError: (error) => {
       toast({
         title: 'Failed to add template',
-        description: error instanceof Error ? error.message : 'Please try again',
+        description: error.message || 'Please try again',
         variant: 'destructive',
       });
     },
@@ -87,7 +74,7 @@ export function TemplateBrowser({ trigger, onTemplateCloned }: TemplateBrowserPr
 
   const handleClone = async (templateId: string) => {
     setCloningId(templateId);
-    cloneMutation.mutate(templateId);
+    cloneMutation.mutate({ templateId });
   };
 
   const filteredTemplates = templates.filter((template) => {

@@ -1,9 +1,9 @@
 "use client";
 
 import React, { createContext, useContext, useState, useCallback } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { getComments, createComment, createCommentReply, resolveComment as resolveCommentAction } from "@/app/itineraries/actions";
-import { queryKeys, staleTimes } from "@/lib/query-keys";
+import { useQueryClient } from "@tanstack/react-query";
+import { trpc } from "@/lib/trpc";
+import { getQueryKey } from "@trpc/react-query";
 
 export type Comment = {
   id: string;
@@ -49,13 +49,17 @@ export function CommentsProvider({ children, proposalId, readOnly = false }: Com
   const queryClient = useQueryClient();
   const [isCommenting, setIsCommenting] = useState(false);
   const [activeCommentId, setActiveCommentId] = useState<string | null>(null);
+  const commentsQueryKey = getQueryKey(trpc.comments.list, { proposalId }, 'query');
 
-  // Use React Query for comments with caching
-  const { data: comments = [], isLoading } = useQuery({
-    queryKey: queryKeys.comments(proposalId),
-    queryFn: () => getComments(proposalId),
-    staleTime: staleTimes.comments,
-  });
+  const createCommentMutation = trpc.comments.create.useMutation();
+  const createReplyMutation = trpc.comments.createReply.useMutation();
+  const resolveCommentMutation = trpc.comments.resolve.useMutation();
+
+  // Use tRPC for comments with caching
+  const { data: comments = [], isLoading } = trpc.comments.list.useQuery(
+    { proposalId },
+    { staleTime: 60 * 1000 },
+  );
 
   const addComment = useCallback(async (posX: number, posY: number, content: string, width?: number, height?: number) => {
     // Create optimistic comment
@@ -73,13 +77,13 @@ export function CommentsProvider({ children, proposalId, readOnly = false }: Com
     };
 
     // Optimistically add the comment
-    queryClient.setQueryData<Comment[]>(queryKeys.comments(proposalId), (old = []) => [
+    queryClient.setQueryData<Comment[]>(commentsQueryKey, (old = []) => [
       optimisticComment,
       ...old,
     ]);
 
     try {
-      const result = await createComment({
+      const result = await createCommentMutation.mutateAsync({
         proposalId,
         authorName: "Guest User",
         content,
@@ -89,9 +93,9 @@ export function CommentsProvider({ children, proposalId, readOnly = false }: Com
         height,
       });
 
-      if (result.success && result.comment) {
+      if (result.comment) {
         // Replace optimistic comment with real one
-        queryClient.setQueryData<Comment[]>(queryKeys.comments(proposalId), (old = []) =>
+        queryClient.setQueryData<Comment[]>(commentsQueryKey, (old = []) =>
           old.map((c) =>
             c.id === optimisticComment.id
               ? { ...optimisticComment, id: result.comment!.id }
@@ -99,16 +103,11 @@ export function CommentsProvider({ children, proposalId, readOnly = false }: Com
           )
         );
         setActiveCommentId(result.comment.id);
-      } else {
-        // Rollback on failure
-        queryClient.setQueryData<Comment[]>(queryKeys.comments(proposalId), (old = []) =>
-          old.filter((c) => c.id !== optimisticComment.id)
-        );
       }
     } catch (error) {
       console.error("Failed to create comment", error);
       // Rollback on error
-      queryClient.setQueryData<Comment[]>(queryKeys.comments(proposalId), (old = []) =>
+      queryClient.setQueryData<Comment[]>(commentsQueryKey, (old = []) =>
         old.filter((c) => c.id !== optimisticComment.id)
       );
     }
@@ -124,7 +123,7 @@ export function CommentsProvider({ children, proposalId, readOnly = false }: Com
     };
 
     // Optimistically add the reply
-    queryClient.setQueryData<Comment[]>(queryKeys.comments(proposalId), (old = []) =>
+    queryClient.setQueryData<Comment[]>(commentsQueryKey, (old = []) =>
       old.map((c) =>
         c.id === commentId
           ? { ...c, replies: [...c.replies, optimisticReply] }
@@ -133,7 +132,7 @@ export function CommentsProvider({ children, proposalId, readOnly = false }: Com
     );
 
     try {
-      const result = await createCommentReply({
+      const result = await createReplyMutation.mutateAsync({
         commentId,
         authorName: "Guest User",
         content,
@@ -141,7 +140,7 @@ export function CommentsProvider({ children, proposalId, readOnly = false }: Com
 
       if (result.success && result.reply) {
         // Replace optimistic reply with real one
-        queryClient.setQueryData<Comment[]>(queryKeys.comments(proposalId), (old = []) =>
+        queryClient.setQueryData<Comment[]>(commentsQueryKey, (old = []) =>
           old.map((c) =>
             c.id === commentId
               ? {
@@ -155,7 +154,7 @@ export function CommentsProvider({ children, proposalId, readOnly = false }: Com
         );
       } else {
         // Rollback on failure
-        queryClient.setQueryData<Comment[]>(queryKeys.comments(proposalId), (old = []) =>
+        queryClient.setQueryData<Comment[]>(commentsQueryKey, (old = []) =>
           old.map((c) =>
             c.id === commentId
               ? { ...c, replies: c.replies.filter((r) => r.id !== optimisticReply.id) }
@@ -166,7 +165,7 @@ export function CommentsProvider({ children, proposalId, readOnly = false }: Com
     } catch (error) {
       console.error("Failed to create reply", error);
       // Rollback on error
-      queryClient.setQueryData<Comment[]>(queryKeys.comments(proposalId), (old = []) =>
+      queryClient.setQueryData<Comment[]>(commentsQueryKey, (old = []) =>
         old.map((c) =>
           c.id === commentId
             ? { ...c, replies: c.replies.filter((r) => r.id !== optimisticReply.id) }
@@ -178,7 +177,7 @@ export function CommentsProvider({ children, proposalId, readOnly = false }: Com
 
   const resolveComment = useCallback(async (commentId: string) => {
     // Optimistically update
-    queryClient.setQueryData<Comment[]>(queryKeys.comments(proposalId), (old = []) =>
+    queryClient.setQueryData<Comment[]>(commentsQueryKey, (old = []) =>
       old.map((c) => (c.id === commentId ? { ...c, status: "resolved" } : c))
     );
 
@@ -187,17 +186,17 @@ export function CommentsProvider({ children, proposalId, readOnly = false }: Com
     }
 
     try {
-      const result = await resolveCommentAction(commentId);
+      const result = await resolveCommentMutation.mutateAsync({ commentId });
       if (!result.success) {
         // Rollback on failure
-        queryClient.setQueryData<Comment[]>(queryKeys.comments(proposalId), (old = []) =>
+        queryClient.setQueryData<Comment[]>(commentsQueryKey, (old = []) =>
           old.map((c) => (c.id === commentId ? { ...c, status: "open" } : c))
         );
       }
     } catch (error) {
       console.error("Failed to resolve comment", error);
       // Rollback on error
-      queryClient.setQueryData<Comment[]>(queryKeys.comments(proposalId), (old = []) =>
+      queryClient.setQueryData<Comment[]>(commentsQueryKey, (old = []) =>
         old.map((c) => (c.id === commentId ? { ...c, status: "open" } : c))
       );
     }

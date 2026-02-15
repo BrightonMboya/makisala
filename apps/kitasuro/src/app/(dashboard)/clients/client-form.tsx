@@ -5,12 +5,12 @@ import { Input } from '@repo/ui/input';
 import { Textarea } from '@repo/ui/textarea';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@repo/ui/form';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { createClient, deleteClient, updateClient } from './actions';
 import { useToast } from '@repo/ui/use-toast';
+import { TRPCClientError } from '@trpc/client';
+import { trpc } from '@/lib/trpc';
 
 const clientSchema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -36,9 +36,12 @@ interface ClientFormProps {
 export function ClientForm({ client }: ClientFormProps) {
   const router = useRouter();
   const { toast } = useToast();
-  const [isDeleting, setIsDeleting] = useState(false);
 
   const isEditing = !!client;
+
+  const createMutation = trpc.clients.create.useMutation();
+  const updateMutation = trpc.clients.update.useMutation();
+  const deleteMutation = trpc.clients.delete.useMutation();
 
   const form = useForm<ClientFormValues>({
     resolver: zodResolver(clientSchema),
@@ -62,30 +65,29 @@ export function ClientForm({ client }: ClientFormProps) {
       };
 
       if (isEditing) {
-        await updateClient(client.id, payload);
+        await updateMutation.mutateAsync({ id: client.id, ...payload });
         toast({ title: 'Client updated successfully' });
       } else {
-        await createClient(payload);
+        await createMutation.mutateAsync(payload);
         toast({ title: 'Client created successfully' });
       }
       router.push('/clients');
     } catch (error) {
-      toast({ title: 'Something went wrong', variant: 'destructive' });
+      const message = error instanceof TRPCClientError ? error.message :'Something went wrong';
+      toast({ title: message, variant: 'destructive' });
     }
   };
 
   async function handleDelete() {
     if (!client || !confirm('Are you sure you want to delete this client?')) return;
 
-    setIsDeleting(true);
     try {
-      await deleteClient(client.id);
+      await deleteMutation.mutateAsync({ id: client.id });
       toast({ title: 'Client deleted successfully' });
       router.push('/clients');
     } catch (error) {
-      toast({ title: 'Failed to delete client', variant: 'destructive' });
-    } finally {
-      setIsDeleting(false);
+      const message = error instanceof TRPCClientError ? error.message :'Failed to delete client';
+      toast({ title: message, variant: 'destructive' });
     }
   }
 
@@ -175,9 +177,9 @@ export function ClientForm({ client }: ClientFormProps) {
                 type="button"
                 variant="destructive"
                 onClick={handleDelete}
-                disabled={isDeleting}
+                disabled={deleteMutation.isPending}
               >
-                {isDeleting ? 'Deleting...' : 'Delete Client'}
+                {deleteMutation.isPending ? 'Deleting...' : 'Delete Client'}
               </Button>
             )}
           </div>

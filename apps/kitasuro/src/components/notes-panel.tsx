@@ -11,14 +11,10 @@ import {
 } from '@repo/ui/sheet';
 import { ChevronDown, ChevronUp, Loader2, MessageSquareText, Plus, Reply, Trash2 } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { queryKeys, staleTimes } from '@/lib/query-keys';
-import {
-  createProposalNote,
-  deleteProposalNote,
-  getProposalNotes,
-  getTeamMembersForMention,
-} from '@/app/itineraries/actions';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { staleTimes } from '@/lib/query-keys';
+import { trpc } from '@/lib/trpc';
+import { getQueryKey } from '@trpc/react-query';
 import { toast } from '@repo/ui/toast';
 import { formatDistanceToNow } from 'date-fns';
 import { MentionTextarea, type TeamMember } from './mention-textarea';
@@ -59,6 +55,12 @@ export function NotesPanel({ proposalId, compact = false }: NotesPanelProps) {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const loadMoreRef = useRef<HTMLDivElement>(null);
 
+  const utils = trpc.useUtils();
+  const createNoteMutation = trpc.notes.create.useMutation();
+  const deleteNoteMutation = trpc.notes.delete.useMutation();
+
+  const notesQueryKey = getQueryKey(trpc.notes.list, { proposalId }, 'infinite');
+
   // Fetch notes with infinite scroll
   const {
     data: notesData,
@@ -66,25 +68,23 @@ export function NotesPanel({ proposalId, compact = false }: NotesPanelProps) {
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
-  } = useInfiniteQuery({
-    queryKey: queryKeys.notes(proposalId),
-    queryFn: ({ pageParam }) => getProposalNotes(proposalId, pageParam as string | undefined),
-    getNextPageParam: (lastPage) => lastPage.nextCursor,
-    initialPageParam: undefined as string | undefined,
-    staleTime: staleTimes.notes,
-    enabled: isOpen,
-  });
+  } = trpc.notes.list.useInfiniteQuery(
+    { proposalId },
+    {
+      getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
+      staleTime: staleTimes.notes,
+      enabled: isOpen,
+    },
+  );
 
   // Flatten paginated notes
   const notes = notesData?.pages.flatMap((page) => page.notes) ?? [];
 
   // Fetch team members for @mention
-  const { data: teamMembers = [], isLoading: isLoadingMembers } = useQuery<TeamMember[]>({
-    queryKey: ['team-members'],
-    queryFn: () => getTeamMembersForMention(),
-    staleTime: 5 * 60 * 1000,
-    enabled: isOpen,
-  });
+  const { data: teamMembers = [], isLoading: isLoadingMembers } = trpc.notes.getTeamMembers.useQuery(
+    undefined,
+    { staleTime: staleTimes.teamMembers, enabled: isOpen },
+  );
 
   // Intersection observer for infinite scroll
   useEffect(() => {
@@ -106,16 +106,16 @@ export function NotesPanel({ proposalId, compact = false }: NotesPanelProps) {
   // Create note mutation with optimistic updates
   const createMutation = useMutation({
     mutationFn: (data: { content: string; parentId?: string; mentionedUserIds: string[] }) =>
-      createProposalNote({
+      createNoteMutation.mutateAsync({
         proposalId,
         content: data.content,
         parentId: data.parentId,
         mentionedUserIds: data.mentionedUserIds,
       }),
     onMutate: async (newData) => {
-      await queryClient.cancelQueries({ queryKey: queryKeys.notes(proposalId) });
+      await queryClient.cancelQueries({ queryKey: notesQueryKey });
 
-      const previousData = queryClient.getQueryData(queryKeys.notes(proposalId));
+      const previousData = queryClient.getQueryData(notesQueryKey);
 
       const optimisticNote: Note = {
         id: `temp-${Date.now()}`,
@@ -130,7 +130,7 @@ export function NotesPanel({ proposalId, compact = false }: NotesPanelProps) {
       };
 
       // Update cache
-      queryClient.setQueryData(queryKeys.notes(proposalId), (old: any) => {
+      queryClient.setQueryData(notesQueryKey, (old: any) => {
         if (!old?.pages) return old;
 
         if (newData.parentId) {
@@ -170,9 +170,9 @@ export function NotesPanel({ proposalId, compact = false }: NotesPanelProps) {
       return { previousData, optimisticNote };
     },
     onSuccess: (result, variables, context) => {
-      if (result.success && result.note) {
+      if (result.note) {
         // Replace temp ID with real note
-        queryClient.setQueryData(queryKeys.notes(proposalId), (old: any) => {
+        queryClient.setQueryData(notesQueryKey, (old: any) => {
           if (!old?.pages) return old;
           return {
             ...old,
@@ -185,17 +185,10 @@ export function NotesPanel({ proposalId, compact = false }: NotesPanelProps) {
           };
         });
         toast({ title: variables.parentId ? 'Reply added' : 'Note added' });
-      } else {
-        queryClient.setQueryData(queryKeys.notes(proposalId), context?.previousData);
-        toast({
-          title: 'Failed to add note',
-          description: result.error || 'Something went wrong',
-          variant: 'destructive',
-        });
       }
     },
     onError: (_err, _variables, context) => {
-      queryClient.setQueryData(queryKeys.notes(proposalId), context?.previousData);
+      queryClient.setQueryData(notesQueryKey, context?.previousData);
       toast({
         title: 'Failed to add note',
         description: 'An unexpected error occurred.',
@@ -206,13 +199,13 @@ export function NotesPanel({ proposalId, compact = false }: NotesPanelProps) {
 
   // Delete note mutation with optimistic updates
   const deleteMutation = useMutation({
-    mutationFn: deleteProposalNote,
+    mutationFn: (noteId: string) => deleteNoteMutation.mutateAsync({ noteId }),
     onMutate: async (noteId) => {
-      await queryClient.cancelQueries({ queryKey: queryKeys.notes(proposalId) });
-      const previousData = queryClient.getQueryData(queryKeys.notes(proposalId));
+      await queryClient.cancelQueries({ queryKey: notesQueryKey });
+      const previousData = queryClient.getQueryData(notesQueryKey);
 
       // Optimistically remove the note
-      queryClient.setQueryData(queryKeys.notes(proposalId), (old: any) => {
+      queryClient.setQueryData(notesQueryKey, (old: any) => {
         if (!old?.pages) return old;
         return {
           ...old,
@@ -227,20 +220,11 @@ export function NotesPanel({ proposalId, compact = false }: NotesPanelProps) {
 
       return { previousData };
     },
-    onSuccess: (result, _noteId, context) => {
-      if (result.success) {
-        toast({ title: 'Note deleted' });
-      } else {
-        queryClient.setQueryData(queryKeys.notes(proposalId), context?.previousData);
-        toast({
-          title: 'Failed to delete note',
-          description: result.error || 'Something went wrong',
-          variant: 'destructive',
-        });
-      }
+    onSuccess: () => {
+      toast({ title: 'Note deleted' });
     },
     onError: (_err, _noteId, context) => {
-      queryClient.setQueryData(queryKeys.notes(proposalId), context?.previousData);
+      queryClient.setQueryData(notesQueryKey, context?.previousData);
       toast({
         title: 'Failed to delete note',
         description: 'An unexpected error occurred.',

@@ -1,4 +1,4 @@
-import { getAccommodations } from './actions'
+import { createServerCaller } from '@/server/trpc/caller'
 import { Button } from '@repo/ui/button'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@repo/ui/table'
 import { Edit, Plus, Search, Globe, MapPin, Eye } from 'lucide-react'
@@ -14,7 +14,8 @@ export default async function AccomodationsPage({
     const page = Number(filters.page) || 1
     const query = filters.query as string
 
-    const { accommodations: data, pagination } = await getAccommodations({
+    const trpc = await createServerCaller()
+    const { accommodations: data, pagination } = await trpc.accommodations.list({
         page,
         limit: 15,
         query,

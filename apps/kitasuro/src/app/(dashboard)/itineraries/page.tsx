@@ -8,9 +8,8 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { getProposalsForDashboard } from '@/app/itineraries/actions';
-import { useQuery } from '@tanstack/react-query';
-import { queryKeys, staleTimes } from '@/lib/query-keys';
+import { trpc } from '@/lib/trpc';
+import { staleTimes } from '@/lib/query-keys';
 import type { RequestItem } from '@/types/dashboard';
 import { authClient } from '@/lib/auth-client';
 
@@ -18,12 +17,10 @@ export default function ItinerariesPage() {
   const router = useRouter();
   const { data: session } = authClient.useSession();
 
-  const { data: proposals = [], isLoading } = useQuery({
-    queryKey: queryKeys.proposals.list(session?.user?.id, 'all'),
-    queryFn: () => getProposalsForDashboard('all'),
-    staleTime: staleTimes.proposals,
-    enabled: !!session?.user?.id,
-  });
+  const { data: proposals = [], isLoading } = trpc.proposals.listForDashboard.useQuery(
+    { filter: 'all' },
+    { staleTime: staleTimes.proposals, enabled: !!session?.user?.id },
+  );
 
   const requests: RequestItem[] = proposals.map((p: any) => ({
     id: p.id,

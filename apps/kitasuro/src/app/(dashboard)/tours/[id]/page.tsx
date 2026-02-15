@@ -2,17 +2,11 @@
 
 import { useState, useMemo, useEffect, useDeferredValue } from 'react';
 import { useParams, useSearchParams, useRouter } from 'next/navigation';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import { useFieldArray, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import {
-  getTourById,
-  updateTour,
-  deleteTour,
-  searchNationalParks,
-  searchAccommodations,
-} from '@/app/itineraries/actions';
+import { trpc } from '@/lib/trpc';
 import { Button } from '@repo/ui/button';
 import { Input } from '@repo/ui/input';
 import { Textarea } from '@repo/ui/textarea';
@@ -74,7 +68,6 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useToast } from '@repo/ui/use-toast';
 import { authClient } from '@/lib/auth-client';
-import { queryKeys } from '@/lib/query-keys';
 import { cn, capitalize, formatPrice } from '@/lib/utils';
 
 const itinerarySchema = z.object({
@@ -108,16 +101,16 @@ export default function TourDetailPage() {
   const queryClient = useQueryClient();
   const { data: session } = authClient.useSession();
 
+  const utils = trpc.useUtils();
   const tourId = params.id as string;
   const isEditMode = searchParams.get('edit') === 'true';
   const [editMode, setEditMode] = useState(isEditMode);
   const [imgError, setImgError] = useState(false);
 
-  const { data: tour, isLoading } = useQuery({
-    queryKey: ['tour', tourId],
-    queryFn: () => getTourById(tourId),
-    enabled: !!tourId && !!session?.user?.id,
-  });
+  const { data: tour, isLoading } = trpc.tours.getById.useQuery(
+    { id: tourId },
+    { enabled: !!tourId && !!session?.user?.id },
+  );
 
 
   // Derive form values from tour data
@@ -167,59 +160,47 @@ export default function TourDetailPage() {
     name: 'itineraries',
   });
 
-  const updateMutation = useMutation({
-    mutationFn: (data: TourFormData) =>
-      updateTour(tourId, {
-        ...data,
-        itineraries: data.itineraries.map((it, index) => ({
-          dayNumber: index + 1,
-          ...it,
-        })),
-      }),
-    onSuccess: (result) => {
-      if (result.success) {
-        toast({ title: 'Tour updated successfully' });
-        queryClient.invalidateQueries({ queryKey: ['tour', tourId] });
-        queryClient.invalidateQueries({ queryKey: queryKeys.tours.list(session?.user?.id) });
-        setEditMode(false);
-        router.replace(`/tours/${tourId}`);
-      } else {
-        toast({ title: result.error || 'Failed to update tour', variant: 'destructive' });
-      }
+  const updateMutation = trpc.tours.update.useMutation({
+    onSuccess: () => {
+      toast({ title: 'Tour updated successfully' });
+      queryClient.invalidateQueries({ queryKey: [['tours', 'getById'], { input: { id: tourId } }] });
+      queryClient.invalidateQueries({ queryKey: [['tours', 'list']] });
+      setEditMode(false);
+      router.replace(`/tours/${tourId}`);
     },
     onError: (error) => {
-      console.error('Update tour error:', error);
       toast({
         title: 'Failed to update tour',
-        description: 'Please check your connection and try again.',
+        description: error.message,
         variant: 'destructive',
       });
     },
   });
 
-  const deleteMutation = useMutation({
-    mutationFn: () => deleteTour(tourId),
-    onSuccess: (result) => {
-      if (result.success) {
-        toast({ title: 'Tour deleted successfully' });
-        queryClient.invalidateQueries({ queryKey: queryKeys.tours.list(session?.user?.id) });
-        router.push('/tours');
-      } else {
-        toast({ title: result.error || 'Failed to delete tour', variant: 'destructive' });
-      }
+  const deleteMutation = trpc.tours.delete.useMutation({
+    onSuccess: () => {
+      toast({ title: 'Tour deleted successfully' });
+      queryClient.invalidateQueries({ queryKey: [['tours', 'list']] });
+      router.push('/tours');
     },
     onError: (error) => {
-      console.error('Delete tour error:', error);
       toast({
         title: 'Failed to delete tour',
-        description: 'Please check your connection and try again.',
+        description: error.message,
         variant: 'destructive',
       });
     },
   });
 
   const onSubmit = (data: TourFormData) => {
-    updateMutation.mutate(data);
+    updateMutation.mutate({
+      id: tourId,
+      ...data,
+      itineraries: data.itineraries.map((it, index) => ({
+        dayNumber: index + 1,
+        ...it,
+      })),
+    });
   };
 
   const formattedPrice = tour ? formatPrice(tour.pricing) : '';
@@ -309,7 +290,7 @@ export default function TourDetailPage() {
                   <AlertDialogFooter>
                     <AlertDialogCancel>Cancel</AlertDialogCancel>
                     <AlertDialogAction
-                      onClick={() => deleteMutation.mutate()}
+                      onClick={() => deleteMutation.mutate({ id: tourId })}
                       className="bg-red-600 hover:bg-red-700"
                     >
                       {deleteMutation.isPending ? 'Deleting...' : 'Delete'}
@@ -531,7 +512,7 @@ export default function TourDetailPage() {
                                   value={field.value}
                                   onChange={field.onChange}
                                   searchFn={async (query) => {
-                                    const results = await searchNationalParks(query, 20);
+                                    const results = await utils.nationalParks.search.fetch({ query, limit: 20 });
                                     return results.map((p) => ({ id: p.id, name: p.name }));
                                   }}
                                   placeholder="Search destinations..."
@@ -551,7 +532,7 @@ export default function TourDetailPage() {
                                   value={field.value}
                                   onChange={field.onChange}
                                   searchFn={async (query) => {
-                                    const results = await searchAccommodations(query, 20);
+                                    const results = await utils.accommodations.search.fetch({ query, limit: 20 });
                                     return results.map((a) => ({ id: a.id, name: a.name }));
                                   }}
                                   placeholder="Search accommodations..."

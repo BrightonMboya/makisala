@@ -3,7 +3,7 @@ import { getPublicUrl } from '@/lib/storage'
 import { ArrowLeft } from 'lucide-react'
 import { Button } from '@repo/ui/button'
 import { notFound } from 'next/navigation'
-import { getAccommodationById } from '../../actions'
+import { createServerCaller } from '@/server/trpc/caller'
 import AccomodationForm from '../../_components/AccomodationForm'
 
 
@@ -20,7 +20,8 @@ export default async function EditAccomodationPage({
         notFound()
     }
 
-    const acc = await getAccommodationById(id)
+    const trpc = await createServerCaller()
+    const acc = await trpc.accommodations.getById({ id })
 
     if (!acc) {
         notFound()

@@ -6,9 +6,8 @@ import { Check, Search, Image as ImageIcon } from 'lucide-react';
 import { Button } from '@repo/ui/button';
 import { Input } from '@repo/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@repo/ui/tabs';
-import { useQuery } from '@tanstack/react-query';
-
-import { getAllNationalParks, getAllAccommodations, getPageImages } from '@/app/itineraries/actions';
+import { trpc } from '@/lib/trpc';
+import { staleTimes } from '@/lib/query-keys';
 import { cn } from '@/lib/utils';
 
 interface ImagePickerProps {
@@ -21,16 +20,12 @@ export function ImagePicker({ value, onChange }: ImagePickerProps) {
   const [customUrl, setCustomUrl] = useState('');
 
   // Use React Query for caching - shares cache with other components
-  const { data: parksData } = useQuery({
-    queryKey: ['nationalParks'],
-    queryFn: getAllNationalParks,
-    staleTime: 5 * 60 * 1000,
+  const { data: parksData } = trpc.nationalParks.getAll.useQuery(undefined, {
+    staleTime: staleTimes.accommodations,
   });
 
-  const { data: accommodationsData } = useQuery({
-    queryKey: ['accommodations'],
-    queryFn: getAllAccommodations,
-    staleTime: 5 * 60 * 1000,
+  const { data: accommodationsData } = trpc.accommodations.getAll.useQuery(undefined, {
+    staleTime: staleTimes.accommodations,
   });
 
   // Get page IDs for parks that have them
@@ -40,12 +35,10 @@ export function ImagePicker({ value, onChange }: ImagePickerProps) {
   );
 
   // Fetch page images only when we have park page IDs
-  const { data: pagesData } = useQuery({
-    queryKey: ['pageImages', parkPageIds],
-    queryFn: () => getPageImages(parkPageIds),
-    enabled: parkPageIds.length > 0,
-    staleTime: 5 * 60 * 1000,
-  });
+  const { data: pagesData } = trpc.tours.getPageImages.useQuery(
+    { pageIds: parkPageIds },
+    { enabled: parkPageIds.length > 0, staleTime: staleTimes.accommodations },
+  );
 
   // Build the images list from cached data
   const images = useMemo(() => {

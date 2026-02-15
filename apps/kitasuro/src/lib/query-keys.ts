@@ -55,6 +55,8 @@ export const queryKeys = {
 export const staleTimes = {
   nationalParks: 5 * 60 * 1000, // 5 minutes - rarely changes
   accommodations: 5 * 60 * 1000, // 5 minutes
+  teamMembers: 5 * 60 * 1000, // 5 minutes - rarely changes
+  storage: 5 * 60 * 1000, // 5 minutes - folder/image listings
   proposals: 30 * 1000, // 30 seconds
   tours: 60 * 1000, // 1 minute
   clients: 60 * 1000, // 1 minute

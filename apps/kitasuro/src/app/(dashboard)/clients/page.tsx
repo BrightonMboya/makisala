@@ -1,4 +1,4 @@
-import { getClients } from './actions'
+import { createServerCaller } from '@/server/trpc/caller'
 import { Button } from '@repo/ui/button'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@repo/ui/table'
 import { Edit, Plus, Search, Mail, Phone, MapPin } from 'lucide-react'
@@ -14,7 +14,8 @@ export default async function ClientsPage({
   const page = Number(filters.page) || 1
   const query = filters.query as string
 
-  const { clients: data, pagination } = await getClients({
+  const trpc = await createServerCaller()
+  const { clients: data, pagination } = await trpc.clients.list({
     page,
     limit: 15,
     query,

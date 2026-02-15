@@ -15,10 +15,10 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useRef, useState } from 'react';
-import { updateOrganizationSettings, uploadOrganizationLogo } from '../actions';
 import { toast } from '@repo/ui/toast';
 import { Textarea } from '@repo/ui/textarea';
 import { useQueryClient } from '@tanstack/react-query';
+import { trpc } from '@/lib/trpc';
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
@@ -51,10 +51,11 @@ interface Props {
 }
 
 export function OrganizationSettings({ organization }: Props) {
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
+  const updateOrgMutation = trpc.settings.updateOrg.useMutation();
+  const uploadLogoMutation = trpc.settings.uploadLogo.useMutation();
 
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -67,16 +68,12 @@ export function OrganizationSettings({ organization }: Props) {
   });
 
   async function onSubmit(data: FormValues) {
-    setIsSubmitting(true);
     try {
-      const result = await updateOrganizationSettings(data);
-      if (result.success) {
-        toast({ title: 'Organization settings updated' });
-      }
-    } catch {
-      toast({ title: 'Failed to update settings', variant: 'destructive' });
-    } finally {
-      setIsSubmitting(false);
+      await updateOrgMutation.mutateAsync(data);
+      toast({ title: 'Organization settings updated' });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to update settings';
+      toast({ title: message, variant: 'destructive' });
     }
   }
 
@@ -133,14 +130,15 @@ export function OrganizationSettings({ organization }: Props) {
                           setIsUploadingLogo(true);
                           try {
                             const base64 = await readFileAsDataURL(file);
-                            const result = await uploadOrganizationLogo(base64);
-                            if (result.success && result.url) {
+                            const result = await uploadLogoMutation.mutateAsync({ base64Data: base64 });
+                            if (result.url) {
                               field.onChange(result.url);
                               toast({ title: 'Logo uploaded' });
-                              queryClient.invalidateQueries({ queryKey: ['organization-settings'] });
+                              queryClient.invalidateQueries({ queryKey: [['settings', 'getOrg']] });
                             }
-                          } catch {
-                            toast({ title: 'Failed to upload logo', variant: 'destructive' });
+                          } catch (error) {
+                            const message = error instanceof Error ? error.message : 'Failed to upload logo';
+                            toast({ title: message, variant: 'destructive' });
                           } finally {
                             setIsUploadingLogo(false);
                             e.target.value = '';
@@ -226,8 +224,8 @@ export function OrganizationSettings({ organization }: Props) {
             />
 
             <div className="flex justify-end">
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? 'Saving...' : 'Save Changes'}
+              <Button type="submit" disabled={updateOrgMutation.isPending}>
+                {updateOrgMutation.isPending ? 'Saving...' : 'Save Changes'}
               </Button>
             </div>
           </form>

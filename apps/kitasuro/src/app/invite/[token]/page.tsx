@@ -1,8 +1,4 @@
-import {
-  getInvitationByToken,
-  acceptInvitation,
-  getInvitationStatus,
-} from '@/app/(dashboard)/settings/actions';
+import { createServerCaller } from '@/server/trpc/caller';
 import { auth } from '@/lib/auth';
 import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
@@ -21,12 +17,13 @@ export default async function InvitePage({
 }) {
   // In Better Auth, the token in the URL is the invitation ID
   const { token: invitationId } = await params;
-  const invitation = await getInvitationByToken(invitationId);
+  const trpc = await createServerCaller();
+  const invitation = await trpc.settings.getInvitationByToken({ invitationId });
   const session = await getSession();
 
   // If invitation not found (or not pending), check if it was already accepted
   if (!invitation) {
-    const invitationStatus = await getInvitationStatus(invitationId);
+    const invitationStatus = await trpc.settings.getInvitationStatus({ invitationId });
 
     // If invitation was already accepted and user is logged in, redirect to dashboard
     if (invitationStatus === 'accepted' && session?.user) {
@@ -85,7 +82,7 @@ export default async function InvitePage({
     }
 
     // Accept the invitation using Better Auth (only needs invitationId)
-    const result = await acceptInvitation(invitationId);
+    const result = await trpc.settings.acceptInvitation({ invitationId });
     if (result.success) {
       redirect('/dashboard');
     }
