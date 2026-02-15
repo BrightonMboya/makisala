@@ -4,12 +4,7 @@ import { Button } from '@repo/ui/button';
 import { Input } from '@repo/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@repo/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@repo/ui/tabs';
-import {
-  getStorageFolders,
-  getStorageImages,
-  searchAccommodationFolders,
-} from '@/app/itineraries/actions';
-import { getOrganizationImages } from '@/app/(dashboard)/content-library/actions';
+import { trpc } from '@/lib/trpc';
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { Building2, ChevronRight, Folder, Home, Image as ImageIcon, Loader2, Search } from 'lucide-react';
@@ -62,6 +57,7 @@ export function ImagePickerContent({
 
   const isAccommodationsBucket = bucket === ACCOMMODATIONS_BUCKET;
   const debouncedSearchQuery = useDebouncedValue(searchQuery, 300);
+  const utils = trpc.useUtils();
 
   const getCurrentFolderPath = () => {
     return currentPath.length > 0 ? currentPath.join('/') : undefined;
@@ -73,7 +69,7 @@ export function ImagePickerContent({
   // Query for initial folder search (to find the path for a given accommodation name)
   const { data: initialFolderResult } = useQuery({
     queryKey: ['accommodationSearch', initialFolder],
-    queryFn: () => searchAccommodationFolders(initialFolder || ''),
+    queryFn: () => utils.storage.searchAccommodationFolders.fetch({ query: initialFolder || '' }),
     enabled: isAccommodationsBucket && !!initialFolder && isOpen && !hasInitialized && activeSource === 'accommodations',
     staleTime: 5 * 60 * 1000,
   });
@@ -115,7 +111,7 @@ export function ImagePickerContent({
   // Query for folders - only when navigating inside a specific accommodation
   const { data: folders = [], isLoading: foldersLoading } = useQuery({
     queryKey: ['storageFolders', bucket, path],
-    queryFn: () => getStorageFolders(path, bucket),
+    queryFn: () => utils.storage.getFolders.fetch({ parentFolder: path, bucket }),
     enabled: isOpen && activeSource === 'accommodations' && !isAccommodationsRoot,
     staleTime: 5 * 60 * 1000,
   });
@@ -123,7 +119,7 @@ export function ImagePickerContent({
   // Query for accommodation images
   const { data: accommodationImages = [], isLoading: accommodationImagesLoading } = useQuery({
     queryKey: ['storageImages', bucket, path],
-    queryFn: () => getStorageImages(path, bucket),
+    queryFn: () => utils.storage.getImages.fetch({ folder: path, bucket }),
     enabled: isOpen && activeSource === 'accommodations' && !isAccommodationsRoot,
     staleTime: 5 * 60 * 1000,
   });
@@ -131,7 +127,7 @@ export function ImagePickerContent({
   // Query for organization images (separate key from the infinite query in content library)
   const { data: orgImagesData, isLoading: orgImagesLoading } = useQuery({
     queryKey: [...queryKeys.organizationImages, 'picker'],
-    queryFn: () => getOrganizationImages({ limit: 100 }),
+    queryFn: () => utils.contentLibrary.getOrgImages.fetch({ limit: 100 }),
     enabled: isOpen && activeSource === 'organization',
     staleTime: staleTimes.organizationImages,
   });
@@ -140,7 +136,7 @@ export function ImagePickerContent({
   // Query for search results
   const { data: searchResults = [], isLoading: isSearching } = useQuery({
     queryKey: ['accommodationSearch', debouncedSearchQuery],
-    queryFn: () => searchAccommodationFolders(debouncedSearchQuery),
+    queryFn: () => utils.storage.searchAccommodationFolders.fetch({ query: debouncedSearchQuery }),
     enabled: isAccommodationsBucket && debouncedSearchQuery.length >= 2 && activeSource === 'accommodations',
     staleTime: 2 * 60 * 1000,
   });

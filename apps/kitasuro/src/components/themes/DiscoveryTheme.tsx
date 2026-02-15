@@ -35,7 +35,7 @@ import Image from 'next/image';
 import { AnimatedRouteMarker, Map, MapMarker, MapRoute, MarkerContent, MarkerTooltip } from '@repo/ui/map';
 import type { ItineraryData } from '@/types/itinerary-types';
 import { cn } from '@/lib/utils';
-import { confirmProposal } from '@/app/itineraries/actions';
+import { trpc } from '@/lib/trpc';
 
 // ============================================================================
 // CINEMATIC IMAGE GALLERY
@@ -1179,6 +1179,8 @@ export default function DiscoveryTheme({ data, onHeroImageChange, onDayImageChan
     }
   };
 
+  const confirmMutation = trpc.proposals.confirm.useMutation();
+
   const handleConfirmProposal = async () => {
     if (!confirmName.trim()) return;
 
@@ -1186,17 +1188,11 @@ export default function DiscoveryTheme({ data, onHeroImageChange, onDayImageChan
     setConfirmError('');
 
     try {
-      const result = await confirmProposal(data.id, confirmName.trim());
-
-      if (result.success) {
-        setConfirmStatus('success');
-      } else {
-        setConfirmStatus('error');
-        setConfirmError(result.error || 'Failed to confirm proposal');
-      }
-    } catch {
+      await confirmMutation.mutateAsync({ proposalId: data.id, clientName: confirmName.trim() });
+      setConfirmStatus('success');
+    } catch (err: any) {
       setConfirmStatus('error');
-      setConfirmError('An unexpected error occurred');
+      setConfirmError(err?.message || 'An unexpected error occurred');
     } finally {
       setIsConfirming(false);
     }

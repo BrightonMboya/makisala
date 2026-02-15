@@ -5,48 +5,34 @@ import { UserPlus, Loader2 } from 'lucide-react';
 import { Popover, PopoverContent, PopoverAnchor } from '@repo/ui/popover';
 import { Checkbox } from '@repo/ui/checkbox';
 import { toast } from '@repo/ui/toast';
-import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
-import {
-  getTeamMembersForMention,
-  assignProposal,
-  unassignProposal,
-} from '@/app/itineraries/actions';
-import { queryKeys } from '@/lib/query-keys';
+import { trpc } from '@/lib/trpc';
 
 interface ProposalAssignPopoverProps {
   proposalId: string;
-  userId?: string;
   activeFilter: 'mine' | 'all';
 }
 
 export function ProposalAssignPopover({
   proposalId,
-  userId,
   activeFilter,
 }: ProposalAssignPopoverProps) {
-  const queryClient = useQueryClient();
+  const utils = trpc.useUtils();
   const [open, setOpen] = useState(false);
 
-  const { data: teamMembers = [], isLoading } = useQuery({
-    queryKey: ['teamMembers'],
-    queryFn: getTeamMembersForMention,
+  const { data: teamMembers = [], isLoading } = trpc.notes.getTeamMembers.useQuery(undefined, {
     staleTime: 5 * 60 * 1000,
     enabled: open,
   });
 
-  const queryKey = queryKeys.proposals.list(userId, activeFilter);
-
-  const assignMutation = useMutation({
-    mutationFn: ({ memberId }: { memberId: string }) =>
-      assignProposal(proposalId, memberId),
-    onMutate: async ({ memberId }) => {
-      await queryClient.cancelQueries({ queryKey });
-      const previousData = queryClient.getQueryData(queryKey);
+  const assignMutation = trpc.proposals.assign.useMutation({
+    onMutate: async ({ userId: memberId }) => {
+      await utils.proposals.listForDashboard.cancel({ filter: activeFilter });
+      const previousData = utils.proposals.listForDashboard.getData({ filter: activeFilter });
 
       const member = teamMembers.find((m) => m.id === memberId);
       if (member) {
-        queryClient.setQueryData(queryKey, (old: any[] | undefined) =>
-          old?.map((p) =>
+        utils.proposals.listForDashboard.setData({ filter: activeFilter }, (old) =>
+          old?.map((p: any) =>
             p.id === proposalId
               ? {
                   ...p,
@@ -62,37 +48,28 @@ export function ProposalAssignPopover({
 
       return { previousData };
     },
-    onSuccess: (result, { memberId }, context) => {
-      if (result.success) {
-        const member = teamMembers.find((m) => m.id === memberId);
-        toast({ title: `Assigned to ${member?.name || 'team member'}` });
-      } else {
-        if (context?.previousData) {
-          queryClient.setQueryData(queryKey, context.previousData);
-        }
-        toast({ title: 'Failed to assign', description: result.error, variant: 'destructive' });
-      }
+    onSuccess: (_result, { userId: memberId }) => {
+      const member = teamMembers.find((m) => m.id === memberId);
+      toast({ title: `Assigned to ${member?.name || 'team member'}` });
     },
     onError: (_err, _vars, context) => {
       if (context?.previousData) {
-        queryClient.setQueryData(queryKey, context.previousData);
+        utils.proposals.listForDashboard.setData({ filter: activeFilter }, context.previousData);
       }
       toast({ title: 'Failed to assign proposal', variant: 'destructive' });
     },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey });
+      utils.proposals.listForDashboard.invalidate({ filter: activeFilter });
     },
   });
 
-  const unassignMutation = useMutation({
-    mutationFn: ({ memberId }: { memberId: string }) =>
-      unassignProposal(proposalId, memberId),
-    onMutate: async ({ memberId }) => {
-      await queryClient.cancelQueries({ queryKey });
-      const previousData = queryClient.getQueryData(queryKey);
+  const unassignMutation = trpc.proposals.unassign.useMutation({
+    onMutate: async ({ userId: memberId }) => {
+      await utils.proposals.listForDashboard.cancel({ filter: activeFilter });
+      const previousData = utils.proposals.listForDashboard.getData({ filter: activeFilter });
 
-      queryClient.setQueryData(queryKey, (old: any[] | undefined) =>
-        old?.map((p) =>
+      utils.proposals.listForDashboard.setData({ filter: activeFilter }, (old) =>
+        old?.map((p: any) =>
           p.id === proposalId
             ? {
                 ...p,
@@ -106,39 +83,32 @@ export function ProposalAssignPopover({
 
       return { previousData };
     },
-    onSuccess: (result, { memberId }, context) => {
-      if (result.success) {
-        const member = teamMembers.find((m) => m.id === memberId);
-        toast({ title: `Unassigned ${member?.name || 'team member'}` });
-      } else {
-        if (context?.previousData) {
-          queryClient.setQueryData(queryKey, context.previousData);
-        }
-        toast({ title: 'Failed to unassign', description: result.error, variant: 'destructive' });
-      }
+    onSuccess: (_result, { userId: memberId }) => {
+      const member = teamMembers.find((m) => m.id === memberId);
+      toast({ title: `Unassigned ${member?.name || 'team member'}` });
     },
     onError: (_err, _vars, context) => {
       if (context?.previousData) {
-        queryClient.setQueryData(queryKey, context.previousData);
+        utils.proposals.listForDashboard.setData({ filter: activeFilter }, context.previousData);
       }
       toast({ title: 'Failed to unassign proposal', variant: 'destructive' });
     },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey });
+      utils.proposals.listForDashboard.invalidate({ filter: activeFilter });
     },
   });
 
   const handleToggle = (memberId: string, isAssigned: boolean) => {
     if (isAssigned) {
-      unassignMutation.mutate({ memberId });
+      unassignMutation.mutate({ proposalId, userId: memberId });
     } else {
-      assignMutation.mutate({ memberId });
+      assignMutation.mutate({ proposalId, userId: memberId });
     }
   };
 
-  // Read optimistic assignee set from query cache
-  const queryData = queryClient.getQueryData<any[]>(queryKey);
-  const currentProposal = queryData?.find((p) => p.id === proposalId);
+  // Read optimistic assignee set from tRPC cache
+  const cachedProposals = utils.proposals.listForDashboard.getData({ filter: activeFilter });
+  const currentProposal = (cachedProposals as any[])?.find((p: any) => p.id === proposalId);
   const optimisticAssignedIds = new Set(
     (currentProposal?.assignments || []).map((a: any) => a.user.id),
   );

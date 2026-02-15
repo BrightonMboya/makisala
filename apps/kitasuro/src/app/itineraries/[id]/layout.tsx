@@ -13,8 +13,8 @@ import { AppSidebar } from '@/components/app-sidebar';
 import { NotesPanel } from '@/components/notes-panel';
 import type { TravelerGroup } from '@/types/itinerary-types';
 import { useMemo, Suspense } from 'react';
-import { saveProposal } from '@/app/itineraries/actions';
 import { useMutation } from '@tanstack/react-query';
+import { trpc } from '@/lib/trpc';
 import { toast } from '@repo/ui/toast';
 import { useProposalData, useClientData } from '@/lib/hooks/use-proposal-data';
 
@@ -50,6 +50,8 @@ function Header() {
   const { data: clientData } = useClientData(clientId);
   const clientName = clientData?.name || '';
 
+  const saveProposalMutation = trpc.proposals.save.useMutation();
+
   // Save Draft Mutation
   const saveDraftMutation = useMutation({
     mutationFn: async () => {
@@ -76,19 +78,13 @@ function Header() {
         heroImage,
       };
 
-      const result = await saveProposal({
+      return await saveProposalMutation.mutateAsync({
         id,
         name: tourTitle || 'Untitled Safari',
         data: proposalData,
         status: 'draft',
         tourId,
       });
-
-      if (!result.success) {
-        throw new Error('Failed to save draft.');
-      }
-
-      return result;
     },
     onSuccess: () => {
       toast({
@@ -132,19 +128,13 @@ function Header() {
         heroImage,
       };
 
-      const result = await saveProposal({
+      return await saveProposalMutation.mutateAsync({
         id,
         name: tourTitle || 'Untitled Safari',
         data: proposalData,
         status: 'shared',
         tourId,
       });
-
-      if (!result.success) {
-        throw new Error('Failed to publish proposal.');
-      }
-
-      return result;
     },
     onSuccess: async (result) => {
       const savedId = (result as any).id || id;

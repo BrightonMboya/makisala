@@ -9,9 +9,9 @@ import {
   Plus,
   Copy,
 } from 'lucide-react';
-import { getTours, getSharedTemplates, cloneTemplate } from '@/app/itineraries/actions';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { queryKeys, staleTimes } from '@/lib/query-keys';
+import { trpc } from '@/lib/trpc';
+import { useQueryClient } from '@tanstack/react-query';
+import { staleTimes } from '@/lib/query-keys';
 import { authClient } from '@/lib/auth-client';
 import { useToast } from '@repo/ui/use-toast';
 import { useState, useMemo, useDeferredValue } from 'react';
@@ -33,16 +33,12 @@ export default function ToursPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const deferredSearchQuery = useDeferredValue(searchQuery);
 
-  const { data: tours = [], isLoading } = useQuery({
-    queryKey: queryKeys.tours.list(session?.user?.id),
-    queryFn: getTours,
+  const { data: tours = [], isLoading } = trpc.tours.list.useQuery(undefined, {
     staleTime: staleTimes.tours,
     enabled: !!session?.user?.id,
   });
 
-  const { data: sharedTemplates } = useQuery({
-    queryKey: queryKeys.tours.shared,
-    queryFn: getSharedTemplates,
+  const { data: sharedTemplates } = trpc.tours.getSharedTemplates.useQuery(undefined, {
     staleTime: 60 * 1000,
     enabled: isTemplateDialogOpen,
   });
@@ -59,19 +55,17 @@ export default function ToursPage() {
     );
   }, [tours, deferredSearchQuery]);
 
+  const cloneTemplateMutation = trpc.tours.cloneTemplate.useMutation();
+
   const handleCloneTemplate = async (templateId: string) => {
     setCloningId(templateId);
     try {
-      const result = await cloneTemplate(templateId);
-      if (result.success) {
-        toast({ title: 'Template added to your tours!' });
-        queryClient.invalidateQueries({ queryKey: queryKeys.tours.list(session?.user?.id) });
-        setIsTemplateDialogOpen(false);
-      } else {
-        toast({ title: result.error || 'Failed to add template', variant: 'destructive' });
-      }
-    } catch (error) {
-      toast({ title: 'Failed to add template', variant: 'destructive' });
+      await cloneTemplateMutation.mutateAsync({ templateId });
+      toast({ title: 'Template added to your tours!' });
+      queryClient.invalidateQueries({ queryKey: [['tours', 'list']] });
+      setIsTemplateDialogOpen(false);
+    } catch (error: any) {
+      toast({ title: error?.message || 'Failed to add template', variant: 'destructive' });
     } finally {
       setCloningId(null);
     }

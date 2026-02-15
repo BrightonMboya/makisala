@@ -5,13 +5,7 @@ import { TeamManagement } from './_components/team-management';
 import { NotificationSettings } from './_components/notification-settings';
 import { ProfileSettings } from './_components/profile-settings';
 import { BillingSettings } from './_components/billing-settings';
-import {
-  getOrganizationSettings,
-  getTeamMembers,
-  getPendingInvitations,
-  getCurrentUser,
-  checkIsAdmin,
-} from './actions';
+import { createServerCaller } from '@/server/trpc/caller';
 import { redirect } from 'next/navigation';
 
 interface SettingsPageProps {
@@ -19,14 +13,15 @@ interface SettingsPageProps {
 }
 
 export default async function SettingsPage({ searchParams }: SettingsPageProps) {
-  const isAdmin = await checkIsAdmin();
+  const trpc = await createServerCaller();
   const params = await searchParams;
 
-  const [organization, teamMembers, pendingInvitations, currentUser] = await Promise.all([
-    getOrganizationSettings(),
-    getTeamMembers(),
-    getPendingInvitations(),
-    getCurrentUser(),
+  const [isAdmin, organization, teamMembers, pendingInvitations, currentUser] = await Promise.all([
+    trpc.settings.checkAdmin(),
+    trpc.settings.getOrg(),
+    trpc.settings.getTeam(),
+    trpc.settings.getPendingInvitations(),
+    trpc.settings.getCurrentUser(),
   ]);
 
   if (!organization || !currentUser) {

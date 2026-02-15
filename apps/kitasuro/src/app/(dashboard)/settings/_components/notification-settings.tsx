@@ -6,8 +6,8 @@ import { Button } from '@repo/ui/button';
 import { Switch } from '@repo/ui/switch';
 import { Label } from '@repo/ui/label';
 import { useState } from 'react';
-import { updateOrganizationSettings } from '../actions';
 import {toast } from '@repo/ui/toast';
+import { trpc } from '@/lib/trpc';
 
 interface Props {
   organization: {
@@ -18,19 +18,14 @@ interface Props {
 
 export function NotificationSettings({ organization, isAdmin }: Props) {
   const [email, setEmail] = useState(organization.notificationEmail || '');
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const updateOrgMutation = trpc.settings.updateOrg.useMutation();
 
   async function handleSave() {
-    setIsSubmitting(true);
     try {
-      const result = await updateOrganizationSettings({ notificationEmail: email });
-      if (result.success) {
-        toast({ title: 'Notification settings updated' });
-      }
+      await updateOrgMutation.mutateAsync({ notificationEmail: email });
+      toast({ title: 'Notification settings updated' });
     } catch {
       toast({ title: 'Failed to update settings', variant: 'destructive' });
-    } finally {
-      setIsSubmitting(false);
     }
   }
 
@@ -58,8 +53,8 @@ export function NotificationSettings({ organization, isAdmin }: Props) {
                 className="max-w-md"
               />
               {isAdmin && (
-                <Button onClick={handleSave} disabled={isSubmitting}>
-                  {isSubmitting ? 'Saving...' : 'Save'}
+                <Button onClick={handleSave} disabled={updateOrgMutation.isPending}>
+                  {updateOrgMutation.isPending ? 'Saving...' : 'Save'}
                 </Button>
               )}
             </div>

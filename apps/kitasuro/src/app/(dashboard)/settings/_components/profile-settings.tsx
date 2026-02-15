@@ -15,12 +15,12 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useRef, useState } from 'react';
-import { updateUserProfile, uploadProfilePicture } from '../actions';
 import { toast } from '@repo/ui/toast';
 import { Badge } from '@repo/ui/badge';
 import { PasskeySettings } from './passkey-settings';
 import { Loader2, Upload } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
+import { trpc } from '@/lib/trpc';
 
 const schema = z.object({
   name: z.string().min(1, 'Name is required'),
@@ -40,10 +40,11 @@ interface Props {
 }
 
 export function ProfileSettings({ user, isAdmin }: Props) {
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
+  const updateProfileMutation = trpc.settings.updateProfile.useMutation();
+  const uploadAvatarMutation = trpc.settings.uploadAvatar.useMutation();
 
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -80,10 +81,10 @@ export function ProfileSettings({ user, isAdmin }: Props) {
         reader.readAsDataURL(file);
       });
 
-      const result = await uploadProfilePicture(base64);
-      if (result.success && result.url) {
+      const result = await uploadAvatarMutation.mutateAsync({ base64Data: base64 });
+      if (result.url) {
         form.setValue('image', result.url);
-        queryClient.invalidateQueries({ queryKey: ['user-profile'] });
+        queryClient.invalidateQueries({ queryKey: [['settings', 'getCurrentUser']] });
         toast({ title: 'Profile picture uploaded' });
       }
     } catch {
@@ -96,17 +97,12 @@ export function ProfileSettings({ user, isAdmin }: Props) {
   }
 
   async function onSubmit(data: FormValues) {
-    setIsSubmitting(true);
     try {
-      const result = await updateUserProfile(data);
-      if (result.success) {
-        queryClient.invalidateQueries({ queryKey: ['user-profile'] });
-        toast({ title: 'Profile updated successfully' });
-      }
+      await updateProfileMutation.mutateAsync(data);
+      queryClient.invalidateQueries({ queryKey: [['settings', 'getCurrentUser']] });
+      toast({ title: 'Profile updated successfully' });
     } catch {
       toast({ title: 'Failed to update profile', variant: 'destructive' });
-    } finally {
-      setIsSubmitting(false);
     }
   }
 
@@ -217,8 +213,8 @@ export function ProfileSettings({ user, isAdmin }: Props) {
               />
 
               <div className="flex justify-end">
-                <Button type="submit" disabled={isSubmitting}>
-                  {isSubmitting ? 'Saving...' : 'Save Changes'}
+                <Button type="submit" disabled={updateProfileMutation.isPending}>
+                  {updateProfileMutation.isPending ? 'Saving...' : 'Save Changes'}
                 </Button>
               </div>
             </form>

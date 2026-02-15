@@ -8,11 +8,7 @@ import { Input } from '@repo/ui/input';
 import { ChevronLeft, ChevronRight, Expand, Loader2, Plus, Trash2, Upload } from 'lucide-react';
 import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
 import { queryKeys, staleTimes } from '@/lib/query-keys';
-import {
-  deleteOrganizationImage,
-  getOrganizationImages,
-  uploadOrganizationImage,
-} from '../actions';
+import { trpc } from '@/lib/trpc';
 import type { OrganizationImage } from '@/app/(dashboard)/content-library/_components/ContentLibraryTabs';
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
@@ -27,6 +23,9 @@ interface OrganizationImagesProps {
 
 export function OrganizationImages({ initialImages, initialNextCursor }: OrganizationImagesProps) {
   const queryClient = useQueryClient();
+  const utils = trpc.useUtils();
+  const uploadMutation = trpc.contentLibrary.uploadImage.useMutation();
+  const deleteMutation = trpc.contentLibrary.deleteImage.useMutation();
   const [isUploading, setIsUploading] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -42,7 +41,7 @@ export function OrganizationImages({ initialImages, initialNextCursor }: Organiz
   } = useInfiniteQuery({
     queryKey: queryKeys.organizationImages,
     queryFn: ({ pageParam }) =>
-      getOrganizationImages({ cursor: pageParam as string | undefined }),
+      utils.contentLibrary.getOrgImages.fetch({ cursor: pageParam as string | undefined }),
     getNextPageParam: (lastPage) => lastPage.nextCursor,
     initialPageParam: undefined as string | undefined,
     initialData: {
@@ -109,17 +108,15 @@ export function OrganizationImages({ initialImages, initialNextCursor }: Organiz
 
       try {
         const base64 = await fileToBase64(file);
-        const result = await uploadOrganizationImage({
+        const result = await uploadMutation.mutateAsync({
           name: file.name,
           type: file.type as 'image/jpeg' | 'image/png' | 'image/webp' | 'image/gif',
           base64,
         });
 
-        if (result.success && result.image) {
+        if (result) {
           // Invalidate to refetch from server with the new image
           queryClient.invalidateQueries({ queryKey: queryKeys.organizationImages });
-        } else if (!result.success) {
-          setError(result.error ?? 'Failed to upload image');
         }
       } catch (err) {
         console.error('Error uploading image:', err);
@@ -159,9 +156,10 @@ export function OrganizationImages({ initialImages, initialNextCursor }: Organiz
       return prev;
     });
 
-    const result = await deleteOrganizationImage(imageId);
-    if (!result.success) {
-      setError(result.error ?? 'Failed to delete image');
+    try {
+      await deleteMutation.mutateAsync({ imageId });
+    } catch (err) {
+      setError('Failed to delete image');
       // Revert on failure
       queryClient.invalidateQueries({ queryKey: queryKeys.organizationImages });
     }

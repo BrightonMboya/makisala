@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation';
 import { ArrowLeft, Globe, MapPin } from 'lucide-react';
 import { Button } from '@repo/ui/button';
 import { getPublicUrl } from '@/lib/storage';
-import { getAccommodationById } from '../actions';
+import { createServerCaller } from '@/server/trpc/caller';
 import { ImageGallery } from '../_components/ImageGallery';
 import { ContentDisplay } from '../_components/ContentDisplay';
 
@@ -19,7 +19,8 @@ export default async function AccommodationDetailPage({
     notFound();
   }
 
-  const acc = await getAccommodationById(id);
+  const trpc = await createServerCaller();
+  const acc = await trpc.accommodations.getById({ id });
 
   if (!acc) {
     notFound();

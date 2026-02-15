@@ -1,5 +1,5 @@
 import { Library } from 'lucide-react';
-import { getAccommodationsWithContentStatus, getOrganizationImages } from './actions';
+import { createServerCaller } from '@/server/trpc/caller';
 import { ContentLibraryTabs } from './_components/ContentLibraryTabs';
 
 export default async function Page({
@@ -11,9 +11,10 @@ export default async function Page({
   const page = Number(filters.page) || 1;
   const query = filters.query as string;
 
+  const trpc = await createServerCaller();
   const [{ accommodations, pagination }, orgImagesResult] = await Promise.all([
-    getAccommodationsWithContentStatus({ page, limit: 20, query }),
-    getOrganizationImages({ limit: 20 }),
+    trpc.contentLibrary.getAccommodationsWithStatus({ page, limit: 20, query }),
+    trpc.contentLibrary.getOrgImages({ limit: 20 }),
   ]);
 
   return (

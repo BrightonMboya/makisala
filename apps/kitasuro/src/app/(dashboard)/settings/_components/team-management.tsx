@@ -20,13 +20,9 @@ import {
 } from '@repo/ui/table';
 import { Badge } from '@repo/ui/badge';
 import { useState } from 'react';
-import {
-  inviteTeamMember,
-  removeTeamMember,
-  updateMemberRole,
-  revokeInvitation,
-} from '../actions';
+import { useRouter } from 'next/navigation';
 import { toast } from '@repo/ui/toast';
+import { trpc } from '@/lib/trpc';
 import { Mail, UserMinus, Clock, X, Crown, User } from 'lucide-react';
 
 interface TeamMember {
@@ -54,54 +50,58 @@ interface Props {
 }
 
 export function TeamManagement({ members, invitations, currentUserId }: Props) {
+  const router = useRouter();
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteRole, setInviteRole] = useState<'admin' | 'member'>('member');
-  const [isInviting, setIsInviting] = useState(false);
+
+  const inviteMutation = trpc.settings.inviteMember.useMutation();
+  const removeMemberMutation = trpc.settings.removeMember.useMutation();
+  const updateRoleMutation = trpc.settings.updateRole.useMutation();
+  const revokeInvitationMutation = trpc.settings.revokeInvitation.useMutation();
 
   async function handleInvite(e: React.FormEvent) {
     e.preventDefault();
     if (!inviteEmail) return;
 
-    setIsInviting(true);
     try {
-      const result = await inviteTeamMember({ email: inviteEmail, role: inviteRole });
-      if (result.success) {
-        toast({ title: 'Invitation sent successfully' });
-        setInviteEmail('');
-      } else {
-        toast({ title: result.error || 'Failed to send invitation', variant: 'destructive' });
-      }
-    } catch {
-      toast({ title: 'Failed to send invitation', variant: 'destructive' });
-    } finally {
-      setIsInviting(false);
+      await inviteMutation.mutateAsync({ email: inviteEmail, role: inviteRole });
+      toast({ title: 'Invitation sent successfully' });
+      setInviteEmail('');
+      router.refresh();
+    } catch (error: any) {
+      toast({ title: error.message || 'Failed to send invitation', variant: 'destructive' });
     }
   }
 
   async function handleRemoveMember(memberId: string) {
     if (!confirm('Are you sure you want to remove this team member?')) return;
 
-    const result = await removeTeamMember(memberId);
-    if (result.success) {
+    try {
+      await removeMemberMutation.mutateAsync({ memberId });
       toast({ title: 'Team member removed' });
-    } else {
-      toast({ title: result.error || 'Failed to remove member', variant: 'destructive' });
+      router.refresh();
+    } catch (error: any) {
+      toast({ title: error.message || 'Failed to remove member', variant: 'destructive' });
     }
   }
 
   async function handleRoleChange(memberId: string, newRole: 'admin' | 'member') {
-    const result = await updateMemberRole(memberId, newRole);
-    if (result.success) {
+    try {
+      await updateRoleMutation.mutateAsync({ memberId, role: newRole });
       toast({ title: 'Role updated' });
-    } else {
-      toast({ title: result.error || 'Failed to update role', variant: 'destructive' });
+      router.refresh();
+    } catch (error: any) {
+      toast({ title: error.message || 'Failed to update role', variant: 'destructive' });
     }
   }
 
   async function handleRevokeInvitation(invitationId: string) {
-    const result = await revokeInvitation(invitationId);
-    if (result.success) {
+    try {
+      await revokeInvitationMutation.mutateAsync({ invitationId });
       toast({ title: 'Invitation revoked' });
+      router.refresh();
+    } catch {
+      toast({ title: 'Failed to revoke invitation', variant: 'destructive' });
     }
   }
 
@@ -136,9 +136,9 @@ export function TeamManagement({ members, invitations, currentUserId }: Props) {
                 <SelectItem value="admin">Admin</SelectItem>
               </SelectContent>
             </Select>
-            <Button type="submit" disabled={isInviting}>
+            <Button type="submit" disabled={inviteMutation.isPending}>
               <Mail className="mr-2 h-4 w-4" />
-              {isInviting ? 'Sending...' : 'Send Invite'}
+              {inviteMutation.isPending ? 'Sending...' : 'Send Invite'}
             </Button>
           </form>
         </CardContent>

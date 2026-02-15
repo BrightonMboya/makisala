@@ -8,20 +8,13 @@ import { format } from 'date-fns';
 import MinimalisticTheme from '@/components/themes/MinimalisticTheme';
 import KuduTheme from '@/components/themes/kudu';
 import DiscoveryTheme from '@/components/themes/DiscoveryTheme';
-import {
-  getAllAccommodations,
-  getAllNationalParks,
-  saveProposal,
-  sendProposalToClient,
-} from '@/app/itineraries/actions';
-import { getOrganizationSettings } from '@/app/(dashboard)/settings/actions';
-import { getClientById } from '@/app/(dashboard)/clients/actions';
+import { trpc } from '@/lib/trpc';
 import { toast } from '@repo/ui/toast';
 import { useEffect, useMemo, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { transformBuilderToItineraryData } from '@/lib/builder-transform';
-import { useMutation, useQuery } from '@tanstack/react-query';
-import { queryKeys, staleTimes } from '@/lib/query-keys';
+import { useMutation } from '@tanstack/react-query';
+import { staleTimes } from '@/lib/query-keys';
 import { Popover, PopoverContent, PopoverTrigger } from '@repo/ui/popover';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@repo/ui/dialog';
 import { ImagePicker, ImagePickerContent } from '@/components/image-picker';
@@ -97,33 +90,24 @@ export default function PreviewPage() {
   }, []);
 
   // Fetch client info
-  const { data: clientData } = useQuery({
-    queryKey: queryKeys.clients.detail(clientId || ''),
-    queryFn: () => (clientId ? getClientById(clientId) : null),
-    enabled: !!clientId,
-    staleTime: staleTimes.clients,
-  });
+  const { data: clientData } = trpc.clients.getById.useQuery(
+    { id: clientId || '' },
+    { enabled: !!clientId, staleTime: staleTimes.clients },
+  );
 
   const clientName = clientData?.name || '';
   const clientEmail = clientData?.email || null;
 
   // Fetch national parks and accommodations for transform
-  const { data: parksData } = useQuery({
-    queryKey: queryKeys.nationalParks,
-    queryFn: getAllNationalParks,
+  const { data: parksData } = trpc.nationalParks.getAll.useQuery(undefined, {
     staleTime: staleTimes.nationalParks,
   });
 
-  const { data: accommodationsData } = useQuery({
-    queryKey: queryKeys.accommodations.all,
-    queryFn: getAllAccommodations,
+  const { data: accommodationsData } = trpc.accommodations.getAll.useQuery(undefined, {
     staleTime: staleTimes.accommodations,
   });
 
-  const { data: orgSettings } = useQuery({
-    queryKey: ['organization-settings'],
-    queryFn: () => getOrganizationSettings(),
-  });
+  const { data: orgSettings } = trpc.settings.getOrg.useQuery();
 
   const nationalParksMap = useMemo(() => {
     const map: Record<
@@ -200,6 +184,9 @@ export default function PreviewPage() {
     orgSettings,
   ]);
 
+  const saveProposalMutation = trpc.proposals.save.useMutation();
+  const sendToClientMutation = trpc.proposals.sendToClient.useMutation();
+
   // Share Proposal Mutation
   const shareProposalMutation = useMutation({
     mutationFn: async () => {
@@ -225,22 +212,16 @@ export default function PreviewPage() {
         heroImage,
       };
 
-      const result = await saveProposal({
+      return await saveProposalMutation.mutateAsync({
         id: proposalId,
         name: tourTitle || 'Untitled Safari',
         data: proposalData,
         status: 'shared',
         tourId: tourId,
       });
-
-      if (!result.success) {
-        throw new Error('Failed to share proposal.');
-      }
-
-      return result;
     },
     onSuccess: async (result) => {
-      const savedProposalId = (result as any).id || proposalId;
+      const savedProposalId = result.id || proposalId;
       const link = `${window.location.origin}/proposal/${savedProposalId}`;
       await navigator.clipboard.writeText(link);
       setIsProposalSaved(true);
@@ -264,11 +245,7 @@ export default function PreviewPage() {
       if (!clientEmail) {
         throw new Error('Client does not have an email address.');
       }
-      const result = await sendProposalToClient(proposalId);
-      if (!result.success) {
-        throw new Error(result.error || 'Failed to send email.');
-      }
-      return result;
+      return await sendToClientMutation.mutateAsync({ proposalId });
     },
     onSuccess: () => {
       toast({

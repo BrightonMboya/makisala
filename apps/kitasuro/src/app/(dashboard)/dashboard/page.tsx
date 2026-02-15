@@ -6,14 +6,8 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useDebounce } from '@repo/ui/use-debounce';
-import {
-  getOnboardingData,
-  getProposalsForDashboard,
-  markOnboardingComplete,
-} from '@/app/itineraries/actions';
-import { checkIsAdmin } from '@/app/(dashboard)/settings/actions';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { queryKeys, staleTimes } from '@/lib/query-keys';
+import { trpc } from '@/lib/trpc';
+import { staleTimes } from '@/lib/query-keys';
 import type { AssignedUser, RequestItem } from '@/types/dashboard';
 import { checkOnboardingStatus } from '@/lib/onboarding';
 import { Onboarding } from '../_components/onboarding';
@@ -23,34 +17,30 @@ import { ProposalAssignPopover } from '@/components/proposal-assign-popover';
 
 export default function DashboardPage() {
   const router = useRouter();
-  const queryClient = useQueryClient();
+  const utils = trpc.useUtils();
   const { data: session } = authClient.useSession();
   const userId = session?.user?.id;
   const [searchQuery, setSearchQuery] = useState('');
   const debouncedQuery = useDebounce(searchQuery, 300);
   const [activeFilter, setActiveFilter] = useState<'mine' | 'all'>('mine');
 
-  const { data: isAdmin = false } = useQuery({
-    queryKey: ['isAdmin', userId],
-    queryFn: checkIsAdmin,
+  const { data: isAdmin = false } = trpc.settings.checkAdmin.useQuery(undefined, {
     staleTime: 5 * 60 * 1000,
     enabled: !!userId,
   });
 
-  const { data: proposals = [], isLoading: proposalsLoading } = useQuery({
-    queryKey: queryKeys.proposals.list(userId, activeFilter),
-    queryFn: () => getProposalsForDashboard(activeFilter),
-    staleTime: staleTimes.proposals,
-    enabled: !!userId,
-  });
+  const { data: proposals = [], isLoading: proposalsLoading } = trpc.proposals.listForDashboard.useQuery(
+    { filter: activeFilter },
+    { staleTime: staleTimes.proposals, enabled: !!userId },
+  );
 
   // Always fetch onboarding data to check org-level completion status
-  const { data: onboardingData, isLoading: onboardingLoading } = useQuery({
-    queryKey: queryKeys.onboardingData(userId),
-    queryFn: getOnboardingData,
-    staleTime: staleTimes.dashboardData,
-    enabled: !!userId,
-  });
+  const { data: onboardingData, isLoading: onboardingLoading } = trpc.onboarding.getData.useQuery(
+    undefined,
+    { staleTime: staleTimes.dashboardData, enabled: !!userId },
+  );
+
+  const markCompleteMutation = trpc.onboarding.markComplete.useMutation();
 
   // Check if org has already completed onboarding (stored at org level)
   const orgOnboardingComplete = !!onboardingData?.organization?.onboardingCompletedAt;
@@ -64,13 +54,13 @@ export default function DashboardPage() {
   // When all onboarding steps are complete, persist to org level in database
   useEffect(() => {
     if (onboardingStatus?.isComplete && !orgOnboardingComplete) {
-      markOnboardingComplete();
+      markCompleteMutation.mutate();
     }
   }, [onboardingStatus?.isComplete, orgOnboardingComplete]);
 
   // Callback to refetch data when tours are updated during onboarding
   const handleToursUpdated = () => {
-    queryClient.invalidateQueries({ queryKey: queryKeys.onboardingData(userId) });
+    utils.onboarding.getData.invalidate();
   };
 
   const isOnboarded = orgOnboardingComplete || onboardingStatus?.isComplete;
@@ -255,7 +245,6 @@ export default function DashboardPage() {
                   {isAdmin && (
                     <ProposalAssignPopover
                       proposalId={req.id}
-                      userId={userId}
                       activeFilter={activeFilter}
                     />
                   )}

@@ -1,5 +1,5 @@
 import { ImageResponse } from 'next/og';
-import { getProposal } from '@/app/itineraries/actions';
+import { createServerCaller } from '@/server/trpc/caller';
 import { format } from 'date-fns';
 
 export const size = { width: 1200, height: 630 };
@@ -13,7 +13,8 @@ function toOgSafeUrl(url: string | null | undefined): string | null {
 
 export default async function OGImage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const proposal = await getProposal(id);
+  const trpc = await createServerCaller();
+  const proposal = await trpc.proposals.getById({ id });
 
   if (!proposal) {
     return new ImageResponse(

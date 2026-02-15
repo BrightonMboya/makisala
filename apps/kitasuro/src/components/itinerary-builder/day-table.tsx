@@ -45,13 +45,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@repo/ui/input';
 import type { TransportModeType } from '@/types/itinerary-types';
 import { addDays, format } from 'date-fns';
-import {
-  getAccommodationById,
-  getNationalParkById,
-  getRandomDayTemplate,
-  searchAccommodations,
-  searchNationalParks,
-} from '@/app/itineraries/actions';
+import { trpc } from '@/lib/trpc';
 
 import type { BuilderActivity, BuilderDay } from '@/types/itinerary-types';
 
@@ -257,11 +251,13 @@ function SortableDayRow({
   onDuplicate: (id: string) => void;
   onUpdate: (id: string, field: keyof Day, value: any) => void;
 }) {
+  const utils = trpc.useUtils();
+
   // Callbacks for async accommodation search
   const handleAccommodationSearch = useCallback(async (query: string) => {
-    const results = await searchAccommodations(query, 10);
+    const results = await utils.accommodations.search.fetch({ query, limit: 10 });
     return results.map((acc) => ({ value: acc.id, label: acc.name }));
-  }, []);
+  }, [utils]);
 
   // Only fetch label if we don't already have the accommodation name
   // This prevents N+1 queries when proposal data already includes names
@@ -271,17 +267,17 @@ function SortableDayRow({
       if (day.accommodationName) {
         return day.accommodationName;
       }
-      const acc = await getAccommodationById(id);
+      const acc = await utils.accommodations.getLookup.fetch({ id });
       return acc?.name || null;
     },
-    [day.accommodationName],
+    [day.accommodationName, utils],
   );
 
   // Destination search handler
   const handleDestinationSearch = useCallback(async (query: string) => {
-    const results = await searchNationalParks(query, 10);
+    const results = await utils.nationalParks.search.fetch({ query, limit: 10 });
     return results.map((p) => ({ value: p.id, label: p.name }));
-  }, []);
+  }, [utils]);
 
   // Get destination label by ID
   const handleGetDestinationLabel = useCallback(async (id: string) => {
@@ -291,9 +287,9 @@ function SortableDayRow({
       // Custom text, return as-is
       return id;
     }
-    const park = await getNationalParkById(id);
+    const park = await utils.nationalParks.getById.fetch({ id });
     return park?.name || null;
-  }, []);
+  }, [utils]);
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: day.id,
   });
@@ -307,11 +303,10 @@ function SortableDayRow({
 
     setIsSuggesting(true);
     try {
-      const template = await getRandomDayTemplate(
-        day.destination,
-        undefined,
-        day.description ? [day.description] : undefined,
-      );
+      const template = await utils.tours.getRandomDayTemplate.fetch({
+        nationalParkId: day.destination,
+        excludeDescriptions: day.description ? [day.description] : undefined,
+      });
       if (template?.description) {
         onUpdate(day.id, 'description', template.description);
         setIsExpanded(true);
@@ -561,7 +556,7 @@ function SortableDayRow({
                 // Pre-populate origin from the day's destination
                 if (day.destination && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(day.destination)) {
                   onUpdate(day.id, 'transfer', emptyTransfer);
-                  const park = await getNationalParkById(day.destination);
+                  const park = await utils.nationalParks.getById.fetch({ id: day.destination });
                   if (park) {
                     onUpdate(day.id, 'transfer', { ...emptyTransfer, originName: park.name });
                   }

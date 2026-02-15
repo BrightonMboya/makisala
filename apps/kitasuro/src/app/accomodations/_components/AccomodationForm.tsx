@@ -8,7 +8,7 @@ import { Label } from '@repo/ui/label'
 import { Textarea } from '@repo/ui/textarea'
 import { Card, CardContent, CardHeader, CardTitle } from '@repo/ui/card'
 import { X, Upload, Loader2, MapPin } from 'lucide-react'
-import { createAccommodation, updateAccommodation } from '../actions'
+import { trpc } from '@/lib/trpc'
 
 interface AccomodationFormProps {
     initialData?: {
@@ -29,6 +29,8 @@ export default function AccomodationForm({ initialData }: AccomodationFormProps)
     const [images, setImages] = useState<any[]>(initialData?.images || [])
     const [newImages, setNewImages] = useState<{ name: string; type: string; base64: string }[]>([])
     const [removedImageIds, setRemovedImageIds] = useState<string[]>([])
+    const createMutation = trpc.accommodations.create.useMutation()
+    const updateMutation = trpc.accommodations.update.useMutation()
 
     async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
         e.preventDefault()
@@ -49,14 +51,15 @@ export default function AccomodationForm({ initialData }: AccomodationFormProps)
 
         try {
             if (initialData) {
-                await updateAccommodation(initialData.id, {
+                await updateMutation.mutateAsync({
+                    id: initialData.id,
                     ...data,
                     newImages,
                     removedImageIds,
                 })
                 router.push('/accomodations')
             } else {
-                const result = await createAccommodation({
+                const result = await createMutation.mutateAsync({
                     ...data,
                     images: newImages,
                 })

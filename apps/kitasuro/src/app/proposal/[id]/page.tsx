@@ -9,7 +9,7 @@ import DiscoveryTheme from '@/components/themes/DiscoveryTheme';
 import { CommentsProvider } from '@/components/comments/CommentsProvider';
 import { CommentsOverlay } from '@/components/comments/CommentsOverlay';
 import { PDFDownloadButton } from '@/components/pdf-download-button';
-import { getProposal } from '@/app/itineraries/actions';
+import { createServerCaller } from '@/server/trpc/caller';
 import { transformProposalToItineraryData } from '@/lib/proposal-transform';
 import { getOrgPlan, PLAN_CONFIG } from '@/lib/plans';
 
@@ -17,7 +17,10 @@ type Props = {
   params: Promise<{ id: string }>;
 };
 
-const getCachedProposal = cache(getProposal);
+const getCachedProposal = cache(async (id: string) => {
+  const trpc = await createServerCaller();
+  return trpc.proposals.getById({ id });
+});
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;

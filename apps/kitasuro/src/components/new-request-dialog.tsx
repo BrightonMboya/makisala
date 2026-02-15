@@ -4,7 +4,6 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@repo/ui/dialog';
 import { Button } from '@repo/ui/button';
 import { Input } from '@repo/ui/input';
@@ -12,11 +11,9 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Combobox } from '@repo/ui/combobox';
 import { DatePicker } from '@repo/ui/date-picker';
 import { CountryDropdown } from '@repo/ui/country-dropdown';
-import { getToursAndClients } from '@/app/itineraries/actions';
-import { createClient } from '@/app/(dashboard)/clients/actions';
 import { useToast } from '@repo/ui/use-toast';
+import { trpc } from '@/lib/trpc';
 import { authClient } from '@/lib/auth-client';
-import { queryKeys, staleTimes } from '@/lib/query-keys';
 import { type RequestFormValues, requestSchema } from '@/lib/schemas/request';
 
 interface NewRequestDialogProps {
@@ -27,15 +24,14 @@ interface NewRequestDialogProps {
 export function NewRequestDialog({ open, onOpenChange }: NewRequestDialogProps) {
   const router = useRouter();
   const { toast } = useToast();
-  const queryClient = useQueryClient();
+  const utils = trpc.useUtils();
   const { data: session } = authClient.useSession();
   const [isNewClient, setIsNewClient] = useState(false);
+  const createClientMutation = trpc.clients.create.useMutation();
 
   // Only fetch data when dialog is open
-  const { data } = useQuery({
-    queryKey: queryKeys.toursAndClients(session?.user?.id),
-    queryFn: getToursAndClients,
-    staleTime: staleTimes.toursAndClients,
+  const { data } = trpc.tours.getToursAndClients.useQuery(undefined, {
+    staleTime: 5 * 60 * 1000,
     enabled: open && !!session?.user?.id,
   });
 
@@ -74,14 +70,14 @@ export function NewRequestDialog({ open, onOpenChange }: NewRequestDialogProps) 
     // If creating a new client, create it first
     if (isNewClient && data.lastName) {
       try {
-        const result = await createClient({
+        const result = await createClientMutation.mutateAsync({
           name: `${data.firstName || ''} ${data.lastName}`.trim(),
           email: data.email || undefined,
           phone: data.phone || undefined,
           countryOfResidence: data.country || undefined,
         });
         clientId = result.id;
-        queryClient.invalidateQueries({ queryKey: queryKeys.toursAndClients(session?.user?.id) });
+        utils.tours.getToursAndClients.invalidate();
       } catch (error) {
         toast({ title: 'Failed to create client', variant: 'destructive' });
         return;
