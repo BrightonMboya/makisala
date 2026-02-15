@@ -22,6 +22,11 @@ export const router = t.router;
 export const publicProcedure = t.procedure;
 export const createCallerFactory = t.createCallerFactory;
 
+/** Escape SQL LIKE wildcards (%, _) in user input to prevent pattern injection */
+export function escapeLikeQuery(query: string): string {
+  return query.replace(/[%_\\]/g, '\\$&');
+}
+
 async function resolveOrgId(userId: string, sessionOrgId?: string | null): Promise<string> {
   if (sessionOrgId) return sessionOrgId;
 

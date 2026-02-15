@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { activityLibrary } from '@repo/db/schema';
 import { and, eq, ilike, or } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
-import { router, protectedProcedure } from '../init';
+import { router, protectedProcedure, escapeLikeQuery } from '../init';
 
 export const activitiesRouter = router({
   search: protectedProcedure
@@ -32,13 +32,13 @@ export const activitiesRouter = router({
       return ctx.db
         .select({ id: activityLibrary.id, name: activityLibrary.name })
         .from(activityLibrary)
-        .where(and(conditions, ilike(activityLibrary.name, `%${trimmed}%`)))
+        .where(and(conditions, ilike(activityLibrary.name, `%${escapeLikeQuery(trimmed)}%`)))
         .orderBy(activityLibrary.name)
         .limit(input.limit);
     }),
 
   create: protectedProcedure
-    .input(z.object({ name: z.string().min(1) }))
+    .input(z.object({ name: z.string().min(1).max(255) }))
     .mutation(async ({ ctx, input }) => {
       const [activity] = await ctx.db
         .insert(activityLibrary)

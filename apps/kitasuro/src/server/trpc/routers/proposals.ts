@@ -239,7 +239,7 @@ export const proposalsRouter = router({
       z.object({
         id: z.string(),
         name: z.string(),
-        data: z.object({}).passthrough(),
+        data: z.record(z.string(), z.unknown()),
         status: z.enum(['draft', 'shared']).optional(),
         tourId: z.string(),
       }),
@@ -501,7 +501,7 @@ export const proposalsRouter = router({
     }),
 
   sendToClient: protectedProcedure
-    .input(z.object({ proposalId: z.string(), message: z.string().optional() }))
+    .input(z.object({ proposalId: z.string(), message: z.string().max(5000).optional() }))
     .mutation(async ({ ctx, input }) => {
       const proposal = await db.query.proposals.findFirst({
         where: and(eq(proposals.id, input.proposalId), eq(proposals.organizationId, ctx.orgId)),
@@ -553,7 +553,7 @@ export const proposalsRouter = router({
     }),
 
   confirm: publicProcedure
-    .input(z.object({ proposalId: z.string(), clientName: z.string() }))
+    .input(z.object({ proposalId: z.string(), clientName: z.string().max(255) }))
     .mutation(async ({ input }) => {
       const [proposal, daysCountResult] = await Promise.all([
         db.query.proposals.findFirst({

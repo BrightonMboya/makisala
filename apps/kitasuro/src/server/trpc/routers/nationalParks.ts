@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { nationalParks } from '@repo/db/schema';
 import { eq, ilike } from 'drizzle-orm';
-import { router, publicProcedure } from '../init';
+import { router, publicProcedure, escapeLikeQuery } from '../init';
 
 export const nationalParksRouter = router({
   getAll: publicProcedure.query(async ({ ctx }) => {
@@ -37,7 +37,7 @@ export const nationalParksRouter = router({
       return ctx.db
         .select({ id: nationalParks.id, name: nationalParks.name })
         .from(nationalParks)
-        .where(ilike(nationalParks.name, `%${trimmed}%`))
+        .where(ilike(nationalParks.name, `%${escapeLikeQuery(trimmed)}%`))
         .limit(input.limit);
     }),
 

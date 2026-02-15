@@ -102,19 +102,20 @@ export const toursRouter = router({
         overview: z.string().optional(),
         pricing: z.string().optional(),
         country: z.string().optional(),
-        tags: z.array(z.string()).optional(),
+        tags: z.array(z.string().max(100)).max(20).optional(),
         img_url: z.string().optional(),
         number_of_days: z.number().optional(),
         itineraries: z
           .array(
             z.object({
               dayNumber: z.number(),
-              title: z.string(),
-              overview: z.string().optional(),
+              title: z.string().max(255),
+              overview: z.string().max(5000).optional(),
               national_park_id: z.string().optional(),
               accommodation_id: z.string().optional(),
             }),
           )
+          .max(60)
           .optional(),
       }),
     )
@@ -320,7 +321,7 @@ export const toursRouter = router({
       z.object({
         nationalParkId: z.string(),
         dayType: z.enum(['arrival', 'full_day', 'half_day', 'departure']).optional(),
-        excludeDescriptions: z.array(z.string()).optional(),
+        excludeDescriptions: z.array(z.string()).max(100).optional(),
       }),
     )
     .query(async ({ input }) => {
@@ -353,7 +354,7 @@ export const toursRouter = router({
     }),
 
   getPageImages: publicProcedure
-    .input(z.object({ pageIds: z.array(z.string()) }))
+    .input(z.object({ pageIds: z.array(z.string()).max(100) }))
     .query(async ({ input }) => {
       if (input.pageIds.length === 0) return [];
 

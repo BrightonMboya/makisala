@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { comments, commentReplies, proposals } from '@repo/db/schema';
 import { eq } from 'drizzle-orm';
+import { TRPCError } from '@trpc/server';
 import { router, publicProcedure } from '../init';
 import { sendCommentNotificationEmail } from '@repo/resend';
 import { checkFeatureAccess } from '@/lib/plans';
@@ -42,8 +43,8 @@ export const commentsRouter = router({
     .input(
       z.object({
         proposalId: z.string(),
-        authorName: z.string().min(1),
-        content: z.string().min(1),
+        authorName: z.string().min(1).max(100),
+        content: z.string().min(1).max(5000),
         posX: z.number(),
         posY: z.number(),
         width: z.number().optional(),
@@ -59,7 +60,7 @@ export const commentsRouter = router({
       if (proposal?.organizationId) {
         const access = await checkFeatureAccess(proposal.organizationId, 'comments');
         if (!access.allowed) {
-          return { success: false as const, error: access.reason };
+          throw new TRPCError({ code: 'FORBIDDEN', message: access.reason });
         }
       }
 
@@ -123,8 +124,8 @@ export const commentsRouter = router({
     .input(
       z.object({
         commentId: z.string(),
-        authorName: z.string().min(1),
-        content: z.string().min(1),
+        authorName: z.string().min(1).max(100),
+        content: z.string().min(1).max(5000),
       }),
     )
     .mutation(async ({ ctx, input }) => {

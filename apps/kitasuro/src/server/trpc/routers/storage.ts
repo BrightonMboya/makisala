@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { accommodations } from '@repo/db/schema';
 import { ilike, inArray } from 'drizzle-orm';
-import { router, protectedProcedure } from '../init';
+import { router, protectedProcedure, escapeLikeQuery } from '../init';
 import { listStorageFolders, listStorageImages } from '@/lib/storage';
 
 const STORAGE_BUCKET = 'r2';
@@ -76,7 +76,7 @@ export const storageRouter = router({
       const results = await ctx.db
         .select({ id: accommodations.id, name: accommodations.name })
         .from(accommodations)
-        .where(ilike(accommodations.name, `%${input.query}%`))
+        .where(ilike(accommodations.name, `%${escapeLikeQuery(input.query)}%`))
         .limit(20);
 
       return results.map((acc) => ({

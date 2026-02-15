@@ -23,11 +23,11 @@ export const settingsRouter = router({
   updateOrg: adminProcedure
     .input(
       z.object({
-        name: z.string().optional(),
-        logoUrl: z.string().optional(),
-        notificationEmail: z.string().optional(),
-        aboutDescription: z.string().optional(),
-        paymentTerms: z.string().optional(),
+        name: z.string().max(255).optional(),
+        logoUrl: z.string().max(500).optional(),
+        notificationEmail: z.string().email().max(255).optional(),
+        aboutDescription: z.string().max(5000).optional(),
+        paymentTerms: z.string().max(10000).optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -62,7 +62,7 @@ export const settingsRouter = router({
       });
 
       if (!result.publicUrl) {
-        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to get public URL for uploaded logo' });
+        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to upload logo' });
       }
 
       const logoUrl = `${result.publicUrl}?v=${Date.now()}`;
@@ -244,7 +244,7 @@ export const settingsRouter = router({
   }),
 
   updateProfile: protectedProcedure
-    .input(z.object({ name: z.string(), image: z.string().optional() }))
+    .input(z.object({ name: z.string().max(255), image: z.string().max(500).optional() }))
     .mutation(async ({ ctx, input }) => {
       await db
         .update(user)
@@ -277,7 +277,7 @@ export const settingsRouter = router({
       });
 
       if (!result.publicUrl) {
-        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to get public URL for uploaded avatar' });
+        throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to upload avatar' });
       }
 
       const imageUrl = `${result.publicUrl}?v=${Date.now()}`;

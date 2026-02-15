@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { accommodations, organizationImages } from '@repo/db/schema';
 import { and, asc, desc, eq, ilike, lt, or, sql } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
-import { router, protectedProcedure } from '../init';
+import { router, protectedProcedure, escapeLikeQuery } from '../init';
 import { deleteFromStorage, getPublicUrl, uploadToStorage } from '@/lib/storage';
 import { compressImage, replaceExtension } from '@/lib/image-utils';
 import { checkFeatureAccess } from '@/lib/plans';
@@ -46,7 +46,7 @@ export const contentLibraryRouter = router({
       const query = input?.query ?? '';
       const offset = (page - 1) * limit;
 
-      const filters = query ? ilike(accommodations.name, `%${query}%`) : undefined;
+      const filters = query ? ilike(accommodations.name, `%${escapeLikeQuery(query)}%`) : undefined;
 
       const [data, total] = await Promise.all([
         ctx.db.query.accommodations.findMany({

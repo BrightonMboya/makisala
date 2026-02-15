@@ -2,15 +2,15 @@ import { z } from 'zod';
 import { accommodationImages, accommodations } from '@repo/db/schema';
 import { and, desc, eq, ilike, inArray, sql } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
-import { router, publicProcedure, protectedProcedure } from '../init';
+import { router, publicProcedure, protectedProcedure, escapeLikeQuery } from '../init';
 import { getPublicUrl, uploadToStorage } from '@/lib/storage';
 import { compressImage, replaceExtension } from '@/lib/image-utils';
 
 
 const imageSchema = z.object({
-  name: z.string().min(1),
-  type: z.string().min(1),
-  base64: z.string().min(1),
+  name: z.string().min(1).max(255),
+  type: z.string().min(1).max(100),
+  base64: z.string().min(1).max(14 * 1024 * 1024), // ~10MB binary
 });
 
 export const accommodationsRouter = router({
@@ -31,7 +31,7 @@ export const accommodationsRouter = router({
 
       const conditions = [];
       if (input?.query) {
-        conditions.push(ilike(accommodations.name, `%${input.query}%`));
+        conditions.push(ilike(accommodations.name, `%${escapeLikeQuery(input.query)}%`));
       }
 
       const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
@@ -119,7 +119,7 @@ export const accommodationsRouter = router({
         });
       }
       return ctx.db.query.accommodations.findMany({
-        where: ilike(accommodations.name, `%${trimmed}%`),
+        where: ilike(accommodations.name, `%${escapeLikeQuery(trimmed)}%`),
         limit: input.limit,
         with: { images: { limit: 1 } },
       });
@@ -148,7 +148,7 @@ export const accommodationsRouter = router({
         description: z.string().max(5000).optional(),
         latitude: z.string().optional(),
         longitude: z.string().optional(),
-        images: z.array(imageSchema).optional(),
+        images: z.array(imageSchema).max(20).optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -205,8 +205,8 @@ export const accommodationsRouter = router({
         description: z.string().max(5000).optional(),
         latitude: z.string().optional(),
         longitude: z.string().optional(),
-        newImages: z.array(imageSchema).optional(),
-        removedImageIds: z.array(z.string()).optional(),
+        newImages: z.array(imageSchema).max(20).optional(),
+        removedImageIds: z.array(z.string()).max(50).optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {

@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { clients } from '@repo/db/schema';
 import { and, desc, eq, ilike } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
-import { router, protectedProcedure } from '../init';
+import { router, protectedProcedure, escapeLikeQuery } from '../init';
 
 export const clientsRouter = router({
   list: protectedProcedure
@@ -24,7 +24,7 @@ export const clientsRouter = router({
 
       const query = input?.query?.trim();
       if (query && query.length >= 2) {
-        conditions.push(ilike(clients.name, `%${query}%`));
+        conditions.push(ilike(clients.name, `%${escapeLikeQuery(query)}%`));
       }
 
       const data = await ctx.db
@@ -62,11 +62,11 @@ export const clientsRouter = router({
   create: protectedProcedure
     .input(
       z.object({
-        name: z.string().min(1),
-        email: z.string().email().optional(),
-        phone: z.string().optional(),
-        countryOfResidence: z.string().optional(),
-        notes: z.string().optional(),
+        name: z.string().min(1).max(255),
+        email: z.string().email().max(255).optional(),
+        phone: z.string().max(50).optional(),
+        countryOfResidence: z.string().max(100).optional(),
+        notes: z.string().max(5000).optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -93,11 +93,11 @@ export const clientsRouter = router({
     .input(
       z.object({
         id: z.string(),
-        name: z.string().min(1),
-        email: z.string().email().optional(),
-        phone: z.string().optional(),
-        countryOfResidence: z.string().optional(),
-        notes: z.string().optional(),
+        name: z.string().min(1).max(255),
+        email: z.string().email().max(255).optional(),
+        phone: z.string().max(50).optional(),
+        countryOfResidence: z.string().max(100).optional(),
+        notes: z.string().max(5000).optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {

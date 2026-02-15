@@ -93,7 +93,7 @@ export function CommentsProvider({ children, proposalId, readOnly = false }: Com
         height,
       });
 
-      if (result.success && result.comment) {
+      if (result.comment) {
         // Replace optimistic comment with real one
         queryClient.setQueryData<Comment[]>(commentsQueryKey, (old = []) =>
           old.map((c) =>
@@ -103,11 +103,6 @@ export function CommentsProvider({ children, proposalId, readOnly = false }: Com
           )
         );
         setActiveCommentId(result.comment.id);
-      } else {
-        // Rollback on failure
-        queryClient.setQueryData<Comment[]>(commentsQueryKey, (old = []) =>
-          old.filter((c) => c.id !== optimisticComment.id)
-        );
       }
     } catch (error) {
       console.error("Failed to create comment", error);
