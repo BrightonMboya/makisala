@@ -71,8 +71,9 @@ export function OrganizationSettings({ organization }: Props) {
     try {
       await updateOrgMutation.mutateAsync(data);
       toast({ title: 'Organization settings updated' });
-    } catch {
-      toast({ title: 'Failed to update settings', variant: 'destructive' });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to update settings';
+      toast({ title: message, variant: 'destructive' });
     }
   }
 
@@ -135,8 +136,9 @@ export function OrganizationSettings({ organization }: Props) {
                               toast({ title: 'Logo uploaded' });
                               queryClient.invalidateQueries({ queryKey: [['settings', 'getOrg']] });
                             }
-                          } catch {
-                            toast({ title: 'Failed to upload logo', variant: 'destructive' });
+                          } catch (error) {
+                            const message = error instanceof Error ? error.message : 'Failed to upload logo';
+                            toast({ title: message, variant: 'destructive' });
                           } finally {
                             setIsUploadingLogo(false);
                             e.target.value = '';

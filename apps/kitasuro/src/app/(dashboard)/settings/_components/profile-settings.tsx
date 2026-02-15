@@ -87,8 +87,9 @@ export function ProfileSettings({ user, isAdmin }: Props) {
         queryClient.invalidateQueries({ queryKey: [['settings', 'getCurrentUser']] });
         toast({ title: 'Profile picture uploaded' });
       }
-    } catch {
-      toast({ title: 'Failed to upload profile picture', variant: 'destructive' });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to upload profile picture';
+      toast({ title: message, variant: 'destructive' });
     } finally {
       setIsUploading(false);
       // Reset file input so the same file can be re-selected
@@ -101,8 +102,9 @@ export function ProfileSettings({ user, isAdmin }: Props) {
       await updateProfileMutation.mutateAsync(data);
       queryClient.invalidateQueries({ queryKey: [['settings', 'getCurrentUser']] });
       toast({ title: 'Profile updated successfully' });
-    } catch {
-      toast({ title: 'Failed to update profile', variant: 'destructive' });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to update profile';
+      toast({ title: message, variant: 'destructive' });
     }
   }
 

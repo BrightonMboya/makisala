@@ -7,6 +7,7 @@ import { Button } from '@repo/ui/button';
 import { Input } from '@repo/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@repo/ui/tabs';
 import { trpc } from '@/lib/trpc';
+import { staleTimes } from '@/lib/query-keys';
 import { cn } from '@/lib/utils';
 
 interface ImagePickerProps {
@@ -20,11 +21,11 @@ export function ImagePicker({ value, onChange }: ImagePickerProps) {
 
   // Use React Query for caching - shares cache with other components
   const { data: parksData } = trpc.nationalParks.getAll.useQuery(undefined, {
-    staleTime: 5 * 60 * 1000,
+    staleTime: staleTimes.accommodations,
   });
 
   const { data: accommodationsData } = trpc.accommodations.getAll.useQuery(undefined, {
-    staleTime: 5 * 60 * 1000,
+    staleTime: staleTimes.accommodations,
   });
 
   // Get page IDs for parks that have them
@@ -36,7 +37,7 @@ export function ImagePicker({ value, onChange }: ImagePickerProps) {
   // Fetch page images only when we have park page IDs
   const { data: pagesData } = trpc.tours.getPageImages.useQuery(
     { pageIds: parkPageIds },
-    { enabled: parkPageIds.length > 0, staleTime: 5 * 60 * 1000 },
+    { enabled: parkPageIds.length > 0, staleTime: staleTimes.accommodations },
   );
 
   // Build the images list from cached data

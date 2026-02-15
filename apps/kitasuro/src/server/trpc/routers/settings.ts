@@ -40,7 +40,9 @@ export const settingsRouter = router({
     }),
 
   uploadLogo: adminProcedure
-    .input(z.object({ base64Data: z.string() }))
+    .input(z.object({
+      base64Data: z.string().max(7 * 1024 * 1024, 'Image too large. Maximum size is 5MB.'),
+    }))
     .mutation(async ({ ctx, input }) => {
       const base64 = input.base64Data.replace(/^data:[^;]+;base64,/, '');
       const buffer = Buffer.from(base64, 'base64');

@@ -6,6 +6,7 @@ import { Popover, PopoverContent, PopoverAnchor } from '@repo/ui/popover';
 import { Checkbox } from '@repo/ui/checkbox';
 import { toast } from '@repo/ui/toast';
 import { trpc } from '@/lib/trpc';
+import { staleTimes } from '@/lib/query-keys';
 
 interface ProposalAssignPopoverProps {
   proposalId: string;
@@ -20,7 +21,7 @@ export function ProposalAssignPopover({
   const [open, setOpen] = useState(false);
 
   const { data: teamMembers = [], isLoading } = trpc.notes.getTeamMembers.useQuery(undefined, {
-    staleTime: 5 * 60 * 1000,
+    staleTime: staleTimes.teamMembers,
     enabled: open,
   });
 

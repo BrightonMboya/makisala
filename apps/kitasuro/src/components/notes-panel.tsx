@@ -83,7 +83,7 @@ export function NotesPanel({ proposalId, compact = false }: NotesPanelProps) {
   // Fetch team members for @mention
   const { data: teamMembers = [], isLoading: isLoadingMembers } = trpc.notes.getTeamMembers.useQuery(
     undefined,
-    { staleTime: 5 * 60 * 1000, enabled: isOpen },
+    { staleTime: staleTimes.teamMembers, enabled: isOpen },
   );
 
   // Intersection observer for infinite scroll

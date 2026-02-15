@@ -72,7 +72,8 @@ export function ClientForm({ client }: ClientFormProps) {
       }
       router.push('/clients');
     } catch (error) {
-      toast({ title: 'Something went wrong', variant: 'destructive' });
+      const message = error instanceof Error ? error.message : 'Something went wrong';
+      toast({ title: message, variant: 'destructive' });
     }
   };
 
@@ -84,7 +85,8 @@ export function ClientForm({ client }: ClientFormProps) {
       toast({ title: 'Client deleted successfully' });
       router.push('/clients');
     } catch (error) {
-      toast({ title: 'Failed to delete client', variant: 'destructive' });
+      const message = error instanceof Error ? error.message : 'Failed to delete client';
+      toast({ title: message, variant: 'destructive' });
     }
   }
 

@@ -5,12 +5,12 @@ import { httpBatchLink } from '@trpc/client';
 import { useState, type ReactNode } from 'react';
 import { Toaster } from '@repo/ui/toaster';
 import { trpc } from '@/lib/trpc';
+import { env } from '@/lib/env';
 import superjson from 'superjson';
 
 function getBaseUrl() {
   if (typeof window !== 'undefined') return '';
-  if (process.env.NEXT_PUBLIC_APP_URL) return process.env.NEXT_PUBLIC_APP_URL;
-  return 'http://localhost:3000';
+  return env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000';
 }
 
 export function Providers({ children }: { children: ReactNode }) {

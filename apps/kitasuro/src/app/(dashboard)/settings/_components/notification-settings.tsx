@@ -24,8 +24,9 @@ export function NotificationSettings({ organization, isAdmin }: Props) {
     try {
       await updateOrgMutation.mutateAsync({ notificationEmail: email });
       toast({ title: 'Notification settings updated' });
-    } catch {
-      toast({ title: 'Failed to update settings', variant: 'destructive' });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to update settings';
+      toast({ title: message, variant: 'destructive' });
     }
   }
 

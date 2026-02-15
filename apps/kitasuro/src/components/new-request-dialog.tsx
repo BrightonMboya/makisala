@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@repo/ui/dialo
 import { Button } from '@repo/ui/button';
 import { Input } from '@repo/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@repo/ui/form';
+import { staleTimes } from '@/lib/query-keys';
 import { Combobox } from '@repo/ui/combobox';
 import { DatePicker } from '@repo/ui/date-picker';
 import { CountryDropdown } from '@repo/ui/country-dropdown';
@@ -31,7 +32,7 @@ export function NewRequestDialog({ open, onOpenChange }: NewRequestDialogProps) 
 
   // Only fetch data when dialog is open
   const { data } = trpc.tours.getToursAndClients.useQuery(undefined, {
-    staleTime: 5 * 60 * 1000,
+    staleTime: staleTimes.toursAndClients,
     enabled: open && !!session?.user?.id,
   });
 
@@ -79,7 +80,8 @@ export function NewRequestDialog({ open, onOpenChange }: NewRequestDialogProps) 
         clientId = result.id;
         utils.tours.getToursAndClients.invalidate();
       } catch (error) {
-        toast({ title: 'Failed to create client', variant: 'destructive' });
+        const message = error instanceof Error ? error.message : 'Failed to create client';
+        toast({ title: message, variant: 'destructive' });
         return;
       }
     }

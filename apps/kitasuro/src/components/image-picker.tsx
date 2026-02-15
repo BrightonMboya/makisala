@@ -71,7 +71,7 @@ export function ImagePickerContent({
     queryKey: ['accommodationSearch', initialFolder],
     queryFn: () => utils.storage.searchAccommodationFolders.fetch({ query: initialFolder || '' }),
     enabled: isAccommodationsBucket && !!initialFolder && isOpen && !hasInitialized && activeSource === 'accommodations',
-    staleTime: 5 * 60 * 1000,
+    staleTime: staleTimes.storage,
   });
 
   // Auto-navigate to initial folder when picker opens
@@ -113,7 +113,7 @@ export function ImagePickerContent({
     queryKey: ['storageFolders', bucket, path],
     queryFn: () => utils.storage.getFolders.fetch({ parentFolder: path, bucket }),
     enabled: isOpen && activeSource === 'accommodations' && !isAccommodationsRoot,
-    staleTime: 5 * 60 * 1000,
+    staleTime: staleTimes.storage,
   });
 
   // Query for accommodation images
@@ -121,7 +121,7 @@ export function ImagePickerContent({
     queryKey: ['storageImages', bucket, path],
     queryFn: () => utils.storage.getImages.fetch({ folder: path, bucket }),
     enabled: isOpen && activeSource === 'accommodations' && !isAccommodationsRoot,
-    staleTime: 5 * 60 * 1000,
+    staleTime: staleTimes.storage,
   });
 
   // Query for organization images (separate key from the infinite query in content library)

@@ -25,7 +25,7 @@ export default function DashboardPage() {
   const [activeFilter, setActiveFilter] = useState<'mine' | 'all'>('mine');
 
   const { data: isAdmin = false } = trpc.settings.checkAdmin.useQuery(undefined, {
-    staleTime: 5 * 60 * 1000,
+    staleTime: staleTimes.dashboardData,
     enabled: !!userId,
   });
 
