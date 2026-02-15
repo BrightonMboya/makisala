@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { db, organizations, user, member, invitation } from '@repo/db';
+import { organizations, user, member, invitation } from '@repo/db/schema';
 import { and, desc, eq, inArray } from 'drizzle-orm';
 import { headers } from 'next/headers';
 import { TRPCError } from '@trpc/server';
@@ -12,7 +12,7 @@ import { checkFeatureAccess } from '@/lib/plans';
 
 export const settingsRouter = router({
   getOrg: protectedProcedure.query(async ({ ctx }) => {
-    const [org] = await db
+    const [org] = await ctx.db
       .select()
       .from(organizations)
       .where(eq(organizations.id, ctx.orgId))
@@ -31,7 +31,7 @@ export const settingsRouter = router({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      await db
+      await ctx.db
         .update(organizations)
         .set({ ...input, updatedAt: new Date() })
         .where(eq(organizations.id, ctx.orgId));
@@ -67,7 +67,7 @@ export const settingsRouter = router({
 
       const logoUrl = `${result.publicUrl}?v=${Date.now()}`;
 
-      await db
+      await ctx.db
         .update(organizations)
         .set({ logoUrl, updatedAt: new Date() })
         .where(eq(organizations.id, ctx.orgId));
@@ -76,7 +76,7 @@ export const settingsRouter = router({
     }),
 
   getTeam: protectedProcedure.query(async ({ ctx }) => {
-    const members = await db
+    const members = await ctx.db
       .select({
         id: member.id,
         memberId: member.id,
@@ -96,7 +96,7 @@ export const settingsRouter = router({
   }),
 
   getPendingInvitations: protectedProcedure.query(async ({ ctx }) => {
-    const invitations_list = await db
+    const invitations_list = await ctx.db
       .select({
         id: invitation.id,
         email: invitation.email,
@@ -121,7 +121,7 @@ export const settingsRouter = router({
     const uniqueInviterIds = [...new Set(inviterIds)];
     const inviters =
       uniqueInviterIds.length > 0
-        ? await db
+        ? await ctx.db
             .select({ id: user.id, name: user.name })
             .from(user)
             .where(inArray(user.id, uniqueInviterIds))
@@ -170,7 +170,7 @@ export const settingsRouter = router({
   removeMember: adminProcedure
     .input(z.object({ memberId: z.string() }))
     .mutation(async ({ ctx, input }) => {
-      const [memberData] = await db
+      const [memberData] = await ctx.db
         .select({ userId: member.userId })
         .from(member)
         .where(eq(member.id, input.memberId))
@@ -195,7 +195,7 @@ export const settingsRouter = router({
   updateRole: adminProcedure
     .input(z.object({ memberId: z.string(), role: z.enum(['admin', 'member']) }))
     .mutation(async ({ ctx, input }) => {
-      const canProceed = await db.transaction(async (tx) => {
+      const canProceed = await ctx.db.transaction(async (tx) => {
         const [memberData] = await tx
           .select({ userId: member.userId })
           .from(member)
@@ -239,14 +239,14 @@ export const settingsRouter = router({
     }),
 
   getCurrentUser: protectedProcedure.query(async ({ ctx }) => {
-    const [userData] = await db.select().from(user).where(eq(user.id, ctx.user.id)).limit(1);
+    const [userData] = await ctx.db.select().from(user).where(eq(user.id, ctx.user.id)).limit(1);
     return userData || null;
   }),
 
   updateProfile: protectedProcedure
     .input(z.object({ name: z.string().max(255), image: z.string().max(500).optional() }))
     .mutation(async ({ ctx, input }) => {
-      await db
+      await ctx.db
         .update(user)
         .set({ ...input, updatedAt: new Date() })
         .where(eq(user.id, ctx.user.id));
@@ -282,7 +282,7 @@ export const settingsRouter = router({
 
       const imageUrl = `${result.publicUrl}?v=${Date.now()}`;
 
-      await db
+      await ctx.db
         .update(user)
         .set({ image: imageUrl, updatedAt: new Date() })
         .where(eq(user.id, ctx.user.id));
@@ -291,7 +291,7 @@ export const settingsRouter = router({
     }),
 
   checkAdmin: protectedProcedure.query(async ({ ctx }) => {
-    const [membership] = await db
+    const [membership] = await ctx.db
       .select({ role: member.role })
       .from(member)
       .where(
@@ -308,8 +308,8 @@ export const settingsRouter = router({
   // Invitation acceptance flows (public - no auth required)
   getInvitationStatus: publicProcedure
     .input(z.object({ invitationId: z.string() }))
-    .query(async ({ input }) => {
-      const [inv] = await db
+    .query(async ({ ctx, input }) => {
+      const [inv] = await ctx.db
         .select({ status: invitation.status })
         .from(invitation)
         .where(eq(invitation.id, input.invitationId))
@@ -319,8 +319,8 @@ export const settingsRouter = router({
 
   getInvitationByToken: publicProcedure
     .input(z.object({ invitationId: z.string() }))
-    .query(async ({ input }) => {
-      const [inv] = await db
+    .query(async ({ ctx, input }) => {
+      const [inv] = await ctx.db
         .select()
         .from(invitation)
         .where(and(eq(invitation.id, input.invitationId), eq(invitation.status, 'pending')))
@@ -329,7 +329,7 @@ export const settingsRouter = router({
       if (!inv) return null;
 
       if (new Date(inv.expiresAt) < new Date()) {
-        await db
+        await ctx.db
           .update(invitation)
           .set({ status: 'expired' })
           .where(eq(invitation.id, inv.id));
@@ -337,13 +337,13 @@ export const settingsRouter = router({
       }
 
       const [[org], [inviter]] = await Promise.all([
-        db
+        ctx.db
           .select({ name: organizations.name, logoUrl: organizations.logoUrl })
           .from(organizations)
           .where(eq(organizations.id, inv.organizationId))
           .limit(1),
         inv.inviterId
-          ? db
+          ? ctx.db
               .select({ name: user.name })
               .from(user)
               .where(eq(user.id, inv.inviterId))
@@ -360,10 +360,10 @@ export const settingsRouter = router({
 
   acceptInvitation: publicProcedure
     .input(z.object({ invitationId: z.string() }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
       const hdrs = await headers();
 
-      const [inv] = await db
+      const [inv] = await ctx.db
         .select({ organizationId: invitation.organizationId })
         .from(invitation)
         .where(eq(invitation.id, input.invitationId))

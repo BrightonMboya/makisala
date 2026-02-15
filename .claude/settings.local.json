@@ -34,7 +34,8 @@
       "Bash(bun install:*)",
       "Bash(gh pr list:*)",
       "Bash(bun add:*)",
-      "Bash(bunx --bun tsc:*)"
+      "Bash(bunx --bun tsc:*)",
+      "Bash(bun test:*)"
     ]
   }
 }

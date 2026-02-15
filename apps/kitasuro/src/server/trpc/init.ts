@@ -1,5 +1,6 @@
 import { initTRPC, TRPCError } from '@trpc/server';
-import { db, member } from '@repo/db';
+import { db } from '@repo/db';
+import { member } from '@repo/db/schema';
 import { and, eq } from 'drizzle-orm';
 import { headers } from 'next/headers';
 import { auth } from '@/lib/auth';
@@ -27,10 +28,10 @@ export function escapeLikeQuery(query: string): string {
   return query.replace(/[%_\\]/g, '\\$&');
 }
 
-async function resolveOrgId(userId: string, sessionOrgId?: string | null): Promise<string> {
+async function resolveOrgId(dbInstance: typeof db, userId: string, sessionOrgId?: string | null): Promise<string> {
   if (sessionOrgId) return sessionOrgId;
 
-  const [membership] = await db
+  const [membership] = await dbInstance
     .select({ organizationId: member.organizationId })
     .from(member)
     .where(eq(member.userId, userId))
@@ -48,17 +49,18 @@ export const protectedProcedure = t.procedure.use(async ({ ctx, next }) => {
   }
 
   const orgId = await resolveOrgId(
+    ctx.db,
     ctx.session.user.id,
     ctx.session.session?.activeOrganizationId as string | undefined,
   );
 
   return next({
-    ctx: { session: ctx.session, user: ctx.session.user, orgId },
+    ctx: { ...ctx, user: ctx.session.user, orgId },
   });
 });
 
 export const adminProcedure = protectedProcedure.use(async ({ ctx, next }) => {
-  const [membership] = await db
+  const [membership] = await ctx.db
     .select({ role: member.role })
     .from(member)
     .where(and(eq(member.userId, ctx.user.id), eq(member.organizationId, ctx.orgId)))
