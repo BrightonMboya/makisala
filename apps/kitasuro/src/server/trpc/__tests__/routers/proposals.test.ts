@@ -53,6 +53,17 @@ describe('proposals router', () => {
       const result = await caller.proposals.listForDashboard({ filter: 'mine' });
       expect(result).toHaveLength(1);
     });
+
+    test('handles database error on listForDashboard', async () => {
+      const { ctx, db } = createProtectedContext();
+      const caller = createCaller(ctx);
+
+      db._results.set('query.proposals.findMany', new Error('connection failed'));
+
+      await expect(
+        caller.proposals.listForDashboard({ filter: 'all' }),
+      ).rejects.toThrow('connection failed');
+    });
   });
 
   describe('getById', () => {
@@ -82,6 +93,17 @@ describe('proposals router', () => {
 
       const result = await caller.proposals.getById({ id: 'nonexistent' });
       expect(result).toBeNull();
+    });
+
+    test('handles database error on getById', async () => {
+      const { ctx, db } = createPublicContext();
+      const caller = createCaller(ctx);
+
+      db._results.set('query.proposals.findFirst', new Error('connection failed'));
+
+      await expect(
+        caller.proposals.getById({ id: 'p-1' }),
+      ).rejects.toThrow('connection failed');
     });
   });
 
@@ -165,6 +187,23 @@ describe('proposals router', () => {
       });
       expect(result.success).toBe(true);
       expect(result.id).toBeTruthy();
+    });
+
+    test('handles database error on save transaction', async () => {
+      const { ctx, db } = createProtectedContext();
+      const caller = createCaller(ctx);
+
+      db._results.set('query.proposals.findFirst', undefined);
+      db._results.set('tx.insert', new Error('disk full'));
+
+      await expect(
+        caller.proposals.save({
+          id: 'new-prop',
+          name: 'New Proposal',
+          tourId: 't-1',
+          data: {},
+        }),
+      ).rejects.toThrow('disk full');
     });
 
     test('throws FORBIDDEN when proposal belongs to another org', async () => {

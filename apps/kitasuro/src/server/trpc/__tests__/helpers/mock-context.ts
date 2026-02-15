@@ -1,4 +1,7 @@
+import type { db as _dbType } from '@repo/db';
 import { createMockDb, type MockDb } from './mock-db';
+
+type Db = typeof _dbType;
 
 const DEFAULT_USER = {
   id: 'user-1',
@@ -6,8 +9,8 @@ const DEFAULT_USER = {
   email: 'test@example.com',
   image: null,
   emailVerified: true,
-  createdAt: new Date(),
-  updatedAt: new Date(),
+  createdAt: new Date('2024-01-01T00:00:00.000Z'),
+  updatedAt: new Date('2024-01-01T00:00:00.000Z'),
 };
 
 const DEFAULT_ORG_ID = 'org-1';
@@ -19,7 +22,7 @@ const DEFAULT_ORG_ID = 'org-1';
 export function createPublicContext() {
   const db = createMockDb();
   return {
-    ctx: { session: null, db: db as any },
+    ctx: { session: null, db: db as unknown as Db },
     db,
   };
 }
@@ -42,7 +45,7 @@ export function createProtectedContext(opts?: {
         user,
         session: { activeOrganizationId: orgId },
       },
-      db: db as any,
+      db: db as unknown as Db,
       user,
       orgId,
     },

@@ -58,6 +58,15 @@ describe('clients router', () => {
       expect(result.pagination.hasNextPage).toBe(false);
     });
 
+    test('handles database error on list', async () => {
+      const { ctx, db } = createProtectedContext();
+      const caller = createCaller(ctx);
+
+      db._results.set('select', new Error('connection refused'));
+
+      await expect(caller.clients.list()).rejects.toThrow('connection refused');
+    });
+
     test('uses default pagination when no input', async () => {
       const { ctx, db } = createProtectedContext();
       const caller = createCaller(ctx);

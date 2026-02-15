@@ -28,6 +28,54 @@ describe('escapeLikeQuery', () => {
   });
 });
 
+describe('search endpoints escape special characters', () => {
+  test('clients.list escapes percent in query', async () => {
+    const { ctx, db } = createProtectedContext();
+    const caller = createCaller(ctx);
+
+    db._results.set('select', []);
+
+    await caller.clients.list({ query: '50%' });
+
+    // Find the where call to verify the escaped value reached the DB
+    const whereCall = db._calls.find((c) => c.method === 'select.where');
+    expect(whereCall).toBeDefined();
+    // Bun.inspect escapes backslashes in its output, so a literal `\%` appears as `\\%`
+    const whereArgs = Bun.inspect(whereCall!.args);
+    expect(whereArgs).toContain('50\\\\%');
+  });
+
+  test('clients.list escapes underscore in query', async () => {
+    const { ctx, db } = createProtectedContext();
+    const caller = createCaller(ctx);
+
+    db._results.set('select', []);
+
+    await caller.clients.list({ query: 'hello_world' });
+
+    const whereCall = db._calls.find((c) => c.method === 'select.where');
+    expect(whereCall).toBeDefined();
+    const whereArgs = Bun.inspect(whereCall!.args);
+    expect(whereArgs).toContain('hello\\\\_world');
+  });
+
+  test('clients.list does not apply search filter for short queries', async () => {
+    const { ctx, db } = createProtectedContext();
+    const caller = createCaller(ctx);
+
+    db._results.set('select', []);
+
+    // Single character should be ignored (minimum 2 chars for search)
+    await caller.clients.list({ query: '%' });
+
+    const whereCall = db._calls.find((c) => c.method === 'select.where');
+    expect(whereCall).toBeDefined();
+    // Should only have the organizationId condition, no ilike pattern
+    const whereArgs = Bun.inspect(whereCall!.args);
+    expect(whereArgs).not.toContain('ilike');
+  });
+});
+
 describe('auth middleware', () => {
   test('UNAUTHORIZED when no session', async () => {
     const { ctx } = createPublicContext();

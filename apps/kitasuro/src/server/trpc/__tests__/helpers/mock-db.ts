@@ -105,11 +105,17 @@ export function createMockDb() {
     }
 
     // .then() makes the chain awaitable — resolves with configured result
+    // If the result is an Error instance, reject instead of resolving.
     chain.then = (resolve: (value: unknown) => void, reject?: (reason: unknown) => void) => {
-      try {
-        resolve(getResult(rootOp, tableName));
-      } catch (e) {
-        if (reject) reject(e);
+      const result = getResult(rootOp, tableName);
+      if (result instanceof Error) {
+        if (reject) reject(result);
+      } else {
+        try {
+          resolve(result);
+        } catch (e) {
+          if (reject) reject(e);
+        }
       }
     };
 
@@ -138,12 +144,14 @@ export function createMockDb() {
             const key = `query.${tableName}.findFirst`;
             calls.push({ method: key, args });
             const val = getResultForQuery(key);
+            if (val instanceof Error) return Promise.reject(val);
             return Promise.resolve(val === undefined ? undefined : val);
           },
           findMany: (...args: unknown[]) => {
             const key = `query.${tableName}.findMany`;
             calls.push({ method: key, args });
             const val = getResultForQuery(key);
+            if (val instanceof Error) return Promise.reject(val);
             return Promise.resolve(val ?? []);
           },
         };
