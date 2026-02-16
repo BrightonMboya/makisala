@@ -1,4 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
+import { withAxiom, type AxiomRequest } from 'next-axiom';
 import { db, member } from '@repo/db';
 import { proposals } from '@repo/db/schema';
 import { and, eq } from 'drizzle-orm';
@@ -26,7 +27,7 @@ async function getOrganizationId(session: Awaited<ReturnType<typeof auth.api.get
   return membership?.organizationId ?? null;
 }
 
-export async function POST(request: NextRequest) {
+export const POST = withAxiom(async (request: AxiomRequest) => {
   try {
     // Check authentication
     const session = await auth.api.getSession({ headers: await headers() });
@@ -100,7 +101,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (result.error) {
-      console.error('Resend API error:', result.error);
+      request.log.error('Resend API error', { error: result.error });
       return NextResponse.json(
         { success: false, error: result.error.message || 'Failed to send email' },
         { status: 500 },
@@ -109,10 +110,10 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Error sending proposal email:', error);
+    request.log.error('Error sending proposal email', { error: String(error) });
     return NextResponse.json({ success: false, error: 'Failed to send email' }, { status: 500 });
   }
-}
+});
 
 interface EmailProps {
   clientName: string;

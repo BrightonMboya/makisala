@@ -4,6 +4,7 @@ import { and, eq, inArray, isNull, lt } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
 import { router, protectedProcedure } from '../init';
 import { sendNoteMentionEmail } from '@repo/resend';
+import { log } from '@/lib/logger';
 
 const NOTES_PAGE_SIZE = 20;
 
@@ -124,7 +125,7 @@ export const notesRouter = router({
               proposalTitle,
               proposalId: input.proposalId,
             }).catch((err) => {
-              console.error('Failed to send mention email:', err);
+              log.warn('Failed to send mention email', { error: String(err) });
             });
           }
         }

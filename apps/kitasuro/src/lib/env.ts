@@ -37,6 +37,8 @@ export const env = createEnv({
 
   client: {
     NEXT_PUBLIC_APP_URL: z.url(),
+    NEXT_PUBLIC_AXIOM_DATASET: z.string().optional(),
+    NEXT_PUBLIC_AXIOM_TOKEN: z.string().optional(),
   },
 
   runtimeEnv: {
@@ -63,6 +65,8 @@ export const env = createEnv({
 
     // Client
     NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
+    NEXT_PUBLIC_AXIOM_DATASET: process.env.NEXT_PUBLIC_AXIOM_DATASET,
+    NEXT_PUBLIC_AXIOM_TOKEN: process.env.NEXT_PUBLIC_AXIOM_TOKEN,
   },
 
   emptyStringAsUndefined: true,
