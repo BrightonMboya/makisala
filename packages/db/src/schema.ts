@@ -446,6 +446,7 @@ export const accommodations = pgTable('accommodations', {
   roomTypes: json('room_types').$type<{ name: string; description: string; capacity?: string }[]>(),
   locationHighlights: text('location_highlights').array(),
   pricingInfo: text('pricing_info'),
+  country: text('country'),
 });
 
 export const accommodationsRelations = relations(accommodations, ({ many }) => ({
