@@ -1,4 +1,6 @@
 import { Library } from 'lucide-react';
+import { getSession } from '@/lib/session';
+import { getOrgPlan } from '@/lib/plans';
 import { createServerCaller } from '@/server/trpc/caller';
 import { ContentLibraryTabs } from './_components/ContentLibraryTabs';
 
@@ -12,6 +14,16 @@ export default async function Page({
   const query = filters.query as string;
 
   const trpc = await createServerCaller();
+
+  // Fetch plan server-side to avoid flash of upgrade prompt.
+  // Uses the cached session shared with the layout — no extra DB hit.
+  const session = await getSession();
+  let canUploadImages = false;
+  if (session?.session?.activeOrganizationId) {
+    const plan = await getOrgPlan(session.session.activeOrganizationId as string);
+    canUploadImages = plan?.limits.uploadImages ?? false;
+  }
+
   const [{ accommodations, pagination }, orgImagesResult] = await Promise.all([
     trpc.contentLibrary.getAccommodationsWithStatus({ page, limit: 20, query }),
     trpc.contentLibrary.getOrgImages({ limit: 20 }),
@@ -39,6 +51,7 @@ export default async function Page({
           organizationImages={orgImagesResult.images}
           organizationImagesNextCursor={orgImagesResult.nextCursor}
           query={query}
+          canUploadImages={canUploadImages}
         />
       </div>
     </div>

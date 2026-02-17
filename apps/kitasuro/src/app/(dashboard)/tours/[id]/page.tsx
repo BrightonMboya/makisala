@@ -67,7 +67,7 @@ import {
 import Link from 'next/link';
 import Image from 'next/image';
 import { useToast } from '@repo/ui/use-toast';
-import { authClient } from '@/lib/auth-client';
+import { useSession } from '@/components/session-context';
 import { cn, capitalize, formatPrice } from '@/lib/utils';
 
 const itinerarySchema = z.object({
@@ -99,7 +99,7 @@ export default function TourDetailPage() {
   const router = useRouter();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { data: session } = authClient.useSession();
+  const { session } = useSession();
 
   const utils = trpc.useUtils();
   const tourId = params.id as string;

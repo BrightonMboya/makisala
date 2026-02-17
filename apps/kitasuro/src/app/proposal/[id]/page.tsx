@@ -74,16 +74,17 @@ export default async function ItineraryPage({ params }: Props) {
       notFound();
     }
 
-    // Transform proposal data to ItineraryData format
-    const transformedData = await transformProposalToItineraryData(proposal);
+    // Run transform and plan lookup in parallel — they're independent
+    const orgId = proposal.organizationId;
+    const [transformedData, orgPlan] = await Promise.all([
+      transformProposalToItineraryData(proposal),
+      orgId ? getOrgPlan(orgId) : null,
+    ]);
 
     if (!transformedData) {
       notFound();
     }
 
-    // Determine plan features for this proposal's organization
-    const orgId = proposal.organizationId;
-    const orgPlan = orgId ? await getOrgPlan(orgId) : null;
     const commentsEnabled = orgPlan ? orgPlan.limits.comments : false;
     const showWatermark = orgPlan ? !orgPlan.limits.noWatermark : true;
 

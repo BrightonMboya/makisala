@@ -14,8 +14,8 @@ import { DatePicker } from '@repo/ui/date-picker';
 import { CountryDropdown } from '@repo/ui/country-dropdown';
 import { useToast } from '@repo/ui/use-toast';
 import { trpc } from '@/lib/trpc';
-import { authClient } from '@/lib/auth-client';
 import { type RequestFormValues, requestSchema } from '@/lib/schemas/request';
+import { useSession } from './session-context';
 
 interface NewRequestDialogProps {
   open: boolean;
@@ -26,7 +26,7 @@ export function NewRequestDialog({ open, onOpenChange }: NewRequestDialogProps) 
   const router = useRouter();
   const { toast } = useToast();
   const utils = trpc.useUtils();
-  const { data: session } = authClient.useSession();
+  const { session } = useSession();
   const [isNewClient, setIsNewClient] = useState(false);
   const createClientMutation = trpc.clients.create.useMutation();
 

@@ -1,18 +1,68 @@
-'use client';
-
-import { useRef, useEffect, Suspense } from 'react';
-import { authClient } from '@/lib/auth-client';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { Suspense } from 'react';
 import { SidebarInset, SidebarProvider, SidebarTrigger } from '@repo/ui/sidebar';
+import { getSession } from '@/lib/session';
+import { createServerCaller } from '@/server/trpc/caller';
 import { AppSidebar } from '@/components/app-sidebar';
-import { toast } from '@repo/ui/use-toast';
 import { PlanProvider } from '@/components/plan-context';
+import { SessionProvider } from '@/components/session-context';
+import { DashboardClientShell } from './dashboard-client-shell';
 
-export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
+  const session = await getSession();
+
+  // Fetch sidebar data server-side to avoid flash of fallback UI
+  let sidebarData: {
+    orgName: string;
+    orgLogo: string | null;
+    userName: string;
+    userEmail: string;
+    userImage: string | null;
+  } | null = null;
+
+  if (session?.user) {
+    try {
+      const trpc = await createServerCaller();
+      const [org, userProfile] = await Promise.all([
+        trpc.settings.getOrg(),
+        trpc.settings.getCurrentUser(),
+      ]);
+      sidebarData = {
+        orgName: org?.name || 'Dashboard',
+        orgLogo: org?.logoUrl || null,
+        userName: userProfile?.name || session.user.name || '',
+        userEmail: session.user.email || '',
+        userImage: userProfile?.image || null,
+      };
+    } catch {
+      // Fallback if tRPC calls fail
+      sidebarData = {
+        orgName: 'Dashboard',
+        orgLogo: null,
+        userName: session.user.name || '',
+        userEmail: session.user.email || '',
+        userImage: session.user.image || null,
+      };
+    }
+  }
+
   return (
-    <Suspense fallback={<DashboardSkeleton />}>
-      <DashboardLayoutInner>{children}</DashboardLayoutInner>
-    </Suspense>
+    <SessionProvider>
+      <Suspense fallback={<DashboardSkeleton />}>
+        <DashboardClientShell>
+          <PlanProvider>
+            <SidebarProvider defaultOpen={true}>
+              <AppSidebar serverData={sidebarData} />
+              <SidebarInset className="bg-stone-50">
+                <header className="sticky top-0 z-10 flex h-14 items-center gap-4 border-b border-stone-200 bg-white/80 px-6 backdrop-blur-md">
+                  <SidebarTrigger className="-ml-1" />
+                </header>
+                <div className="min-h-screen">{children}</div>
+              </SidebarInset>
+            </SidebarProvider>
+          </PlanProvider>
+        </DashboardClientShell>
+      </Suspense>
+    </SessionProvider>
   );
 }
 
@@ -32,44 +82,5 @@ function DashboardSkeleton() {
         </div>
       </div>
     </div>
-  );
-}
-
-function DashboardLayoutInner({ children }: { children: React.ReactNode }) {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const hasShownVerificationToast = useRef(false);
-  const { data: session, isPending } = authClient.useSession();
-
-  // Show toast when user arrives after email verification
-  useEffect(() => {
-    if (searchParams.get('verified') === 'true' && !hasShownVerificationToast.current) {
-      hasShownVerificationToast.current = true;
-      toast('Email verified!', {
-        description: 'Your email has been verified successfully. Welcome to Kitasuro!',
-      });
-      // Clean up URL
-      const url = new URL(window.location.href);
-      url.searchParams.delete('verified');
-      window.history.replaceState({}, '', url.pathname);
-    }
-  }, [searchParams]);
-
-  if (!session && !isPending) {
-    router.push('/login');
-  }
-
-  return (
-    <PlanProvider>
-      <SidebarProvider defaultOpen={true}>
-        <AppSidebar />
-        <SidebarInset className="bg-stone-50">
-          <header className="sticky top-0 z-10 flex h-14 items-center gap-4 border-b border-stone-200 bg-white/80 px-6 backdrop-blur-md">
-            <SidebarTrigger className="-ml-1" />
-          </header>
-          <div className="min-h-screen">{children}</div>
-        </SidebarInset>
-      </SidebarProvider>
-    </PlanProvider>
   );
 }

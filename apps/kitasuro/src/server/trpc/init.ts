@@ -1,18 +1,9 @@
 import { initTRPC, TRPCError } from '@trpc/server';
-import { cache } from 'react';
 import { db } from '@repo/db';
 import { member } from '@repo/db/schema';
 import { and, eq } from 'drizzle-orm';
-import { headers } from 'next/headers';
-import { auth } from '@/lib/auth';
 import superjson from 'superjson';
-
-// Deduplicate session lookups within the same server request
-const getSession = cache(async () => {
-  return auth.api.getSession({
-    headers: await headers(),
-  });
-});
+import { getSession } from '@/lib/session';
 
 export async function createContext() {
   // Lazy session: only resolved when accessed, so public procedures skip the DB hit
