@@ -1,4 +1,5 @@
 import type { db as _dbType } from '@repo/db';
+import type { Context } from '../../init';
 import { createMockDb, type MockDb } from './mock-db';
 
 type Db = typeof _dbType;
@@ -22,7 +23,7 @@ const DEFAULT_ORG_ID = 'org-1';
 export function createPublicContext() {
   const db = createMockDb();
   return {
-    ctx: { session: null, db: db as unknown as Db },
+    ctx: { getSession: async () => null, db: db as unknown as Db } as unknown as Context,
     db,
   };
 }
@@ -41,14 +42,14 @@ export function createProtectedContext(opts?: {
 
   return {
     ctx: {
-      session: {
+      getSession: async () => ({
         user,
         session: { activeOrganizationId: orgId },
-      },
+      }),
       db: db as unknown as Db,
       user,
       orgId,
-    },
+    } as unknown as Context,
     db,
   };
 }

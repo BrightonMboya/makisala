@@ -455,14 +455,18 @@ export const accommodationsRelations = relations(accommodations, ({ many }) => (
 }));
 
 // ---------- ACCOMMODATION IMAGES (per master accommodation) ----------
-export const accommodationImages = pgTable('accommodation_images', {
-  id: uuid('id').defaultRandom().primaryKey(),
-  accommodationId: uuid('accommodation_id')
-    .notNull()
-    .references(() => accommodations.id, { onDelete: 'cascade' }),
-  bucket: text('bucket').notNull(),
-  key: text('key').notNull(),
-});
+export const accommodationImages = pgTable(
+  'accommodation_images',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    accommodationId: uuid('accommodation_id')
+      .notNull()
+      .references(() => accommodations.id, { onDelete: 'cascade' }),
+    bucket: text('bucket').notNull(),
+    key: text('key').notNull(),
+  },
+  (table) => [index('idx_accommodation_images_accommodation_id').on(table.accommodationId)],
+);
 
 export const accommodationImagesRelations = relations(accommodationImages, ({ one }) => ({
   accommodation: one(accommodations, {

@@ -5,6 +5,7 @@ import {
   ListObjectsV2Command,
 } from '@aws-sdk/client-s3';
 import { env } from './env';
+import { cfImage, type CfImageOptions } from './cf-image';
 
 export type StorageVisibility = 'public' | 'private';
 
@@ -67,10 +68,11 @@ export async function uploadToStorage({
   return result;
 }
 
-export function getPublicUrl(_bucket: string, key: string) {
-  // Bucket param kept for backwards compatibility but ignored - R2 uses single bucket
-  return `${env.R2_PUBLIC_URL}/${key}`;
+export function getPublicUrl(_bucket: string, key: string, options?: CfImageOptions) {
+  const rawUrl = `${env.R2_PUBLIC_URL}/${key}`;
+  return cfImage(rawUrl, options);
 }
+
 
 export async function deleteFromStorage(key: string): Promise<void> {
   await r2.send(
@@ -167,7 +169,7 @@ export async function listStorageImages(
       images.push({
         id: key,
         name,
-        url: `${env.R2_PUBLIC_URL}/${key}`,
+        url: cfImage(`${env.R2_PUBLIC_URL}/${key}`),
       });
     }
   }

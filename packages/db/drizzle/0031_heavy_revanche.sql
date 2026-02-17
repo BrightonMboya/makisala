@@ -1,0 +1,1 @@
+CREATE INDEX "idx_accommodation_images_accommodation_id" ON "accommodation_images" USING btree ("accommodation_id");

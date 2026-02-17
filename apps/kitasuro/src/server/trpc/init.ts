@@ -1,4 +1,5 @@
 import { initTRPC, TRPCError } from '@trpc/server';
+import { cache } from 'react';
 import { db } from '@repo/db';
 import { member } from '@repo/db/schema';
 import { and, eq } from 'drizzle-orm';
@@ -6,11 +7,16 @@ import { headers } from 'next/headers';
 import { auth } from '@/lib/auth';
 import superjson from 'superjson';
 
-export async function createContext() {
-  const session = await auth.api.getSession({
+// Deduplicate session lookups within the same server request
+const getSession = cache(async () => {
+  return auth.api.getSession({
     headers: await headers(),
   });
-  return { session, db };
+});
+
+export async function createContext() {
+  // Lazy session: only resolved when accessed, so public procedures skip the DB hit
+  return { getSession, db };
 }
 
 export type Context = Awaited<ReturnType<typeof createContext>>;
@@ -44,18 +50,19 @@ async function resolveOrgId(dbInstance: typeof db, userId: string, sessionOrgId?
 }
 
 export const protectedProcedure = t.procedure.use(async ({ ctx, next }) => {
-  if (!ctx.session?.user) {
+  const session = await ctx.getSession();
+  if (!session?.user) {
     throw new TRPCError({ code: 'UNAUTHORIZED', message: 'Not authenticated' });
   }
 
   const orgId = await resolveOrgId(
     ctx.db,
-    ctx.session.user.id,
-    ctx.session.session?.activeOrganizationId as string | undefined,
+    session.user.id,
+    session.session?.activeOrganizationId as string | undefined,
   );
 
   return next({
-    ctx: { ...ctx, user: ctx.session.user, orgId },
+    ctx: { ...ctx, session, user: session.user, orgId },
   });
 });
 

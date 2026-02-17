@@ -74,20 +74,12 @@ export const accommodationsRouter = router({
   getById: publicProcedure
     .input(z.object({ id: z.string() }))
     .query(async ({ ctx, input }) => {
-      const [acc] = await ctx.db
-        .select()
-        .from(accommodations)
-        .where(eq(accommodations.id, input.id))
-        .limit(1);
-
-      if (!acc) return null;
-
-      const images = await ctx.db
-        .select()
-        .from(accommodationImages)
-        .where(eq(accommodationImages.accommodationId, input.id));
-
-      return { ...acc, images };
+      return (
+        (await ctx.db.query.accommodations.findFirst({
+          where: eq(accommodations.id, input.id),
+          with: { images: true },
+        })) ?? null
+      );
     }),
 
   // Lightweight lookup for itinerary builder (first image only)

@@ -1,11 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import Image from 'next/image';
 import { Dialog, DialogContent } from '@repo/ui/dialog';
 import { Button } from '@repo/ui/button';
 import { ChevronLeft, ChevronRight, X, Maximize2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { cfImage } from '@/lib/cf-image';
 
 interface ImageGalleryProps {
   images: { id: string; url: string }[];
@@ -13,9 +14,84 @@ interface ImageGalleryProps {
   className?: string;
 }
 
+function BlurImage({
+  src,
+  alt,
+  fill,
+  className,
+  priority,
+  sizes,
+}: {
+  src: string;
+  alt: string;
+  fill?: boolean;
+  className?: string;
+  priority?: boolean;
+  sizes?: string;
+}) {
+  const [loaded, setLoaded] = useState(false);
+  const blurSrc = cfImage(src, { width: 20, quality: 10, format: 'webp', sharpen: 0 });
+
+  const handleLoad = useCallback(() => setLoaded(true), []);
+
+  return (
+    <>
+      {/* Tiny blurred placeholder */}
+      {!loaded && (
+        <img
+          src={blurSrc}
+          alt=""
+          aria-hidden
+          className={cn(className, 'absolute inset-0 h-full w-full scale-110 blur-xl')}
+        />
+      )}
+      {/* Full image */}
+      <Image
+        src={src}
+        alt={alt}
+        fill={fill}
+        className={cn(className, 'transition-opacity duration-300', loaded ? 'opacity-100' : 'opacity-0')}
+        priority={priority}
+        sizes={sizes}
+        onLoad={handleLoad}
+      />
+    </>
+  );
+}
+
+function usePreloadImages(images: { url: string }[], currentIndex: number) {
+  useEffect(() => {
+    if (images.length <= 1) return;
+
+    const toPreload = [
+      images[(currentIndex + 1) % images.length],
+      images[(currentIndex - 1 + images.length) % images.length],
+    ];
+
+    const links: HTMLLinkElement[] = [];
+    for (const img of toPreload) {
+      if (!img) continue;
+      const link = document.createElement('link');
+      link.rel = 'preload';
+      link.as = 'image';
+      link.href = img.url;
+      document.head.appendChild(link);
+      links.push(link);
+    }
+
+    return () => {
+      for (const link of links) {
+        link.remove();
+      }
+    };
+  }, [images, currentIndex]);
+}
+
 export function ImageGallery({ images, accommodationName, className }: ImageGalleryProps) {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
+
+  usePreloadImages(images, currentImageIndex);
 
   if (images.length === 0) {
     return (
@@ -41,11 +117,11 @@ export function ImageGallery({ images, accommodationName, className }: ImageGall
     <>
       <div className={cn("relative h-full w-full overflow-hidden", className)}>
         {/* Main Image */}
-        <div 
+        <div
           className="relative h-full w-full cursor-pointer"
           onClick={() => setIsLightboxOpen(true)}
         >
-          <Image
+          <BlurImage
             src={currentImage.url}
             alt={`${accommodationName} - Image ${currentImageIndex + 1}`}
             fill
@@ -53,7 +129,7 @@ export function ImageGallery({ images, accommodationName, className }: ImageGall
             priority
             sizes="(max-width: 1024px) 100vw, 50vw"
           />
-          
+
           {/* Overlay Gradient for contrast if needed */}
           <div className="absolute inset-0 bg-black/10 transition-colors hover:bg-black/0" />
 
@@ -126,7 +202,7 @@ export function ImageGallery({ images, accommodationName, className }: ImageGall
             </Button>
 
             <div className="relative h-full w-full">
-              <Image
+              <BlurImage
                 src={currentImage.url}
                 alt={`${accommodationName} - Fullscreen`}
                 fill
@@ -134,7 +210,7 @@ export function ImageGallery({ images, accommodationName, className }: ImageGall
                 priority
               />
             </div>
-            
+
             <div className="absolute bottom-4 left-1/2 -translate-x-1/2 text-white">
                {currentImageIndex + 1} / {images.length}
             </div>

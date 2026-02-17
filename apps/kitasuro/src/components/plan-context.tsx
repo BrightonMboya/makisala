@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import type { PlanTier, PlanLimits, Feature } from '@/lib/plans-config';
 
 interface PlanInfo {
@@ -26,6 +26,7 @@ const PlanContext = createContext<PlanContextType | undefined>(undefined);
 export function PlanProvider({ children }: { children: ReactNode }) {
   const [plan, setPlan] = useState<PlanInfo | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const hasFetched = useRef(false);
 
   const fetchPlan = useCallback(async (bustCache = false) => {
     try {
@@ -44,6 +45,8 @@ export function PlanProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
+    if (hasFetched.current) return;
+    hasFetched.current = true;
     fetchPlan();
   }, [fetchPlan]);
 
