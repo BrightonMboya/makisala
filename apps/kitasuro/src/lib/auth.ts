@@ -41,6 +41,7 @@ function sanitizeSlug(input: string): string {
 
 export const auth = betterAuth({
   baseURL: env.NEXT_PUBLIC_APP_URL,
+  trustedOrigins: [env.NEXT_PUBLIC_APP_URL],
   database: drizzleAdapter(db, {
     provider: 'pg',
   }),
