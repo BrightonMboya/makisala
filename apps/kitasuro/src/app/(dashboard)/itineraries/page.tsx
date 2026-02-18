@@ -11,11 +11,11 @@ import { useRouter } from 'next/navigation';
 import { trpc } from '@/lib/trpc';
 import { staleTimes } from '@/lib/query-keys';
 import type { RequestItem } from '@/types/dashboard';
-import { authClient } from '@/lib/auth-client';
+import { useSession } from '@/components/session-context';
 
 export default function ItinerariesPage() {
   const router = useRouter();
-  const { data: session } = authClient.useSession();
+  const { session } = useSession();
 
   const { data: proposals = [], isLoading } = trpc.proposals.listForDashboard.useQuery(
     { filter: 'all' },

@@ -8,10 +8,9 @@ import KuduTheme from '@/components/themes/kudu';
 import DiscoveryTheme from '@/components/themes/DiscoveryTheme';
 import { CommentsProvider } from '@/components/comments/CommentsProvider';
 import { CommentsOverlay } from '@/components/comments/CommentsOverlay';
-import { PDFDownloadButton } from '@/components/pdf-download-button';
 import { createServerCaller } from '@/server/trpc/caller';
 import { transformProposalToItineraryData } from '@/lib/proposal-transform';
-import { getOrgPlan, PLAN_CONFIG } from '@/lib/plans';
+import { getOrgPlan } from '@/lib/plans';
 
 type Props = {
   params: Promise<{ id: string }>;
@@ -74,16 +73,16 @@ export default async function ItineraryPage({ params }: Props) {
       notFound();
     }
 
-    // Transform proposal data to ItineraryData format
-    const transformedData = await transformProposalToItineraryData(proposal);
+    const orgId = proposal.organizationId;
+    const [transformedData, orgPlan] = await Promise.all([
+      transformProposalToItineraryData(proposal),
+      orgId ? getOrgPlan(orgId) : null,
+    ]);
 
     if (!transformedData) {
       notFound();
     }
 
-    // Determine plan features for this proposal's organization
-    const orgId = proposal.organizationId;
-    const orgPlan = orgId ? await getOrgPlan(orgId) : null;
     const commentsEnabled = orgPlan ? orgPlan.limits.comments : false;
     const showWatermark = orgPlan ? !orgPlan.limits.noWatermark : true;
 
@@ -100,7 +99,7 @@ export default async function ItineraryPage({ params }: Props) {
             <MinimalisticTheme data={transformedData} />
           )}
           {showWatermark && (
-            <div className="fixed bottom-4 right-4 z-40 rounded-full bg-black/70 px-4 py-2 text-xs text-white shadow-lg backdrop-blur-sm">
+            <div className="fixed right-4 bottom-4 z-40 rounded-full bg-black/70 px-4 py-2 text-xs text-white shadow-lg backdrop-blur-sm">
               Powered by Kitasuro
             </div>
           )}

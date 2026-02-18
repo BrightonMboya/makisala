@@ -17,29 +17,36 @@ import {
   SidebarRail,
 } from '@repo/ui/sidebar';
 import { useQueryClient } from '@tanstack/react-query';
-import { authClient, useActiveOrganization } from '@/lib/auth-client';
+import { authClient } from '@/lib/auth-client';
 import { trpc } from '@/lib/trpc';
 import { NewRequestDialog } from './new-request-dialog';
 
-export function AppSidebar() {
+interface SidebarServerData {
+  orgName: string;
+  orgLogo: string | null;
+  userName: string;
+  userEmail: string;
+  userImage: string | null;
+}
+
+export function AppSidebar({ serverData }: { serverData?: SidebarServerData | null }) {
   const pathname = usePathname();
   const router = useRouter();
   const queryClient = useQueryClient();
-  const { data: session } = authClient.useSession();
-  const { data: activeOrg } = useActiveOrganization();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
+  // Use client queries as live data source (will update if user changes profile/org)
+  // but initialize from server data to avoid flash
   const { data: orgSettings } = trpc.settings.getOrg.useQuery();
-
   const { data: userProfile } = trpc.settings.getCurrentUser.useQuery();
 
-  // Get org info from active organization
-  const orgName = activeOrg?.name || 'Dashboard';
-  const orgLogo = orgSettings?.logoUrl;
+  // Prefer fresh client data when available, fall back to server-rendered data
+  const orgName = orgSettings?.name || serverData?.orgName || 'Dashboard';
+  const orgLogo = orgSettings?.logoUrl || serverData?.orgLogo;
   const orgInitial = orgName[0]?.toUpperCase();
-  const userName = userProfile?.name || session?.user?.name || '';
-  const userEmail = session?.user?.email || '';
-  const userImage = userProfile?.image;
+  const userName = userProfile?.name || serverData?.userName || '';
+  const userEmail = serverData?.userEmail || '';
+  const userImage = userProfile?.image || serverData?.userImage;
 
   const handleSignOut = async () => {
     queryClient.clear();

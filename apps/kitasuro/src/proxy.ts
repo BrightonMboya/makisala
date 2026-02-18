@@ -1,15 +1,11 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 export default async function proxy(request: NextRequest) {
-    const sessionResponse = await fetch(`${request.nextUrl.origin}/api/auth/get-session`, {
-        headers: {
-            cookie: request.headers.get("cookie") || "",
-        },
-    });
+    // Lightweight cookie check — no DB/network call.
+    // Full session validation happens client-side via useSession() in the layout.
+    const hasSession = request.cookies.has("better-auth.session_token");
 
-    const session = await sessionResponse.json();
-
-    if (!session) {
+    if (!hasSession) {
         return NextResponse.redirect(new URL("/login", request.url));
     }
     return NextResponse.next();

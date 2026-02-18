@@ -12,8 +12,8 @@ import {
 import { trpc } from '@/lib/trpc';
 import { useQueryClient } from '@tanstack/react-query';
 import { staleTimes } from '@/lib/query-keys';
-import { authClient } from '@/lib/auth-client';
 import { useToast } from '@repo/ui/use-toast';
+import { useSession } from '@/components/session-context';
 import { useState, useMemo, useDeferredValue } from 'react';
 import {
   Dialog,
@@ -27,7 +27,7 @@ import TourCard from '../_components/tour-card';
 export default function ToursPage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { data: session } = authClient.useSession();
+  const { session } = useSession();
   const [isTemplateDialogOpen, setIsTemplateDialogOpen] = useState(false);
   const [cloningId, setCloningId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');

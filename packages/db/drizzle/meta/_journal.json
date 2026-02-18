@@ -211,6 +211,20 @@
       "when": 1770920030906,
       "tag": "0029_wooden_molten_man",
       "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1771275899076,
+      "tag": "0030_square_joseph",
+      "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1771345167994,
+      "tag": "0031_heavy_revanche",
+      "breakpoints": true
     }
   ]
 }

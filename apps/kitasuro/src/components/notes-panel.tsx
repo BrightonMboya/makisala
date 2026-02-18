@@ -19,7 +19,7 @@ import { toast } from '@repo/ui/toast';
 import { formatDistanceToNow } from 'date-fns';
 import { MentionTextarea, type TeamMember } from './mention-textarea';
 import { HighlightedText } from './highlighted-text';
-import { authClient } from '@/lib/auth-client';
+import { useSession } from './session-context';
 import { cn } from '@/lib/utils';
 
 const MAX_REPLY_DEPTH = 3;
@@ -51,7 +51,7 @@ export function NotesPanel({ proposalId, compact = false }: NotesPanelProps) {
   const [replyContent, setReplyContent] = useState('');
   const [replyMentionedUserIds, setReplyMentionedUserIds] = useState<string[]>([]);
   const [expandedNotes, setExpandedNotes] = useState<Set<string>>(new Set());
-  const { data: session } = authClient.useSession();
+  const { session } = useSession();
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const loadMoreRef = useRef<HTMLDivElement>(null);
 

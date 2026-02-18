@@ -1,6 +1,6 @@
 {
-  "id": "5f327a18-4a5e-4e5b-8e3e-f831d8d1a2ee",
-  "prevId": "44b11cf5-c65f-4f6c-beb3-b511d11772f5",
+  "id": "48bb67b3-ec4a-4091-adcd-a066c889e745",
+  "prevId": "33eca2c4-b2ee-4eb6-bed1-e3deb769ee44",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -34,7 +34,23 @@
           "notNull": true
         }
       },
-      "indexes": {},
+      "indexes": {
+        "idx_accommodation_images_accommodation_id": {
+          "name": "idx_accommodation_images_accommodation_id",
+          "columns": [
+            {
+              "expression": "accommodation_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
       "foreignKeys": {
         "accommodation_images_accommodation_id_accommodations_id_fk": {
           "name": "accommodation_images_accommodation_id_accommodations_id_fk",
@@ -129,6 +145,12 @@
         },
         "pricing_info": {
           "name": "pricing_info",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "country": {
+          "name": "country",
           "type": "text",
           "primaryKey": false,
           "notNull": false
@@ -1520,7 +1542,38 @@
           "default": "now()"
         }
       },
-      "indexes": {},
+      "indexes": {
+        "idx_organizations_polar_subscription_id": {
+          "name": "idx_organizations_polar_subscription_id",
+          "columns": [
+            {
+              "expression": "polar_subscription_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "idx_organizations_trial_ends_at": {
+          "name": "idx_organizations_trial_ends_at",
+          "columns": [
+            {
+              "expression": "trial_ends_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
       "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
@@ -1886,6 +1939,143 @@
             "id"
           ],
           "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.proposal_assignments": {
+      "name": "proposal_assignments",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "proposal_id": {
+          "name": "proposal_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "assigned_by": {
+          "name": "assigned_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp(3)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "CURRENT_TIMESTAMP"
+        }
+      },
+      "indexes": {
+        "proposal_assignments_proposal_user_idx": {
+          "name": "proposal_assignments_proposal_user_idx",
+          "columns": [
+            {
+              "expression": "proposal_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "proposal_assignments_proposal_idx": {
+          "name": "proposal_assignments_proposal_idx",
+          "columns": [
+            {
+              "expression": "proposal_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "proposal_assignments_user_idx": {
+          "name": "proposal_assignments_user_idx",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "proposal_assignments_proposal_id_proposals_id_fk": {
+          "name": "proposal_assignments_proposal_id_proposals_id_fk",
+          "tableFrom": "proposal_assignments",
+          "tableTo": "proposals",
+          "columnsFrom": [
+            "proposal_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "proposal_assignments_user_id_user_id_fk": {
+          "name": "proposal_assignments_user_id_user_id_fk",
+          "tableFrom": "proposal_assignments",
+          "tableTo": "user",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "proposal_assignments_assigned_by_user_id_fk": {
+          "name": "proposal_assignments_assigned_by_user_id_fk",
+          "tableFrom": "proposal_assignments",
+          "tableTo": "user",
+          "columnsFrom": [
+            "assigned_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
           "onUpdate": "no action"
         }
       },

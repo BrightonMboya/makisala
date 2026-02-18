@@ -11,14 +11,14 @@ import { staleTimes } from '@/lib/query-keys';
 import type { AssignedUser, RequestItem } from '@/types/dashboard';
 import { checkOnboardingStatus } from '@/lib/onboarding';
 import { Onboarding } from '../_components/onboarding';
-import { authClient } from '@/lib/auth-client';
 import { NotesPanel } from '@/components/notes-panel';
 import { ProposalAssignPopover } from '@/components/proposal-assign-popover';
+import { useSession } from '@/components/session-context';
 
 export default function DashboardPage() {
   const router = useRouter();
   const utils = trpc.useUtils();
-  const { data: session } = authClient.useSession();
+  const { session } = useSession();
   const userId = session?.user?.id;
   const [searchQuery, setSearchQuery] = useState('');
   const debouncedQuery = useDebounce(searchQuery, 300);

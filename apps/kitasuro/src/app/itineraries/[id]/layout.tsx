@@ -17,6 +17,8 @@ import { useMutation } from '@tanstack/react-query';
 import { trpc } from '@/lib/trpc';
 import { toast } from '@repo/ui/toast';
 import { useProposalData, useClientData } from '@/lib/hooks/use-proposal-data';
+import { SessionProvider } from '@/components/session-context';
+import { PlanProvider } from '@/components/plan-context';
 
 function Header() {
   const pathname = usePathname();
@@ -385,9 +387,13 @@ function BuilderLayoutContent({ children }: { children: React.ReactNode }) {
 
 export default function BuilderLayout({ children }: { children: React.ReactNode }) {
   return (
-    <Suspense fallback={<BuilderLayoutSkeleton />}>
-      <BuilderLayoutInner>{children}</BuilderLayoutInner>
-    </Suspense>
+    <SessionProvider>
+      <PlanProvider>
+        <Suspense fallback={<BuilderLayoutSkeleton />}>
+          <BuilderLayoutInner>{children}</BuilderLayoutInner>
+        </Suspense>
+      </PlanProvider>
+    </SessionProvider>
   );
 }
 

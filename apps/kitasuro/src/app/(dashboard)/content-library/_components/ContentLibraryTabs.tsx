@@ -7,7 +7,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@repo/ui/tabs';
 import { AccommodationSelector } from './AccommodationSelector';
 import { SearchInput } from './SearchInput';
 import { OrganizationImages } from './OrganizationImages';
-import { usePlan } from '@/components/plan-context';
 import { UpgradePrompt } from '@/components/upgrade-prompt';
 
 interface Accommodation {
@@ -37,6 +36,7 @@ interface ContentLibraryTabsProps {
   organizationImages: OrganizationImage[];
   organizationImagesNextCursor: string | null;
   query?: string;
+  canUploadImages: boolean;
 }
 
 export function ContentLibraryTabs({
@@ -45,9 +45,8 @@ export function ContentLibraryTabs({
   organizationImages,
   organizationImagesNextCursor,
   query,
+  canUploadImages,
 }: ContentLibraryTabsProps) {
-  const { canAccess } = usePlan();
-  const canUploadImages = canAccess('uploadImages');
 
   return (
     <Tabs defaultValue="my-images" className="w-full">
