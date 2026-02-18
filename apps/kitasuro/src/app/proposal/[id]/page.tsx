@@ -11,6 +11,7 @@ import { CommentsOverlay } from '@/components/comments/CommentsOverlay';
 import { createServerCaller } from '@/server/trpc/caller';
 import { transformProposalToItineraryData } from '@/lib/proposal-transform';
 import { getOrgPlan } from '@/lib/plans';
+import { log, serializeError } from '@/lib/logger';
 
 type Props = {
   params: Promise<{ id: string }>;
@@ -107,7 +108,7 @@ export default async function ItineraryPage({ params }: Props) {
       </CommentsProvider>
     );
   } catch (err) {
-    console.error('Error loading proposal:', err);
+    log.error('Error loading proposal', { error: serializeError(err) });
     notFound();
   }
 }

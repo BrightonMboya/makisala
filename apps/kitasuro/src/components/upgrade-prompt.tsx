@@ -28,7 +28,6 @@ export function UpgradePrompt({
     try {
       await checkout({ slug: upgradeToTier });
     } catch (error) {
-      console.error('Checkout failed:', error);
       setIsCheckingOut(false);
     }
   };

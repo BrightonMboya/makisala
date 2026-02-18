@@ -7,6 +7,7 @@ import { resend } from '@repo/resend';
 import { auth } from '@/lib/auth';
 import { headers } from 'next/headers';
 import { env } from '@/lib/env';
+import { serializeError } from '@/lib/logger';
 
 // Helper to get organization ID from session or member table
 async function getOrganizationId(session: Awaited<ReturnType<typeof auth.api.getSession>>): Promise<string | null> {
@@ -101,7 +102,7 @@ export const POST = withAxiom(async (request: AxiomRequest) => {
     });
 
     if (result.error) {
-      request.log.error('Resend API error', { error: result.error });
+      request.log.error('Resend API error', { error: serializeError(result.error) });
       return NextResponse.json(
         { success: false, error: result.error.message || 'Failed to send email' },
         { status: 500 },
@@ -110,7 +111,8 @@ export const POST = withAxiom(async (request: AxiomRequest) => {
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    request.log.error('Error sending proposal email', { error: String(error) });
+    request.log.error('Error sending proposal email', { error: serializeError(error) });
+    await request.log.flush();
     return NextResponse.json({ success: false, error: 'Failed to send email' }, { status: 500 });
   }
 });

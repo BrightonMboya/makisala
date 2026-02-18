@@ -81,7 +81,7 @@ export function BillingSettings() {
         });
       }
     } catch (error) {
-      console.error('Failed to fetch customer state:', error);
+      // Server-side logging handled by API route
     } finally {
       setIsLoadingCustomer(false);
     }
@@ -117,7 +117,6 @@ export function BillingSettings() {
     try {
       await checkout({ slug });
     } catch (error) {
-      console.error('Checkout failed:', error);
       toast({ title: 'Failed to start checkout', variant: 'destructive' });
       setCheckingOutSlug(null);
     }
@@ -128,7 +127,6 @@ export function BillingSettings() {
     try {
       await customer.portal();
     } catch (error) {
-      console.error('Failed to open portal:', error);
       toast({ title: 'Failed to open billing portal', variant: 'destructive' });
       setIsOpeningPortal(false);
     }

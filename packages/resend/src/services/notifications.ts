@@ -175,7 +175,7 @@ export async function sendCommentNotificationEmail(
     });
 
     if (result.error) {
-      console.error('Resend API error:', result.error);
+      // Error details returned to caller for centralized logging
       return {
         success: false,
         error: result.error.message || 'Failed to send email',
@@ -184,7 +184,7 @@ export async function sendCommentNotificationEmail(
 
     return { success: true };
   } catch (error) {
-    console.error('Error sending comment notification email:', error);
+    // Error details returned to caller for centralized logging
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error occurred',
@@ -230,7 +230,7 @@ export async function sendProposalShareEmail(
     });
 
     if (result.error) {
-      console.error('Resend API error:', result.error);
+      // Error details returned to caller for centralized logging
       return {
         success: false,
         error: result.error.message || 'Failed to send email',
@@ -239,7 +239,7 @@ export async function sendProposalShareEmail(
 
     return { success: true };
   } catch (error) {
-    console.error('Error sending proposal share email:', error);
+    // Error details returned to caller for centralized logging
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error occurred',
@@ -298,7 +298,7 @@ export async function sendProposalAcceptanceEmail(
     });
 
     if (result.error) {
-      console.error('Resend API error:', result.error);
+      // Error details returned to caller for centralized logging
       return {
         success: false,
         error: result.error.message || 'Failed to send email',
@@ -307,7 +307,7 @@ export async function sendProposalAcceptanceEmail(
 
     return { success: true };
   } catch (error) {
-    console.error('Error sending proposal acceptance email:', error);
+    // Error details returned to caller for centralized logging
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error occurred',
@@ -350,7 +350,7 @@ export async function sendTeamInvitationEmail(
     });
 
     if (result.error) {
-      console.error('Resend API error:', result.error);
+      // Error details returned to caller for centralized logging
       return {
         success: false,
         error: result.error.message || 'Failed to send email',
@@ -359,7 +359,7 @@ export async function sendTeamInvitationEmail(
 
     return { success: true };
   } catch (error) {
-    console.error('Error sending team invitation email:', error);
+    // Error details returned to caller for centralized logging
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error occurred',
@@ -395,7 +395,7 @@ export async function sendEmailVerificationEmail(
     });
 
     if (result.error) {
-      console.error('Resend API error:', result.error);
+      // Error details returned to caller for centralized logging
       return {
         success: false,
         error: result.error.message || 'Failed to send email',
@@ -404,7 +404,7 @@ export async function sendEmailVerificationEmail(
 
     return { success: true };
   } catch (error) {
-    console.error('Error sending email verification email:', error);
+    // Error details returned to caller for centralized logging
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error occurred',
@@ -459,7 +459,7 @@ export async function sendNoteMentionEmail(
     });
 
     if (result.error) {
-      console.error('Resend API error:', result.error);
+      // Error details returned to caller for centralized logging
       return {
         success: false,
         error: result.error.message || 'Failed to send email',
@@ -468,7 +468,7 @@ export async function sendNoteMentionEmail(
 
     return { success: true };
   } catch (error) {
-    console.error('Error sending note mention email:', error);
+    // Error details returned to caller for centralized logging
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error occurred',

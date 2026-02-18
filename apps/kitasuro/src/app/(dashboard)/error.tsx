@@ -16,6 +16,7 @@ export default function DashboardError({
     log.error('Dashboard error boundary', {
       message: error.message,
       digest: error.digest,
+      stack: error.stack,
     });
   }, [error, log]);
 

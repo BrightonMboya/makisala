@@ -15,7 +15,9 @@ function handler(req: Request) {
           path,
           code: error.code,
           message: error.message,
+          stack: error.stack,
         });
+        log.flush();
       }
     },
   });

@@ -9,6 +9,7 @@ import { sendEmailVerificationEmail, sendTeamInvitationEmail } from '@repo/resen
 import { and, eq } from 'drizzle-orm';
 import { randomBytes } from 'crypto';
 import { env } from './env';
+import { log, serializeError } from './logger';
 import type { PlanTier } from './plans-config';
 
 // Initialize Polar client
@@ -62,7 +63,7 @@ export const auth = betterAuth({
           userName: user.name,
           verificationUrl: verificationUrl.toString(),
         }).catch((error) => {
-          console.error('Failed to send verification email:', error);
+          log.warn('Failed to send verification email', { error: serializeError(error) });
         });
       });
     },

@@ -16,6 +16,7 @@ export default function Error({
     log.error('Page error boundary', {
       message: error.message,
       digest: error.digest,
+      stack: error.stack,
     });
   }, [error, log]);
 

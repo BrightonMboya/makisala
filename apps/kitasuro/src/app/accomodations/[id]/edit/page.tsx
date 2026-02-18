@@ -5,6 +5,7 @@ import { Button } from '@repo/ui/button'
 import { notFound } from 'next/navigation'
 import { createServerCaller } from '@/server/trpc/caller'
 import AccomodationForm from '../../_components/AccomodationForm'
+import { log } from '@/lib/logger'
 
 
 export default async function EditAccomodationPage({
@@ -16,7 +17,7 @@ export default async function EditAccomodationPage({
     const id = resolvedParams?.id
 
     if (!id) {
-        console.error("No ID provided to EditAccomodationPage")
+        log.error('No ID provided to EditAccomodationPage')
         notFound()
     }
 

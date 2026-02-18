@@ -16,6 +16,7 @@ export default function GlobalError({
     log.error('Global error boundary', {
       message: error.message,
       digest: error.digest,
+      stack: error.stack,
     });
   }, [error, log]);
 

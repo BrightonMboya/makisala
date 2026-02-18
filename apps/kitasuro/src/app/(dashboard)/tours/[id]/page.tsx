@@ -691,7 +691,6 @@ function AsyncSelectWithSearch({
         }
       })
       .catch((error) => {
-        console.error('Search error:', error);
         if (!cancelled) {
           setOptions([]);
         }

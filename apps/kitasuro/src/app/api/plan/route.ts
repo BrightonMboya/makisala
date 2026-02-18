@@ -5,6 +5,7 @@ import { headers } from 'next/headers';
 import { db, member } from '@repo/db';
 import { and, eq } from 'drizzle-orm';
 import { getOrgPlan } from '@/lib/plans';
+import { serializeError } from '@/lib/logger';
 
 export const GET = withAxiom(async (request: AxiomRequest) => {
   try {
@@ -63,7 +64,8 @@ export const GET = withAxiom(async (request: AxiomRequest) => {
       },
     );
   } catch (error) {
-    request.log.error('Error fetching plan', { error: String(error) });
+    request.log.error('Error fetching plan', { error: serializeError(error) });
+    await request.log.flush();
     if (error instanceof Error && error.message.includes('connect')) {
       return NextResponse.json({ error: 'Service unavailable' }, { status: 503 });
     }

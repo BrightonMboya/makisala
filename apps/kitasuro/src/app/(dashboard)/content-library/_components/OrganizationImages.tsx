@@ -119,7 +119,6 @@ export function OrganizationImages({ initialImages, initialNextCursor }: Organiz
           queryClient.invalidateQueries({ queryKey: queryKeys.organizationImages });
         }
       } catch (err) {
-        console.error('Error uploading image:', err);
         setError('Failed to upload image');
       }
     }

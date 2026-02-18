@@ -33,6 +33,7 @@ const loggerMiddleware = t.middleware(async ({ path, type, next, ctx }) => {
       error: {
         code: result.error.code,
         message: result.error.message,
+        cause: result.error.cause,
       },
     });
   }

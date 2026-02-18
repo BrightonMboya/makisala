@@ -25,7 +25,7 @@ export function PDFDownloadButton({ proposalId, title }: { proposalId: string; t
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
     } catch (error) {
-      console.error('Failed to download PDF:', error);
+      // Server-side logging handled by API route
     } finally {
       setIsDownloading(false);
     }

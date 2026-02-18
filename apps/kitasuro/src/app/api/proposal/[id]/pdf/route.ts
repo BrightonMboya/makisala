@@ -10,6 +10,7 @@ import { auth } from '@/lib/auth';
 import { headers } from 'next/headers';
 import { z } from 'zod';
 import { checkFeatureAccess } from '@/lib/plans';
+import { serializeError } from '@/lib/logger';
 
 // Helper to get organization ID from session or member table
 async function getOrganizationId(session: Awaited<ReturnType<typeof auth.api.getSession>>): Promise<string | null> {
@@ -129,7 +130,8 @@ export const GET = withAxiom(async (
       },
     });
   } catch (error) {
-    request.log.error('Error generating PDF', { error: String(error) });
+    request.log.error('Error generating PDF', { error: serializeError(error) });
+    await request.log.flush();
     return NextResponse.json(
       { error: 'Failed to generate PDF' },
       { status: 500 }
