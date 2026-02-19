@@ -13,7 +13,7 @@ export function Footer() {
               <span className="text-lg font-semibold tracking-tight font-heading">Kitasuro</span>
             </Link>
             <p className="max-w-xs text-sm text-muted-foreground">
-              The modern operating system for tour operators. Create beautiful proposals, manage itineraries, and grow your travel business.
+              Itinerary and proposal software for tour operators and travel agencies. Build, share, and close — all from one place.
             </p>
           </div>
           

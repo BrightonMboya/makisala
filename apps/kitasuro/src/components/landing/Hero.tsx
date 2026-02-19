@@ -16,21 +16,21 @@ export function Hero() {
         </div>
 
         <h1 className="text-foreground font-heading animate-in fade-in slide-in-from-bottom-6 fill-mode-both mb-6 max-w-4xl text-5xl font-bold tracking-tight delay-100 duration-1000 sm:text-7xl">
-          Create Proposals that converts <br className="hidden sm:block" />
+          Build itineraries in minutes, <br className="hidden sm:block" />
           <span className="from-foreground to-muted-foreground bg-gradient-to-r bg-clip-text text-transparent">
-            {/*Within Minutes and not hours*/}
+            not days
           </span>
         </h1>
 
         <p className="text-muted-foreground animate-in fade-in slide-in-from-bottom-8 fill-mode-both mb-10 max-w-2xl text-lg delay-200 duration-1000">
-          Create stunning itineraries, manage proposals, and close more deals. The all-in-one
-          platform designed to help you sell travel experiences effortlessly.
+          Drag, drop, and send polished travel proposals your clients will love. Kitasuro handles
+          the layout, pricing, and maps so you can focus on selling the trip.
         </p>
 
         <div className="animate-in fade-in slide-in-from-bottom-10 fill-mode-both flex flex-col items-center gap-4 delay-300 duration-1000 sm:flex-row">
           <Button asChild size="lg" className="h-12 rounded-full px-8 text-base">
-            <Link href="/register">
-              Start for free <ArrowRight className="ml-2 h-4 w-4" />
+            <Link href="/sign-up">
+              Create your first itinerary <ArrowRight className="ml-2 h-4 w-4" />
             </Link>
           </Button>
           <Button
@@ -39,7 +39,7 @@ export function Hero() {
             size="lg"
             className="bg-background/50 hover:bg-muted/80 h-12 rounded-full px-8 text-base backdrop-blur-sm"
           >
-            <Link href="/demo">View live demo</Link>
+            <Link href="https://proposals.makisala.com/proposal/tjksu">See a live proposal</Link>
           </Button>
         </div>
 
@@ -55,21 +55,21 @@ export function Hero() {
         </div>
 
         {/* Hero Image / UI Mockup */}
-        <div className="animate-in fade-in slide-in-from-bottom-12 relative mx-auto mt-20 w-full max-w-6xl delay-700 duration-1000">
-          <div className="border-border/50 bg-background/50 relative aspect-[16/9] overflow-hidden rounded-xl border shadow-2xl backdrop-blur-xl">
-            <div className="from-muted/20 absolute inset-0 bg-gradient-to-tr to-transparent"></div>
-            {/* Placeholder for actual screenshot */}
-            <div className="text-muted-foreground flex h-full w-full items-center justify-center">
-              <div className="text-center">
-                <p className="text-lg font-medium">Interactive Itinerary Builder UI</p>
-                <p className="text-sm">Drag & Drop • Smart Content • Beautiful Proposals</p>
-              </div>
-            </div>
-          </div>
-          {/* Decorative elements behind */}
-          <div className="bg-primary/20 absolute -right-10 -bottom-10 -z-10 h-64 w-64 rounded-full blur-3xl"></div>
-          <div className="absolute -top-10 -left-10 -z-10 h-64 w-64 rounded-full bg-blue-500/20 blur-3xl"></div>
-        </div>
+        {/*<div className="animate-in fade-in slide-in-from-bottom-12 relative mx-auto mt-20 w-full max-w-6xl delay-700 duration-1000">*/}
+        {/*  <div className="border-border/50 bg-background/50 relative aspect-[16/9] overflow-hidden rounded-xl border shadow-2xl backdrop-blur-xl">*/}
+        {/*    <div className="from-muted/20 absolute inset-0 bg-gradient-to-tr to-transparent"></div>*/}
+        {/*    /!* Placeholder for actual screenshot *!/*/}
+        {/*    <div className="text-muted-foreground flex h-full w-full items-center justify-center">*/}
+        {/*      <div className="text-center">*/}
+        {/*        <p className="text-lg font-medium">Interactive Itinerary Builder UI</p>*/}
+        {/*        <p className="text-sm">Drag & Drop • Smart Content • Beautiful Proposals</p>*/}
+        {/*      </div>*/}
+        {/*    </div>*/}
+        {/*  </div>*/}
+        {/*  /!* Decorative elements behind *!/*/}
+        {/*  <div className="bg-primary/20 absolute -right-10 -bottom-10 -z-10 h-64 w-64 rounded-full blur-3xl"></div>*/}
+        {/*  <div className="absolute -top-10 -left-10 -z-10 h-64 w-64 rounded-full bg-blue-500/20 blur-3xl"></div>*/}
+        {/*</div>*/}
       </div>
     </div>
   );

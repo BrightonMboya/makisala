@@ -10,35 +10,38 @@ import Link from 'next/link';
 export default function LandingPage() {
   const coreFeatures = [
     {
-      title: 'Smart Itinerary Builder',
-      description: 'Drag-and-drop interface to build stunning itineraries in minutes, not hours.',
+      title: 'Drag-and-Drop Builder',
+      description:
+        'Add accommodations, activities, and transfers. Rearrange days with a drag. Your itinerary stays organized.',
       icon: Compass,
     },
     {
-      title: 'Curated Content Library',
+      title: 'Ready-Made Content',
       description:
-        'Access thousands of high-quality images and descriptions for accommodations and activities.',
+        'Stop Googling for lodge photos. Pull from a library of verified images and descriptions for top destinations.',
       icon: Library,
     },
     {
-      title: 'Interactive Proposals',
+      title: 'Shareable Proposals',
       description:
-        'Share digital proposals that look great on any device and let clients comment directly.',
+        'Send a link, not a PDF attachment. Clients view, comment, and accept your proposal from any device.',
       icon: Share2,
     },
     {
-      title: 'Offline Access',
-      description: 'Your clients can access their itineraries even without an internet connection.',
+      title: 'Works Offline',
+      description: 'Your clients can pull up their itinerary mid-safari, even with no signal.',
       icon: Globe,
     },
     {
-      title: 'AI Assistance',
-      description: 'Generate descriptions and optimize routes with our built-in AI tools.',
+      title: 'AI Writing Assist',
+      description:
+        'Stuck on a description? Generate polished copy for any destination or activity in seconds.',
       icon: Sparkles,
     },
     {
-      title: 'Multiple Themes',
-      description: 'Choose from our collection of premium themes to match your brand identity.',
+      title: 'Your Brand, Your Look',
+      description:
+        'Pick a theme, add your logo, and match your brand colors. Every proposal looks like it came from your team.',
       icon: Layout,
     },
   ];
@@ -55,10 +58,10 @@ export default function LandingPage() {
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="mb-16 text-center">
               <h2 className="font-heading text-3xl font-bold tracking-tight sm:text-4xl">
-                Everything you need to scale
+                Less admin, more bookings
               </h2>
               <p className="text-muted-foreground mt-4 text-lg">
-                Powerful tools designed specifically for the workflow of modern tour operators.
+                Every tool a tour operator needs to go from enquiry to confirmed booking, faster.
               </p>
             </div>
             <FeatureGrid features={coreFeatures} />
@@ -68,30 +71,30 @@ export default function LandingPage() {
         {/* Deep Dive Feature 1: Builder */}
         <FeatureHighlight
           align="left"
-          title="Build complex itineraries with ease"
-          description="Our intuitive drag-and-drop builder handles all the logistics. Simply select accommodations, add activities, and let Kitasuro calculate travel times and route maps automatically."
+          title="Stop wrestling with Word docs and spreadsheets"
+          description="Drop in accommodations, slot in game drives, and rearrange the whole trip with a drag. Kitasuro calculates travel times, maps the route, and totals the pricing as you go."
           features={[
-            'Drag & drop reordering',
-            'Automatic route mapping',
+            'Drag & drop day reordering',
+            'Auto-generated route maps',
             'Day-by-day breakdowns',
-            'Pricing calculator',
+            'Built-in pricing calculator',
           ]}
           imageSrc="/img_1.png" // Placeholder
           imageAlt="Itinerary Builder Interface"
           ctaText="Try the builder"
-          ctaLink="/demo"
+          ctaLink="/login"
         />
 
         {/* Deep Dive Feature 2: Content Library */}
         <FeatureHighlight
           align="right"
-          title="World-class content at your fingertips"
-          description="Stop wasting time searching for high-res images or writing descriptions from scratch. Our integrated library gives you instant access to premium content for top destinations."
+          title="Every lodge photo and description, ready to go"
+          description="No more emailing lodges for updated photos or writing the same Serengeti description for the tenth time. Search, pick, and drop verified content straight into your itinerary."
           features={[
-            'Verified accommodation photos',
-            'Pre-written descriptions',
-            'Activity database',
-            'One-click import',
+            'High-res accommodation photos',
+            'Pre-written destination copy',
+            'Activity and excursion database',
+            'One-click import into any itinerary',
           ]}
           imageSrc="/proposal preview.png" // Placeholder
           imageAlt="Content Library Interface"
@@ -100,13 +103,13 @@ export default function LandingPage() {
         {/* Deep Dive Feature 3: Proposals */}
         <FeatureHighlight
           align="left"
-          title="Proposals that convert"
-          description="Send beautiful, interactive web-based proposals that wow your clients. Enable comments, track views, and let clients accept quotes directly from the page."
+          title="Send proposals clients actually respond to"
+          description="Forget flat PDFs that sit in inboxes. Share a live link where clients explore interactive maps, leave comments on specific days, and accept the quote — all in one place."
           features={[
-            'Mobile-responsive design',
-            'Interactive maps',
-            'Client commenting system',
-            'Digital acceptance & signatures',
+            'Looks great on phone, tablet, or desktop',
+            'Interactive route maps',
+            'Day-level client comments',
+            'One-click quote acceptance',
           ]}
           imageSrc="/proposal_preivew-1.png" // Placeholder
           imageAlt="Digital Proposal Example"
@@ -120,23 +123,24 @@ export default function LandingPage() {
           <div className="bg-primary/5 absolute inset-0"></div>
           <div className="relative mx-auto max-w-4xl px-4 text-center">
             <h2 className="font-heading mb-6 text-4xl font-bold tracking-tight sm:text-5xl">
-              Ready to transform your travel business?
+              Your next proposal could take 10 minutes, not 2 hours
             </h2>
             <p className="text-muted-foreground mb-10 text-xl">
-              Join hundreds of tour operators who are saving time and selling more with Kitasuro.
+              Sign up, build your first itinerary, and send it to a client today. No credit card
+              needed.
             </p>
             <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
               <Link
                 href="/sign-up"
                 className="bg-primary text-primary-foreground hover:bg-primary/90 focus-visible:ring-ring inline-flex h-12 items-center justify-center rounded-full px-8 text-sm font-medium shadow transition-colors focus-visible:ring-1 focus-visible:outline-none"
               >
-                Start your 14-day free trial
+                Create your first itinerary free
               </Link>
               <Link
-                href="/contact"
+                href="https://cal.com/brightonmboya/30min"
                 className="border-input bg-background hover:bg-accent hover:text-accent-foreground focus-visible:ring-ring inline-flex h-12 items-center justify-center rounded-full border px-8 text-sm font-medium shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none"
               >
-                Contact Sales
+                Talk to our team
               </Link>
             </div>
           </div>

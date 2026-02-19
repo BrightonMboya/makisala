@@ -45,10 +45,10 @@ export function Pricing() {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="mb-16 text-center">
           <h2 className="font-heading text-3xl font-bold tracking-tight sm:text-4xl">
-            Simple, transparent pricing
+            Pick a plan that fits your team
           </h2>
           <p className="text-muted-foreground mt-4 text-lg">
-            Start free. Upgrade as your business grows.
+            Start free with 2 proposals. Upgrade when you need more.
           </p>
         </div>
 
@@ -127,7 +127,7 @@ export function Pricing() {
                       : 'border-input bg-background hover:bg-accent hover:text-accent-foreground focus-visible:ring-ring border shadow-sm'
                   }`}
                 >
-                  {config.price === 0 ? 'Sign up free' : 'Get started'}
+                  {config.price === 0 ? 'Start free' : 'Start 14-day trial'}
                 </Link>
               </div>
             );

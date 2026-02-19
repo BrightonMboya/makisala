@@ -43,7 +43,7 @@ export function Navbar() {
             Log in
           </Link>
           <Button asChild size="sm" className="rounded-full px-6">
-            <Link href="/sign-up">Get Started</Link>
+            <Link href="/sign-up">Try free</Link>
           </Button>
         </div>
       </div>
