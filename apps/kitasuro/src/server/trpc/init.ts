@@ -29,7 +29,7 @@ const loggerMiddleware = t.middleware(async ({ path, type, next, ctx }) => {
       path,
       type,
       durationMs: Date.now() - start,
-      userId: ctx.session?.user?.id,
+      userId: ctx.getSession().then((session) => session?.user?.id),
       error: {
         code: result.error.code,
         message: result.error.message,
@@ -48,7 +48,11 @@ export function escapeLikeQuery(query: string): string {
   return query.replace(/[%_\\]/g, '\\$&');
 }
 
-async function resolveOrgId(dbInstance: typeof db, userId: string, sessionOrgId?: string | null): Promise<string> {
+async function resolveOrgId(
+  dbInstance: typeof db,
+  userId: string,
+  sessionOrgId?: string | null,
+): Promise<string> {
   if (sessionOrgId) return sessionOrgId;
 
   const [membership] = await dbInstance
