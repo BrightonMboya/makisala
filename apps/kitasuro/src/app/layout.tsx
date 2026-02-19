@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Inter, Cormorant_Garamond, Outfit } from "next/font/google";
+import { AxiomWebVitals } from "next-axiom";
 import "./globals.css";
 import { Providers } from "@/components/providers";
 
@@ -34,6 +35,7 @@ export default function RootLayout({
       <body
         className={`${inter.variable} ${cormorant.variable} ${outfit.variable} font-sans antialiased`}
       >
+        <AxiomWebVitals />
         <Providers>{children}</Providers>
       </body>
     </html>

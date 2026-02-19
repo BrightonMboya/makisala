@@ -1,4 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
+import { withAxiom, type AxiomRequest } from 'next-axiom';
 import { renderToBuffer } from '@react-pdf/renderer';
 import { ProposalPDF } from '@/lib/pdf/proposal-pdf';
 import { db, member } from '@repo/db';
@@ -9,6 +10,7 @@ import { auth } from '@/lib/auth';
 import { headers } from 'next/headers';
 import { z } from 'zod';
 import { checkFeatureAccess } from '@/lib/plans';
+import { serializeError } from '@/lib/logger';
 
 // Helper to get organization ID from session or member table
 async function getOrganizationId(session: Awaited<ReturnType<typeof auth.api.getSession>>): Promise<string | null> {
@@ -29,10 +31,10 @@ async function getOrganizationId(session: Awaited<ReturnType<typeof auth.api.get
   return membership?.organizationId ?? null;
 }
 
-export async function GET(
-  request: NextRequest,
+export const GET = withAxiom(async (
+  request: AxiomRequest,
   { params }: { params: Promise<{ id: string }> }
-) {
+) => {
   try {
     const { id } = await params;
 
@@ -128,10 +130,11 @@ export async function GET(
       },
     });
   } catch (error) {
-    console.error('Error generating PDF:', error);
+    request.log.error('Error generating PDF', { error: serializeError(error) });
+    await request.log.flush();
     return NextResponse.json(
       { error: 'Failed to generate PDF' },
       { status: 500 }
     );
   }
-}
+});

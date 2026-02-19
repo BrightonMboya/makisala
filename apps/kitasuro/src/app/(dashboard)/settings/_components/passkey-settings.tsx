@@ -54,7 +54,6 @@ export function PasskeySettings() {
           queryClient.invalidateQueries({ queryKey: ['passkeys'] });
         }
       } catch (error) {
-        console.error('Failed to add passkey:', error);
         toast({
           title: 'Failed to add passkey',
           description: 'Your browser may not support passkeys.',
@@ -79,7 +78,6 @@ export function PasskeySettings() {
           queryClient.invalidateQueries({ queryKey: ['passkeys'] });
         }
       } catch (error) {
-        console.error('Failed to delete passkey:', error);
         toast({ title: 'Failed to delete passkey', variant: 'destructive' });
       } finally {
         setDeleteId(null);

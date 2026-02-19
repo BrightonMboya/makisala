@@ -95,7 +95,7 @@ function Header() {
       });
     },
     onError: (error: Error) => {
-      console.error('Save draft error:', error);
+      // Server-side logging handled by tRPC middleware
       toast({
         title: 'Failed to save draft',
         description: error.message,
@@ -148,7 +148,7 @@ function Header() {
       });
     },
     onError: (error: Error) => {
-      console.error('Publish error:', error);
+      // Server-side logging handled by tRPC middleware
       toast({
         title: 'Failed to publish',
         description: error.message,

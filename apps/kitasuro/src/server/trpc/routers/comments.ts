@@ -5,6 +5,7 @@ import { TRPCError } from '@trpc/server';
 import { router, publicProcedure } from '../init';
 import { sendCommentNotificationEmail } from '@repo/resend';
 import { checkFeatureAccess } from '@/lib/plans';
+import { log } from '@/lib/logger';
 
 export const commentsRouter = router({
   list: publicProcedure
@@ -103,7 +104,7 @@ export const commentsRouter = router({
             });
           }
         } catch (e) {
-          console.error('Failed to send comment notification email:', e);
+          log.warn('Failed to send comment notification email', { error: String(e) });
         }
       }
 
@@ -168,7 +169,7 @@ export const commentsRouter = router({
             });
           }
         } catch (e) {
-          console.error('Failed to send reply notification email:', e);
+          log.warn('Failed to send reply notification email', { error: String(e) });
         }
       }
 

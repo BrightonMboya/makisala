@@ -1,11 +1,13 @@
 import { NextResponse } from 'next/server';
+import { withAxiom, type AxiomRequest } from 'next-axiom';
 import { auth } from '@/lib/auth';
 import { headers } from 'next/headers';
 import { db, member } from '@repo/db';
 import { and, eq } from 'drizzle-orm';
 import { getOrgPlan } from '@/lib/plans';
+import { serializeError } from '@/lib/logger';
 
-export async function GET() {
+export const GET = withAxiom(async (request: AxiomRequest) => {
   try {
     const session = await auth.api.getSession({ headers: await headers() });
     if (!session?.user?.id) {
@@ -62,10 +64,11 @@ export async function GET() {
       },
     );
   } catch (error) {
-    console.error('Error fetching plan:', error);
+    request.log.error('Error fetching plan', { error: serializeError(error) });
+    await request.log.flush();
     if (error instanceof Error && error.message.includes('connect')) {
       return NextResponse.json({ error: 'Service unavailable' }, { status: 503 });
     }
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
-}
+});

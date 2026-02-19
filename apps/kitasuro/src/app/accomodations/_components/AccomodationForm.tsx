@@ -71,7 +71,6 @@ export default function AccomodationForm({ initialData }: AccomodationFormProps)
             }
             router.refresh()
         } catch (error) {
-            console.error('Error saving accomodation:', error)
             alert('Failed to save accomodation')
         } finally {
             setLoading(false)

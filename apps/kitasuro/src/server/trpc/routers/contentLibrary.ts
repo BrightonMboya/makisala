@@ -6,6 +6,7 @@ import { router, protectedProcedure, escapeLikeQuery } from '../init';
 import { deleteFromStorage, getPublicUrl, uploadToStorage } from '@/lib/storage';
 import { compressImage, replaceExtension } from '@/lib/image-utils';
 import { checkFeatureAccess } from '@/lib/plans';
+import { log } from '@/lib/logger';
 
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
@@ -207,7 +208,7 @@ export const contentLibraryRouter = router({
       try {
         await deleteFromStorage(image.key);
       } catch (error) {
-        console.error('Failed to delete from R2:', error);
+        log.warn('Failed to delete from R2', { error: String(error), key: image.key });
       }
 
       await ctx.db.delete(organizationImages).where(eq(organizationImages.id, input.imageId));

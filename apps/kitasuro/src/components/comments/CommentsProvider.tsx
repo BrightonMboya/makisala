@@ -105,7 +105,7 @@ export function CommentsProvider({ children, proposalId, readOnly = false }: Com
         setActiveCommentId(result.comment.id);
       }
     } catch (error) {
-      console.error("Failed to create comment", error);
+      // Server-side logging handled by tRPC middleware
       // Rollback on error
       queryClient.setQueryData<Comment[]>(commentsQueryKey, (old = []) =>
         old.filter((c) => c.id !== optimisticComment.id)
@@ -163,7 +163,7 @@ export function CommentsProvider({ children, proposalId, readOnly = false }: Com
         );
       }
     } catch (error) {
-      console.error("Failed to create reply", error);
+      // Server-side logging handled by tRPC middleware
       // Rollback on error
       queryClient.setQueryData<Comment[]>(commentsQueryKey, (old = []) =>
         old.map((c) =>
@@ -194,7 +194,7 @@ export function CommentsProvider({ children, proposalId, readOnly = false }: Com
         );
       }
     } catch (error) {
-      console.error("Failed to resolve comment", error);
+      // Server-side logging handled by tRPC middleware
       // Rollback on error
       queryClient.setQueryData<Comment[]>(commentsQueryKey, (old = []) =>
         old.map((c) => (c.id === commentId ? { ...c, status: "open" } : c))

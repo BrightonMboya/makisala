@@ -37,7 +37,7 @@ export function PlanProvider({ children }: { children: ReactNode }) {
         return data as PlanInfo;
       }
     } catch (error) {
-      console.error('Failed to fetch plan:', error);
+      // Server-side logging handled by API route
     } finally {
       setIsLoading(false);
     }

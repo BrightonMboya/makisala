@@ -616,7 +616,7 @@ function MapControls({
           setWaitingForLocation(false);
         },
         (error) => {
-          console.error("Error getting location:", error);
+          // Geolocation error handled by UI state
           setWaitingForLocation(false);
         }
       );
