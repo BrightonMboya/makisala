@@ -1,5 +1,5 @@
 import type { IParams } from './type'
-import { fetchAllNps, getNPInfo, getWildlifeByPark } from '@/lib/cms-service'
+import { getNPInfo, getWildlifeByPark } from '@/lib/cms-service'
 import { MarkdownRenderer } from '@/components/markdown-renderer'
 import { notFound } from 'next/navigation'
 import {
@@ -15,10 +15,10 @@ import { NavigationSidebar } from '../_components/navigation'
 import TourCard from '../../safaris/[country]/[modifier]/_components/TourCard'
 import Link from 'next/link'
 
-export async function generateStaticParams() {
-    const parks = await fetchAllNps()
-    return parks.map(park => ({ park: park.name }))
-}
+// export async function generateStaticParams() {
+//     const parks = await fetchAllNps()
+//     return parks.map(park => ({ park: park.name }))
+// }
 
 export async function generateMetadata({ params }: IParams): Promise<Metadata> {
     const { park } = await params
@@ -53,43 +53,48 @@ export default async function page({ params }: IParams) {
 
     return (
         <main>
-            <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify([
-                    BreadcrumbSchema({
-                        breadcrumbs: [
-                            { name: 'Home', url: BASE_URL },
-                            {
-                                name: `${capitalize(np.country)} Safaris`,
-                                url: `${BASE_URL}/safaris/${np.country}`,
+            <script
+                type="application/ld+json"
+                dangerouslySetInnerHTML={{
+                    __html: JSON.stringify([
+                        BreadcrumbSchema({
+                            breadcrumbs: [
+                                { name: 'Home', url: BASE_URL },
+                                {
+                                    name: `${capitalize(np.country)} Safaris`,
+                                    url: `${BASE_URL}/safaris/${np.country}`,
+                                },
+                                {
+                                    name: `${capitalize(np.name)} National Park`,
+                                    url: `${BASE_URL}/national-parks/${np.name}`,
+                                },
+                            ],
+                        }),
+                        TouristDestinationSchema({
+                            name: capitalize(np.name),
+                            description: page.meta_description || '',
+                            url: `${BASE_URL}/national-parks/${np.name}/`,
+                            image: page.featured_image_url!,
+                            country: capitalize(np.country),
+                        }),
+                        TouristAttractionSchema({
+                            name: capitalize(np.name),
+                            description: page.meta_description || '',
+                            image: page.featured_image_url!,
+                            url: `${BASE_URL}/national-parks/${np.name}/`,
+                        }),
+                        ParkSchema({
+                            name: capitalize(np.name),
+                            description: page.meta_description || '',
+                            image: page.featured_image_url!,
+                            url: `${BASE_URL}/national-parks/${np.name}/`,
+                            address: {
+                                addressCountry: capitalize(np.country),
                             },
-                            {
-                                name: `${capitalize(np.name)} National Park`,
-                                url: `${BASE_URL}/national-parks/${np.name}`,
-                            },
-                        ],
-                    }),
-                    TouristDestinationSchema({
-                        name: capitalize(np.name),
-                        description: page.meta_description || '',
-                        url: `${BASE_URL}/national-parks/${np.name}/`,
-                        image: page.featured_image_url!,
-                        country: capitalize(np.country),
-                    }),
-                    TouristAttractionSchema({
-                        name: capitalize(np.name),
-                        description: page.meta_description || '',
-                        image: page.featured_image_url!,
-                        url: `${BASE_URL}/national-parks/${np.name}/`,
-                    }),
-                    ParkSchema({
-                        name: capitalize(np.name),
-                        description: page.meta_description || '',
-                        image: page.featured_image_url!,
-                        url: `${BASE_URL}/national-parks/${np.name}/`,
-                        address: {
-                            addressCountry: capitalize(np.country),
-                        },
-                    }),
-                ]) }} />
+                        }),
+                    ]),
+                }}
+            />
 
             <div className="relative h-[60vh] overflow-hidden">
                 <div

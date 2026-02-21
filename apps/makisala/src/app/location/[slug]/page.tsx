@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 
-import { getPageBySlug, getPageSlugs, getTourPackagesByLocation } from '@/lib/cms-service'
+import { getPageBySlug, getTourPackagesByLocation } from '@/lib/cms-service'
 import Link from 'next/link'
 import ImageCard from '@/components/home/image-card'
 import C2A from '@/components/home/call-to-action'
@@ -48,12 +48,14 @@ export async function generateMetadata({
 }
 
 // generating static params
-export async function generateStaticParams() {
-    const pages = await getPageSlugs('page')
-    return pages.map(page => ({
-        slug: page.slug,
-    }))
-}
+// export async function generateStaticParams() {
+//     const pages = await getPageSlugs('page')
+//     return pages
+//         .filter(page => !page.slug.includes('/'))
+//         .map(page => ({
+//             slug: page.slug,
+//         }))
+// }
 
 // Page renderer
 export default async function BlogPostPage({ params }: { params: Promise<{ slug: string }> }) {
@@ -67,24 +69,29 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
 
     return (
         <>
-            <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify([
-                    BreadcrumbSchema({
-                        breadcrumbs: [
-                            { name: 'Home', url: BASE_URL },
-                            {
-                                name: page.title,
-                                url: `${BASE_URL}/location/${slug}`,
-                            },
-                        ],
-                    }),
-                    TouristDestinationSchema({
-                        description: page.meta_description!,
-                        image: page.featured_image_url!,
-                        name: page.title,
-                        url: `${BASE_URL}/location/${slug}`,
-                        country: slug.includes('rwanda') ? 'Rwanda' : slug.includes('kenya') ? 'Kenya' : slug.includes('uganda') ? 'Uganda' : 'Tanzania',
-                    }),
-                ]) }} />
+            <script
+                type="application/ld+json"
+                dangerouslySetInnerHTML={{
+                    __html: JSON.stringify([
+                        BreadcrumbSchema({
+                            breadcrumbs: [
+                                { name: 'Home', url: BASE_URL },
+                                {
+                                    name: page.title,
+                                    url: `${BASE_URL}/location/${slug}`,
+                                },
+                            ],
+                        }),
+                        TouristDestinationSchema({
+                            description: page.meta_description!,
+                            image: page.featured_image_url!,
+                            name: page.title,
+                            url: `${BASE_URL}/location/${slug}`,
+                            country: slug.includes('rwanda') ? 'Rwanda' : 'Tanzania',
+                        }),
+                    ]),
+                }}
+            />
             <div className="relative min-h-screen bg-white">
                 {page.featured_image_url && (
                     <section className="relative mt-16 flex h-screen items-center justify-start overflow-hidden">

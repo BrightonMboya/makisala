@@ -1,4 +1,4 @@
-import { getTours, fetchAllNps } from '@/lib/cms-service'
+import { getTours } from '@/lib/cms-service'
 import TourCard from './_components/TourCard'
 import { countries, modifiers, safariDescriptions } from '@/lib/p_seo_info'
 import { capitalize } from '@/lib/utils'
@@ -6,7 +6,6 @@ import { BreadcrumbSchema } from '@/components/schema'
 import { BASE_URL } from '@/lib/constants'
 import { notFound } from 'next/navigation'
 import { type Metadata } from 'next'
-import Link from 'next/link'
 
 interface Params {
     params: {
@@ -38,30 +37,35 @@ export default async function SafariPage({ params }: Params) {
     if (!countries.includes(country) || !modifiers.includes(modifier)) {
         return notFound()
     }
-    const [tours, allParks] = await Promise.all([
+    const [tours] = await Promise.all([
         getTours(country, modifier),
-        fetchAllNps(),
+        // fetchAllNps(),
     ])
-    const countryParks = allParks.filter(p => p.country === country)
+    // const countryParks = allParks.filter(p => p.country === country)
 
     return (
         <>
-            <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify([
-                    BreadcrumbSchema({
-                        breadcrumbs: [
-                            { name: 'Home', url: BASE_URL },
-                            { name: 'All Safaris', url: `${BASE_URL}/safaris` },
-                            {
-                                name: `All ${capitalize(country)} Safaris`,
-                                url: `${BASE_URL}/safaris/${country}`,
-                            },
-                            {
-                                name: `${modifier} ${capitalize(country)} Safaris`,
-                                url: `${BASE_URL}/safaris/${country}/${modifier}`,
-                            },
-                        ],
-                    }),
-            ]) }} />
+            <script
+                type="application/ld+json"
+                dangerouslySetInnerHTML={{
+                    __html: JSON.stringify([
+                        BreadcrumbSchema({
+                            breadcrumbs: [
+                                { name: 'Home', url: BASE_URL },
+                                { name: 'All Safaris', url: `${BASE_URL}/safaris` },
+                                {
+                                    name: `All ${capitalize(country)} Safaris`,
+                                    url: `${BASE_URL}/safaris/${country}`,
+                                },
+                                {
+                                    name: `${modifier} ${capitalize(country)} Safaris`,
+                                    url: `${BASE_URL}/safaris/${country}/${modifier}`,
+                                },
+                            ],
+                        }),
+                    ]),
+                }}
+            />
             <main className="mt-[60px]">
                 <div className="bg-background min-h-screen">
                     <div className="from-safari-gold/10 to-safari-bronze/10 border-border border-b bg-gradient-to-r">
@@ -73,22 +77,22 @@ export default async function SafariPage({ params }: Params) {
                         </div>
                     </div>
 
-                    {countryParks.length > 0 && (
-                        <div className="container mx-auto px-4 py-6">
-                            <h2 className="mb-3 text-lg font-semibold">{`Explore ${capitalize(country)} National Parks`}</h2>
-                            <div className="flex flex-wrap gap-2">
-                                {countryParks.map(p => (
-                                    <Link
-                                        key={p.name}
-                                        href={`/national-parks/${p.name}`}
-                                        className="bg-card hover:bg-primary/10 border-border rounded-full border px-4 py-1.5 text-sm font-medium transition-colors"
-                                    >
-                                        {capitalize(p.name)}
-                                    </Link>
-                                ))}
-                            </div>
-                        </div>
-                    )}
+                    {/*{countryParks.length > 0 && (*/}
+                    {/*    <div className="container mx-auto px-4 py-6">*/}
+                    {/*        <h2 className="mb-3 text-lg font-semibold">{`Explore ${capitalize(country)} National Parks`}</h2>*/}
+                    {/*        <div className="flex flex-wrap gap-2">*/}
+                    {/*            {countryParks.map(p => (*/}
+                    {/*                <Link*/}
+                    {/*                    key={p.name}*/}
+                    {/*                    href={`/national-parks/${p.name}`}*/}
+                    {/*                    className="bg-card hover:bg-primary/10 border-border rounded-full border px-4 py-1.5 text-sm font-medium transition-colors"*/}
+                    {/*                >*/}
+                    {/*                    {capitalize(p.name)}*/}
+                    {/*                </Link>*/}
+                    {/*            ))}*/}
+                    {/*        </div>*/}
+                    {/*    </div>*/}
+                    {/*)}*/}
 
                     {/* Tours Grid */}
                     <div className="container mx-auto px-4 py-8">

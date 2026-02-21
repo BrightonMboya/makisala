@@ -8,6 +8,7 @@ jiti('./src/lib/env')
 const withMDX = createMDX({})
 
 const nextConfig = {
+    staticPageGenerationTimeout: 180,
     pageExtensions: ['js', 'jsx', 'md', 'mdx', 'ts', 'tsx'],
     images: {
         remotePatterns: [
@@ -26,6 +27,12 @@ const nextConfig = {
             {
                 protocol: 'https',
                 hostname: 'res.cloudinary.com',
+                port: '',
+                pathname: '/**',
+            },
+            {
+                protocol: 'https',
+                hostname: 'assets.makisala.com',
                 port: '',
                 pathname: '/**',
             },
