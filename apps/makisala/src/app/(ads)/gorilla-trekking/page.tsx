@@ -192,20 +192,40 @@ export default function GorillaTrekkingPage() {
                             className="object-cover"
                             priority
                         />
-                        <div className="absolute inset-0 bg-black/60 lg:bg-black/65" />
+                        <div className="absolute inset-0 bg-black/50 lg:bg-black/75" />
                     </div>
                     <div className="relative z-10 mt-20 px-6 sm:px-10 lg:px-16">
                         <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-white/15 px-4 py-2 text-sm font-medium text-white backdrop-blur-sm">
-                            <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                            Only 1,000 gorillas left in the wild
+                            <Shield className="h-4 w-4 text-white" />
+                            Only 96 permits issued per day
                         </div>
                         <h1 className="mb-4 max-w-4xl text-3xl font-bold text-white md:text-6xl lg:text-7xl">
-                            Meet Mountain Gorillas Face to Face
+                            Secure Your Gorilla Trekking Permit in Rwanda — Without the Stress
                         </h1>
-                        <p className="mb-3 max-w-2xl text-xl font-light text-white/90 md:text-2xl">
-                            4-day all-inclusive gorilla trekking in Rwanda. Permits, lodging, guides
-                            — everything handled.
+                        <p className="mb-5 max-w-2xl text-xl font-light text-white/90 md:text-2xl">
+                            We handle the limited-entry permit, expert guides, accommodation, and
+                            transport so your dates are locked before they sell out.
                         </p>
+                        <div className="mb-6 max-w-2xl space-y-2 text-base text-white/90">
+                            <div className="flex items-center gap-2">
+                                <Check className="h-5 w-5 shrink-0 text-green-400" />
+                                <span>
+                                    Guaranteed permit handling (only 96 permits issued per day)
+                                </span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <Check className="h-5 w-5 shrink-0 text-green-400" />
+                                <span>
+                                    Fixed 4-day itinerary designed around permit availability
+                                </span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <Check className="h-5 w-5 shrink-0 text-green-400" />
+                                <span>
+                                    Local team on the ground managing logistics from arrival to trek
+                                </span>
+                            </div>
+                        </div>
                         <p className="mb-8 text-lg font-semibold text-white">
                             From <span className="text-3xl">$3,500</span> per person
                         </p>
@@ -216,7 +236,7 @@ export default function GorillaTrekkingPage() {
                                     className="bg-primary hover:bg-primary/90 px-8 py-3 text-lg font-medium"
                                 >
                                     <Users className="mr-2 h-5 w-5" />
-                                    Check Availability
+                                    Check Permit Availability
                                 </Button>
                             </a>
                             <a href="#whats-included">
@@ -263,28 +283,58 @@ export default function GorillaTrekkingPage() {
                     </div>
                 </section>
 
-                {/* The Experience */}
+                {/* How Permits Work */}
                 <section className="py-16 lg:py-20">
                     <div className="mx-auto max-w-4xl px-6">
                         <h2 className="mb-6 text-3xl font-bold md:text-4xl">
-                            The Most Profound Wildlife Encounter on Earth
+                            How Gorilla Trekking Permits Work
                         </h2>
                         <div className="text-muted-foreground space-y-4 text-lg leading-relaxed">
                             <p>
-                                You've trekked through mist-covered bamboo forest for two hours.
-                                Your guide raises a hand — silence. Then, through the leaves, you
-                                see them. A silverback, 200 kilograms of quiet power, sits just
-                                meters away, watching you with calm, knowing eyes.
+                                Gorilla trekking is strictly regulated. Only a small number of
+                                visitors are allowed each day, and permits are assigned to specific
+                                dates — they cannot be held without commitment.
+                            </p>
+                            <p>Our role is to:</p>
+                            <ul className="ml-6 list-disc space-y-2">
+                                <li>Secure your permit for your travel dates</li>
+                                <li>Build the itinerary around that confirmed permit</li>
+                                <li>Manage all transport and lodging logistics once locked</li>
+                            </ul>
+                        </div>
+                        <div className="mt-6 rounded-lg border border-amber-200 bg-amber-50 px-5 py-4">
+                            <p className="text-sm font-medium text-amber-800">
+                                <strong>Important:</strong> Once permits for a date are sold out, no
+                                additional visitors can trek that day.
+                            </p>
+                        </div>
+                    </div>
+                </section>
+
+                {/* Why This Experience Is So Limited */}
+                <section className="py-16 lg:py-20">
+                    <div className="mx-auto max-w-4xl px-6">
+                        <h2 className="mb-6 text-3xl font-bold md:text-4xl">
+                            Why This Experience Is So Limited
+                        </h2>
+                        <div className="text-muted-foreground space-y-4 text-lg leading-relaxed">
+                            <p>
+                                You trek in small, ranger-led groups to visit one specific
+                                habituated gorilla family.
                             </p>
                             <p>
-                                For one hour, you're a guest in their world. A mother cradles her
-                                infant. Juveniles tumble and play. The silverback yawns. There are
-                                no barriers, no glass, no cages — just shared space between two
-                                species that share 98% of their DNA.
+                                Each visit is strictly limited to one hour to protect the animals
+                                and minimize human impact.
                             </p>
-                            <p className="font-medium text-black">
-                                People don't come back from gorilla trekking the same. This is the
-                                encounter that changes everything.
+                            <p>
+                                There are no vehicles, no viewing platforms, and no large crowds —
+                                the final approach is done on foot through the forest with trained
+                                guides and trackers.
+                            </p>
+                            <p>
+                                Because of these conservation rules, only a small number of permits
+                                are issued each day, which is why securing dates in advance is
+                                essential.
                             </p>
                         </div>
                     </div>
@@ -408,6 +458,35 @@ export default function GorillaTrekkingPage() {
                     </div>
                 </section>
 
+                {/* Booking With Confidence */}
+                <section className="border-y bg-white py-12">
+                    <div className="mx-auto max-w-5xl px-6">
+                        <h2 className="mb-8 text-center text-2xl font-bold md:text-3xl">
+                            Booking With Confidence
+                        </h2>
+                        <div className="grid gap-6 md:grid-cols-3">
+                            <div className="flex items-start gap-3 text-center md:flex-col md:items-center">
+                                <MapPin className="text-primary h-6 w-6 shrink-0" />
+                                <p className="text-muted-foreground text-sm leading-relaxed">
+                                    Local East Africa–based operations team
+                                </p>
+                            </div>
+                            <div className="flex items-start gap-3 text-center md:flex-col md:items-center">
+                                <Shield className="text-primary h-6 w-6 shrink-0" />
+                                <p className="text-muted-foreground text-sm leading-relaxed">
+                                    Direct coordination with park authorities and licensed guides
+                                </p>
+                            </div>
+                            <div className="flex items-start gap-3 text-center md:flex-col md:items-center">
+                                <Users className="text-primary h-6 w-6 shrink-0" />
+                                <p className="text-muted-foreground text-sm leading-relaxed">
+                                    On-the-ground support from arrival to departure
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
                 {/* Testimonials */}
                 <section className="bg-gray-50 py-16 lg:py-20">
                     <div className="mx-auto max-w-5xl px-6">
@@ -497,9 +576,10 @@ export default function GorillaTrekkingPage() {
                             else — lodging, meals, transport, guides, and park fees — for just
                             $2,000 more.
                         </p>
-                        <p className="text-muted-foreground mb-3 text-base">
-                            Dates are flexible. Group discounts available. No payment until your
-                            trip is confirmed.
+                        <p className="text-muted-foreground mb-3 max-w-2xl mx-auto text-base">
+                            To secure your trekking permit, a deposit equal to the permit cost is
+                            required. This allows us to lock your date with the park immediately.
+                            The remaining balance is scheduled after your itinerary is finalized.
                         </p>
                         <p className="mb-8 text-sm font-medium text-amber-700">
                             June — September 2026 permits are filling fast
@@ -527,11 +607,11 @@ export default function GorillaTrekkingPage() {
                     <div className="mx-auto max-w-xl px-6">
                         <div className="mb-8 text-center">
                             <h2 className="mb-4 text-3xl font-bold md:text-4xl">
-                                Plan Your Gorilla Trek
+                                Check Date & Permit Availability
                             </h2>
                             <p className="text-muted-foreground text-lg">
-                                Tell us your dates and group size — we'll put together your
-                                all-inclusive itinerary within 24 hours.
+                                Tell us your preferred dates and group size — we'll confirm
+                                availability and next steps within 24 hours.
                             </p>
                             <p className="mt-2 text-sm font-medium text-amber-700">
                                 Peak season permits (June — September 2026) are selling out

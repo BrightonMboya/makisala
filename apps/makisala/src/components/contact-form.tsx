@@ -269,8 +269,11 @@ export default function ContactForm({
                     />
                 </div>
 
+                <p className="text-muted-foreground text-center text-xs">
+                    We'll confirm availability and next steps within 24 hours.
+                </p>
                 <Button type="submit" className="w-full">
-                    Request My Free Quote
+                    Check Availability
                 </Button>
             </form>
         </Form>

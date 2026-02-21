@@ -18,7 +18,7 @@ export default function LandingNav() {
                     </Link>
                     <a href="#inquiry-form">
                         <Button className="bg-primary px-6 py-2 text-sm font-medium text-white">
-                            GET A FREE QUOTE
+                            CHECK AVAILABILITY
                         </Button>
                     </a>
                 </div>
