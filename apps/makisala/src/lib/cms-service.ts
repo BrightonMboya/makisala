@@ -193,8 +193,26 @@ export async function getTourPackagesSlugs() {
         .from(tourPackages)
 }
 
-export async function createInquiry(data: NewInquiries) {
-    const [newInquiry] = await db.insert(inquiries).values(data)
+export async function createInquiry(data: NewInquiries & { phoneNumber?: string }) {
+    const { phoneNumber, ...dbData } = data
+    const [newInquiry] = await db.insert(inquiries).values(dbData)
+
+    // Send email notification (non-blocking — don't fail the inquiry if email fails)
+    try {
+        const { sendInquiryNotificationEmail } = await import('@repo/resend')
+        await sendInquiryNotificationEmail({
+            fullName: data.fullName,
+            email: data.email,
+            countryOfResidence: data.countryOfResidence,
+            phoneNumber: phoneNumber || '',
+            numberOfTravellers: data.numberOfTravellers,
+            startDate: data.startDate,
+            comments: data.comments || '',
+            pageUrl: data.url || '',
+        })
+    } catch (error) {
+        console.error('Failed to send inquiry notification email:', error)
+    }
 
     return newInquiry
 }

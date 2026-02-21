@@ -35,7 +35,7 @@ export default function ContactForm({
         phoneNumber: z.string().min(1, 'Phone number is required'),
         numberOfTravellers: z.number().min(1, 'Number of travellers is required'),
         startDate: z.date().min(1, 'Start date is required'),
-        comments: z.string().min(1, 'Comments are required'),
+        comments: z.string().optional(),
     })
 
     type FormData = z.infer<typeof formSchema>
@@ -255,11 +255,11 @@ export default function ContactForm({
                         name="comments"
                         render={({ field }) => (
                             <FormItem>
-                                <FormLabel>Any other comments or requests?*</FormLabel>
+                                <FormLabel>Anything else we should know? (optional)</FormLabel>
                                 <FormControl>
                                     <Textarea
-                                        placeholder="We are two families travelling together and would love to see gorillas and chimps, do a 7-day safari to experience the wildebeest migration and then spend 5 days on the beach with great snorkelling and diving. We are an adventurous bunch and would also love to include some walking safaris with the BIG5!"
-                                        className="min-h-[100px]"
+                                        placeholder="E.g. travelling as a couple, interested in extending to Serengeti, specific dates in mind..."
+                                        className="min-h-[80px]"
                                         {...field}
                                     />
                                 </FormControl>

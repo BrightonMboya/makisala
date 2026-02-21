@@ -6,6 +6,7 @@ import { renderProposalAcceptanceEmail } from '../templates/proposal-acceptance'
 import { renderTeamInvitationEmail } from '../templates/team-invitation';
 import { renderEmailVerificationEmail } from '../templates/email-verification';
 import { renderNoteMentionEmail } from '../templates/note-mention';
+import { renderInquiryNotificationEmail } from '../templates/inquiry-notification';
 
 export interface CommentNotificationData {
   proposalId: string;
@@ -469,6 +470,68 @@ export async function sendNoteMentionEmail(
     return { success: true };
   } catch (error) {
     // Error details returned to caller for centralized logging
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error occurred',
+    };
+  }
+}
+
+export interface InquiryNotificationData {
+  fullName: string;
+  email: string;
+  countryOfResidence: string;
+  phoneNumber: string;
+  numberOfTravellers: number;
+  startDate: Date;
+  comments: string;
+  pageUrl: string;
+}
+
+/**
+ * Sends an email notification to the team when a new inquiry is submitted.
+ */
+export async function sendInquiryNotificationEmail(
+  data: InquiryNotificationData,
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const formattedDate = data.startDate.toLocaleDateString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
+
+    const html = renderInquiryNotificationEmail({
+      fullName: data.fullName,
+      email: data.email,
+      countryOfResidence: data.countryOfResidence,
+      phoneNumber: data.phoneNumber,
+      numberOfTravellers: data.numberOfTravellers,
+      startDate: formattedDate,
+      comments: data.comments,
+      pageUrl: data.pageUrl,
+    });
+
+    const fromEmail = env.RESEND_FROM_EMAIL || 'notifications@makisala.com';
+
+    const result = await resend.emails.send({
+      from: fromEmail,
+      to: 'info@makisala.com',
+      subject: `New Inquiry from ${data.fullName} — ${data.countryOfResidence}`,
+      html,
+      replyTo: data.email,
+    });
+
+    if (result.error) {
+      return {
+        success: false,
+        error: result.error.message || 'Failed to send email',
+      };
+    }
+
+    return { success: true };
+  } catch (error) {
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error occurred',
