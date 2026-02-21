@@ -2,6 +2,7 @@
  * Server-only plan utilities. Uses database queries.
  * For client-safe config/types, import from plans-config.ts.
  */
+import { cache } from 'react';
 import { db, organizations, member, invitation, proposals } from '@repo/db';
 import { and, eq, sql } from 'drizzle-orm';
 import { PLAN_CONFIG, TIER_ORDER, type PlanTier, type Feature } from './plans-config';
@@ -23,7 +24,7 @@ export interface OrgPlan {
  * Resolves the effective plan for an organization.
  * Handles trial logic: free tier with active trial gets pro-equivalent access.
  */
-export async function getOrgPlan(orgId: string): Promise<OrgPlan | null> {
+export const getOrgPlan = cache(async function getOrgPlan(orgId: string): Promise<OrgPlan | null> {
   const [org] = await db
     .select({
       planTier: organizations.planTier,
@@ -58,7 +59,7 @@ export async function getOrgPlan(orgId: string): Promise<OrgPlan | null> {
     trialDaysRemaining,
     limits: PLAN_CONFIG[effectiveTier].limits,
   };
-}
+});
 
 export interface FeatureAccessResult {
   allowed: boolean;

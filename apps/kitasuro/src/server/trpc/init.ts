@@ -1,3 +1,4 @@
+import { cache } from 'react';
 import { initTRPC, TRPCError } from '@trpc/server';
 import { db } from '@repo/db';
 import { member } from '@repo/db/schema';
@@ -48,14 +49,13 @@ export function escapeLikeQuery(query: string): string {
   return query.replace(/[%_\\]/g, '\\$&');
 }
 
-async function resolveOrgId(
-  dbInstance: typeof db,
+const resolveOrgId = cache(async (
   userId: string,
   sessionOrgId?: string | null,
-): Promise<string> {
+): Promise<string> => {
   if (sessionOrgId) return sessionOrgId;
 
-  const [membership] = await dbInstance
+  const [membership] = await db
     .select({ organizationId: member.organizationId })
     .from(member)
     .where(eq(member.userId, userId))
@@ -65,7 +65,7 @@ async function resolveOrgId(
     throw new TRPCError({ code: 'FORBIDDEN', message: 'No organization found' });
   }
   return membership.organizationId;
-}
+});
 
 export const protectedProcedure = publicProcedure.use(async ({ ctx, next }) => {
   const session = await ctx.getSession();
@@ -74,7 +74,6 @@ export const protectedProcedure = publicProcedure.use(async ({ ctx, next }) => {
   }
 
   const orgId = await resolveOrgId(
-    ctx.db,
     session.user.id,
     session.session?.activeOrganizationId as string | undefined,
   );
