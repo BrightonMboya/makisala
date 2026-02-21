@@ -6,10 +6,11 @@ import { capitalize } from '@/lib/utils'
 import { getWildlifeByNameAndPark } from '@/lib/cms-service'
 import { FAQ } from '@/components/faq'
 import type { Metadata } from 'next'
-import Script from 'next/script'
 import { BreadcrumbSchema, FAQSchema } from '@/components/schema'
 import { BASE_URL } from '@/lib/constants'
 import TourCard from '../../../safaris/[country]/[modifier]/_components/TourCard'
+import Link from 'next/link'
+import { ArrowLeft } from 'lucide-react'
 
 interface IParams {
     params: {
@@ -27,17 +28,12 @@ export default async function Page({ params }: IParams) {
         return notFound()
     }
 
-    if (!data) {
-        return notFound()
-    }
-
     return (
         <main className="mt-[50px]">
-            <Script type={'application/ld+json'} strategy={'lazyOnload'} id="wildlife-schema">
-                {JSON.stringify([
+            <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify([
                     BreadcrumbSchema({
                         breadcrumbs: [
-                            { name: 'Home', url: 'https://www.makisala.com' },
+                            { name: 'Home', url: BASE_URL },
                             {
                                 name: `National Parks/${destination}`,
                                 url: `${BASE_URL}/national-parks/${destination}/`,
@@ -49,8 +45,7 @@ export default async function Page({ params }: IParams) {
                         ],
                     }),
                     data.faqs && FAQSchema({ faqs: data.faqs }),
-                ])}
-            </Script>
+            ]) }} />
             <section className="relative flex h-[80vh] items-center justify-center">
                 <Image
                     src={images[0]?.url!}
@@ -67,6 +62,16 @@ export default async function Page({ params }: IParams) {
                     </h1>
                 </div>
             </section>
+            <div className="container mx-auto px-6 pt-6">
+                <Link
+                    href={`/national-parks/${destination}`}
+                    className="text-primary hover:text-primary/80 inline-flex items-center gap-2 text-sm font-medium transition-colors"
+                >
+                    <ArrowLeft className="h-4 w-4" />
+                    {`Explore ${capitalize(destination)} National Park`}
+                </Link>
+            </div>
+
             <section className="py-20">
                 <div className="container mx-auto px-6">
                     <div className="mb-16 text-center">

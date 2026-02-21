@@ -1,5 +1,5 @@
 // these are used for programatic seo in the safaris/country/modifer route
-export const countries = ['tanzania', 'rwanda']
+export const countries = ['tanzania', 'rwanda', 'kenya', 'zanzibar']
 export const tour_tags = [
     'private',
     'group',

@@ -3,7 +3,6 @@ import { notFound } from 'next/navigation'
 import { MarkdownRenderer } from '@/components/markdown-renderer'
 import { FAQ } from '@/components/faq'
 import { BreadcrumbSchema, FAQSchema } from '@/components/schema'
-import Script from 'next/script'
 import C2A from '../../../components/home/call-to-action'
 import type { Metadata } from 'next'
 import MonthNavigator from './_components/month_navigator'
@@ -14,6 +13,10 @@ interface IParams {
     params: {
         month: string
     }
+}
+
+export function generateStaticParams() {
+    return articles_url.map(article => ({ month: article.month }))
 }
 
 export async function generateMetadata({ params }: IParams): Promise<Metadata> {
@@ -61,20 +64,18 @@ export default async function Page({ params }: IParams) {
 
     return (
         <>
-            <Script type={'application/ld+json'} strategy={'lazyOnload'} id="schema-script">
-                {JSON.stringify([
+            <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify([
                     BreadcrumbSchema({
                         breadcrumbs: [
                             { name: 'Home', url: BASE_URL },
                             {
                                 name: `Where to travel in Africa in ${month}`,
-                                url: `${BASE_URL}/where_to_travel/${month}`,
+                                url: `${BASE_URL}/where-to-go/${month}`,
                             },
                         ],
                     }),
                     FAQSchema({ faqs: page.faqs! }),
-                ])}
-            </Script>
+                ]) }} />
             <div className="relative h-[60vh] overflow-hidden">
                 <div
                     className="absolute inset-0 bg-cover bg-no-repeat object-cover"

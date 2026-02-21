@@ -3,7 +3,6 @@ import PropertyDetails from './_components/PropertyDetails'
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { AccomodationSchema, BreadcrumbSchema } from '@/components/schema'
-import Script from 'next/script'
 import { BASE_URL } from '@/lib/constants'
 import { slugify } from '@/lib/utils'
 
@@ -48,8 +47,7 @@ export default async function Page({ params }: IParams) {
 
     return (
         <main>
-            <Script type="application/ld+json" strategy="lazyOnload" id="schema-script">
-                {JSON.stringify([
+            <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify([
                     BreadcrumbSchema({
                         breadcrumbs: [
                             { name: 'Home', url: BASE_URL },
@@ -73,8 +71,7 @@ export default async function Page({ params }: IParams) {
                         review_count: data.review_count || 100,
                         amenities: data.amenities,
                     }),
-                ])}
-            </Script>
+                ]) }} />
             <PropertyDetails propertyData={data} reviews={reviews.reviews} />
         </main>
     )

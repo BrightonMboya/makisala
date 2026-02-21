@@ -7,7 +7,6 @@ import Footer from '../components/home/footer'
 import Nav from '../components/home/nav'
 import { Providers } from './providers'
 import { OrganizationSchema, WebsiteSchema } from '@/components/schema'
-import Script from 'next/script'
 import { Analytics } from '@vercel/analytics/next'
 import { SpeedInsights } from '@vercel/speed-insights/next'
 
@@ -45,9 +44,7 @@ export default function RootLayout({
     return (
         <html lang="en">
             <Nav />
-            <Script type={'application/ld+json'} strategy={'lazyOnload'} id="schema-id">
-                {JSON.stringify([OrganizationSchema(), WebsiteSchema()])}
-            </Script>
+            <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify([OrganizationSchema(), WebsiteSchema()]) }} />
             <Script id="apollo-tracker" strategy="afterInteractive">
                 {`
             function initApollo() {

@@ -4,9 +4,9 @@ import type { Metadata } from 'next'
 import { getPageBySlug } from '@/lib/cms-service'
 import { generateTableOfContentsFromMarkdown, RemoteMdx } from '@/components/markdown-renderer'
 import { BlogSchema, BreadcrumbSchema, FAQSchema } from '@/components/schema'
-import Script from 'next/script'
 import { FAQ } from '@/components/faq'
 import TableOfContents from '@/components/table-of-contents'
+import { BASE_URL } from '@/lib/constants'
 
 export async function generateMetadata({
     params,
@@ -56,21 +56,20 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
 
     return (
         <main>
-            <Script type={'application/ld+json'} strategy={'lazyOnload'} id="schema">
-                {JSON.stringify([
+            <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify([
                     BreadcrumbSchema({
                         breadcrumbs: [
                             {
                                 name: 'Home',
-                                url: 'https://www.makisala.com',
+                                url: BASE_URL,
                             },
                             {
                                 name: 'Blog',
-                                url: 'https://www.makisala.com/blog',
+                                url: `${BASE_URL}/blog`,
                             },
                             {
                                 name: `${page.title}`,
-                                url: `https://www.makisala.com/blog/${slug}`,
+                                url: `${BASE_URL}/blog/${slug}`,
                             },
                         ],
                     }),
@@ -78,10 +77,11 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
                         headline: `${page.title}`,
                         image: `${page.featured_image_url}`,
                         description: `${page.excerpt}`,
+                        datePublished: page.createdAt,
+                        dateModified: page.updatedAt,
                     }),
                     page.faqs && FAQSchema({ faqs: page.faqs }),
-                ])}
-            </Script>
+                ]) }} />
             <div className="mx-[30px] scroll-smooth pt-[100px] sm:overflow-hidden md:overflow-visible lg:container lg:mx-auto">
                 <div className="flex w-full flex-row">
                     <div className="flex w-full flex-col lg:w-3/4">

@@ -1,8 +1,7 @@
 import type { IParams } from './type'
-import { getNPInfo } from '@/lib/cms-service'
+import { fetchAllNps, getNPInfo, getWildlifeByPark } from '@/lib/cms-service'
 import { MarkdownRenderer } from '@/components/markdown-renderer'
 import { notFound } from 'next/navigation'
-import Script from 'next/script'
 import {
     BreadcrumbSchema,
     ParkSchema,
@@ -14,6 +13,12 @@ import { capitalize } from '@/lib/utils'
 import type { Metadata } from 'next'
 import { NavigationSidebar } from '../_components/navigation'
 import TourCard from '../../safaris/[country]/[modifier]/_components/TourCard'
+import Link from 'next/link'
+
+export async function generateStaticParams() {
+    const parks = await fetchAllNps()
+    return parks.map(park => ({ park: park.name }))
+}
 
 export async function generateMetadata({ params }: IParams): Promise<Metadata> {
     const { park } = await params
@@ -40,6 +45,7 @@ export async function generateMetadata({ params }: IParams): Promise<Metadata> {
 export default async function page({ params }: IParams) {
     const { park } = await params
     const { park: np, page, tours } = await getNPInfo(park, 'overview_page_id')
+    const wildlifeInPark = await getWildlifeByPark(park)
 
     if (!page) {
         return notFound()
@@ -47,22 +53,17 @@ export default async function page({ params }: IParams) {
 
     return (
         <main>
-            <Script type={'application/ld+json'} strategy={'lazyOnload'} id="schema-script">
-                {JSON.stringify([
+            <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify([
                     BreadcrumbSchema({
                         breadcrumbs: [
                             { name: 'Home', url: BASE_URL },
                             {
-                                name: `${capitalize(np.country)} National Parks`,
-                                url: `${BASE_URL}/safaris/${np.country}/where-to-go`,
+                                name: `${capitalize(np.country)} Safaris`,
+                                url: `${BASE_URL}/safaris/${np.country}`,
                             },
                             {
                                 name: `${capitalize(np.name)} National Park`,
-                                url: `${BASE_URL}/safaris/${np.name}/`,
-                            },
-                            {
-                                name: `Best time to visit ${capitalize(np.name)} National Park`,
-                                url: `${BASE_URL}/national-parks/${np.name}/`,
+                                url: `${BASE_URL}/national-parks/${np.name}`,
                             },
                         ],
                     }),
@@ -88,8 +89,7 @@ export default async function page({ params }: IParams) {
                             addressCountry: capitalize(np.country),
                         },
                     }),
-                ])}
-            </Script>
+                ]) }} />
 
             <div className="relative h-[60vh] overflow-hidden">
                 <div
@@ -118,6 +118,27 @@ export default async function page({ params }: IParams) {
                     </section>
                 </div>
             </div>
+
+            {wildlifeInPark.length > 0 && (
+                <section className="py-12">
+                    <div className="container mx-auto px-6">
+                        <h2 className="mb-6 text-center text-3xl font-bold">
+                            {`Wildlife in ${capitalize(np.name)}`}
+                        </h2>
+                        <div className="mx-auto flex max-w-4xl flex-wrap justify-center gap-3">
+                            {wildlifeInPark.map(w => (
+                                <Link
+                                    key={w.animalName}
+                                    href={`/wildlife/${w.animalName}/${park}`}
+                                    className="bg-card hover:bg-primary/10 border-border rounded-full border px-5 py-2 text-sm font-medium transition-colors"
+                                >
+                                    {capitalize(w.animalName)}
+                                </Link>
+                            ))}
+                        </div>
+                    </div>
+                </section>
+            )}
 
             {tours && (
                 <section>

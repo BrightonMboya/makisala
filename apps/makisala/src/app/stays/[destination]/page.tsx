@@ -4,6 +4,8 @@ import { destinationCoordinates } from '../_components/data'
 import { slugify } from '@/lib/utils'
 import Link from 'next/link'
 import { type Metadata } from 'next'
+import { BreadcrumbSchema } from '@/components/schema'
+import { BASE_URL } from '@/lib/constants'
 
 interface IParams {
     params: {
@@ -58,6 +60,17 @@ export default async function Page({ params }: IParams) {
 
     return (
         <main className="mt-[100px]">
+            <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify([
+                    BreadcrumbSchema({
+                        breadcrumbs: [
+                            { name: 'Home', url: BASE_URL },
+                            {
+                                name: `Best Stays in ${coordinates.name}`,
+                                url: `${BASE_URL}/stays/${destination}`,
+                            },
+                        ],
+                    }),
+                ]) }} />
             <h1 className="pb-10 text-center text-xl font-bold lg:text-3xl">{`Best Places to Stay in ${coordinates.name}`}</h1>
             <section className="container mx-auto mb-10 grid grid-cols-1 gap-10 px-4 lg:grid-cols-3">
                 {data.map(stay => (

@@ -3,7 +3,6 @@ import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import type { IParams } from '../../types'
 import { getBestTimeToVisit } from '@/lib/cms-service'
-import Script from 'next/script'
 import { BreadcrumbSchema, FAQSchema } from '@/components/schema'
 import { BASE_URL } from '@/lib/constants'
 import { capitalize } from '@/lib/utils'
@@ -50,17 +49,12 @@ export default async function Page({ params }: IParams) {
     }
     return (
         <main>
-            <Script
-                type={'application/ld+json'}
-                strategy={'lazyOnload'}
-                id="schema-best-time-to-go"
-            >
-                {JSON.stringify([
+            <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify([
                     BreadcrumbSchema({
                         breadcrumbs: [
                             { name: 'Home', url: BASE_URL },
                             {
-                                name: 'Tanzania',
+                                name: `${capitalize(country)} Safaris`,
                                 url: `${BASE_URL}/safaris/${country}`,
                             },
                             {
@@ -70,8 +64,7 @@ export default async function Page({ params }: IParams) {
                         ],
                     }),
                     destination.faqs && FAQSchema({ faqs: destination.faqs }),
-                ])}
-            </Script>
+            ]) }} />
             <section className="relative mt-16 flex h-[80dvh] items-center justify-start overflow-hidden lg:h-screen">
                 <div className="absolute inset-0">
                     <Image

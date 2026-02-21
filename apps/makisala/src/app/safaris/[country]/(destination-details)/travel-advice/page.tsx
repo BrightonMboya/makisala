@@ -5,7 +5,6 @@ import type { IParams } from '../../types'
 import { BreadcrumbSchema, FAQSchema } from '@/components/schema'
 import { BASE_URL } from '@/lib/constants'
 import { capitalize } from '@/lib/utils'
-import Script from 'next/script'
 import { getTravelAdvice } from '@/lib/cms-service'
 import { FAQ } from '@/components/faq'
 import Image from 'next/image'
@@ -50,13 +49,12 @@ export default async function Page({ params }: IParams) {
     }
     return (
         <main>
-            <Script type={'application/ld+json'} strategy={'lazyOnload'} id="schema-travel-advice">
-                {JSON.stringify([
+            <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify([
                     BreadcrumbSchema({
                         breadcrumbs: [
                             { name: 'Home', url: BASE_URL },
                             {
-                                name: 'Tanzania',
+                                name: `${capitalize(country)} Safaris`,
                                 url: `${BASE_URL}/safaris/${country}`,
                             },
                             {
@@ -66,8 +64,7 @@ export default async function Page({ params }: IParams) {
                         ],
                     }),
                     destination.faqs && FAQSchema({ faqs: destination.faqs }),
-                ])}
-            </Script>
+            ]) }} />
             <section className="relative mt-16 flex h-[80dvh] items-center justify-start overflow-hidden lg:h-screen">
                 <div className="absolute inset-0">
                     <Image

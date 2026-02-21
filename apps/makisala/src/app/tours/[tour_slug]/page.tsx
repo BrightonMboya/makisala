@@ -1,8 +1,7 @@
-import { getProgramaticTourBySlug } from '@/lib/cms-service'
+import { AllToursSlugs, getProgramaticTourBySlug } from '@/lib/cms-service'
 import { notFound } from 'next/navigation'
 import { BASE_URL, exclusions, inclusions } from '@/lib/constants'
 import { type Metadata } from 'next'
-import Script from 'next/script'
 import { BreadcrumbSchema, ProductSchema, TouristTripSchema } from '@/components/schema'
 import { capitalize } from '@/lib/utils'
 import ItineraryAccordion from './_components/ItineraryAccordion'
@@ -17,6 +16,11 @@ interface Params {
     }
 }
 
+export async function generateStaticParams() {
+    const tours = await AllToursSlugs()
+    return tours.filter(t => t.slug).map(t => ({ tour_slug: t.slug! }))
+}
+
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
     const { tour_slug } = await params
     const tour = await getProgramaticTourBySlug(tour_slug)
@@ -29,6 +33,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
 
     return {
         title: tour.tourName,
+        description: tour.overview,
         openGraph: {
             title: tour.tourName,
             description: tour.overview,
@@ -53,14 +58,13 @@ export default async function Page({ params }: Params) {
     }
     return (
         <>
-            <Script type={'application/ld+json'} strategy={'lazyOnload'} id="schema">
-                {JSON.stringify([
+            <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify([
                     BreadcrumbSchema({
                         breadcrumbs: [
                             { name: 'Home', url: BASE_URL },
                             {
                                 name: `${capitalize(tour.country)} Safaris`,
-                                url: `${BASE_URL}`,
+                                url: `${BASE_URL}/safaris/${tour.country}`,
                             },
                             {
                                 name: `${tour.tourName}`,
@@ -86,8 +90,7 @@ export default async function Page({ params }: Params) {
                         tour_slug: tour.slug!,
                         tour_id: tour.id,
                     }),
-                ])}
-            </Script>
+                ]) }} />
             <div className="min-h-screen bg-gray-50/50 pb-20">
                 <TourHero
                     imageUrl={tour.img_url}

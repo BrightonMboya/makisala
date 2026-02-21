@@ -2,7 +2,6 @@ import type { IParams } from '../type'
 import { getNPInfo } from '@/lib/cms-service'
 import { MarkdownRenderer } from '@/components/markdown-renderer'
 import { notFound } from 'next/navigation'
-import Script from 'next/script'
 import {
     BreadcrumbSchema,
     FAQSchema,
@@ -113,18 +112,17 @@ export default async function page({ params }: IParams) {
 
     return (
         <main>
-            <Script type={'application/ld+json'} strategy={'lazyOnload'} id="schema-script">
-                {JSON.stringify([
+            <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify([
                     BreadcrumbSchema({
                         breadcrumbs: [
                             { name: 'Home', url: BASE_URL },
                             {
-                                name: `${capitalize(np.country)} National Parks`,
-                                url: `${BASE_URL}/safaris/${np.country}/where-to-go`,
+                                name: `${capitalize(np.country)} Safaris`,
+                                url: `${BASE_URL}/safaris/${np.country}`,
                             },
                             {
                                 name: `${capitalize(np.name)} National Park`,
-                                url: `${BASE_URL}/safaris/${np.name}/`,
+                                url: `${BASE_URL}/national-parks/${np.name}`,
                             },
                             {
                                 name: `Wildlife highlights in ${capitalize(np.name)} National Park`,
@@ -155,8 +153,7 @@ export default async function page({ params }: IParams) {
                         },
                     }),
                     page.faqs && FAQSchema({ faqs: page.faqs }),
-                ])}
-            </Script>
+            ]) }} />
 
             <div className="relative h-[60vh] overflow-hidden">
                 <div

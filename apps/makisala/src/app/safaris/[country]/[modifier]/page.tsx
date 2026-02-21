@@ -1,12 +1,12 @@
-import { getTours } from '@/lib/cms-service'
+import { getTours, fetchAllNps } from '@/lib/cms-service'
 import TourCard from './_components/TourCard'
 import { countries, modifiers, safariDescriptions } from '@/lib/p_seo_info'
 import { capitalize } from '@/lib/utils'
 import { BreadcrumbSchema } from '@/components/schema'
-import Script from 'next/script'
 import { BASE_URL } from '@/lib/constants'
 import { notFound } from 'next/navigation'
 import { type Metadata } from 'next'
+import Link from 'next/link'
 
 interface Params {
     params: {
@@ -17,9 +17,15 @@ interface Params {
 
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
     const { country, modifier } = await params
+    const title = `${capitalize(modifier.replace('-', ' '))} ${capitalize(country)} safaris | Makisala Safaris`
+    const description = `Discover the best ${modifier.replace('-', ' ')} safari tours in ${country}. Tailored itineraries, expert guides, and unforgettable adventures.`
     return {
-        title: `${capitalize(modifier.replace('-', ' '))} ${capitalize(country)} safaris | Makisala Safaris`,
-        description: `Discover the best ${modifier.replace('-', ' ')} safari tours in ${country}. Tailored itineraries, expert guides, and unforgettable adventures.`,
+        title,
+        description,
+        openGraph: {
+            title,
+            description,
+        },
     }
 }
 
@@ -32,12 +38,15 @@ export default async function SafariPage({ params }: Params) {
     if (!countries.includes(country) || !modifiers.includes(modifier)) {
         return notFound()
     }
-    const tours = await getTours(country, modifier)
+    const [tours, allParks] = await Promise.all([
+        getTours(country, modifier),
+        fetchAllNps(),
+    ])
+    const countryParks = allParks.filter(p => p.country === country)
 
     return (
         <>
-            <Script type={'application/ld+json'} strategy={'lazyOnload'} id="schema-id">
-                {JSON.stringify([
+            <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify([
                     BreadcrumbSchema({
                         breadcrumbs: [
                             { name: 'Home', url: BASE_URL },
@@ -52,8 +61,7 @@ export default async function SafariPage({ params }: Params) {
                             },
                         ],
                     }),
-                ])}
-            </Script>
+            ]) }} />
             <main className="mt-[60px]">
                 <div className="bg-background min-h-screen">
                     <div className="from-safari-gold/10 to-safari-bronze/10 border-border border-b bg-gradient-to-r">
@@ -64,6 +72,23 @@ export default async function SafariPage({ params }: Params) {
                             </p>
                         </div>
                     </div>
+
+                    {countryParks.length > 0 && (
+                        <div className="container mx-auto px-4 py-6">
+                            <h2 className="mb-3 text-lg font-semibold">{`Explore ${capitalize(country)} National Parks`}</h2>
+                            <div className="flex flex-wrap gap-2">
+                                {countryParks.map(p => (
+                                    <Link
+                                        key={p.name}
+                                        href={`/national-parks/${p.name}`}
+                                        className="bg-card hover:bg-primary/10 border-border rounded-full border px-4 py-1.5 text-sm font-medium transition-colors"
+                                    >
+                                        {capitalize(p.name)}
+                                    </Link>
+                                ))}
+                            </div>
+                        </div>
+                    )}
 
                     {/* Tours Grid */}
                     <div className="container mx-auto px-4 py-8">

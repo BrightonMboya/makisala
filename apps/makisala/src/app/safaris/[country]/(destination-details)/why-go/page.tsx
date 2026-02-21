@@ -6,7 +6,6 @@ import type { IParams } from '../../types'
 import { BreadcrumbSchema, FAQSchema } from '@/components/schema'
 import { BASE_URL } from '@/lib/constants'
 import { capitalize } from '@/lib/utils'
-import Script from 'next/script'
 import { FAQ } from '@/components/faq'
 import Nav from '../_components/Nav'
 import Image from 'next/image'
@@ -53,13 +52,12 @@ export default async function HomePage({ params }: IParams) {
 
     return (
         <main className="">
-            <Script type={'application/ld+json'} strategy={'lazyOnload'} id="schema-why-go">
-                {JSON.stringify([
+            <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify([
                     BreadcrumbSchema({
                         breadcrumbs: [
                             { name: 'Home', url: BASE_URL },
                             {
-                                name: 'Tanzania',
+                                name: `${capitalize(country)} Safaris`,
                                 url: `${BASE_URL}/safaris/${country}`,
                             },
                             {
@@ -69,8 +67,7 @@ export default async function HomePage({ params }: IParams) {
                         ],
                     }),
                     destinationOverview.faqs && FAQSchema({ faqs: destinationOverview.faqs }),
-                ])}
-            </Script>
+            ]) }} />
             {/*<h1 className="pb-5 text-4xl font-medium">*/}
             {/*    {destinationOverview.title}*/}
             {/*</h1>*/}

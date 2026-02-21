@@ -6,7 +6,7 @@ import Link from 'next/link'
 import ImageCard from '@/components/home/image-card'
 import C2A from '@/components/home/call-to-action'
 import { BreadcrumbSchema, TouristDestinationSchema } from '@/components/schema'
-import Script from 'next/script'
+import { BASE_URL } from '@/lib/constants'
 import Image from 'next/image'
 import { InquiryDialog } from '@/components/enquire-dialog-button'
 import { Button } from '@repo/ui/button'
@@ -67,14 +67,13 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
 
     return (
         <>
-            <Script type={'application/ld+json'} strategy={'lazyOnload'} id="schema-script">
-                {JSON.stringify([
+            <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify([
                     BreadcrumbSchema({
                         breadcrumbs: [
-                            { name: 'Home', url: 'https://www.makisala.com' },
+                            { name: 'Home', url: BASE_URL },
                             {
-                                name: `${slug}`,
-                                url: `https://www.makisala.com/location/${slug}`,
+                                name: page.title,
+                                url: `${BASE_URL}/location/${slug}`,
                             },
                         ],
                     }),
@@ -82,11 +81,10 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
                         description: page.meta_description!,
                         image: page.featured_image_url!,
                         name: page.title,
-                        url: `https://www.makisala.com/location/${slug}`,
-                        country: slug === 'rwanda' ? 'Rwanda' : 'Tanzania',
+                        url: `${BASE_URL}/location/${slug}`,
+                        country: slug.includes('rwanda') ? 'Rwanda' : slug.includes('kenya') ? 'Kenya' : slug.includes('uganda') ? 'Uganda' : 'Tanzania',
                     }),
-                ])}
-            </Script>
+                ]) }} />
             <div className="relative min-h-screen bg-white">
                 {page.featured_image_url && (
                     <section className="relative mt-16 flex h-screen items-center justify-start overflow-hidden">

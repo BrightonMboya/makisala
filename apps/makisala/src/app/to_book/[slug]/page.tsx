@@ -10,8 +10,7 @@ import { DesktopNavigation, MobileNavigation } from './_components/PageNavigatio
 import { InquiryDialog } from '@/components/enquire-dialog-button'
 import { Button } from '@repo/ui/button'
 import { BreadcrumbSchema, TouristTripSchema } from '@/components/schema'
-import Script from 'next/script'
-import { exclusions, inclusions } from '@/lib/constants'
+import { BASE_URL, exclusions, inclusions } from '@/lib/constants'
 
 export async function generateMetadata({
     params,
@@ -71,29 +70,27 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
     }
     return (
         <>
-            <Script type={'application/ld+json'} strategy={'lazyOnload'}>
-                {JSON.stringify([
+            <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify([
                     BreadcrumbSchema({
                         breadcrumbs: [
-                            { name: 'Home', url: 'https://www.makisala.com' },
+                            { name: 'Home', url: BASE_URL },
                             {
                                 name: `${tourPackageData.title}`,
-                                url: `https://www.makisala.com/to_book/${slug}`,
+                                url: `${BASE_URL}/to_book/${slug}`,
                             },
                         ],
                     }),
                     TouristTripSchema({
                         name: tourPackageData.title,
                         description: `${tourPackageData.title} is a ${tourPackageData.numberOfDays}-day safari adventure in ${tourPackageData.destination}, ${tourPackageData.country}. Explore highlights, top experiences, and more.`,
-                        url: `https://www.makisala.com/to_book/${slug}`,
+                        url: `${BASE_URL}/to_book/${slug}`,
                         pricingStartsFrom: tourPackageData.pricing_starts_from!,
                         itineraryItems: tourPackageData.itineraries.map(item => ({
                             name: `${item.title}`,
                             description: `${item.activities}`,
                         })),
                     }),
-                ])}
-            </Script>
+                ]) }} />
             <div className="min-h-screen">
                 {/* Hero Section */}
                 <div className="relative h-[60vh] overflow-hidden lg:h-[80vh]">

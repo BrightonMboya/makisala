@@ -2,8 +2,8 @@ import { Button } from '@repo/ui/button'
 import { InquiryDialog } from '@/components/enquire-dialog-button'
 import { Users } from 'lucide-react'
 import type { Metadata } from 'next'
-import { BreadcrumbSchema } from '@/components/schema'
-import Script from 'next/script'
+import { BreadcrumbSchema, FAQSchema } from '@/components/schema'
+import { BASE_URL } from '@/lib/constants'
 import Image from 'next/image'
 import { getTours } from '@/lib/cms-service'
 import TourCard from '../../safaris/[country]/[modifier]/_components/TourCard'
@@ -34,19 +34,25 @@ export default async function Page() {
     const tours = await getTours('tanzania', 'family')
     return (
         <main>
-            <Script type={'application/ld+json'} strategy={'lazyOnload'} id="schema-script">
-                {JSON.stringify([
+            <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify([
                     BreadcrumbSchema({
                         breadcrumbs: [
-                            { name: 'Home', url: 'https://www.makisala.com' },
+                            { name: 'Home', url: BASE_URL },
                             {
                                 name: 'Family Safari',
-                                url: 'https://www.makisala.com/who-is-travelling/family-safari',
+                                url: `${BASE_URL}/who-is-travelling/family-safari`,
                             },
                         ],
                     }),
-                ])}
-            </Script>
+                    FAQSchema({
+                        faqs: [
+                            { question: 'What age is appropriate for a family safari in Africa?', answer: 'Children of all ages can enjoy a safari. We tailor itineraries based on your family, with shorter game drives for younger kids and more adventurous activities for teens. Most lodges welcome children from age 5+, with some offering special family units.' },
+                            { question: 'Is a family safari safe?', answer: 'Absolutely. You will be accompanied by professional guides at all times, and family-friendly lodges are designed with safety in mind. Vehicles are enclosed, and camps have security measures in place.' },
+                            { question: 'How long should a family safari be?', answer: 'We recommend 5 to 7 days for a family safari. This allows enough time to explore multiple parks without exhausting younger travelers. Many families add a few beach days in Zanzibar afterwards.' },
+                            { question: 'What is included in a family safari package?', answer: 'Our family safaris include airport transfers, all accommodation, meals, professional guides, game drives in 4WD vehicles, park entrance fees, and bottled water. International flights, visas, and personal expenses are not included.' },
+                        ],
+                    }),
+                ]) }} />
             <div className="bg-background min-h-screen">
                 {/* Hero Section */}
                 <section className="relative flex h-[80dvh] items-center justify-start lg:h-screen">

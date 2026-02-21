@@ -2,8 +2,8 @@ import { Button } from '@repo/ui/button'
 import { Users } from 'lucide-react'
 import type { Metadata } from 'next'
 import { InquiryDialog } from '@/components/enquire-dialog-button'
-import { BreadcrumbSchema } from '@/components/schema'
-import Script from 'next/script'
+import { BreadcrumbSchema, FAQSchema } from '@/components/schema'
+import { BASE_URL } from '@/lib/constants'
 import Image from 'next/image'
 import { getTours } from '@/lib/cms-service'
 import TourCard from '../../safaris/[country]/[modifier]/_components/TourCard'
@@ -39,19 +39,25 @@ export default async function Page() {
     const tours = await getTours('tanzania', 'honeymoon')
     return (
         <main>
-            <Script type={'application/ld+json'} strategy={'lazyOnload'} id="schema-script">
-                {JSON.stringify([
+            <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify([
                     BreadcrumbSchema({
                         breadcrumbs: [
-                            { name: 'Home', url: 'https://www.makisala.com' },
+                            { name: 'Home', url: BASE_URL },
                             {
                                 name: 'Couples and Honeymooners Safari',
-                                url: 'https://www.makisala.com/who-is-travelling/couples-and-honeymooners',
+                                url: `${BASE_URL}/who-is-travelling/couples-and-honeymooners`,
                             },
                         ],
                     }),
-                ])}
-            </Script>
+                    FAQSchema({
+                        faqs: [
+                            { question: 'What makes a honeymoon safari different from a regular safari?', answer: 'Honeymoon safaris feature private game drives, romantic lodges with plunge pools and outdoor bathtubs, candlelit dinners, and exclusive experiences designed for two. We focus on intimacy, luxury, and creating unforgettable shared moments.' },
+                            { question: 'When is the best time for a honeymoon safari in Africa?', answer: 'June to October is the dry season and offers the best wildlife viewing. However, the green season (November to March) offers lush landscapes, fewer crowds, and lower rates — perfect for a more intimate experience.' },
+                            { question: 'Can we combine a safari with a beach holiday?', answer: 'Absolutely! Many couples combine a Tanzania safari with a few days in Zanzibar for pristine beaches, turquoise waters, and romantic sunsets. We can arrange seamless transfers between your safari and beach stay.' },
+                            { question: 'How much does a honeymoon safari cost?', answer: 'Honeymoon safaris vary based on duration, accommodation style, and destinations. We offer options ranging from comfortable mid-range lodges to ultra-luxury camps. Contact us for a personalized quote tailored to your preferences and budget.' },
+                        ],
+                    }),
+                ]) }} />
 
             <div className="bg-background min-h-screen">
                 <section className="relative flex h-[80dvh] items-center justify-start lg:h-screen">

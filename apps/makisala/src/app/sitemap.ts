@@ -28,7 +28,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
             priority: 0.5,
         },
         {
-            url: `${BASE_URL}/who-is-travelling/couples-and-honemooners`,
+            url: `${BASE_URL}/who-is-travelling/couples-and-honeymooners`,
             lastModified: new Date('2025-09-05'),
             changeFrequency: 'weekly',
             priority: 0.5,
@@ -39,10 +39,10 @@ export default function sitemap(): MetadataRoute.Sitemap {
             changeFrequency: 'weekly',
             priority: 0.5,
         },
-        // place additional dynamic sitemaps here
+        // Child sitemaps
         {
             url: `${BASE_URL}/to_book/sitemap.xml`,
-            lastModified: new Date('2025-09-05'),
+            lastModified: new Date(),
         },
         {
             url: `${BASE_URL}/blog/sitemap.xml`,
@@ -50,10 +50,30 @@ export default function sitemap(): MetadataRoute.Sitemap {
         },
         {
             url: `${BASE_URL}/location/sitemap.xml`,
-            lastModified: new Date('2025-09-05'),
+            lastModified: new Date(),
         },
         {
             url: `${BASE_URL}/where-to-go/sitemap.xml`,
+            lastModified: new Date(),
+        },
+        {
+            url: `${BASE_URL}/safaris/sitemap.xml`,
+            lastModified: new Date(),
+        },
+        {
+            url: `${BASE_URL}/national-parks/sitemap.xml`,
+            lastModified: new Date(),
+        },
+        {
+            url: `${BASE_URL}/tours/sitemap.xml`,
+            lastModified: new Date(),
+        },
+        {
+            url: `${BASE_URL}/wildlife/sitemap.xml`,
+            lastModified: new Date(),
+        },
+        {
+            url: `${BASE_URL}/stays/sitemap.xml`,
             lastModified: new Date(),
         },
     ]

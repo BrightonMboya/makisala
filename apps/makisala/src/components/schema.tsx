@@ -62,10 +62,14 @@ export const BlogSchema = ({
     headline,
     image,
     description,
+    datePublished,
+    dateModified,
 }: {
     headline: string
     image: string
     description: string
+    datePublished?: string
+    dateModified?: string
 }) => {
     return {
         '@context': 'https://schema.org',
@@ -73,8 +77,8 @@ export const BlogSchema = ({
         headline: `${headline}`,
         image: `${image}`,
         author: {
-            '@type': 'Person',
-            name: 'Uwiduhaye Diane',
+            '@type': 'Organization',
+            name: 'Makisala Safaris',
         },
         publisher: {
             '@type': 'Organization',
@@ -84,8 +88,8 @@ export const BlogSchema = ({
                 url: 'https://www.makisala.com/makisala_icon.png',
             },
         },
-        datePublished: '2025-07-15',
-        dateModified: '2025-07-15',
+        datePublished: datePublished || new Date().toISOString().split('T')[0],
+        dateModified: dateModified || new Date().toISOString().split('T')[0],
         description: description,
     }
 }
@@ -387,8 +391,8 @@ export const AccomodationSchema = ({
         },
         aggregateRating: {
             '@type': 'AggregateRating',
-            ratingValue: !ratings || ratings[0].value || 4.5,
-            reviewCount: review_count,
+            ratingValue: ratings?.[0]?.value ?? 4.5,
+            reviewCount: review_count || 1,
         },
         amenityFeature: amenities?.map(amenity => {
             return {

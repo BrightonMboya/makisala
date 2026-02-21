@@ -3,13 +3,8 @@ import {
     db,
     destinations,
     inquiries,
-    itineraries,
-    type IWildlife,
-    type IWildlifeParkOverrides,
     nationalParks,
     type NewInquiries,
-    type NewItinerary,
-    type NewTourPackage,
     tourPackages,
     tours,
     wildlife,
@@ -145,77 +140,6 @@ export interface CreateTourPackageData {
     }>
 }
 
-export async function createTourPackage(data: CreateTourPackageData) {
-    try {
-        // Insert the tour package
-        const tourPackageData: NewTourPackage = {
-            title: data.title,
-            numberOfDays: data.numberOfDays,
-            country: data.country,
-            destination: data.destination,
-            overview: data.overview,
-            hero_image_url: data.hero_image_url,
-            slug: data.slug,
-            pricing_starts_from: data.pricing_starts_from,
-            updatedAt: new Date(),
-        }
-
-        const [newTourPackage] = await db.insert(tourPackages).values(tourPackageData).returning()
-
-        // Insert itineraries
-        const itineraryData: NewItinerary[] = data.itineraries.map((itinerary, index) => ({
-            tourPackageId: newTourPackage.id,
-            dayNumber: index + 1,
-            title: itinerary.title,
-            estimatedDrivingDistance: itinerary.estimatedDrivingDistance || null,
-            activities: itinerary.activities,
-            accommodation: itinerary.accommodation || null,
-        }))
-
-        const newItineraries = await db.insert(itineraries).values(itineraryData).returning()
-
-        return {
-            tourPackage: newTourPackage,
-            itineraries: newItineraries,
-        }
-    } catch (error) {
-        console.error('Error creating tour package:', error)
-        throw new Error('Failed to create tour package')
-    }
-}
-
-export async function getTourPackages() {
-    try {
-        return await db.query.tourPackages.findMany({
-            with: {
-                itineraries: {
-                    orderBy: (itineraries, { asc }) => [asc(itineraries.dayNumber)],
-                },
-            },
-            orderBy: (tourPackages, { desc }) => [desc(tourPackages.createdAt)],
-        })
-    } catch (error) {
-        console.error('Error fetching tour packages:', error)
-        throw new Error('Failed to fetch tour packages')
-    }
-}
-
-export async function getTourPackageById(id: string) {
-    try {
-        return await db.query.tourPackages.findFirst({
-            where: eq(tourPackages.id, id),
-            with: {
-                itineraries: {
-                    orderBy: (itineraries, { asc }) => [asc(itineraries.dayNumber)],
-                },
-            },
-        })
-    } catch (error) {
-        console.error('Error fetching tour package:', error)
-        throw new Error('Failed to fetch tour package')
-    }
-}
-
 export async function getTourPackagesByLocation(locationName: string) {
     const locationTerm = `%${locationName.toLowerCase()}%`
 
@@ -269,15 +193,6 @@ export async function getTourPackagesSlugs() {
         .from(tourPackages)
 }
 
-export async function deleteTourPackage(id: string) {
-    try {
-        await db.delete(tourPackages).where(eq(tourPackages.id, id))
-    } catch (error) {
-        console.error('Error deleting tour package:', error)
-        throw new Error('Failed to delete tour package')
-    }
-}
-
 export async function createInquiry(data: NewInquiries) {
     const [newInquiry] = await db.insert(inquiries).values(data)
 
@@ -311,28 +226,6 @@ export async function getTours(country: string, modifier: string) {
 export const getToursByCountry = async (country: string) => {
     return db.select().from(tours).where(eq(tours.country, country)).orderBy(desc(tours.pricing))
 }
-
-export const getProgramaticTourById = async (tour_id: string) => {
-    return db.query.tours.findFirst({
-        where: eq(tours.id, tour_id),
-        with: {
-            days: {
-                with: {
-                    itineraryAccommodations: {
-                        with: {
-                            accommodation: {
-                                with: {
-                                    images: true,
-                                },
-                            },
-                        },
-                    },
-                },
-            },
-        },
-    })
-}
-
 export const getProgramaticTourBySlug = async (slug: string) => {
     return db.query.tours.findFirst({
         where: eq(tours.slug, slug),
@@ -500,8 +393,6 @@ export async function fetchAllNps() {
         .from(nationalParks)
 }
 
-type WildlifeByNameAndPark = IWildlife & IWildlifeParkOverrides
-
 export async function getWildlifeByNameAndPark(animalName: string, parkName: string) {
     const parkId = await db.query.nationalParks.findFirst({
         where: eq(nationalParks.name, parkName),
@@ -567,6 +458,17 @@ export async function getWildlifeByNameAndPark(animalName: string, parkName: str
         .execute()
 
     return result[0]
+}
+
+export async function getWildlifeByPark(parkName: string) {
+    return await db
+        .select({
+            animalName: wildlife.name,
+        })
+        .from(wildlife)
+        .leftJoin(wildlifeParkOverrides, eq(wildlife.id, wildlifeParkOverrides.wildlife_id))
+        .leftJoin(nationalParks, eq(wildlifeParkOverrides.national_park_id, nationalParks.id))
+        .where(eq(nationalParks.name, parkName))
 }
 
 export async function AllToursSlugs() {
