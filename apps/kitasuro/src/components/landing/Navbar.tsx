@@ -16,19 +16,25 @@ export function Navbar() {
 
         <div className="hidden items-center gap-8 md:flex">
           <Link
-            href="#features"
+            href="/#features"
             className="text-muted-foreground hover:text-foreground text-sm font-medium transition-colors"
           >
             Features
           </Link>
           <Link
-            href="#testimonials"
+            href="/for-tour-operators"
             className="text-muted-foreground hover:text-foreground text-sm font-medium transition-colors"
           >
-            Testimonials
+            For Tour Operators
           </Link>
           <Link
-            href="#pricing"
+            href="/compare"
+            className="text-muted-foreground hover:text-foreground text-sm font-medium transition-colors"
+          >
+            Compare
+          </Link>
+          <Link
+            href="/#pricing"
             className="text-muted-foreground hover:text-foreground text-sm font-medium transition-colors"
           >
             Pricing

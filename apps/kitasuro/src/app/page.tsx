@@ -115,6 +115,44 @@ export default function LandingPage() {
           imageAlt="Digital Proposal Example"
         />
 
+        <section className="bg-muted/25 py-24">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <div className="grid gap-8 lg:grid-cols-2">
+              <article className="rounded-2xl border border-border/60 bg-card/70 p-8">
+                <h2 className="font-heading text-3xl font-bold tracking-tight">
+                  Built for B2B tour operations
+                </h2>
+                <p className="text-muted-foreground mt-4 text-lg">
+                  From safari operators to destination management companies, Kitasuro helps teams
+                  run proposals with less back-and-forth and more consistency.
+                </p>
+                <Link
+                  href="/for-tour-operators"
+                  className="text-primary mt-6 inline-flex items-center text-sm font-medium hover:underline"
+                >
+                  Explore solutions for operators
+                </Link>
+              </article>
+
+              <article className="rounded-2xl border border-border/60 bg-card/70 p-8">
+                <h2 className="font-heading text-3xl font-bold tracking-tight">
+                  Evaluating alternatives?
+                </h2>
+                <p className="text-muted-foreground mt-4 text-lg">
+                  See how Kitasuro compares with platforms like Wetu, Safari Office, and Safari
+                  Portal for everyday proposal workflows.
+                </p>
+                <Link
+                  href="/compare"
+                  className="text-primary mt-6 inline-flex items-center text-sm font-medium hover:underline"
+                >
+                  View comparison pages
+                </Link>
+              </article>
+            </div>
+          </div>
+        </section>
+
         {/* Pricing Section */}
         <Pricing />
 
@@ -140,7 +178,7 @@ export default function LandingPage() {
                 href="https://cal.com/brightonmboya/30min"
                 className="border-input bg-background hover:bg-accent hover:text-accent-foreground focus-visible:ring-ring inline-flex h-12 items-center justify-center rounded-full border px-8 text-sm font-medium shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none"
               >
-                Talk to our team
+                Book a demo call
               </Link>
             </div>
           </div>

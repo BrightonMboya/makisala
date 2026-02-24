@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from 'next/link';
 
 export function Footer() {
   return (
@@ -6,42 +6,104 @@ export function Footer() {
       <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8 lg:py-16">
         <div className="grid grid-cols-2 gap-8 md:grid-cols-4 lg:grid-cols-5">
           <div className="col-span-2 lg:col-span-2">
-            <Link href="/" className="flex items-center gap-2 mb-4">
+            <Link href="/" className="mb-4 flex items-center gap-2">
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-                <span className="text-xl font-bold font-heading leading-none">K</span>
+                <span className="font-heading text-xl leading-none font-bold">K</span>
               </div>
-              <span className="text-lg font-semibold tracking-tight font-heading">Kitasuro</span>
+              <span className="font-heading text-lg font-semibold tracking-tight">Kitasuro</span>
             </Link>
             <p className="max-w-xs text-sm text-muted-foreground">
-              Itinerary and proposal software for tour operators and travel agencies. Build, share, and close — all from one place.
+              Itinerary and proposal software for tour operators and travel agencies. Build, share,
+              and close from one place.
             </p>
           </div>
-          
+
           <div>
-            <h3 className="text-sm font-semibold text-foreground tracking-wider uppercase">Product</h3>
+            <h3 className="text-foreground text-sm font-semibold tracking-wider uppercase">
+              Product
+            </h3>
             <ul className="mt-4 space-y-3">
-              <li><Link href="#features" className="text-sm text-muted-foreground hover:text-foreground">Features</Link></li>
-              <li><Link href="#pricing" className="text-sm text-muted-foreground hover:text-foreground">Pricing</Link></li>
-              <li><Link href="/itineraries" className="text-sm text-muted-foreground hover:text-foreground">Itinerary Builder</Link></li>
-              <li><Link href="/library" className="text-sm text-muted-foreground hover:text-foreground">Content Library</Link></li>
+              <li>
+                <Link href="/#features" className="text-sm text-muted-foreground hover:text-foreground">
+                  Features
+                </Link>
+              </li>
+              <li>
+                <Link href="/#pricing" className="text-sm text-muted-foreground hover:text-foreground">
+                  Pricing
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/for-tour-operators"
+                  className="text-sm text-muted-foreground hover:text-foreground"
+                >
+                  For Tour Operators
+                </Link>
+              </li>
+              <li>
+                <Link href="/compare" className="text-sm text-muted-foreground hover:text-foreground">
+                  Compare Alternatives
+                </Link>
+              </li>
             </ul>
           </div>
 
           <div>
-            <h3 className="text-sm font-semibold text-foreground tracking-wider uppercase">Company</h3>
+            <h3 className="text-foreground text-sm font-semibold tracking-wider uppercase">
+              Resources
+            </h3>
             <ul className="mt-4 space-y-3">
-              <li><Link href="/about" className="text-sm text-muted-foreground hover:text-foreground">About</Link></li>
-              <li><Link href="/blog" className="text-sm text-muted-foreground hover:text-foreground">Blog</Link></li>
-              <li><Link href="/careers" className="text-sm text-muted-foreground hover:text-foreground">Careers</Link></li>
-              <li><Link href="/contact" className="text-sm text-muted-foreground hover:text-foreground">Contact</Link></li>
+              <li>
+                <Link
+                  href="/compare/wetu-alternative"
+                  className="text-sm text-muted-foreground hover:text-foreground"
+                >
+                  Wetu Alternative
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/compare/safari-office-alternative"
+                  className="text-sm text-muted-foreground hover:text-foreground"
+                >
+                  Safari Office Alternative
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/compare/safari-portal-alternative"
+                  className="text-sm text-muted-foreground hover:text-foreground"
+                >
+                  Safari Portal Alternative
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="https://cal.com/brightonmboya/30min"
+                  className="text-sm text-muted-foreground hover:text-foreground"
+                >
+                  Book a Demo
+                </Link>
+              </li>
             </ul>
           </div>
 
           <div>
-            <h3 className="text-sm font-semibold text-foreground tracking-wider uppercase">Legal</h3>
+            <h3 className="text-foreground text-sm font-semibold tracking-wider uppercase">
+              Account
+            </h3>
             <ul className="mt-4 space-y-3">
-              <li><Link href="/privacy" className="text-sm text-muted-foreground hover:text-foreground">Privacy</Link></li>
-              <li><Link href="/terms" className="text-sm text-muted-foreground hover:text-foreground">Terms</Link></li>
+              <li>
+                <Link href="/sign-up" className="text-sm text-muted-foreground hover:text-foreground">
+                  Start Free Trial
+                </Link>
+              </li>
+              <li>
+                <Link href="/login" className="text-sm text-muted-foreground hover:text-foreground">
+                  Log In
+                </Link>
+              </li>
             </ul>
           </div>
         </div>
