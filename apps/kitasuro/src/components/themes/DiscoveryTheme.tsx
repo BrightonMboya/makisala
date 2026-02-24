@@ -514,7 +514,7 @@ const IntroductionSection = ({ data }: { data: ItineraryData }) => {
 // ============================================================================
 // JOURNEY OVERVIEW - Map and Timeline
 // ============================================================================
-const JourneyOverview = ({ data, onDayTitleChange }: { data: ItineraryData; onDayTitleChange?: (dayNumber: number, title: string) => void }) => (
+const JourneyOverview = ({ data }: { data: ItineraryData }) => (
   <section className="bg-white">
     <div className="grid grid-cols-1 lg:grid-cols-2">
       {/* Map */}
@@ -565,23 +565,21 @@ const JourneyOverview = ({ data, onDayTitleChange }: { data: ItineraryData; onDa
                     <p className="mb-1 text-xs tracking-wider text-stone-400 uppercase">
                       {day.date}
                     </p>
-                    {onDayTitleChange ? (
-                      <input
-                        type="text"
-                        value={day.title}
-                        onChange={(e) => onDayTitleChange(day.day, e.target.value)}
-                        placeholder={`Day ${day.day} title...`}
-                        className="mb-1 w-full rounded-md border border-dashed border-stone-300 bg-white/60 px-2 py-1 font-serif text-lg text-stone-800 outline-none transition-colors placeholder:text-stone-300 hover:border-stone-400 hover:bg-white focus:border-stone-500 focus:bg-white focus:ring-1 focus:ring-stone-300"
-                      />
-                    ) : (
-                      <h4 className="mb-1 font-serif text-lg text-stone-800">{day.title}</h4>
-                    )}
-                    {day.destination && (
-                      <p className="flex items-center gap-1.5 text-sm text-stone-500">
-                        <MapPin className="h-3.5 w-3.5" />
-                        {day.destination}
-                      </p>
-                    )}
+                    <h4 className="mb-1 font-serif text-lg text-stone-800">
+                      {day.activities.length > 0
+                        ? day.activities.map((a) => a.activity).join(' & ')
+                        : day.title}
+                    </h4>
+                    {(() => {
+                      const activityLocs = [...new Set(day.activities.map((a) => a.location).filter(Boolean))];
+                      const displayLocation = activityLocs.length > 0 ? activityLocs.join(' & ') : day.destination;
+                      return displayLocation ? (
+                        <p className="flex items-center gap-1.5 text-sm text-stone-500">
+                          <MapPin className="h-3.5 w-3.5" />
+                          {displayLocation}
+                        </p>
+                      ) : null;
+                    })()}
                   </div>
                 </div>
               </motion.div>
@@ -707,6 +705,10 @@ const DaySection = ({
     data.nationalParks && day.nationalParkId ? data.nationalParks[day.nationalParkId] : null;
   const accommodationDetails = data.accommodations.find((a) => a.name === day.accommodation);
 
+  // Derive location from activity locations, falling back to day.destination (national park)
+  const activityLocations = [...new Set(day.activities.map((a) => a.location).filter(Boolean))];
+  const dayLocation = activityLocations.length > 0 ? activityLocations.join(' & ') : day.destination;
+
   // Destination image - previewImage first, then park's featured image, then fallback
   const destinationImage =
     day.previewImage ||
@@ -739,7 +741,7 @@ const DaySection = ({
       >
         <Image
           src={destinationImage}
-          alt={day.destination || day.title}
+          alt={dayLocation || day.title}
           fill
           className="object-cover"
         />
@@ -795,10 +797,10 @@ const DaySection = ({
                 </span>
                 <div>
                   <p className="mb-2 text-sm tracking-wider text-white/60 uppercase">{day.date}</p>
-                  {day.destination && (
+                  {dayLocation && (
                     <p className="flex items-center gap-2 text-base text-white/80">
                       <MapPin className="h-4 w-4" />
-                      {day.destination}
+                      {dayLocation}
                     </p>
                   )}
                 </div>
@@ -1005,10 +1007,10 @@ const DaySection = ({
                   {day.accommodation}
                 </h3>
 
-                {day.destination && (
+                {dayLocation && (
                   <p className="mb-8 flex items-center gap-2 text-sm text-stone-500">
                     <MapPin className="h-4 w-4" />
-                    {day.destination}
+                    {dayLocation}
                   </p>
                 )}
 
@@ -1162,10 +1164,9 @@ interface DiscoveryThemeProps {
   data: ItineraryData;
   onHeroImageChange?: (url: string) => void;
   onDayImageChange?: (dayNumber: number, url: string) => void;
-  onDayTitleChange?: (dayNumber: number, title: string) => void;
 }
 
-export default function DiscoveryTheme({ data, onHeroImageChange, onDayImageChange, onDayTitleChange }: DiscoveryThemeProps) {
+export default function DiscoveryTheme({ data, onHeroImageChange, onDayImageChange }: DiscoveryThemeProps) {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [confirmName, setConfirmName] = useState(data.clientName || '');
   const [isConfirming, setIsConfirming] = useState(false);
@@ -1207,7 +1208,7 @@ export default function DiscoveryTheme({ data, onHeroImageChange, onDayImageChan
         onImageChange={onHeroImageChange ? handleHeroImageChange : undefined}
       />
       <IntroductionSection data={data} />
-      <JourneyOverview data={data} onDayTitleChange={onDayTitleChange} />
+      <JourneyOverview data={data} />
       <PricingSection data={data} onConfirm={openConfirmModal} />
 
       {data.itinerary.map((day, index) => (

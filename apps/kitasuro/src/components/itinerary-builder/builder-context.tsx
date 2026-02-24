@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, type ReactNode, useEffect } from 'react';
+import React, { createContext, useContext, useState, useRef, type ReactNode, useEffect } from 'react';
 import type {
   BuilderContextType,
   BuilderDay,
@@ -69,9 +69,11 @@ export function BuilderProvider({
     'https://images.unsplash.com/photo-1516426122078-c23e76319801?q=80&w=2000&auto=format&fit=crop'
   );
 
-  // Load initial data if provided
+  // Only load initial data once to prevent React Query refetches from overwriting user edits
+  const hasInitialized = useRef(false);
   useEffect(() => {
-    if (initialData) {
+    if (initialData && !hasInitialized.current) {
+      hasInitialized.current = true;
       if (initialData.tourId) setTourId(initialData.tourId);
       if (initialData.tourType) setTourType(initialData.tourType);
       if (initialData.clientId) setClientId(initialData.clientId);

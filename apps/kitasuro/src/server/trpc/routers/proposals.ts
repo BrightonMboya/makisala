@@ -204,7 +204,7 @@ export const proposalsRouter = router({
                 },
               },
               meals: { columns: { breakfast: true, lunch: true, dinner: true } },
-              activities: { columns: { id: true, name: true, description: true } },
+              activities: { columns: { id: true, name: true, description: true, location: true, moment: true, isOptional: true, imageUrl: true } },
               transportation: {
                 columns: {
                   id: true,

@@ -70,7 +70,7 @@ export function ActivityModal({
   // Location search handler
   const handleLocationSearch = useCallback(async (query: string) => {
     const results = await utils.nationalParks.search.fetch({ query, limit: 10 });
-    return results.map((p) => ({ value: p.id, label: p.name }));
+    return results.map((p) => ({ value: p.name, label: p.name }));
   }, [utils]);
 
   useEffect(() => {

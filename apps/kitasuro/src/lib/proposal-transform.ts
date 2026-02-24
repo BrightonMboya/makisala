@@ -181,16 +181,6 @@ export async function transformProposalToItineraryData(
       ? tourCountry.charAt(0).toUpperCase() + tourCountry.slice(1).toLowerCase()
       : 'East Africa';
 
-  // Helper to sanitize IDs from location
-  const sanitizeLocation = (loc: string | null | undefined): string | undefined => {
-    if (!loc) return undefined;
-    // Check if it looks like a UUID (standard format: 8-4-4-4-12 hex chars)
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    if (uuidRegex.test(loc)) return undefined;
-    // Also check for long hex strings or database IDs
-    if (loc.length > 20 && /^[a-z0-9-]+$/i.test(loc) && loc.includes('-')) return undefined;
-    return loc;
-  };
 
   // Convert days from relational data
   const itinerary: ThemeDay[] = proposalDays.map((day, index) => {
@@ -203,7 +193,7 @@ export async function transformProposalToItineraryData(
         time: act.moment, // Keep as "Morning", "Afternoon", "Full Day", etc.
         activity: capitalize(act.name),
         description: act.description || '',
-        location: sanitizeLocation(act.location),
+        location: act.location || undefined,
       };
     });
 
