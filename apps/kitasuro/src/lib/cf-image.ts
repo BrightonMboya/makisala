@@ -1,13 +1,13 @@
 export interface CfImageOptions {
-  width?: number
-  height?: number
-  quality?: number
-  fit?: 'scale-down' | 'contain' | 'cover' | 'crop' | 'pad'
-  format?: 'auto' | 'webp' | 'avif' | 'json'
-  sharpen?: number
-  brightness?: number
-  contrast?: number
-  dpr?: number
+  width?: number;
+  height?: number;
+  quality?: number;
+  fit?: 'scale-down' | 'contain' | 'cover' | 'crop' | 'pad';
+  format?: 'auto' | 'webp' | 'avif' | 'json';
+  sharpen?: number;
+  brightness?: number;
+  contrast?: number;
+  dpr?: number;
 }
 
 /**
@@ -26,10 +26,7 @@ export interface CfImageOptions {
  *   quality: 85,
  * })
  */
-export function cfImage(
-  imageUrl: string,
-  options: CfImageOptions = {}
-): string {
+export function cfImage(imageUrl: string, options: CfImageOptions = {}): string {
   const {
     width,
     height,
@@ -40,27 +37,39 @@ export function cfImage(
     brightness,
     contrast,
     dpr,
-  } = options
+  } = options;
 
-  const params: string[] = []
+  const params: string[] = [];
 
-  params.push(`quality=${quality}`)
-  params.push(`format=${format}`)
-  params.push(`fit=${fit}`)
-  if (sharpen) params.push(`sharpen=${sharpen}`)
-  if (width) params.push(`width=${width}`)
-  if (height) params.push(`height=${height}`)
-  if (brightness) params.push(`brightness=${brightness}`)
-  if (contrast) params.push(`contrast=${contrast}`)
-  if (dpr) params.push(`dpr=${dpr}`)
+  params.push(`quality=${quality}`);
+  params.push(`format=${format}`);
+  params.push(`fit=${fit}`);
+  if (sharpen) params.push(`sharpen=${sharpen}`);
+  if (width) params.push(`width=${width}`);
+  if (height) params.push(`height=${height}`);
+  if (brightness) params.push(`brightness=${brightness}`);
+  if (contrast) params.push(`contrast=${contrast}`);
+  if (dpr) params.push(`dpr=${dpr}`);
 
-  const paramString = params.join(',')
+  const paramString = params.join(',');
 
   try {
-    const url = new URL(imageUrl)
-    return `${url.origin}/cdn-cgi/image/${paramString}${url.pathname}`
+    const url = new URL(imageUrl);
+    const pathname = url.pathname.toLowerCase();
+
+    // // Avoid nesting Cloudflare image transforms.
+    // if (pathname.includes('/cdn-cgi/image/')) {
+    //   return imageUrl
+    // }
+
+    // Some R2 assets are stored as AVIF and may fail through Image Resizing.
+    // Serve AVIF files directly from the bucket URL instead.
+    if (pathname.endsWith('.avif')) {
+      return imageUrl;
+    }
+
+    return `${url.origin}/cdn-cgi/image/${paramString}${url.pathname}`;
   } catch {
-    return imageUrl
+    return imageUrl;
   }
 }
-

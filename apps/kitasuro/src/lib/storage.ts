@@ -30,6 +30,7 @@ const ALLOWED_CONTENT_TYPES = [
   'image/png',
   'image/webp',
   'image/gif',
+  'image/avif',
 ] as const;
 
 interface UploadToStorageParams {
