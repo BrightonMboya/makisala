@@ -1,4 +1,3 @@
-import Image from 'next/image';
 import Link from 'next/link';
 import {
   ArrowRight,
@@ -43,31 +42,32 @@ type ComparisonTemplateProps = {
   testimonials: Testimonial[];
   faqs: Array<{ question: string; answer: string }>;
   pagePath: string;
+  competitorDefaultPerSeat?: number;
 };
 
 const kitasuroAdvantages = [
   {
-    title: 'Live collaboration without version drift',
+    title: 'One workspace for sales and ops',
     description:
-      'Sales and operations teams work from one itinerary source, so edits and approvals stay synchronized.',
+      'Both teams edit the same live proposal. No more emailing PDFs back and forth or reconciling conflicting versions.',
     icon: Users,
   },
   {
-    title: 'Predictable monthly spend as you grow',
+    title: 'Flat pricing from $49/mo',
     description:
-      'Avoid per-seat cost creep. Forecast software cost with fixed plans that fit real team growth.',
+      'Three fixed plans. No per-seat surcharges, no surprise add-on fees. Your cost stays the same as your team grows.',
     icon: Coins,
   },
   {
-    title: 'Brand-level control on every proposal',
+    title: 'Your brand on every proposal',
     description:
-      'Use custom images and visual style standards so every itinerary reflects your company quality.',
+      'Upload your own photography and apply brand styling so clients see your company — not a generic template.',
     icon: Images,
   },
   {
-    title: 'Workflow built for enquiry-to-send speed',
+    title: 'Enquiry to sent proposal, same day',
     description:
-      'Move from brief to client-ready proposal faster with fewer handoffs and less channel switching.',
+      'Build, review, and send a branded itinerary in one session. Fewer handoffs means faster turnaround during peak season.',
     icon: Workflow,
   },
 ];
@@ -81,6 +81,7 @@ export function ComparisonTemplate({
   testimonials,
   faqs,
   pagePath,
+  competitorDefaultPerSeat,
 }: ComparisonTemplateProps) {
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ratiba.app';
   const normalizedPath = pagePath.startsWith('/') ? pagePath : `/${pagePath}`;
@@ -160,28 +161,29 @@ export function ComparisonTemplate({
 
             <div className="text-muted-foreground mt-3 flex flex-wrap items-center gap-x-5 gap-y-1 text-sm">
               <span>No credit card required</span>
-              <span>Set up your first proposal in minutes</span>
+              <span>Build your first proposal in under 10 minutes</span>
             </div>
 
             <div className="mt-8 grid gap-4 md:grid-cols-3">
               <article className="border-border/70 bg-card/65 rounded-2xl border p-4">
                 <p className="text-xs font-semibold tracking-wide uppercase">Best for</p>
                 <p className="mt-2 text-sm text-balance">
-                  Tour operators that need one proposal workflow across consultants and operations.
+                  Safari and tour operators where sales and ops both touch the proposal before it
+                  reaches the client.
                 </p>
               </article>
               <article className="border-border/70 bg-card/65 rounded-2xl border p-4">
                 <p className="text-xs font-semibold tracking-wide uppercase">Core difference</p>
                 <p className="mt-2 text-sm text-balance">
-                  Fixed monthly pricing and in-context collaboration designed for faster team
-                  execution.
+                  Flat monthly pricing ($49–$249/mo), real-time collaboration, and branded proposals
+                  — all in one workspace.
                 </p>
               </article>
               <article className="border-border/70 bg-card/65 rounded-2xl border p-4">
-                <p className="text-xs font-semibold tracking-wide uppercase">Decision path</p>
+                <p className="text-xs font-semibold tracking-wide uppercase">How to decide</p>
                 <p className="mt-2 text-sm text-balance">
-                  Compare capabilities, model cost, then run one live proposal test before
-                  migration.
+                  Read the comparison below, model your cost with the calculator, then build one
+                  real proposal in each tool.
                 </p>
               </article>
             </div>
@@ -192,11 +194,11 @@ export function ComparisonTemplate({
           <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
             <div className="mb-10 max-w-3xl">
               <h2 className="font-heading text-3xl font-bold tracking-tight sm:text-4xl">
-                Why operators shortlist Ratiba
+                Four reasons operators switch to Ratiba
               </h2>
               <p className="text-muted-foreground mt-3 text-lg">
-                These are the four criteria most teams use when comparing itinerary and proposal
-                platforms for safari and tour operations.
+                The same pain points come up in every evaluation call: version chaos, rising costs,
+                inconsistent branding, and slow turnaround.
               </p>
             </div>
             <div className="grid gap-4 md:grid-cols-2">
@@ -233,45 +235,12 @@ export function ComparisonTemplate({
           <div className="relative mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
             <div className="mb-10 max-w-3xl">
               <h2 className="font-heading text-3xl font-bold tracking-tight sm:text-4xl">
-                Designed for proposal-first sales teams
+                Built for teams that sell through proposals
               </h2>
               <p className="text-muted-foreground mt-3 text-lg">
-                Keep proposal quality high with branded imagery, clear itinerary structure, and a
-                polished output your team can send quickly.
+                Your proposal is your first impression. Ratiba keeps it branded, accurate, and out
+                the door before the client calls your competitor.
               </p>
-            </div>
-
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              <div className="border-border/60 bg-card/80 relative overflow-hidden rounded-2xl border p-2 shadow-xl md:translate-y-8">
-                <div className="bg-background relative aspect-[4/3] overflow-hidden rounded-xl">
-                  <Image
-                    src="/img_1.png"
-                    alt="Ratiba itinerary builder"
-                    fill
-                    className="object-cover"
-                  />
-                </div>
-              </div>
-              <div className="border-border/60 bg-card/80 relative overflow-hidden rounded-2xl border p-2 shadow-2xl">
-                <div className="bg-background relative aspect-[4/3] overflow-hidden rounded-xl">
-                  <Image
-                    src="/proposal preview.png"
-                    alt="Ratiba proposal preview"
-                    fill
-                    className="object-cover"
-                  />
-                </div>
-              </div>
-              <div className="border-border/60 bg-card/80 relative overflow-hidden rounded-2xl border p-2 shadow-xl md:-translate-y-6">
-                <div className="bg-background relative aspect-[4/3] overflow-hidden rounded-xl">
-                  <Image
-                    src="/proposal_preivew-1.png"
-                    alt="Ratiba branded proposal screen"
-                    fill
-                    className="object-cover"
-                  />
-                </div>
-              </div>
             </div>
           </div>
         </section>
@@ -283,8 +252,8 @@ export function ComparisonTemplate({
                 Ratiba vs {competitorName}: feature comparison matrix
               </h2>
               <p className="text-muted-foreground mt-3 max-w-3xl">
-                Compare the capabilities most teams evaluate when selecting itinerary software,
-                travel proposal software, and safari operations tools.
+                A side-by-side look at the features that matter most when choosing itinerary
+                software, travel proposal tools, and safari operations platforms.
               </p>
             </div>
 
@@ -345,11 +314,11 @@ export function ComparisonTemplate({
           <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
             <div className="mb-8">
               <h2 className="font-heading text-3xl font-bold tracking-tight">
-                What operators say in evaluation calls
+                What tour operators tell us during demos
               </h2>
               <p className="text-muted-foreground mt-3 text-lg">
-                Representative voice-of-customer insights from tour operators assessing proposal
-                software options.
+                These are the problems that come up most often when teams evaluate proposal
+                software.
               </p>
             </div>
 
@@ -378,7 +347,7 @@ export function ComparisonTemplate({
             <div className="grid gap-6 lg:grid-cols-2">
               <article className="border-border/60 bg-card/60 rounded-2xl border p-6 sm:p-8">
                 <h2 className="font-heading text-3xl font-bold tracking-tight">
-                  Why teams choose Ratiba
+                  Why teams switch to Ratiba
                 </h2>
                 <ul className="mt-6 space-y-4">
                   {switchReasons.map((reason) => (
@@ -390,7 +359,10 @@ export function ComparisonTemplate({
                 </ul>
               </article>
 
-              <PricingSavingsCalculator />
+              <PricingSavingsCalculator
+                competitorName={competitorName}
+                defaultPerSeat={competitorDefaultPerSeat}
+              />
             </div>
           </div>
         </section>
@@ -400,27 +372,27 @@ export function ComparisonTemplate({
             <div className="grid gap-6 lg:grid-cols-2">
               <article className="border-border/60 bg-card/60 rounded-2xl border p-6 sm:p-8">
                 <h2 className="font-heading text-2xl font-bold tracking-tight sm:text-3xl">
-                  How to evaluate Ratiba vs {competitorName}
+                  How to run a fair evaluation
                 </h2>
                 <p className="text-muted-foreground mt-3">
-                  Use the same itinerary scenario in both tools, include sales and operations users,
-                  then compare output quality, turnaround time, and internal handoff clarity.
+                  Pick one real client enquiry and build the proposal in both Ratiba and{' '}
+                  {competitorName}. Include your sales and ops team so you see the full workflow.
                 </p>
                 <ul className="text-muted-foreground mt-5 space-y-2 text-sm">
-                  <li>- Create one proposal with identical client requirements.</li>
-                  <li>- Capture total build and internal review time.</li>
-                  <li>- Review proposal presentation quality and brand consistency.</li>
-                  <li>- Confirm total annual software cost at your target team size.</li>
+                  <li>- Build the same itinerary with the same client brief in both tools.</li>
+                  <li>- Time the full cycle: build, internal review, and client send.</li>
+                  <li>- Compare how the final proposal looks to the client.</li>
+                  <li>- Model total annual cost at your current and projected team size.</li>
                 </ul>
               </article>
 
               <article className="border-border/60 bg-card/60 rounded-2xl border p-6 sm:p-8">
                 <h2 className="font-heading text-2xl font-bold tracking-tight sm:text-3xl">
-                  Explore more alternatives
+                  Compare other tools
                 </h2>
                 <p className="text-muted-foreground mt-3">
-                  Compare other safari and tour operator software options to validate your
-                  shortlist.
+                  Evaluating multiple options? See how Ratiba stacks up against other safari and
+                  tour operator platforms.
                 </p>
                 <div className="mt-5 flex flex-col gap-2 text-sm">
                   {[
@@ -472,24 +444,24 @@ export function ComparisonTemplate({
         <section className="py-20">
           <div className="mx-auto max-w-4xl px-4 text-center sm:px-6 lg:px-8">
             <h2 className="font-heading text-4xl font-bold tracking-tight">
-              Compare quickly, then test in your own workflow
+              Build your first proposal today — free
             </h2>
             <p className="text-muted-foreground mt-4 text-lg">
-              Build one real proposal in Ratiba and see how your team handles collaboration,
-              branding, and pricing in practice.
+              No credit card, no sales call required. Pick a real client enquiry, build the
+              itinerary in Ratiba, and see the difference for yourself.
             </p>
             <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
               <Link
                 href="/sign-up"
                 className="bg-primary text-primary-foreground hover:bg-primary/90 inline-flex h-12 items-center justify-center rounded-full px-8 text-sm font-medium shadow-sm transition-colors"
               >
-                Build my first proposal <ArrowRight className="ml-2 h-4 w-4" />
+                Start my free trial <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
               <Link
                 href="https://cal.com/brightonmboya/30min"
                 className="border-input bg-background hover:bg-accent hover:text-accent-foreground inline-flex h-12 items-center justify-center rounded-full border px-8 text-sm font-medium shadow-sm transition-colors"
               >
-                Get a live comparison demo
+                See a live walkthrough
               </Link>
             </div>
           </div>

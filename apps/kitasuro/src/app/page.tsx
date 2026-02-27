@@ -4,7 +4,7 @@ import { FeatureGrid } from '@/components/landing/FeatureGrid';
 import { FeatureHighlight } from '@/components/landing/FeatureHighlight';
 import { Pricing } from '@/components/landing/Pricing';
 import { Footer } from '@/components/landing/Footer';
-import { Compass, Globe, Layout, Library, Share2, Sparkles, ArrowRight, Quote } from 'lucide-react';
+import { ArrowRight, Compass, Globe, Layout, Library, Share2, Sparkles } from 'lucide-react';
 import Link from 'next/link';
 
 export default function LandingPage() {
@@ -50,12 +50,14 @@ export default function LandingPage() {
     {
       number: '01',
       title: 'Build your itinerary',
-      description: 'Drag in accommodations, activities, and transfers. The builder handles maps, pricing, and day structure.',
+      description:
+        'Drag in accommodations, activities, and transfers. The builder handles maps, pricing, and day structure.',
     },
     {
       number: '02',
       title: 'Personalize for your client',
-      description: 'Add your brand, tailor descriptions, and fine-tune the experience for each traveler.',
+      description:
+        'Add your brand, tailor descriptions, and fine-tune the experience for each traveler.',
     },
     {
       number: '03',
@@ -72,21 +74,26 @@ export default function LandingPage() {
         <Hero />
 
         {/* Trusted By / Social Proof */}
-        <section className="border-y border-border/40 py-12">
+        <section className="border-border/40 border-y py-12">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <p className="animate-slide-up-fade text-center text-sm font-medium text-muted-foreground" style={{ '--delay': '700ms' } as React.CSSProperties}>
+            <p
+              className="animate-slide-up-fade text-muted-foreground text-center text-sm font-medium"
+              style={{ '--delay': '700ms' } as React.CSSProperties}
+            >
               Trusted by tour operators across East Africa
             </p>
             <div className="mt-8 flex flex-wrap items-center justify-center gap-x-12 gap-y-4">
-              {['Safari operators', 'DMC teams', 'Travel agencies', 'Luxury outfitters'].map((label, i) => (
-                <span
-                  key={label}
-                  className="animate-slide-up-fade text-muted-foreground/50 font-heading text-lg font-semibold tracking-tight"
-                  style={{ '--delay': `${750 + i * 80}ms` } as React.CSSProperties}
-                >
-                  {label}
-                </span>
-              ))}
+              {['Safari operators', 'DMC teams', 'Travel agencies', 'Luxury outfitters'].map(
+                (label, i) => (
+                  <span
+                    key={label}
+                    className="animate-slide-up-fade text-muted-foreground/50 font-heading text-lg font-semibold tracking-tight"
+                    style={{ '--delay': `${750 + i * 80}ms` } as React.CSSProperties}
+                  >
+                    {label}
+                  </span>
+                ),
+              )}
             </div>
           </div>
         </section>
@@ -94,8 +101,11 @@ export default function LandingPage() {
         {/* Features Grid Section */}
         <section id="features" className="py-24">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <div className="animate-slide-up-fade mb-16 text-center" style={{ '--delay': '0ms' } as React.CSSProperties}>
-              <span className="text-primary mb-4 inline-block rounded-full border border-primary/20 bg-primary/5 px-4 py-1.5 text-sm font-medium">
+            <div
+              className="animate-slide-up-fade mb-16 text-center"
+              style={{ '--delay': '0ms' } as React.CSSProperties}
+            >
+              <span className="text-primary border-primary/20 bg-primary/5 mb-4 inline-block rounded-full border px-4 py-1.5 text-sm font-medium">
                 Features
               </span>
               <h2 className="font-heading text-3xl font-bold tracking-tight sm:text-4xl">
@@ -160,8 +170,11 @@ export default function LandingPage() {
         <section className="relative py-24">
           <div className="bg-dot-pattern pointer-events-none absolute inset-0 [mask-image:radial-gradient(ellipse_at_center,black_20%,transparent_60%)] opacity-30" />
           <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <div className="animate-slide-up-fade mb-16 text-center" style={{ '--delay': '0ms' } as React.CSSProperties}>
-              <span className="text-primary mb-4 inline-block rounded-full border border-primary/20 bg-primary/5 px-4 py-1.5 text-sm font-medium">
+            <div
+              className="animate-slide-up-fade mb-16 text-center"
+              style={{ '--delay': '0ms' } as React.CSSProperties}
+            >
+              <span className="text-primary border-primary/20 bg-primary/5 mb-4 inline-block rounded-full border px-4 py-1.5 text-sm font-medium">
                 How it works
               </span>
               <h2 className="font-heading text-3xl font-bold tracking-tight sm:text-4xl">
@@ -172,11 +185,15 @@ export default function LandingPage() {
               {steps.map((step, i) => (
                 <div
                   key={step.number}
-                  className="animate-slide-up-fade relative rounded-2xl border border-border/50 bg-card/50 p-8"
+                  className="animate-slide-up-fade border-border/50 bg-card/50 relative rounded-2xl border p-8"
                   style={{ '--delay': `${i * 120}ms` } as React.CSSProperties}
                 >
-                  <span className="font-heading text-primary/20 text-6xl font-bold">{step.number}</span>
-                  <h3 className="font-heading mt-4 text-xl font-semibold tracking-tight">{step.title}</h3>
+                  <span className="font-heading text-primary/20 text-6xl font-bold">
+                    {step.number}
+                  </span>
+                  <h3 className="font-heading mt-4 text-xl font-semibold tracking-tight">
+                    {step.title}
+                  </h3>
                   <p className="text-muted-foreground mt-3 leading-relaxed">{step.description}</p>
                 </div>
               ))}
@@ -188,13 +205,16 @@ export default function LandingPage() {
         <section className="py-24">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div className="grid gap-8 lg:grid-cols-2">
-              <article className="animate-slide-up-fade group rounded-2xl border border-border/60 bg-card/70 p-8 transition-all duration-300 hover:shadow-lg" style={{ '--delay': '0ms' } as React.CSSProperties}>
+              <article
+                className="animate-slide-up-fade group border-border/60 bg-card/70 rounded-2xl border p-8 transition-all duration-300 hover:shadow-lg"
+                style={{ '--delay': '0ms' } as React.CSSProperties}
+              >
                 <h2 className="font-heading text-3xl font-bold tracking-tight">
                   Built for B2B tour operations
                 </h2>
                 <p className="text-muted-foreground mt-4 text-lg leading-relaxed">
-                  From safari operators to destination management companies, Ratiba helps teams
-                  run proposals with less back-and-forth and more consistency.
+                  From safari operators to destination management companies, Ratiba helps teams run
+                  proposals with less back-and-forth and more consistency.
                 </p>
                 <Link
                   href="/for-tour-operators"
@@ -204,13 +224,16 @@ export default function LandingPage() {
                 </Link>
               </article>
 
-              <article className="animate-slide-up-fade group rounded-2xl border border-border/60 bg-card/70 p-8 transition-all duration-300 hover:shadow-lg" style={{ '--delay': '100ms' } as React.CSSProperties}>
+              <article
+                className="animate-slide-up-fade group border-border/60 bg-card/70 rounded-2xl border p-8 transition-all duration-300 hover:shadow-lg"
+                style={{ '--delay': '100ms' } as React.CSSProperties}
+              >
                 <h2 className="font-heading text-3xl font-bold tracking-tight">
                   Evaluating alternatives?
                 </h2>
                 <p className="text-muted-foreground mt-4 text-lg leading-relaxed">
-                  See how Ratiba compares with platforms like Wetu, Safari Office, and Safari
-                  Portal for everyday proposal workflows.
+                  See how Ratiba compares with platforms like Wetu, Safari Office, and Safari Portal
+                  for everyday proposal workflows.
                 </p>
                 <Link
                   href="/compare"
@@ -224,20 +247,71 @@ export default function LandingPage() {
         </section>
 
         {/* Testimonial */}
-        <section className="py-24">
-          <div className="mx-auto max-w-4xl px-4 text-center sm:px-6 lg:px-8">
-            <div className="animate-slide-up-fade" style={{ '--delay': '0ms' } as React.CSSProperties}>
-              <Quote className="text-primary/30 mx-auto h-10 w-10" />
-              <blockquote className="font-heading mt-6 text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
-                &ldquo;We used to spend hours on each proposal. Now we send polished, interactive itineraries the same day an enquiry comes in.&rdquo;
-              </blockquote>
-              <div className="mt-6">
-                <p className="text-sm font-medium text-foreground">Safari Operations Team</p>
-                <p className="text-sm text-muted-foreground">East Africa Tour Operator</p>
-              </div>
+        {/*<section className="py-24">*/}
+        {/*  <div className="mx-auto max-w-4xl px-4 text-center sm:px-6 lg:px-8">*/}
+        {/*    <div className="animate-slide-up-fade" style={{ '--delay': '0ms' } as React.CSSProperties}>*/}
+        {/*      <Quote className="text-primary/30 mx-auto h-10 w-10" />*/}
+        {/*      <blockquote className="font-heading mt-6 text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">*/}
+        {/*        &ldquo;We used to spend hours on each proposal. Now we send polished, interactive itineraries the same day an enquiry comes in.&rdquo;*/}
+        {/*      </blockquote>*/}
+        {/*      <div className="mt-6">*/}
+        {/*        <p className="text-sm font-medium text-foreground">Safari Operations Team</p>*/}
+        {/*        <p className="text-sm text-muted-foreground">East Africa Tour Operator</p>*/}
+        {/*      </div>*/}
+        {/*    </div>*/}
+        {/*  </div>*/}
+        {/*</section>*/}
+        <div
+          id="customers"
+          className="grid-section border-grid-border relative overflow-clip border-y px-4 [.grid-section~&]:border-t-0"
+        >
+          <div className="max-w-grid-width border-grid-border relative z-0 mx-auto border-x px-4 py-20 sm:px-10 sm:py-28">
+            <div className="mx-auto mb-16 max-w-2xl text-center">
+              <h2 className="font-display text-3xl font-medium text-neutral-900 sm:text-4xl">
+                Trusted by startups and enterprises
+              </h2>
+              <p className="mt-4 text-base text-neutral-500 sm:text-lg">
+                Join 100,000+ customers who use our link attribution platform to take their
+                marketing efforts to the next level.
+              </p>
+            </div>
+
+            <div className="grid gap-6 md:grid-cols-2">
+              <CustomerCard
+                company="Framer"
+                logo="https://assets.dub.co/testimonials/companies/vercel.svg"
+                quote='Dub is simply put the <strong class="text-neutral-900">best way to track links and measure attribution</strong>. It&apos;s easy, clean, and just works &ndash; while all the alternatives look bloated, complicated, and dated.'
+                name="Jorn van Dijk"
+                title="CEO, Framer"
+                avatar="https://assets.dub.co/testimonials/people/jorn-van-dijk.jpg"
+              />
+              <CustomerCard
+                company="Vercel"
+                logo="https://assets.dub.co/testimonials/companies/vercel.svg"
+                quote='Stripe for payments, Vercel for deployments, <strong class="text-neutral-900">Dub for links</strong>. As the cloud evolves, we abstract out common needs into reusable, high-performance infrastructure. Excited about Dub filling this foundational missing piece of the puzzle.'
+                name="Guillermo Rauch"
+                title="CEO, Vercel"
+                avatar="https://assets.dub.co/testimonials/people/guillermo-rauch.jpeg"
+              />
+              <CustomerCard
+                company="Clerk"
+                logo="https://assets.dub.co/testimonials/companies/clerk.svg"
+                quote='<strong class="text-neutral-900">Dub has been a breath of fresh air</strong> in the link management space &ndash; with everything we needed and no unnecessary feature bloat.'
+                name="Nick Parsons"
+                title="Director of Marketing, Clerk"
+                avatar="https://assets.dub.co/testimonials/people/nick-parsons.jpeg"
+              />
+              <CustomerCard
+                company="Cal.com"
+                logo="https://assets.dub.co/testimonials/companies/cal.svg"
+                quote="We've been active users of Dub since day one! Not only is the product immensely useful, <strong class=&quot;text-neutral-900&quot;>it's also built with an obsessive focus on UX</strong> &ndash; something that a lot of the incumbents in the space lack."
+                name="Peer Richelsen"
+                title="Co-founder, Cal.com"
+                avatar="https://assets.dub.co/testimonials/people/peer-richelsen.jpeg"
+              />
             </div>
           </div>
-        </section>
+        </div>
 
         {/* Pricing Section */}
         <Pricing />
@@ -266,7 +340,7 @@ export default function LandingPage() {
             >
               <Link
                 href="/sign-up"
-                className="bg-primary text-primary-foreground hover:bg-primary/90 focus-visible:ring-ring inline-flex h-12 items-center justify-center rounded-full px-8 text-sm font-medium shadow-lg shadow-primary/20 transition-colors focus-visible:ring-1 focus-visible:outline-none"
+                className="bg-primary text-primary-foreground hover:bg-primary/90 focus-visible:ring-ring shadow-primary/20 inline-flex h-12 items-center justify-center rounded-full px-8 text-sm font-medium shadow-lg transition-colors focus-visible:ring-1 focus-visible:outline-none"
               >
                 Create your first itinerary free
               </Link>
@@ -282,6 +356,45 @@ export default function LandingPage() {
       </main>
 
       <Footer />
+    </div>
+  );
+}
+
+function CustomerCard({
+  company,
+  quote,
+  name,
+  title,
+  avatar,
+}: {
+  company: string;
+  logo: string;
+  quote: string;
+  name: string;
+  title: string;
+  avatar: string;
+}) {
+  return (
+    <div className="rounded-xl border border-neutral-200 bg-white p-8">
+      <div className="mb-6 text-lg font-bold tracking-tight text-neutral-900">{company}</div>
+      <blockquote
+        className="text-sm leading-relaxed text-neutral-600"
+        dangerouslySetInnerHTML={{ __html: `&ldquo;${quote}&rdquo;` }}
+      />
+      <div className="mt-4 flex items-center gap-3">
+        <img
+          alt={name}
+          src={avatar}
+          width={40}
+          height={40}
+          className="size-10 rounded-full border border-neutral-200"
+          loading="lazy"
+        />
+        <div>
+          <p className="text-sm font-medium text-neutral-900">{name}</p>
+          <p className="text-xs text-neutral-500">{title}</p>
+        </div>
+      </div>
     </div>
   );
 }

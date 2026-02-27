@@ -11,15 +11,38 @@ const formatMoney = (value: number) =>
     maximumFractionDigits: 0,
   }).format(value);
 
-export function PricingSavingsCalculator() {
+type PricingSavingsCalculatorProps = {
+  competitorName?: string;
+  defaultPerSeat?: number;
+};
+
+export function PricingSavingsCalculator({
+  competitorName = 'Competitor',
+  defaultPerSeat = 79,
+}: PricingSavingsCalculatorProps) {
   const [teamSize, setTeamSize] = useState(6);
-  const [competitorPerUser, setCompetitorPerUser] = useState(79);
+  const [competitorPerUser, setCompetitorPerUser] = useState(defaultPerSeat);
 
   const result = useMemo(() => {
+    const starterPrice = PLAN_CONFIG.starter.price;
     const proPrice = PLAN_CONFIG.pro.price;
     const businessPrice = PLAN_CONFIG.business.price;
-    const proTeamLimit = PLAN_CONFIG.pro.limits.teamMembers;
-    const kitasuroMonthly = teamSize <= proTeamLimit ? proPrice : businessPrice;
+    // teamMembers limit is additional members (0 = solo, 3 = owner + 3)
+    const proTeamLimit = PLAN_CONFIG.pro.limits.teamMembers + 1; // total people including owner
+
+    let kitasuroMonthly: number;
+    let kitasuroPlan: string;
+    if (teamSize <= 1) {
+      kitasuroMonthly = starterPrice;
+      kitasuroPlan = 'Starter';
+    } else if (teamSize <= proTeamLimit) {
+      kitasuroMonthly = proPrice;
+      kitasuroPlan = 'Pro';
+    } else {
+      kitasuroMonthly = businessPrice;
+      kitasuroPlan = 'Business';
+    }
+
     const competitorMonthly = teamSize * competitorPerUser;
     const monthlySavings = competitorMonthly - kitasuroMonthly;
     const annualSavings = monthlySavings * 12;
@@ -28,6 +51,7 @@ export function PricingSavingsCalculator() {
 
     return {
       kitasuroMonthly,
+      kitasuroPlan,
       competitorMonthly,
       monthlySavings,
       annualSavings,
@@ -53,13 +77,13 @@ export function PricingSavingsCalculator() {
           Pricing savings calculator
         </h2>
         <p className="text-muted-foreground mt-2 max-w-2xl text-sm">
-          Compare Kitasuro fixed plans with seat-based tools and estimate annual cost difference for
+          Compare Ratiba fixed plans with {competitorName} and estimate annual cost difference for
           your team size.
         </p>
 
         <div className="mt-6 rounded-2xl border border-emerald-500/25 bg-emerald-500/10 p-5">
           <p className="text-xs font-semibold tracking-wide uppercase">
-            {isSaving ? 'Estimated annual savings with Kitasuro' : 'Estimated annual difference'}
+            {isSaving ? 'Estimated annual savings with Ratiba' : 'Estimated annual difference'}
           </p>
           <p className="font-heading mt-2 text-3xl font-bold sm:text-4xl">
             {isSaving
@@ -123,7 +147,7 @@ export function PricingSavingsCalculator() {
         <div className="mt-7 grid gap-3">
           <article className="border-border/70 bg-background/80 rounded-xl border p-4">
             <div className="mb-2 flex items-center justify-between text-sm">
-              <p className="font-medium">Kitasuro monthly</p>
+              <p className="font-medium">Ratiba {result.kitasuroPlan} monthly</p>
               <p className="font-semibold">{formatMoney(result.kitasuroMonthly)}</p>
             </div>
             <div className="bg-muted h-2.5 rounded-full">
@@ -136,7 +160,7 @@ export function PricingSavingsCalculator() {
 
           <article className="border-border/70 bg-background/80 rounded-xl border p-4">
             <div className="mb-2 flex items-center justify-between text-sm">
-              <p className="font-medium">Competitor monthly</p>
+              <p className="font-medium">{competitorName} monthly</p>
               <p className="font-semibold">{formatMoney(result.competitorMonthly)}</p>
             </div>
             <div className="bg-muted h-2.5 rounded-full">

@@ -2,23 +2,25 @@ import type { Metadata } from 'next';
 import { ComparisonTemplate } from '@/components/compare/ComparisonTemplate';
 
 export const metadata: Metadata = {
-  title: 'Ratiba vs Safari Portal: Alternative for Safari Operators',
+  title: 'Ratiba vs Safari Portal (2026): Pricing, Features & Full Comparison',
   description:
-    'Compare Ratiba vs Safari Portal for proposal collaboration, pricing predictability, itinerary quality control, and team workflow clarity.',
+    'Compare Ratiba and Safari Portal for safari operators. See real pricing ($49/mo vs $199+/mo), collaboration features, and a side-by-side feature matrix.',
   keywords: [
     'Ratiba vs Safari Portal',
     'Safari Portal alternative',
-    'safari software comparison',
+    'Safari Portal pricing',
+    'safari operator software comparison',
+    'safari booking software alternative',
     'tour operator proposal platform',
-    'travel itinerary management software',
+    'best Safari Portal alternative 2026',
   ],
   alternates: {
     canonical: '/compare/safari-portal-alternative',
   },
   openGraph: {
-    title: 'Ratiba vs Safari Portal: Alternative for Safari Operators',
+    title: 'Ratiba vs Safari Portal (2026): Pricing, Features & Full Comparison',
     description:
-      'See how Ratiba compares with Safari Portal on collaboration, branding, and fixed-vs-seat pricing.',
+      'Compare Ratiba and Safari Portal for safari operators. Real pricing, collaboration features, and a side-by-side feature matrix.',
     url: '/compare/safari-portal-alternative',
     type: 'article',
   },
@@ -28,126 +30,127 @@ export default function SafariPortalAlternativePage() {
   return (
     <ComparisonTemplate
       competitorName="Safari Portal"
+      competitorDefaultPerSeat={150}
       pagePath="/compare/safari-portal-alternative"
-      heroTitle="Safari Portal alternative with stronger collaboration and cost control"
-      heroDescription="Ratiba helps safari operators standardize proposal quality across teams, reduce version chaos, and keep pricing predictable as they scale."
+      heroTitle="Get the same proposal quality at a fraction of the cost"
+      heroDescription="Safari Portal starts at $199/mo for a single user. Ratiba starts at $49/mo and includes team collaboration, branded proposals, and client review links — without charging extra for each seat or feature."
       featureRows={[
         {
-          feature: 'Proposal collaboration with full context',
+          feature: 'Real-time team collaboration on proposals',
           kitasuro: {
             enabled: true,
-            note: 'Shared proposal workspace with clear change visibility',
+            note: 'Sales and ops co-edit the same proposal with inline comments',
           },
           competitor: {
             enabled: false,
-            note: 'Support varies by setup and process',
+            note: 'Collaboration limited — additional user seats sold as add-ons',
           },
         },
         {
-          feature: 'Pricing predictability as team grows',
+          feature: 'Pricing that stays flat as you grow',
           kitasuro: {
             enabled: true,
-            note: 'Fixed monthly plans reduce seat-based cost creep',
+            note: 'Plans from $49/mo to $249/mo — no per-seat surcharges',
           },
           competitor: {
             enabled: false,
-            note: 'Commercial model depends on package structure',
+            note: 'Starts at $199/mo for 1 user; Deluxe at $399/mo for 3 users',
           },
         },
         {
-          feature: 'Brand consistency across consultants',
+          feature: 'Brand-consistent proposals across consultants',
           kitasuro: {
             enabled: true,
-            note: 'Custom images and styling for consistent output',
+            note: 'Upload your photos, apply brand styling — every proposal matches',
           },
           competitor: {
             enabled: true,
-            note: 'Available, but consistency varies by process',
+            note: 'Supports branded output, but consistency depends on per-consultant setup',
           },
         },
         {
-          feature: 'Client-friendly proposal experiences',
+          feature: 'Interactive client review and acceptance',
           kitasuro: {
             enabled: true,
-            note: 'Interactive links optimized for review and response',
+            note: 'Clients review, comment on days, and accept via a branded link',
           },
           competitor: {
             enabled: true,
-            note: 'Possible, depending on workflow setup',
+            note: 'Client-facing itinerary views available',
           },
         },
         {
-          feature: 'Content and itinerary reuse',
+          feature: 'Reusable itinerary building blocks',
           kitasuro: {
             enabled: true,
-            note: 'Reusable building blocks for faster repeat proposals',
+            note: 'Save and reuse day templates, accommodations, and activity blocks',
           },
           competitor: {
             enabled: true,
-            note: 'Reusable workflows differ by implementation',
+            note: 'Template reuse supported within the platform',
           },
         },
         {
-          feature: 'Operational clarity from enquiry to acceptance',
+          feature: 'Full workflow from enquiry to accepted quote',
           kitasuro: {
             enabled: true,
-            note: 'One workflow reduces fragmented communication',
+            note: 'One workspace covers build, review, send, and client acceptance',
           },
           competitor: {
             enabled: false,
-            note: 'May require extra tools or coordination',
+            note: 'Booking and quoting require separate modules or manual coordination',
           },
         },
       ]}
       switchReasons={[
-        'You want to eliminate version confusion between sales and operations.',
-        'You need a more reliable way to produce branded proposals at scale.',
-        'You want pricing confidence while headcount changes.',
-        'You want collaboration and client feedback in one place.',
+        'Safari Portal costs $199/mo for one user — a 3-person team pays $399/mo before add-ons.',
+        'Adding users requires contacting sales for custom add-on pricing, slowing team growth.',
+        'Proposal quality varies by consultant because there is no enforced brand template system.',
+        'Client feedback and internal reviews happen outside the tool, creating version confusion.',
       ]}
       testimonials={[
         {
           quote:
-            'We need a consistent proposal standard across the team so quality does not vary by consultant.',
-          author: 'Evaluation Call',
+            'We had three consultants producing three different-looking proposals. Clients noticed. We needed one standard.',
+          author: 'Product Owner',
           role: 'Product Owner',
           company: 'Safari Operator Group',
         },
         {
           quote:
-            'Our goal is to reduce handoff friction between enquiry and accepted quote so teams can focus on closing.',
-          author: 'Evaluation Call',
+            'The time between receiving an enquiry and sending a quote is where we win or lose the booking. Every extra step costs us.',
+          author: 'Sales Lead',
           role: 'Sales Lead',
-          company: 'Inbound DMC Team',
+          company: 'Inbound DMC, Kenya',
         },
         {
           quote:
-            'As we scale, we want a pricing model that stays predictable without forcing us to compromise on proposal quality.',
-          author: 'Evaluation Call',
+            'We were paying $399/mo for three seats and still needed workarounds for client approvals. The cost did not match the value.',
+          author: 'Managing Director',
           role: 'Managing Director',
-          company: 'Tour Agency',
+          company: 'Boutique Safari Agency',
         },
       ]}
       faqs={[
         {
-          question: 'Do we have to migrate everything at once?',
+          question: 'How does Ratiba pricing compare to Safari Portal pricing?',
           answer:
-            'No. Many teams start with new enquiries or one product line, then expand after proving speed and conversion improvements.',
+            'Safari Portal charges $199/mo (Starter, 1 user), $299/mo (Standard, 1 user), or $399/mo (Deluxe, 3 users) with extra seats and features as paid add-ons. Ratiba charges $49/mo (Starter), $99/mo (Pro, up to 4 users), or $249/mo (Business, unlimited users) with no add-on fees.',
         },
         {
-          question: 'Can Ratiba support high enquiry volume teams?',
+          question: 'Do we have to migrate everything from Safari Portal at once?',
           answer:
-            'Yes. The workflow is designed around repeatable proposal creation, collaboration, and consistency under operational pressure.',
+            'No. Start by building your next new enquiry in Ratiba. Compare the turnaround time, client response, and team collaboration before making any wider changes.',
         },
         {
-          question: 'Is price the only reason to switch?',
+          question: 'Is Ratiba only cheaper, or does it do more?',
           answer:
-            'Usually no. Teams typically switch for a combination of collaboration, consistency, speed, and total cost predictability.',
+            'Both. Ratiba includes real-time collaboration, inline client comments, and branded proposal delivery in every plan. Safari Portal charges separately for additional seats, white labeling, and API access.',
         },
         {
-          question: 'How should we evaluate the branding difference?',
+          question: 'Can Ratiba handle high-volume safari operators?',
           answer:
-            'Build the same proposal scenario in both tools and compare visual consistency, editing time, and final client presentation quality.',
+            'Yes. The Business plan supports unlimited team members and unlimited proposals. The workflow is built for teams that send multiple proposals per day during peak season.',
         },
       ]}
     />
