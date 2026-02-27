@@ -2,11 +2,11 @@ import type { Metadata } from 'next';
 import { ComparisonTemplate } from '@/components/compare/ComparisonTemplate';
 
 export const metadata: Metadata = {
-  title: 'Kitasuro vs Wetu: Best Alternative for Tour Operators',
+  title: 'Ratiba vs Wetu: Best Alternative for Tour Operators',
   description:
-    'Compare Kitasuro vs Wetu for itinerary builder workflows, proposal collaboration, branding control, and fixed pricing for safari operators.',
+    'Compare Ratiba vs Wetu for itinerary builder workflows, proposal collaboration, branding control, and fixed pricing for safari operators.',
   keywords: [
-    'Kitasuro vs Wetu',
+    'Ratiba vs Wetu',
     'Wetu alternative',
     'tour operator software comparison',
     'safari itinerary software',
@@ -16,9 +16,9 @@ export const metadata: Metadata = {
     canonical: '/compare/wetu-alternative',
   },
   openGraph: {
-    title: 'Kitasuro vs Wetu: Best Alternative for Tour Operators',
+    title: 'Ratiba vs Wetu: Best Alternative for Tour Operators',
     description:
-      'Feature-by-feature comparison of Kitasuro and Wetu for collaboration, branding, and pricing predictability.',
+      'Feature-by-feature comparison of Ratiba and Wetu for collaboration, branding, and pricing predictability.',
     url: '/compare/wetu-alternative',
     type: 'article',
   },
@@ -30,7 +30,7 @@ export default function WetuAlternativePage() {
       competitorName="Wetu"
       pagePath="/compare/wetu-alternative"
       heroTitle="A modern Wetu alternative for proposal-first safari teams"
-      heroDescription="If your team wants faster collaboration, predictable pricing, and stronger brand control, Kitasuro helps you deliver polished itineraries with less operational friction."
+      heroDescription="If your team wants faster collaboration, predictable pricing, and stronger brand control, Ratiba helps you deliver polished itineraries with less operational friction."
       featureRows={[
         {
           feature: 'Team collaboration on live proposals',
@@ -132,7 +132,7 @@ export default function WetuAlternativePage() {
         {
           question: 'How should we evaluate pricing vs other platforms?',
           answer:
-            'Compare the total team cost, not only entry price. Use the calculator to estimate how seat-based pricing scales against Kitasuro fixed monthly plans.',
+            'Compare the total team cost, not only entry price. Use the calculator to estimate how seat-based pricing scales against Ratiba fixed monthly plans.',
         },
         {
           question: 'Can we trial this before moving fully?',
@@ -140,14 +140,14 @@ export default function WetuAlternativePage() {
             'Yes. Start with one itinerary workflow and compare your team speed, quality, and client response before wider rollout.',
         },
         {
-          question: 'Is Kitasuro only for small teams?',
+          question: 'Is Ratiba only for small teams?',
           answer:
             'No. The workflow is useful for both small operators and larger teams because collaboration, consistency, and turnaround speed become more important as volume grows.',
         },
         {
           question: 'Can we keep our brand identity in every proposal?',
           answer:
-            'Yes. Kitasuro supports custom visual assets and proposal styling so every proposal looks like it came from your team, not a generic template.',
+            'Yes. Ratiba supports custom visual assets and proposal styling so every proposal looks like it came from your team, not a generic template.',
         },
       ]}
     />

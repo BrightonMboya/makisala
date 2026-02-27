@@ -21,7 +21,7 @@ const outfit = Outfit({
 });
 
 export const metadata: Metadata = {
-  title: "Kitasuro | Itinerary Builder",
+  title: "Ratiba | Itinerary Builder",
   description: "Itinerary Builder & Proposal Management for Tour Operators",
 };
 

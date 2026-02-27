@@ -5,7 +5,7 @@ import { Navbar } from '@/components/landing/Navbar';
 import { Footer } from '@/components/landing/Footer';
 
 export const metadata: Metadata = {
-  title: 'Tour Operator Software | Kitasuro',
+  title: 'Tour Operator Software | Ratiba',
   description:
     'Proposal and itinerary software for tour operators and DMC teams. Build trips faster, collaborate with your team, and send interactive proposals clients can approve online.',
 };
@@ -66,20 +66,32 @@ export default function TourOperatorsPage() {
         <section className="relative overflow-hidden pt-32 pb-20 md:pt-40 md:pb-24">
           <div className="from-primary/15 pointer-events-none absolute top-0 left-1/2 h-[360px] w-[760px] -translate-x-1/2 rounded-full bg-gradient-to-b to-transparent blur-3xl" />
           <div className="relative mx-auto max-w-6xl px-4 text-center sm:px-6 lg:px-8">
-            <p className="text-primary mb-4 inline-flex items-center gap-2 rounded-full border border-border/60 bg-card/70 px-4 py-1.5 text-sm font-medium">
+            <p
+              className="animate-slide-up-fade text-primary mb-4 inline-flex items-center gap-2 rounded-full border border-border/60 bg-card/70 px-4 py-1.5 text-sm font-medium"
+              style={{ '--delay': '0ms' } as React.CSSProperties}
+            >
               <Building2 className="h-4 w-4" /> Built for B2B travel teams
             </p>
-            <h1 className="font-heading text-4xl font-bold tracking-tight sm:text-6xl">
+            <h1
+              className="animate-slide-up-fade font-heading text-4xl font-bold tracking-tight sm:text-6xl"
+              style={{ '--delay': '100ms', '--offset': '32px' } as React.CSSProperties}
+            >
               Tour operator software for teams that need to move faster
             </h1>
-            <p className="text-muted-foreground mx-auto mt-6 max-w-3xl text-lg">
-              Kitasuro helps you turn enquiries into bookable itineraries with less admin. Build,
+            <p
+              className="animate-slide-up-fade text-muted-foreground mx-auto mt-6 max-w-3xl text-lg"
+              style={{ '--delay': '200ms' } as React.CSSProperties}
+            >
+              Ratiba helps you turn enquiries into bookable itineraries with less admin. Build,
               price, share, and collaborate from one platform built for safari and multi-day travel.
             </p>
-            <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
+            <div
+              className="animate-slide-up-fade mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row"
+              style={{ '--delay': '300ms' } as React.CSSProperties}
+            >
               <Link
                 href="/sign-up"
-                className="bg-primary text-primary-foreground hover:bg-primary/90 inline-flex h-12 items-center justify-center rounded-full px-8 text-sm font-medium shadow-sm transition-colors"
+                className="bg-primary text-primary-foreground hover:bg-primary/90 inline-flex h-12 items-center justify-center rounded-full px-8 text-sm font-medium shadow-lg shadow-primary/20 transition-colors"
               >
                 Start free trial <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
@@ -96,9 +108,13 @@ export default function TourOperatorsPage() {
         <section className="py-20">
           <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
             <div className="grid gap-6 md:grid-cols-3">
-              {outcomes.map((item) => (
-                <article key={item.title} className="rounded-2xl border border-border/60 bg-card/60 p-6">
-                  <div className="bg-primary/10 text-primary mb-4 inline-flex h-10 w-10 items-center justify-center rounded-lg">
+              {outcomes.map((item, i) => (
+                <article
+                  key={item.title}
+                  className="animate-slide-up-fade rounded-2xl border border-border/60 bg-card/60 p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg"
+                  style={{ '--delay': `${i * 100}ms` } as React.CSSProperties}
+                >
+                  <div className="bg-gradient-to-br from-primary/15 to-primary/5 text-primary mb-4 inline-flex h-10 w-10 items-center justify-center rounded-lg">
                     <item.icon className="h-5 w-5" />
                   </div>
                   <h2 className="font-heading text-xl font-semibold">{item.title}</h2>
@@ -111,8 +127,8 @@ export default function TourOperatorsPage() {
 
         <section className="bg-muted/25 py-20">
           <div className="mx-auto grid max-w-6xl gap-10 px-4 sm:px-6 lg:grid-cols-2 lg:px-8">
-            <div>
-              <h2 className="font-heading text-3xl font-bold tracking-tight">Who Kitasuro is for</h2>
+            <div className="animate-slide-up-fade" style={{ '--delay': '0ms' } as React.CSSProperties}>
+              <h2 className="font-heading text-3xl font-bold tracking-tight">Who Ratiba is for</h2>
               <ul className="mt-6 space-y-4">
                 {audience.map((item) => (
                   <li key={item} className="flex items-start gap-3">
@@ -123,11 +139,11 @@ export default function TourOperatorsPage() {
               </ul>
             </div>
 
-            <div>
-              <h2 className="font-heading text-3xl font-bold tracking-tight">How teams use Kitasuro</h2>
+            <div className="animate-slide-up-fade" style={{ '--delay': '100ms' } as React.CSSProperties}>
+              <h2 className="font-heading text-3xl font-bold tracking-tight">How teams use Ratiba</h2>
               <ol className="mt-6 space-y-5">
                 {process.map((item) => (
-                  <li key={item.step} className="rounded-xl border border-border/60 bg-background/70 p-4">
+                  <li key={item.step} className="rounded-xl border border-border/60 bg-background/70 p-4 transition-all duration-300 hover:shadow-md">
                     <p className="text-foreground text-sm font-semibold tracking-wide uppercase">{item.step}</p>
                     <p className="text-muted-foreground mt-2">{item.description}</p>
                   </li>
@@ -139,17 +155,26 @@ export default function TourOperatorsPage() {
 
         <section className="py-20">
           <div className="mx-auto max-w-4xl px-4 text-center sm:px-6 lg:px-8">
-            <h2 className="font-heading text-4xl font-bold tracking-tight">
+            <h2
+              className="animate-slide-up-fade font-heading text-4xl font-bold tracking-tight"
+              style={{ '--delay': '0ms' } as React.CSSProperties}
+            >
               Replace disconnected tools with one workflow
             </h2>
-            <p className="text-muted-foreground mx-auto mt-4 max-w-2xl text-lg">
-              If your team is still stitching together docs, spreadsheets, and PDFs, Kitasuro gives
+            <p
+              className="animate-slide-up-fade text-muted-foreground mx-auto mt-4 max-w-2xl text-lg"
+              style={{ '--delay': '100ms' } as React.CSSProperties}
+            >
+              If your team is still stitching together docs, spreadsheets, and PDFs, Ratiba gives
               you a cleaner way to run proposal operations at scale.
             </p>
-            <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
+            <div
+              className="animate-slide-up-fade mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row"
+              style={{ '--delay': '200ms' } as React.CSSProperties}
+            >
               <Link
                 href="/sign-up"
-                className="bg-primary text-primary-foreground hover:bg-primary/90 inline-flex h-12 items-center justify-center rounded-full px-8 text-sm font-medium shadow-sm transition-colors"
+                className="bg-primary text-primary-foreground hover:bg-primary/90 inline-flex h-12 items-center justify-center rounded-full px-8 text-sm font-medium shadow-lg shadow-primary/20 transition-colors"
               >
                 Create your account
               </Link>

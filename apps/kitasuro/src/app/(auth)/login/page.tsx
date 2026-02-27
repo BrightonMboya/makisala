@@ -34,7 +34,7 @@ function LoginSkeleton() {
     <div className="flex min-h-screen items-center justify-center bg-stone-50 p-4">
       <div className="w-full max-w-md space-y-8 rounded-2xl border border-stone-200 bg-white p-8 shadow-sm">
         <div className="text-center">
-          <h1 className="font-serif text-3xl font-bold text-green-800">Kitasuro</h1>
+          <h1 className="font-serif text-3xl font-bold text-green-800">Ratiba</h1>
           <p className="mt-2 text-stone-600">Log into your itinerary builder account</p>
         </div>
         <div className="animate-pulse space-y-4">
@@ -148,7 +148,7 @@ function LoginForm() {
     <div className="flex min-h-screen items-center justify-center bg-stone-50 p-4">
       <div className="w-full max-w-md space-y-8 rounded-2xl border border-stone-200 bg-white p-8 shadow-sm">
         <div className="text-center">
-          <h1 className="font-serif text-3xl font-bold text-green-800">Kitasuro</h1>
+          <h1 className="font-serif text-3xl font-bold text-green-800">Ratiba</h1>
           <p className="mt-2 text-stone-600">Log into your itinerary builder account</p>
         </div>
 

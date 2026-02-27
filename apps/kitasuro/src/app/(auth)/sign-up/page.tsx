@@ -39,7 +39,7 @@ function SignUpSkeleton() {
         <div className="flex min-h-screen items-center justify-center bg-stone-50 p-4">
             <div className="w-full max-w-md space-y-8 rounded-2xl border border-stone-200 bg-white p-8 shadow-sm">
                 <div className="text-center">
-                    <h1 className="font-serif text-3xl font-bold text-green-800">Kitasuro</h1>
+                    <h1 className="font-serif text-3xl font-bold text-green-800">Ratiba</h1>
                     <p className="mt-2 text-stone-600">Create your tour operator account</p>
                 </div>
                 <div className="animate-pulse space-y-4">
@@ -114,7 +114,7 @@ function SignUpForm() {
                         <div className="flex items-start gap-3 text-left">
                             <Mail className="h-5 w-5 text-stone-500 mt-0.5" />
                             <div className="text-sm text-stone-600">
-                                <p>Click the link in the email to verify your account and start using Kitasuro.</p>
+                                <p>Click the link in the email to verify your account and start using Ratiba.</p>
                                 <p className="mt-2">Can&apos;t find it? Check your spam folder.</p>
                             </div>
                         </div>
@@ -153,7 +153,7 @@ function SignUpForm() {
         <div className="flex min-h-screen items-center justify-center bg-stone-50 p-4">
             <div className="w-full max-w-md space-y-8 rounded-2xl border border-stone-200 bg-white p-8 shadow-sm">
                 <div className="text-center">
-                    <h1 className="font-serif text-3xl font-bold text-green-800">Kitasuro</h1>
+                    <h1 className="font-serif text-3xl font-bold text-green-800">Ratiba</h1>
                     <p className="mt-2 text-stone-600">Create your tour operator account</p>
                 </div>
 

@@ -82,7 +82,7 @@ export function ComparisonTemplate({
   faqs,
   pagePath,
 }: ComparisonTemplateProps) {
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://kitasuro.com';
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ratiba.app';
   const normalizedPath = pagePath.startsWith('/') ? pagePath : `/${pagePath}`;
   const pageUrl = `${siteUrl}${normalizedPath}`;
 
@@ -112,7 +112,7 @@ export function ComparisonTemplate({
       {
         '@type': 'ListItem',
         position: 2,
-        name: `Kitasuro vs ${competitorName}`,
+        name: `Ratiba vs ${competitorName}`,
         item: pageUrl,
       },
     ],
@@ -136,7 +136,7 @@ export function ComparisonTemplate({
           <div className="from-primary/15 pointer-events-none absolute top-0 left-1/2 h-[340px] w-[720px] -translate-x-1/2 rounded-full bg-gradient-to-b to-transparent blur-3xl" />
           <div className="relative mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
             <p className="text-primary border-border/60 bg-card/70 inline-flex items-center rounded-full border px-4 py-1.5 text-sm font-medium">
-              Kitasuro vs {competitorName}
+              Ratiba vs {competitorName}
             </p>
             <h1 className="font-heading mt-5 max-w-4xl text-4xl font-bold tracking-tight sm:text-6xl">
               {heroTitle}
@@ -192,7 +192,7 @@ export function ComparisonTemplate({
           <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
             <div className="mb-10 max-w-3xl">
               <h2 className="font-heading text-3xl font-bold tracking-tight sm:text-4xl">
-                Why operators shortlist Kitasuro
+                Why operators shortlist Ratiba
               </h2>
               <p className="text-muted-foreground mt-3 text-lg">
                 These are the four criteria most teams use when comparing itinerary and proposal
@@ -246,7 +246,7 @@ export function ComparisonTemplate({
                 <div className="bg-background relative aspect-[4/3] overflow-hidden rounded-xl">
                   <Image
                     src="/img_1.png"
-                    alt="Kitasuro itinerary builder"
+                    alt="Ratiba itinerary builder"
                     fill
                     className="object-cover"
                   />
@@ -256,7 +256,7 @@ export function ComparisonTemplate({
                 <div className="bg-background relative aspect-[4/3] overflow-hidden rounded-xl">
                   <Image
                     src="/proposal preview.png"
-                    alt="Kitasuro proposal preview"
+                    alt="Ratiba proposal preview"
                     fill
                     className="object-cover"
                   />
@@ -266,7 +266,7 @@ export function ComparisonTemplate({
                 <div className="bg-background relative aspect-[4/3] overflow-hidden rounded-xl">
                   <Image
                     src="/proposal_preivew-1.png"
-                    alt="Kitasuro branded proposal screen"
+                    alt="Ratiba branded proposal screen"
                     fill
                     className="object-cover"
                   />
@@ -280,7 +280,7 @@ export function ComparisonTemplate({
           <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
             <div className="mb-8">
               <h2 className="font-heading text-3xl font-bold tracking-tight">
-                Kitasuro vs {competitorName}: feature comparison matrix
+                Ratiba vs {competitorName}: feature comparison matrix
               </h2>
               <p className="text-muted-foreground mt-3 max-w-3xl">
                 Compare the capabilities most teams evaluate when selecting itinerary software,
@@ -293,7 +293,7 @@ export function ComparisonTemplate({
                 <TableHeader>
                   <TableRow>
                     <TableHead className="w-[38%]">Capability</TableHead>
-                    <TableHead className="w-[31%]">Kitasuro</TableHead>
+                    <TableHead className="w-[31%]">Ratiba</TableHead>
                     <TableHead className="w-[31%]">{competitorName}</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -378,7 +378,7 @@ export function ComparisonTemplate({
             <div className="grid gap-6 lg:grid-cols-2">
               <article className="border-border/60 bg-card/60 rounded-2xl border p-6 sm:p-8">
                 <h2 className="font-heading text-3xl font-bold tracking-tight">
-                  Why teams choose Kitasuro
+                  Why teams choose Ratiba
                 </h2>
                 <ul className="mt-6 space-y-4">
                   {switchReasons.map((reason) => (
@@ -400,7 +400,7 @@ export function ComparisonTemplate({
             <div className="grid gap-6 lg:grid-cols-2">
               <article className="border-border/60 bg-card/60 rounded-2xl border p-6 sm:p-8">
                 <h2 className="font-heading text-2xl font-bold tracking-tight sm:text-3xl">
-                  How to evaluate Kitasuro vs {competitorName}
+                  How to evaluate Ratiba vs {competitorName}
                 </h2>
                 <p className="text-muted-foreground mt-3">
                   Use the same itinerary scenario in both tools, include sales and operations users,
@@ -424,14 +424,14 @@ export function ComparisonTemplate({
                 </p>
                 <div className="mt-5 flex flex-col gap-2 text-sm">
                   {[
-                    { href: '/compare/wetu-alternative', label: 'Kitasuro vs Wetu' },
+                    { href: '/compare/wetu-alternative', label: 'Ratiba vs Wetu' },
                     {
                       href: '/compare/safari-office-alternative',
-                      label: 'Kitasuro vs Safari Office',
+                      label: 'Ratiba vs Safari Office',
                     },
                     {
                       href: '/compare/safari-portal-alternative',
-                      label: 'Kitasuro vs Safari Portal',
+                      label: 'Ratiba vs Safari Portal',
                     },
                     { href: '/compare', label: 'All comparison pages' },
                   ].map((linkItem) => (
@@ -475,7 +475,7 @@ export function ComparisonTemplate({
               Compare quickly, then test in your own workflow
             </h2>
             <p className="text-muted-foreground mt-4 text-lg">
-              Build one real proposal in Kitasuro and see how your team handles collaboration,
+              Build one real proposal in Ratiba and see how your team handles collaboration,
               branding, and pricing in practice.
             </p>
             <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">

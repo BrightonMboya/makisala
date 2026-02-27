@@ -2,11 +2,11 @@ import type { Metadata } from 'next';
 import { ComparisonTemplate } from '@/components/compare/ComparisonTemplate';
 
 export const metadata: Metadata = {
-  title: 'Kitasuro vs Safari Office: Alternative for Tour Companies',
+  title: 'Ratiba vs Safari Office: Alternative for Tour Companies',
   description:
-    'Compare Kitasuro vs Safari Office for proposal turnaround, team collaboration, fixed pricing, and branded itinerary delivery.',
+    'Compare Ratiba vs Safari Office for proposal turnaround, team collaboration, fixed pricing, and branded itinerary delivery.',
   keywords: [
-    'Kitasuro vs Safari Office',
+    'Ratiba vs Safari Office',
     'Safari Office alternative',
     'tour operator CRM comparison',
     'itinerary proposal software',
@@ -16,9 +16,9 @@ export const metadata: Metadata = {
     canonical: '/compare/safari-office-alternative',
   },
   openGraph: {
-    title: 'Kitasuro vs Safari Office: Alternative for Tour Companies',
+    title: 'Ratiba vs Safari Office: Alternative for Tour Companies',
     description:
-      'Compare workflow speed, collaboration depth, proposal branding, and pricing model between Kitasuro and Safari Office.',
+      'Compare workflow speed, collaboration depth, proposal branding, and pricing model between Ratiba and Safari Office.',
     url: '/compare/safari-office-alternative',
     type: 'article',
   },
@@ -30,7 +30,7 @@ export default function SafariOfficeAlternativePage() {
       competitorName="Safari Office"
       pagePath="/compare/safari-office-alternative"
       heroTitle="Safari Office alternative for teams that want a cleaner proposal stack"
-      heroDescription="Kitasuro helps consultants and operations teams build client-ready proposals faster, collaborate clearly, and keep costs predictable with fixed monthly pricing."
+      heroDescription="Ratiba helps consultants and operations teams build client-ready proposals faster, collaborate clearly, and keep costs predictable with fixed monthly pricing."
       featureRows={[
         {
           feature: 'Proposal workflow built for sales velocity',
@@ -135,7 +135,7 @@ export default function SafariOfficeAlternativePage() {
             'Model your expected team size and seat assumptions with the calculator, then compare total annual cost and workflow efficiency.',
         },
         {
-          question: 'Is Kitasuro useful if we already have an established process?',
+          question: 'Is Ratiba useful if we already have an established process?',
           answer:
             'Yes. You can start by replacing one high-friction part of your current process, then expand based on measurable improvements.',
         },
@@ -145,7 +145,7 @@ export default function SafariOfficeAlternativePage() {
             'Most teams gain speed and clarity: fewer disconnected steps between building the itinerary, reviewing internally, and presenting to clients.',
         },
         {
-          question: 'Can Kitasuro support branded, premium-looking proposals?',
+          question: 'Can Ratiba support branded, premium-looking proposals?',
           answer:
             'Yes. Teams can use custom visual assets and maintain a consistent brand presentation across proposals.',
         },

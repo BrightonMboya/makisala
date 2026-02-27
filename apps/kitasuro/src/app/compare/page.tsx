@@ -5,12 +5,12 @@ import { Navbar } from '@/components/landing/Navbar';
 import { Footer } from '@/components/landing/Footer';
 
 export const metadata: Metadata = {
-  title: 'Kitasuro Compare Pages | Tour Operator Software Alternatives',
+  title: 'Ratiba Compare Pages | Tour Operator Software Alternatives',
   description:
-    'Explore Kitasuro comparison pages for Wetu, Safari Office, and Safari Portal. Evaluate features, pricing models, and proposal workflows for tour operators.',
+    'Explore Ratiba comparison pages for Wetu, Safari Office, and Safari Portal. Evaluate features, pricing models, and proposal workflows for tour operators.',
   keywords: [
     'tour operator software alternatives',
-    'Kitasuro comparison',
+    'Ratiba comparison',
     'Wetu alternative',
     'Safari Office alternative',
     'Safari Portal alternative',
@@ -19,9 +19,9 @@ export const metadata: Metadata = {
     canonical: '/compare',
   },
   openGraph: {
-    title: 'Kitasuro Compare Pages | Tour Operator Software Alternatives',
+    title: 'Ratiba Compare Pages | Tour Operator Software Alternatives',
     description:
-      'Compare Kitasuro with top tour operator platforms and evaluate collaboration, branding, and pricing differences.',
+      'Compare Ratiba with top tour operator platforms and evaluate collaboration, branding, and pricing differences.',
     url: '/compare',
     type: 'website',
   },
@@ -29,19 +29,19 @@ export const metadata: Metadata = {
 
 const comparisons = [
   {
-    title: 'Kitasuro vs Wetu',
+    title: 'Ratiba vs Wetu',
     description: 'A full comparison of workflow speed, collaboration depth, and brand control.',
     bullets: ['Long-form feature matrix', 'Pricing savings calculator', 'Team migration FAQs'],
     href: '/compare/wetu-alternative',
   },
   {
-    title: 'Kitasuro vs Safari Office',
-    description: 'See where Kitasuro improves day-to-day consultant and operations alignment.',
+    title: 'Ratiba vs Safari Office',
+    description: 'See where Ratiba improves day-to-day consultant and operations alignment.',
     bullets: ['Workflow fit analysis', 'Fixed-vs-seat pricing view', 'Switch-readiness checklist'],
     href: '/compare/safari-office-alternative',
   },
   {
-    title: 'Kitasuro vs Safari Portal',
+    title: 'Ratiba vs Safari Portal',
     description: 'Compare collaboration depth, proposal consistency, and cost predictability.',
     bullets: ['Capability-by-capability table', 'Savings estimator', 'Implementation FAQs'],
     href: '/compare/safari-portal-alternative',
@@ -60,19 +60,19 @@ const faqs = [
       'Evaluate proposal turnaround time, internal handoff quality, branding consistency, and the full yearly software cost at your expected team size.',
   },
   {
-    question: 'How quickly can teams test Kitasuro against another platform?',
+    question: 'How quickly can teams test Ratiba against another platform?',
     answer:
       'Most teams can run a side-by-side test using one real itinerary scenario in less than a day, then use that result to guide rollout planning.',
   },
 ];
 
 export default function CompareHubPage() {
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://kitasuro.com';
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ratiba.app';
 
   const itemListSchema = {
     '@context': 'https://schema.org',
     '@type': 'ItemList',
-    name: 'Kitasuro comparison pages',
+    name: 'Ratiba comparison pages',
     itemListElement: comparisons.map((item, index) => ({
       '@type': 'ListItem',
       position: index + 1,
@@ -125,18 +125,30 @@ export default function CompareHubPage() {
       <Navbar />
       <main className="pt-32 pb-20 md:pt-36">
         <section className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
-          <p className="text-primary border-border/60 bg-card/70 mb-4 inline-flex items-center gap-2 rounded-full border px-4 py-1.5 text-sm font-medium">
+          <p
+            className="animate-slide-up-fade text-primary border-border/60 bg-card/70 mb-4 inline-flex items-center gap-2 rounded-full border px-4 py-1.5 text-sm font-medium"
+            style={{ '--delay': '0ms' } as React.CSSProperties}
+          >
             <GitCompareArrows className="h-4 w-4" /> Buyer enablement
           </p>
-          <h1 className="font-heading text-4xl font-bold tracking-tight sm:text-5xl">
-            Compare Kitasuro with other tour operator platforms
+          <h1
+            className="animate-slide-up-fade font-heading text-4xl font-bold tracking-tight sm:text-5xl"
+            style={{ '--delay': '100ms' } as React.CSSProperties}
+          >
+            Compare Ratiba with other tour operator platforms
           </h1>
-          <p className="text-muted-foreground mt-5 max-w-3xl text-lg">
+          <p
+            className="animate-slide-up-fade text-muted-foreground mt-5 max-w-3xl text-lg"
+            style={{ '--delay': '200ms' } as React.CSSProperties}
+          >
             Use these pages to evaluate fit for your team, workflow, and client proposal experience.
             Each comparison includes capability matrixes, pricing modeling, and rollout guidance.
           </p>
 
-          <div className="border-border/60 bg-card/60 mt-6 rounded-2xl border p-5">
+          <div
+            className="animate-slide-up-fade border-border/60 bg-card/60 mt-6 rounded-2xl border p-5"
+            style={{ '--delay': '250ms' } as React.CSSProperties}
+          >
             <p className="text-sm font-semibold">How to use these pages</p>
             <p className="text-muted-foreground mt-2 text-sm">
               Shortlist by feature fit, validate total annual cost for your team size, then run one
@@ -145,10 +157,11 @@ export default function CompareHubPage() {
           </div>
 
           <div className="mt-10 grid gap-6 md:grid-cols-3">
-            {comparisons.map((item) => (
+            {comparisons.map((item, i) => (
               <article
                 key={item.title}
-                className="border-border/60 bg-card/60 rounded-2xl border p-6"
+                className="animate-slide-up-fade border-border/60 bg-card/60 rounded-2xl border p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg"
+                style={{ '--delay': `${300 + i * 100}ms` } as React.CSSProperties}
               >
                 <h2 className="font-heading text-2xl font-semibold tracking-tight">{item.title}</h2>
                 <p className="text-muted-foreground mt-3">{item.description}</p>
@@ -170,14 +183,18 @@ export default function CompareHubPage() {
 
         <section className="py-16">
           <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
-            <h2 className="font-heading text-3xl font-bold tracking-tight">
+            <h2
+              className="animate-slide-up-fade font-heading text-3xl font-bold tracking-tight"
+              style={{ '--delay': '0ms' } as React.CSSProperties}
+            >
               Comparison FAQs for tour operators
             </h2>
             <div className="mt-8 space-y-4">
-              {faqs.map((faq) => (
+              {faqs.map((faq, i) => (
                 <article
                   key={faq.question}
-                  className="border-border/60 bg-card/60 rounded-2xl border p-6"
+                  className="animate-slide-up-fade border-border/60 bg-card/60 rounded-2xl border p-6 transition-all duration-300 hover:shadow-md"
+                  style={{ '--delay': `${i * 80}ms` } as React.CSSProperties}
                 >
                   <h3 className="font-heading text-xl font-semibold">{faq.question}</h3>
                   <p className="text-muted-foreground mt-3">{faq.answer}</p>

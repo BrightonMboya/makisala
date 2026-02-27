@@ -2,11 +2,11 @@ import type { Metadata } from 'next';
 import { ComparisonTemplate } from '@/components/compare/ComparisonTemplate';
 
 export const metadata: Metadata = {
-  title: 'Kitasuro vs Safari Portal: Alternative for Safari Operators',
+  title: 'Ratiba vs Safari Portal: Alternative for Safari Operators',
   description:
-    'Compare Kitasuro vs Safari Portal for proposal collaboration, pricing predictability, itinerary quality control, and team workflow clarity.',
+    'Compare Ratiba vs Safari Portal for proposal collaboration, pricing predictability, itinerary quality control, and team workflow clarity.',
   keywords: [
-    'Kitasuro vs Safari Portal',
+    'Ratiba vs Safari Portal',
     'Safari Portal alternative',
     'safari software comparison',
     'tour operator proposal platform',
@@ -16,9 +16,9 @@ export const metadata: Metadata = {
     canonical: '/compare/safari-portal-alternative',
   },
   openGraph: {
-    title: 'Kitasuro vs Safari Portal: Alternative for Safari Operators',
+    title: 'Ratiba vs Safari Portal: Alternative for Safari Operators',
     description:
-      'See how Kitasuro compares with Safari Portal on collaboration, branding, and fixed-vs-seat pricing.',
+      'See how Ratiba compares with Safari Portal on collaboration, branding, and fixed-vs-seat pricing.',
     url: '/compare/safari-portal-alternative',
     type: 'article',
   },
@@ -30,7 +30,7 @@ export default function SafariPortalAlternativePage() {
       competitorName="Safari Portal"
       pagePath="/compare/safari-portal-alternative"
       heroTitle="Safari Portal alternative with stronger collaboration and cost control"
-      heroDescription="Kitasuro helps safari operators standardize proposal quality across teams, reduce version chaos, and keep pricing predictable as they scale."
+      heroDescription="Ratiba helps safari operators standardize proposal quality across teams, reduce version chaos, and keep pricing predictable as they scale."
       featureRows={[
         {
           feature: 'Proposal collaboration with full context',
@@ -135,7 +135,7 @@ export default function SafariPortalAlternativePage() {
             'No. Many teams start with new enquiries or one product line, then expand after proving speed and conversion improvements.',
         },
         {
-          question: 'Can Kitasuro support high enquiry volume teams?',
+          question: 'Can Ratiba support high enquiry volume teams?',
           answer:
             'Yes. The workflow is designed around repeatable proposal creation, collaboration, and consistency under operational pressure.',
         },

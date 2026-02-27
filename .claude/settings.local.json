@@ -41,7 +41,9 @@
       "Bash(python3:*)",
       "Bash(bun:*)",
       "Bash(git rebase:*)",
-      "Bash(git stash:*)"
+      "Bash(git stash:*)",
+      "WebFetch(domain:api.github.com)",
+      "WebFetch(domain:dub.co)"
     ]
   }
 }
