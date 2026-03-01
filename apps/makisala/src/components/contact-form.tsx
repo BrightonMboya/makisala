@@ -17,6 +17,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { createInquiry } from '@/lib/cms-service'
 import { usePathname } from 'next/navigation'
 import { BASE_URL } from '@/lib/constants'
+import { sendGTMEvent } from '@next/third-parties/google'
 import { CountryDropdown } from '@repo/ui/country-dropdown'
 
 export default function ContactForm({
@@ -57,6 +58,11 @@ export default function ContactForm({
                 ...data,
                 url: `${BASE_URL}/${pathname}`,
             })
+            sendGTMEvent({
+                event: 'conversion',
+                send_to: 'AW-17982843958/autmCMmsk4EcELbY8f5C',
+            })
+
             toast('Inquiry Submitted', {
                 description: "We'll get back to you within 24 hours!",
             })
