@@ -14,6 +14,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Navbar } from '@/components/landing/Navbar';
 import { Footer } from '@/components/landing/Footer';
 import { PricingSavingsCalculator } from '@/components/compare/PricingSavingsCalculator';
+import { env } from '@/lib/env';
 
 type FeatureCell = {
   enabled: boolean;
@@ -83,7 +84,7 @@ export function ComparisonTemplate({
   pagePath,
   competitorDefaultPerSeat,
 }: ComparisonTemplateProps) {
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ratiba.app';
+  const siteUrl = env.NEXT_PUBLIC_APP_URL;
   const normalizedPath = pagePath.startsWith('/') ? pagePath : `/${pagePath}`;
   const pageUrl = `${siteUrl}${normalizedPath}`;
 

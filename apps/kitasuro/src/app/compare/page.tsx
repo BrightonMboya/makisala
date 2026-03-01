@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { ArrowRight, GitCompareArrows } from 'lucide-react';
 import { Navbar } from '@/components/landing/Navbar';
 import { Footer } from '@/components/landing/Footer';
+import { env } from '@/lib/env';
 
 export const metadata: Metadata = {
   title: 'Ratiba Compare Pages | Tour Operator Software Alternatives',
@@ -67,7 +68,7 @@ const faqs = [
 ];
 
 export default function CompareHubPage() {
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://ratiba.app';
+  const siteUrl = env.NEXT_PUBLIC_APP_URL;
 
   const itemListSchema = {
     '@context': 'https://schema.org',
