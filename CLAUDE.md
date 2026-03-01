@@ -9,6 +9,7 @@ Makisala is a Bun-based monorepo for travel/safari booking with two Next.js 16 a
 ## Commands
 
 ### Development
+
 ```bash
 bun --bun next dev          # Start dev server (run from app directory)
 bun --bun next build        # Build for production
@@ -17,6 +18,7 @@ bun --bun next lint         # Run ESLint
 ```
 
 ### Database (from packages/db)
+
 ```bash
 bun run generate            # Generate Drizzle migrations
 bun run migrate             # Run migrations
@@ -29,7 +31,7 @@ bun run studio              # Open Drizzle Studio
 ```
 ├── apps/
 │   ├── makisala/           # Public-facing safari booking site
-│   │   └── MDX content, Duffel flight API, Cloudinary images
+│   │   └── MDX content, Cloudinary images
 │   └── kitasuro/           # Proposal dashboard & itinerary builder
 │       └── DnD itinerary builder, maps, accommodation management
 │

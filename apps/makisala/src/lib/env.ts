@@ -12,7 +12,6 @@ export const env = createEnv({
     client: {
         NEXT_PUBLIC_POSTHOG_KEY: z.string().min(1),
         NEXT_PUBLIC_POSTHOG_HOST: z.string().min(1),
-        NEXT_PUBLIC_DUFFEL_KEY: z.string().min(1),
         NEXT_PUBLIC_BETTER_AUTH_URL: z.string(),
     },
 
@@ -24,7 +23,6 @@ export const env = createEnv({
         NEXT_PUBLIC_BETTER_AUTH_URL: process.env.NEXT_PUBLIC_BETTER_AUTH_URL,
         NEXT_PUBLIC_POSTHOG_KEY: process.env.NEXT_PUBLIC_POSTHOG_KEY,
         NEXT_PUBLIC_POSTHOG_HOST: process.env.NEXT_PUBLIC_POSTHOG_HOST,
-        NEXT_PUBLIC_DUFFEL_KEY: process.env.NEXT_PUBLIC_DUFFEL_KEY,
     },
 
     /**
