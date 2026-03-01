@@ -1,6 +1,6 @@
 import { Logger } from 'next-axiom';
 
-export const log = new Logger({ source: 'kitasuro' });
+export const log = new Logger({ source: 'ratiba' });
 
 /** Serialize an unknown error into a structured object for logging */
 export function serializeError(error: unknown): {

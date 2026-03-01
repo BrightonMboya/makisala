@@ -10,17 +10,18 @@ interface FeatureGridProps {
 
 export function FeatureGrid({ features }: FeatureGridProps) {
   return (
-    <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
+    <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
       {features.map((feature, index) => (
-        <div 
-            key={index} 
-            className="group relative rounded-2xl border border-border/50 bg-card/50 p-8 transition-colors hover:bg-card/80 hover:border-border/80"
+        <div
+          key={index}
+          className="animate-slide-up-fade group relative rounded-2xl border border-border/50 bg-card/50 p-8 transition-all duration-300 hover:bg-card/80 hover:border-border/80 hover:-translate-y-1 hover:shadow-lg"
+          style={{ '--delay': `${index * 80}ms` } as React.CSSProperties}
         >
-          <div className="mb-6 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
+          <div className="mb-6 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 text-primary transition-all duration-300 group-hover:from-primary group-hover:to-primary/80 group-hover:text-primary-foreground group-hover:shadow-lg group-hover:shadow-primary/20">
             <feature.icon className="h-6 w-6" />
           </div>
           <h3 className="mb-3 text-lg font-semibold tracking-tight font-heading">{feature.title}</h3>
-          <p className="text-muted-foreground">{feature.description}</p>
+          <p className="text-muted-foreground leading-relaxed">{feature.description}</p>
         </div>
       ))}
     </div>

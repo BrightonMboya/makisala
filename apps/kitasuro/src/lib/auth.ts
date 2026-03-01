@@ -153,7 +153,7 @@ export const auth = betterAuth({
   plugins: [
     passkey({
       rpID: new URL(env.NEXT_PUBLIC_APP_URL).hostname,
-      rpName: 'Kitasuro',
+      rpName: 'Ratiba',
       origin: env.NEXT_PUBLIC_APP_URL,
     }),
     organization({

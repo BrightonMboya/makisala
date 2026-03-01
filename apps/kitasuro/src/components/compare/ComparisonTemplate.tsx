@@ -1,0 +1,475 @@
+import Link from 'next/link';
+import {
+  ArrowRight,
+  Check,
+  CheckCircle2,
+  Coins,
+  Images,
+  Quote,
+  Users,
+  Workflow,
+  X,
+} from 'lucide-react';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@repo/ui/table';
+import { Navbar } from '@/components/landing/Navbar';
+import { Footer } from '@/components/landing/Footer';
+import { PricingSavingsCalculator } from '@/components/compare/PricingSavingsCalculator';
+import { env } from '@/lib/env';
+
+type FeatureCell = {
+  enabled: boolean;
+  note: string;
+};
+
+type FeatureRow = {
+  feature: string;
+  kitasuro: FeatureCell;
+  competitor: FeatureCell;
+};
+
+type Testimonial = {
+  quote: string;
+  author: string;
+  role: string;
+  company: string;
+};
+
+type ComparisonTemplateProps = {
+  competitorName: string;
+  heroTitle: string;
+  heroDescription: string;
+  featureRows: FeatureRow[];
+  switchReasons: string[];
+  testimonials: Testimonial[];
+  faqs: Array<{ question: string; answer: string }>;
+  pagePath: string;
+  competitorDefaultPerSeat?: number;
+};
+
+const kitasuroAdvantages = [
+  {
+    title: 'One workspace for sales and ops',
+    description:
+      'Both teams edit the same live proposal. No more emailing PDFs back and forth or reconciling conflicting versions.',
+    icon: Users,
+  },
+  {
+    title: 'Flat pricing from $49/mo',
+    description:
+      'Three fixed plans. No per-seat surcharges, no surprise add-on fees. Your cost stays the same as your team grows.',
+    icon: Coins,
+  },
+  {
+    title: 'Your brand on every proposal',
+    description:
+      'Upload your own photography and apply brand styling so clients see your company — not a generic template.',
+    icon: Images,
+  },
+  {
+    title: 'Enquiry to sent proposal, same day',
+    description:
+      'Build, review, and send a branded itinerary in one session. Fewer handoffs means faster turnaround during peak season.',
+    icon: Workflow,
+  },
+];
+
+export function ComparisonTemplate({
+  competitorName,
+  heroTitle,
+  heroDescription,
+  featureRows,
+  switchReasons,
+  testimonials,
+  faqs,
+  pagePath,
+  competitorDefaultPerSeat,
+}: ComparisonTemplateProps) {
+  const siteUrl = env.NEXT_PUBLIC_APP_URL;
+  const normalizedPath = pagePath.startsWith('/') ? pagePath : `/${pagePath}`;
+  const pageUrl = `${siteUrl}${normalizedPath}`;
+
+  const faqSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: faqs.map((faq) => ({
+      '@type': 'Question',
+      name: faq.question,
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: faq.answer,
+      },
+    })),
+  };
+
+  const breadcrumbSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      {
+        '@type': 'ListItem',
+        position: 1,
+        name: 'Compare',
+        item: `${siteUrl}/compare`,
+      },
+      {
+        '@type': 'ListItem',
+        position: 2,
+        name: `Ratiba vs ${competitorName}`,
+        item: pageUrl,
+      },
+    ],
+  };
+
+  return (
+    <div className="bg-background text-foreground min-h-screen">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
+      />
+
+      <Navbar />
+
+      <main className="pt-32 pb-20 md:pt-36">
+        <section id="overview" className="relative overflow-hidden">
+          <div className="from-primary/15 pointer-events-none absolute top-0 left-1/2 h-[340px] w-[720px] -translate-x-1/2 rounded-full bg-gradient-to-b to-transparent blur-3xl" />
+          <div className="relative mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+            <p className="text-primary border-border/60 bg-card/70 inline-flex items-center rounded-full border px-4 py-1.5 text-sm font-medium">
+              Ratiba vs {competitorName}
+            </p>
+            <h1 className="font-heading mt-5 max-w-4xl text-4xl font-bold tracking-tight sm:text-6xl">
+              {heroTitle}
+            </h1>
+            <p className="text-muted-foreground mt-6 max-w-3xl text-lg">{heroDescription}</p>
+
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+              <Link
+                href="/sign-up"
+                className="bg-primary text-primary-foreground hover:bg-primary/90 inline-flex h-11 items-center justify-center rounded-full px-6 text-sm font-medium shadow-sm transition-colors"
+              >
+                Start free trial
+              </Link>
+              <Link
+                href="https://cal.com/brightonmboya/30min"
+                className="border-input bg-background hover:bg-accent hover:text-accent-foreground inline-flex h-11 items-center justify-center rounded-full border px-6 text-sm font-medium transition-colors"
+              >
+                Book a 20-min walkthrough
+              </Link>
+            </div>
+
+            <div className="text-muted-foreground mt-3 flex flex-wrap items-center gap-x-5 gap-y-1 text-sm">
+              <span>No credit card required</span>
+              <span>Build your first proposal in under 10 minutes</span>
+            </div>
+
+            <div className="mt-8 grid gap-4 md:grid-cols-3">
+              <article className="border-border/70 bg-card/65 rounded-2xl border p-4">
+                <p className="text-xs font-semibold tracking-wide uppercase">Best for</p>
+                <p className="mt-2 text-sm text-balance">
+                  Safari and tour operators where sales and ops both touch the proposal before it
+                  reaches the client.
+                </p>
+              </article>
+              <article className="border-border/70 bg-card/65 rounded-2xl border p-4">
+                <p className="text-xs font-semibold tracking-wide uppercase">Core difference</p>
+                <p className="mt-2 text-sm text-balance">
+                  Flat monthly pricing ($49–$249/mo), real-time collaboration, and branded proposals
+                  — all in one workspace.
+                </p>
+              </article>
+              <article className="border-border/70 bg-card/65 rounded-2xl border p-4">
+                <p className="text-xs font-semibold tracking-wide uppercase">How to decide</p>
+                <p className="mt-2 text-sm text-balance">
+                  Read the comparison below, model your cost with the calculator, then build one
+                  real proposal in each tool.
+                </p>
+              </article>
+            </div>
+          </div>
+        </section>
+
+        <section className="py-16">
+          <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+            <div className="mb-10 max-w-3xl">
+              <h2 className="font-heading text-3xl font-bold tracking-tight sm:text-4xl">
+                Four reasons operators switch to Ratiba
+              </h2>
+              <p className="text-muted-foreground mt-3 text-lg">
+                The same pain points come up in every evaluation call: version chaos, rising costs,
+                inconsistent branding, and slow turnaround.
+              </p>
+            </div>
+            <div className="grid gap-4 md:grid-cols-2">
+              {kitasuroAdvantages.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <article
+                    key={item.title}
+                    className="border-border/60 bg-card/55 relative overflow-hidden rounded-2xl border p-6"
+                  >
+                    <div className="from-primary/10 pointer-events-none absolute -right-8 -bottom-10 h-24 w-24 rounded-full bg-gradient-to-tr to-transparent blur-md" />
+                    <div className="relative">
+                      <span className="bg-primary/12 text-primary inline-flex h-10 w-10 items-center justify-center rounded-xl">
+                        <Icon className="h-5 w-5" />
+                      </span>
+                      <h3 className="font-heading mt-4 text-xl font-semibold tracking-tight">
+                        {item.title}
+                      </h3>
+                      <p className="text-muted-foreground mt-3 text-sm leading-relaxed">
+                        {item.description}
+                      </p>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+
+        <section className="relative py-20">
+          <div className="absolute inset-0 bg-[linear-gradient(to_right,oklch(0.922_0_0)_1px,transparent_1px),linear-gradient(to_bottom,oklch(0.922_0_0)_1px,transparent_1px)] bg-[size:40px_40px] opacity-50" />
+          <div className="from-primary/10 pointer-events-none absolute inset-0 bg-gradient-to-b via-transparent to-transparent" />
+
+          <div className="relative mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+            <div className="mb-10 max-w-3xl">
+              <h2 className="font-heading text-3xl font-bold tracking-tight sm:text-4xl">
+                Built for teams that sell through proposals
+              </h2>
+              <p className="text-muted-foreground mt-3 text-lg">
+                Your proposal is your first impression. Ratiba keeps it branded, accurate, and out
+                the door before the client calls your competitor.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <section id="matrix" className="bg-muted/20 py-16">
+          <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+            <div className="mb-8">
+              <h2 className="font-heading text-3xl font-bold tracking-tight">
+                Ratiba vs {competitorName}: feature comparison matrix
+              </h2>
+              <p className="text-muted-foreground mt-3 max-w-3xl">
+                A side-by-side look at the features that matter most when choosing itinerary
+                software, travel proposal tools, and safari operations platforms.
+              </p>
+            </div>
+
+            <div className="border-border/60 bg-card/60 rounded-2xl border p-2">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-[38%]">Capability</TableHead>
+                    <TableHead className="w-[31%]">Ratiba</TableHead>
+                    <TableHead className="w-[31%]">{competitorName}</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {featureRows.map((row) => (
+                    <TableRow key={row.feature}>
+                      <TableCell className="font-medium">{row.feature}</TableCell>
+                      <TableCell>
+                        <div className="flex items-start gap-2">
+                          {row.kitasuro.enabled ? (
+                            <span className="mt-0.5 inline-flex h-5 w-5 items-center justify-center rounded-full bg-green-100 text-green-700">
+                              <Check className="h-3.5 w-3.5" />
+                            </span>
+                          ) : (
+                            <span className="mt-0.5 inline-flex h-5 w-5 items-center justify-center rounded-full bg-red-100 text-red-700">
+                              <X className="h-3.5 w-3.5" />
+                            </span>
+                          )}
+                          <span className="text-muted-foreground">{row.kitasuro.note}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-start gap-2">
+                          {row.competitor.enabled ? (
+                            <span className="mt-0.5 inline-flex h-5 w-5 items-center justify-center rounded-full bg-green-100 text-green-700">
+                              <Check className="h-3.5 w-3.5" />
+                            </span>
+                          ) : (
+                            <span className="mt-0.5 inline-flex h-5 w-5 items-center justify-center rounded-full bg-red-100 text-red-700">
+                              <X className="h-3.5 w-3.5" />
+                            </span>
+                          )}
+                          <span className="text-muted-foreground">{row.competitor.note}</span>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+            <p className="text-muted-foreground mt-3 text-xs">
+              Buyer guidance only. Validate exact plan and feature availability during your own
+              trial and procurement process.
+            </p>
+          </div>
+        </section>
+
+        <section className="py-16">
+          <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+            <div className="mb-8">
+              <h2 className="font-heading text-3xl font-bold tracking-tight">
+                What tour operators tell us during demos
+              </h2>
+              <p className="text-muted-foreground mt-3 text-lg">
+                These are the problems that come up most often when teams evaluate proposal
+                software.
+              </p>
+            </div>
+
+            <div className="grid gap-6 md:grid-cols-3">
+              {testimonials.map((item) => (
+                <article
+                  key={`${item.author}-${item.company}`}
+                  className="border-border/60 bg-card/70 relative rounded-2xl border p-6"
+                >
+                  <Quote className="text-primary mb-4 h-5 w-5" />
+                  <p className="text-muted-foreground leading-relaxed">{item.quote}</p>
+                  <div className="border-border/60 mt-5 border-t pt-4">
+                    <p className="font-medium">{item.author}</p>
+                    <p className="text-muted-foreground text-sm">
+                      {item.role}, {item.company}
+                    </p>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="py-16">
+          <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+            <div className="grid gap-6 lg:grid-cols-2">
+              <article className="border-border/60 bg-card/60 rounded-2xl border p-6 sm:p-8">
+                <h2 className="font-heading text-3xl font-bold tracking-tight">
+                  Why teams switch to Ratiba
+                </h2>
+                <ul className="mt-6 space-y-4">
+                  {switchReasons.map((reason) => (
+                    <li key={reason} className="flex items-start gap-3">
+                      <CheckCircle2 className="text-primary mt-1 h-4 w-4 shrink-0" />
+                      <span className="text-muted-foreground">{reason}</span>
+                    </li>
+                  ))}
+                </ul>
+              </article>
+
+              <PricingSavingsCalculator
+                competitorName={competitorName}
+                defaultPerSeat={competitorDefaultPerSeat}
+              />
+            </div>
+          </div>
+        </section>
+
+        <section className="bg-muted/20 py-16">
+          <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+            <div className="grid gap-6 lg:grid-cols-2">
+              <article className="border-border/60 bg-card/60 rounded-2xl border p-6 sm:p-8">
+                <h2 className="font-heading text-2xl font-bold tracking-tight sm:text-3xl">
+                  How to run a fair evaluation
+                </h2>
+                <p className="text-muted-foreground mt-3">
+                  Pick one real client enquiry and build the proposal in both Ratiba and{' '}
+                  {competitorName}. Include your sales and ops team so you see the full workflow.
+                </p>
+                <ul className="text-muted-foreground mt-5 space-y-2 text-sm">
+                  <li>- Build the same itinerary with the same client brief in both tools.</li>
+                  <li>- Time the full cycle: build, internal review, and client send.</li>
+                  <li>- Compare how the final proposal looks to the client.</li>
+                  <li>- Model total annual cost at your current and projected team size.</li>
+                </ul>
+              </article>
+
+              <article className="border-border/60 bg-card/60 rounded-2xl border p-6 sm:p-8">
+                <h2 className="font-heading text-2xl font-bold tracking-tight sm:text-3xl">
+                  Compare other tools
+                </h2>
+                <p className="text-muted-foreground mt-3">
+                  Evaluating multiple options? See how Ratiba stacks up against other safari and
+                  tour operator platforms.
+                </p>
+                <div className="mt-5 flex flex-col gap-2 text-sm">
+                  {[
+                    { href: '/compare/wetu-alternative', label: 'Ratiba vs Wetu' },
+                    {
+                      href: '/compare/safari-office-alternative',
+                      label: 'Ratiba vs Safari Office',
+                    },
+                    {
+                      href: '/compare/safari-portal-alternative',
+                      label: 'Ratiba vs Safari Portal',
+                    },
+                    { href: '/compare', label: 'All comparison pages' },
+                  ].map((linkItem) => (
+                    <Link
+                      key={linkItem.href}
+                      href={linkItem.href}
+                      className="text-primary hover:text-primary/80 inline-flex items-center gap-2 font-medium"
+                    >
+                      <ArrowRight className="h-4 w-4" />
+                      {linkItem.label}
+                    </Link>
+                  ))}
+                </div>
+              </article>
+            </div>
+          </div>
+        </section>
+
+        <section id="faq" className="py-16">
+          <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
+            <h2 className="font-heading text-3xl font-bold tracking-tight">
+              Frequently Asked Questions
+            </h2>
+            <div className="mt-8 space-y-4">
+              {faqs.map((faq) => (
+                <article
+                  key={faq.question}
+                  className="border-border/60 bg-card/60 rounded-2xl border p-6"
+                >
+                  <h3 className="font-heading text-xl font-semibold">{faq.question}</h3>
+                  <p className="text-muted-foreground mt-3">{faq.answer}</p>
+                </article>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="py-20">
+          <div className="mx-auto max-w-4xl px-4 text-center sm:px-6 lg:px-8">
+            <h2 className="font-heading text-4xl font-bold tracking-tight">
+              Build your first proposal today — free
+            </h2>
+            <p className="text-muted-foreground mt-4 text-lg">
+              No credit card, no sales call required. Pick a real client enquiry, build the
+              itinerary in Ratiba, and see the difference for yourself.
+            </p>
+            <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
+              <Link
+                href="/sign-up"
+                className="bg-primary text-primary-foreground hover:bg-primary/90 inline-flex h-12 items-center justify-center rounded-full px-8 text-sm font-medium shadow-sm transition-colors"
+              >
+                Start my free trial <ArrowRight className="ml-2 h-4 w-4" />
+              </Link>
+              <Link
+                href="https://cal.com/brightonmboya/30min"
+                className="border-input bg-background hover:bg-accent hover:text-accent-foreground inline-flex h-12 items-center justify-center rounded-full border px-8 text-sm font-medium shadow-sm transition-colors"
+              >
+                See a live walkthrough
+              </Link>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <Footer />
+    </div>
+  );
+}

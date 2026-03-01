@@ -1,3 +1,6 @@
+'use client';
+
+import { useState } from 'react';
 import { PLAN_CONFIG, type PlanTier } from '@/lib/plans-config';
 import { CheckCircle2, X } from 'lucide-react';
 import Link from 'next/link';
@@ -40,34 +43,67 @@ const FEATURES: { label: string; tiers: Record<PlanTier, string> }[] = [
 ];
 
 export function Pricing() {
+  const [billing, setBilling] = useState<'monthly' | 'annual'>('monthly');
+
   return (
-    <section id="pricing" className="bg-muted/30 py-24">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="mb-16 text-center">
+    <section id="pricing" className="relative py-24">
+      <div className="bg-grid-pattern pointer-events-none absolute inset-0 [mask-image:linear-gradient(to_bottom,transparent,black_20%,black_80%,transparent)] opacity-30" />
+      <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="animate-slide-up-fade mb-16 text-center" style={{ '--delay': '0ms' } as React.CSSProperties}>
           <h2 className="font-heading text-3xl font-bold tracking-tight sm:text-4xl">
             Pick a plan that fits your team
           </h2>
           <p className="text-muted-foreground mt-4 text-lg">
             Start free with 2 proposals. Upgrade when you need more.
           </p>
+
+          {/* Billing toggle */}
+          <div className="mt-8 inline-flex items-center gap-3 rounded-full border border-border/60 bg-muted/50 p-1">
+            <button
+              type="button"
+              onClick={() => setBilling('monthly')}
+              className={`rounded-full px-5 py-2 text-sm font-medium transition-all ${
+                billing === 'monthly'
+                  ? 'bg-background text-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              Monthly
+            </button>
+            <button
+              type="button"
+              onClick={() => setBilling('annual')}
+              className={`rounded-full px-5 py-2 text-sm font-medium transition-all ${
+                billing === 'annual'
+                  ? 'bg-background text-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              Annual <span className="text-primary ml-1 text-xs font-semibold">Save 20%</span>
+            </button>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          {TIER_ORDER.map((tier) => {
+          {TIER_ORDER.map((tier, index) => {
             const config = PLAN_CONFIG[tier];
             const isPopular = tier === 'pro';
+            const displayPrice = billing === 'annual' && config.price > 0
+              ? Math.round(config.price * 0.8)
+              : config.price;
 
             return (
               <div
                 key={tier}
-                className={`relative flex flex-col rounded-2xl border p-8 transition-colors ${
+                className={`animate-slide-up-fade relative flex flex-col rounded-2xl border p-8 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg ${
                   isPopular
-                    ? 'border-primary bg-primary/5 ring-1 ring-primary/20'
+                    ? 'border-primary bg-gradient-to-b from-primary/5 to-transparent ring-1 ring-primary/20'
                     : 'border-border/50 bg-card/50 hover:border-border/80 hover:bg-card/80'
                 }`}
+                style={{ '--delay': `${index * 100}ms` } as React.CSSProperties}
               >
                 {isPopular && (
-                  <span className="bg-primary text-primary-foreground absolute -top-3 left-1/2 -translate-x-1/2 rounded-full px-3 py-0.5 text-xs font-medium">
+                  <span className="bg-primary text-primary-foreground absolute -top-3 left-1/2 -translate-x-1/2 rounded-full px-4 py-0.5 text-xs font-semibold shadow-lg shadow-primary/20">
                     Popular
                   </span>
                 )}
@@ -76,13 +112,13 @@ export function Pricing() {
                   <h3 className="font-heading text-lg font-semibold tracking-tight">
                     {config.name}
                   </h3>
-                  <div className="mt-2">
+                  <div className="mt-3">
                     {config.price === 0 ? (
                       <span className="font-heading text-4xl font-bold">Free</span>
                     ) : (
                       <>
                         <span className="font-heading text-4xl font-bold">
-                          ${config.price}
+                          ${displayPrice}
                         </span>
                         <span className="text-muted-foreground text-sm">/mo</span>
                       </>
@@ -121,9 +157,9 @@ export function Pricing() {
 
                 <Link
                   href="/sign-up"
-                  className={`inline-flex h-11 items-center justify-center rounded-full text-sm font-medium transition-colors focus-visible:ring-1 focus-visible:outline-none ${
+                  className={`inline-flex h-11 items-center justify-center rounded-full text-sm font-medium transition-all focus-visible:ring-1 focus-visible:outline-none ${
                     isPopular
-                      ? 'bg-primary text-primary-foreground hover:bg-primary/90 focus-visible:ring-ring shadow'
+                      ? 'bg-primary text-primary-foreground hover:bg-primary/90 focus-visible:ring-ring shadow-lg shadow-primary/20'
                       : 'border-input bg-background hover:bg-accent hover:text-accent-foreground focus-visible:ring-ring border shadow-sm'
                   }`}
                 >
