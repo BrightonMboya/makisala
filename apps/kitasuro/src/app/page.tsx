@@ -8,44 +8,6 @@ import { ArrowRight, Compass, Globe, Layout, Library, Share2, Sparkles } from 'l
 import Link from 'next/link';
 
 export default function LandingPage() {
-  const coreFeatures = [
-    {
-      title: 'Drag-and-Drop Builder',
-      description:
-        'Add accommodations, activities, and transfers. Rearrange days with a drag. Your itinerary stays organized.',
-      icon: Compass,
-    },
-    {
-      title: 'Ready-Made Content',
-      description:
-        'Stop Googling for lodge photos. Pull from a library of verified images and descriptions for top destinations.',
-      icon: Library,
-    },
-    {
-      title: 'Shareable Proposals',
-      description:
-        'Send a link, not a PDF attachment. Clients view, comment, and accept your proposal from any device.',
-      icon: Share2,
-    },
-    {
-      title: 'Works Offline',
-      description: 'Your clients can pull up their itinerary mid-safari, even with no signal.',
-      icon: Globe,
-    },
-    {
-      title: 'AI Writing Assist',
-      description:
-        'Stuck on a description? Generate polished copy for any destination or activity in seconds.',
-      icon: Sparkles,
-    },
-    {
-      title: 'Your Brand, Your Look',
-      description:
-        'Pick a theme, add your logo, and match your brand colors. Every proposal looks like it came from your team.',
-      icon: Layout,
-    },
-  ];
-
   const steps = [
     {
       number: '01',
@@ -73,51 +35,28 @@ export default function LandingPage() {
       <main>
         <Hero />
 
-        {/* Trusted By / Social Proof */}
-        <section className="border-border/40 border-y py-12">
-          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <p
-              className="animate-slide-up-fade text-muted-foreground text-center text-sm font-medium"
-              style={{ '--delay': '700ms' } as React.CSSProperties}
-            >
-              Trusted by tour operators across Africa
-            </p>
-            <div className="mt-8 flex flex-wrap items-center justify-center gap-x-12 gap-y-4">
-              {['Safari operators', 'DMC teams', 'Travel agencies', 'Luxury outfitters'].map(
-                (label, i) => (
-                  <span
-                    key={label}
-                    className="animate-slide-up-fade text-muted-foreground/50 font-heading text-lg font-semibold tracking-tight"
-                    style={{ '--delay': `${750 + i * 80}ms` } as React.CSSProperties}
-                  >
-                    {label}
-                  </span>
-                ),
-              )}
-            </div>
-          </div>
-        </section>
-
         {/* Features Grid Section */}
-        <section id="features" className="py-24">
-          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <div
-              className="animate-slide-up-fade mb-16 text-center"
-              style={{ '--delay': '0ms' } as React.CSSProperties}
-            >
-              <span className="text-primary border-primary/20 bg-primary/5 mb-4 inline-block rounded-full border px-4 py-1.5 text-sm font-medium">
-                Features
-              </span>
-              <h2 className="font-heading text-3xl font-bold tracking-tight sm:text-4xl">
-                Less admin, more bookings
-              </h2>
-              <p className="text-muted-foreground mx-auto mt-4 max-w-2xl text-lg">
-                Every tool a tour operator needs to go from enquiry to confirmed booking, faster.
-              </p>
+        <div className='border-b'>
+          <section id="features" className="mx-auto border-x w-fit px-8 py-16">
+            <div className="mx-auto px-4 sm:px-6 lg:px-8 max-w-5xl">
+              <div
+                className="animate-slide-up-fade mb-16 text-center"
+                style={{ '--delay': '0ms' } as React.CSSProperties}
+              >
+                <span className="text-primary border-primary/20 bg-primary/5 mb-4 inline-block rounded-full border px-4 py-1.5 text-sm font-medium">
+                  Features
+                </span>
+                <h2 className="font-heading text-3xl font-bold tracking-tight sm:text-5xl">
+                  Less admin, more bookings
+                </h2>
+                <p className="text-muted-foreground mx-auto mt-4 max-w-2xl text-lg">
+                  Every tool a tour operator needs to go from enquiry to confirmed booking, faster.
+                </p>
+              </div>
+              <FeatureGrid />
             </div>
-            <FeatureGrid features={coreFeatures} />
-          </div>
-        </section>
+          </section>
+        </div>
 
         {/* Deep Dive Feature 1: Builder */}
         <FeatureHighlight
