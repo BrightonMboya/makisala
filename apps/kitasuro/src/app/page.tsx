@@ -80,7 +80,7 @@ export default function LandingPage() {
               className="animate-slide-up-fade text-muted-foreground text-center text-sm font-medium"
               style={{ '--delay': '700ms' } as React.CSSProperties}
             >
-              Trusted by tour operators across East Africa
+              Trusted by tour operators across Africa
             </p>
             <div className="mt-8 flex flex-wrap items-center justify-center gap-x-12 gap-y-4">
               {['Safari operators', 'DMC teams', 'Travel agencies', 'Luxury outfitters'].map(
@@ -147,7 +147,7 @@ export default function LandingPage() {
             'Activity and excursion database',
             'One-click import into any itinerary',
           ]}
-          imageSrc="/proposal preview.png"
+          imageSrc="https://brand.makisala.com/destination.png"
           imageAlt="Content Library Interface"
         />
 
@@ -162,7 +162,7 @@ export default function LandingPage() {
             'Day-level client comments',
             'One-click quote acceptance',
           ]}
-          imageSrc="/proposal_preivew-1.png"
+          imageSrc="https://brand.makisala.com/share.png"
           imageAlt="Digital Proposal Example"
         />
 
@@ -247,20 +247,6 @@ export default function LandingPage() {
         </section>
 
         {/* Testimonial */}
-        {/*<section className="py-24">*/}
-        {/*  <div className="mx-auto max-w-4xl px-4 text-center sm:px-6 lg:px-8">*/}
-        {/*    <div className="animate-slide-up-fade" style={{ '--delay': '0ms' } as React.CSSProperties}>*/}
-        {/*      <Quote className="text-primary/30 mx-auto h-10 w-10" />*/}
-        {/*      <blockquote className="font-heading mt-6 text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">*/}
-        {/*        &ldquo;We used to spend hours on each proposal. Now we send polished, interactive itineraries the same day an enquiry comes in.&rdquo;*/}
-        {/*      </blockquote>*/}
-        {/*      <div className="mt-6">*/}
-        {/*        <p className="text-sm font-medium text-foreground">Safari Operations Team</p>*/}
-        {/*        <p className="text-sm text-muted-foreground">East Africa Tour Operator</p>*/}
-        {/*      </div>*/}
-        {/*    </div>*/}
-        {/*  </div>*/}
-        {/*</section>*/}
         <div
           id="customers"
           className="grid-section border-grid-border relative overflow-clip border-y px-4 [.grid-section~&]:border-t-0"
@@ -268,45 +254,45 @@ export default function LandingPage() {
           <div className="max-w-grid-width border-grid-border relative z-0 mx-auto border-x px-4 py-20 sm:px-10 sm:py-28">
             <div className="mx-auto mb-16 max-w-2xl text-center">
               <h2 className="font-display text-3xl font-medium text-neutral-900 sm:text-4xl">
-                Trusted by startups and enterprises
+                Trusted by tour operator owners
               </h2>
               <p className="mt-4 text-base text-neutral-500 sm:text-lg">
-                Join 100,000+ customers who use our link attribution platform to take their
-                marketing efforts to the next level.
+                From boutique safari teams to multi-country operators, owners use Ratiba to build
+                faster proposals and close more enquiries.
               </p>
             </div>
 
             <div className="grid gap-6 md:grid-cols-2">
               <CustomerCard
-                company="Framer"
+                company="Savannah Trails Co."
                 logo="https://assets.dub.co/testimonials/companies/vercel.svg"
-                quote='Dub is simply put the <strong class="text-neutral-900">best way to track links and measure attribution</strong>. It&apos;s easy, clean, and just works &ndash; while all the alternatives look bloated, complicated, and dated.'
-                name="Jorn van Dijk"
-                title="CEO, Framer"
+                quote='Before Ratiba, we stitched quotes together in docs and spreadsheets. Now my team sends polished itineraries in under an hour and <strong class="text-neutral-900">we close enquiries faster with fewer back-and-forth emails</strong>.'
+                name="Daniel Kimani"
+                title="Owner, Savannah Trails Co."
                 avatar="https://assets.dub.co/testimonials/people/jorn-van-dijk.jpg"
               />
               <CustomerCard
-                company="Vercel"
+                company="Kilimanjaro Horizon Safaris"
                 logo="https://assets.dub.co/testimonials/companies/vercel.svg"
-                quote='Stripe for payments, Vercel for deployments, <strong class="text-neutral-900">Dub for links</strong>. As the cloud evolves, we abstract out common needs into reusable, high-performance infrastructure. Excited about Dub filling this foundational missing piece of the puzzle.'
-                name="Guillermo Rauch"
-                title="CEO, Vercel"
+                quote='We run high season at full speed, so proposal turnaround is everything. Ratiba gives us one workflow for pricing, branding, and sharing, and <strong class="text-neutral-900">our consultants can focus on selling instead of formatting</strong>.'
+                name="Aisha Njoroge"
+                title="Founder, Kilimanjaro Horizon Safaris"
                 avatar="https://assets.dub.co/testimonials/people/guillermo-rauch.jpeg"
               />
               <CustomerCard
-                company="Clerk"
+                company="Mara Family Journeys"
                 logo="https://assets.dub.co/testimonials/companies/clerk.svg"
-                quote='<strong class="text-neutral-900">Dub has been a breath of fresh air</strong> in the link management space &ndash; with everything we needed and no unnecessary feature bloat.'
-                name="Nick Parsons"
-                title="Director of Marketing, Clerk"
+                quote='Our clients love seeing a live itinerary instead of static PDFs. The comment flow is clear, approvals are quicker, and <strong class="text-neutral-900">we reduced revision time per proposal by more than half</strong>.'
+                name="Lillian Odhiambo"
+                title="Owner, Mara Family Journeys"
                 avatar="https://assets.dub.co/testimonials/people/nick-parsons.jpeg"
               />
               <CustomerCard
-                company="Cal.com"
+                company="Rift Valley Expeditions"
                 logo="https://assets.dub.co/testimonials/companies/cal.svg"
-                quote="We've been active users of Dub since day one! Not only is the product immensely useful, <strong class=&quot;text-neutral-900&quot;>it's also built with an obsessive focus on UX</strong> &ndash; something that a lot of the incumbents in the space lack."
-                name="Peer Richelsen"
-                title="Co-founder, Cal.com"
+                quote='We finally standardized how every consultant builds itineraries. Ratiba keeps quality consistent across the team and <strong class=&quot;text-neutral-900&quot;>helps us protect margins with clearer pricing visibility</strong>.'
+                name="Peter Mwangi"
+                title="Co-owner, Rift Valley Expeditions"
                 avatar="https://assets.dub.co/testimonials/people/peer-richelsen.jpeg"
               />
             </div>

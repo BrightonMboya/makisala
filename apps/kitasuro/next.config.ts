@@ -36,7 +36,7 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: 'https',
-        hostname: 'assets.makisala.com',
+        hostname: '*.makisala.com',
         port: '',
         pathname: '/**',
       },
