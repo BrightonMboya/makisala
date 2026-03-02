@@ -6,7 +6,7 @@ const CallToAction = () => {
         <div className='relative overflow-hidden'>
             <section className="mx-auto border border-border border-t-0 rounded-b-4xl w-fit px-8 space-y-20 relative py-28">
             <div className="bg-dot-pattern pointer-events-none absolute inset-0 mask-[radial-gradient(ellipse_at_center,black_20%,transparent_60%)] opacity-30" />
-                <div className="relative mx-auto min-w-5xl px-4 text-center w-full">
+                <div className="relative mx-auto min-w-5xl px-4 text-center w-full z-10">
                     <h2
                         className="animate-slide-up-fade font-heading mb-6 text-4xl font-bold tracking-tight sm:text-5xl leading-tight"
                         style={{ '--delay': '0ms' } as React.CSSProperties}
@@ -15,7 +15,7 @@ const CallToAction = () => {
                         <span className='text-primary'>10 minutes, not 2 hours</span>
                     </h2>
                     <p
-                        className="animate-slide-up-fade text-muted-foreground mb-10 text-xl"
+                        className="animate-slide-up-fade text-muted-foreground mb-10"
                         style={{ '--delay': '100ms' } as React.CSSProperties}
                     >
                         Sign up, build your first itinerary, and send it to a client today. No credit card
