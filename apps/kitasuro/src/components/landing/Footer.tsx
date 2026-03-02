@@ -2,8 +2,8 @@ import Link from 'next/link';
 
 export function Footer() {
   return (
-    <footer className="border-t border-border/40 bg-background">
-      <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8 lg:py-16">
+    <footer className="bg-background mt-8">
+      <div className="mx-auto max-w-5xl px-4 py-12 sm:px-6 lg:py-16">
         <div className="grid grid-cols-2 gap-8 md:grid-cols-4 lg:grid-cols-5">
           <div className="col-span-2 lg:col-span-2">
             <Link href="/" className="mb-4 flex items-center gap-2.5">
@@ -23,7 +23,7 @@ export function Footer() {
           </div>
 
           <div>
-            <h3 className="text-foreground text-sm font-semibold tracking-wider uppercase">
+            <h3 className="text-sm font-semibold tracking-wider uppercase text-primary">
               Product
             </h3>
             <ul className="mt-4 space-y-3">
@@ -54,7 +54,7 @@ export function Footer() {
           </div>
 
           <div>
-            <h3 className="text-foreground text-sm font-semibold tracking-wider uppercase">
+            <h3 className="text-sm font-semibold tracking-wider uppercase text-primary">
               Resources
             </h3>
             <ul className="mt-4 space-y-3">
@@ -94,7 +94,7 @@ export function Footer() {
           </div>
 
           <div>
-            <h3 className="text-foreground text-sm font-semibold tracking-wider uppercase">
+            <h3 className="text-sm font-semibold tracking-wider uppercase text-primary">
               Account
             </h3>
             <ul className="mt-4 space-y-3">
@@ -114,7 +114,7 @@ export function Footer() {
 
         {/* Bottom bar with gradient top border */}
         <div className="relative mt-12 pt-8">
-          <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-border to-transparent" />
+          <div className="absolute top-0 left-0 right-0 h-px bg-linear-to-r from-transparent via-border to-transparent" />
           <p className="text-xs text-muted-foreground text-center">
             &copy; {new Date().getFullYear()} Ratiba. All rights reserved.
           </p>

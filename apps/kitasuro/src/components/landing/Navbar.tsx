@@ -16,8 +16,8 @@ export function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
-    <nav className="border-border/40 bg-background/80 fixed top-0 right-0 left-0 z-50 border-b backdrop-blur-md">
-      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+    <nav className="bg-background/80 fixed top-4 left-1/2 -translate-x-1/2 z-50 backdrop-blur-md w-full max-w-6xl shadow-xl shadow-primary/5 rounded-full overflow-hidden">
+      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4">
         <div className="flex items-center gap-2">
           <Link href="/" className="flex items-center gap-2.5">
             <div className="bg-primary text-primary-foreground flex h-8 w-8 items-center justify-center rounded-lg">

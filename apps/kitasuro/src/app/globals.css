@@ -93,7 +93,7 @@
 }
 
 @utility bg-dot-pattern {
-    background-image: radial-gradient(oklch(0.8 0 0) 1px, transparent 1px);
+    background-image: radial-gradient(oklch(0.3 0 0) 1px, transparent 1px);
     background-size: 24px 24px;
 }
 
