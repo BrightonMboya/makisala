@@ -1,8 +1,15 @@
 import { WifiOff } from "lucide-react";
 import Image from "next/image";
-
+import LogoLoop from "@repo/ui/logo-loop"
 
 export function FeatureGrid() {
+  const imageLogos = [
+    { src: "/screenshots/features/content/1.png", alt: "Company 1" },
+    { src: "/screenshots/features/content/2.png", alt: "Company 2" },
+    { src: "/screenshots/features/content/3.png", alt: "Company 3" },
+  ];
+
+
   return (
     <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-6">
       <div className="h-80 border border-green-700/25 bg-green-50/75 col-span-6 flex justify-between rounded-3xl overflow-hidden">
@@ -24,7 +31,7 @@ export function FeatureGrid() {
           />
         </div>
       </div>
-      <div className="min-h-80 border border-emerald-500/25 bg-emerald-50/75 col-span-4 rounded-3xl overflow-hidden">
+      <div className="h-96 border border-emerald-500/25 bg-emerald-50/75 col-span-4 rounded-3xl overflow-hidden">
         <div className="w-full p-8 space-y-4">
           <p className="text-3xl font-bold text-emerald-800">Ready-Made Content</p>
           <p className="text-emerald-700/75">
@@ -33,18 +40,19 @@ export function FeatureGrid() {
         </div>
         <div className="flex gap-2">
           {/* MAKE MARQUEE HERE */}
-          {
-            Array.from({ length: 2 }).map((_, index) => (
-              <div key={index} className="h-64 w-full relative shadow-xl">
-                <Image
-                  src={`/screenshots/features/content/${index + 1}.png`}
-                  alt={`Screenshot of the content feature ${index + 1}`}
-                  fill
-                  className="object-cover w-full h-full"
-                />
-              </div>
-            ))
-          }
+          <LogoLoop
+            logos={imageLogos}
+            speed={25}
+            direction="left"
+            logoHeight={240}
+            gap={4}
+            hoverSpeed={0}
+            scaleOnHover={false}
+            fadeOut
+            pauseOnHover={false}
+            fadeOutColor="#F1FEF8"
+            ariaLabel="Technology partners"
+          />
         </div>
       </div>
       <div className="min-h-80 border border-lime-500/25 bg-lime-50 col-span-2 rounded-3xl overflow-hidden relative">
@@ -53,7 +61,7 @@ export function FeatureGrid() {
           <p className="text-lime-700/75">Rearrange days with a drag. Your itinerary stays organized.
           </p>
         </div>
-        <div className="absolute w-full bottom-0 left-24 scale-150">
+        <div className="absolute w-full bottom-0 left-18 scale-125">
           <Image
             src="/screenshots/features/drag-and-drop.png"
             alt="Screenshot of the drag-and-drop builder feature"
