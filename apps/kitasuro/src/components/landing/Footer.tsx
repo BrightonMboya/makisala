@@ -23,7 +23,7 @@ export function Footer() {
           </div>
 
           <div>
-            <h3 className="text-foreground text-sm font-semibold tracking-wider uppercase text-primary">
+            <h3 className="text-sm font-semibold tracking-wider uppercase text-primary">
               Product
             </h3>
             <ul className="mt-4 space-y-3">
@@ -54,7 +54,7 @@ export function Footer() {
           </div>
 
           <div>
-            <h3 className="text-foreground text-sm font-semibold tracking-wider uppercase text-primary">
+            <h3 className="text-sm font-semibold tracking-wider uppercase text-primary">
               Resources
             </h3>
             <ul className="mt-4 space-y-3">
@@ -94,7 +94,7 @@ export function Footer() {
           </div>
 
           <div>
-            <h3 className="text-foreground text-sm font-semibold tracking-wider uppercase text-primary">
+            <h3 className="text-sm font-semibold tracking-wider uppercase text-primary">
               Account
             </h3>
             <ul className="mt-4 space-y-3">
@@ -114,7 +114,7 @@ export function Footer() {
 
         {/* Bottom bar with gradient top border */}
         <div className="relative mt-12 pt-8">
-          <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-border to-transparent" />
+          <div className="absolute top-0 left-0 right-0 h-px bg-linear-to-r from-transparent via-border to-transparent" />
           <p className="text-xs text-muted-foreground text-center">
             &copy; {new Date().getFullYear()} Ratiba. All rights reserved.
           </p>
