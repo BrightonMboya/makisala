@@ -3,7 +3,7 @@ import Link from 'next/link'
 
 const CallToAction = () => {
     return (
-        <div className='relative'>
+        <div className='relative overflow-hidden'>
             <section className="mx-auto border border-border border-t-0 rounded-b-4xl w-fit px-8 space-y-20 relative py-28">
             <div className="bg-dot-pattern pointer-events-none absolute inset-0 mask-[radial-gradient(ellipse_at_center,black_20%,transparent_60%)] opacity-30" />
                 <div className="relative mx-auto min-w-5xl px-4 text-center w-full">
@@ -40,6 +40,8 @@ const CallToAction = () => {
                     </div>
                 </div>
             </section>
+
+            <div className='bg-dot-pattern pointer-events-none absolute inset-0 mask-[radial-gradient(ellipse_at_center,black_20%,transparent_60%)] opacity-30 py-96' />
         </div>
     )
 }

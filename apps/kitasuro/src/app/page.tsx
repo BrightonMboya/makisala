@@ -40,8 +40,8 @@ export default function LandingPage() {
         <Hero />
 
         {/* Features Grid Section */}
-        <div className='border-b'>
-          <section id="features" className="mx-auto border-x w-fit px-8 py-16">
+        <div className='border-b border-border'>
+          <section id="features" className="mx-auto border-border border-x w-fit px-8 py-16">
             <div className="mx-auto px-4 sm:px-6 lg:px-8 max-w-5xl">
               <div
                 className="animate-slide-up-fade mb-16 text-center"

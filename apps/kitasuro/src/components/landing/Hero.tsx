@@ -7,6 +7,7 @@ export function Hero() {
   return (
     <div className="relative overflow-hidden pt-32 md:pt-36 border-b border-border">
       {/* Dot pattern background */}
+      <div className="bg-dot-pattern pointer-events-none absolute inset-0 mask-[radial-gradient(ellipse_at_center,black_20%,transparent_60%)] opacity-30" />
 
       <div className="relative mx-auto flex max-w-7xl flex-col items-center px-4 text-center sm:px-6 lg:px-8">
         <h1
@@ -72,7 +73,7 @@ export function Hero() {
         </div>
 
         {/* Hero product screenshot */}
-        <div className='overflow-hidden border border-b-0 border-border/50 rounded-t-4xl mt-16 relative backdrop-blur-lg pt-8 px-8'>
+        <div className='overflow-hidden border border-b-0 border-border rounded-t-4xl mt-16 relative backdrop-blur-lg pt-8 px-8'>
           <div
             className="animate-slide-up-fade relative mx-auto w-full max-w-5xl"
             style={{ '--delay': '600ms', '--offset': '48px' } as React.CSSProperties}
@@ -92,29 +93,29 @@ export function Hero() {
           </div>
 
           {/* Trusted By / Social Proof */}
-            <section className='py-12'>
-              <div className="mx-auto px-4 sm:px-6 lg:px-8">
-                <p
-                  className="animate-slide-up-fade text-muted-foreground text-center text-sm font-medium"
-                  style={{ '--delay': '700ms' } as React.CSSProperties}
-                >
-                  Trusted by tour operators across Africa
-                </p>
-                <div className="mt-6 flex flex-wrap items-center justify-center gap-x-12 gap-y-4">
-                  {['Safari operators', 'DMC teams', 'Travel agencies', 'Luxury outfitters'].map(
-                    (label, i) => (
-                      <span
-                        key={label}
-                        className="animate-slide-up-fade text-muted-foreground/50 font-heading text-lg font-semibold tracking-tight"
-                        style={{ '--delay': `${750 + i * 80}ms` } as React.CSSProperties}
-                      >
-                        {label}
-                      </span>
-                    ),
-                  )}
-                </div>
+          <section className='py-12'>
+            <div className="mx-auto px-4 sm:px-6 lg:px-8">
+              <p
+                className="animate-slide-up-fade text-muted-foreground text-center text-sm font-medium"
+                style={{ '--delay': '700ms' } as React.CSSProperties}
+              >
+                Trusted by tour operators across Africa
+              </p>
+              <div className="mt-6 flex flex-wrap items-center justify-center gap-x-12 gap-y-4">
+                {['Safari operators', 'DMC teams', 'Travel agencies', 'Luxury outfitters'].map(
+                  (label, i) => (
+                    <span
+                      key={label}
+                      className="animate-slide-up-fade text-muted-foreground/50 font-heading text-lg font-semibold tracking-tight"
+                      style={{ '--delay': `${750 + i * 80}ms` } as React.CSSProperties}
+                    >
+                      {label}
+                    </span>
+                  ),
+                )}
               </div>
-            </section>
+            </div>
+          </section>
         </div>
       </div>
     </div>
