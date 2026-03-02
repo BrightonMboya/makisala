@@ -15,7 +15,7 @@ import { useToast } from '@/lib/hooks/use-toast'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { createInquiry } from '@/lib/cms-service'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { BASE_URL } from '@/lib/constants'
 import { sendGTMEvent } from '@next/third-parties/google'
 import { CountryDropdown } from '@repo/ui/country-dropdown'
@@ -28,6 +28,7 @@ export default function ContactForm({
     const [openCalendar, setOpenCalendar] = React.useState<boolean>(false)
     const { toast } = useToast()
     const pathname = usePathname()
+    const router = useRouter()
 
     const formSchema = z.object({
         fullName: z.string().min(1, 'Full Name is required'),
@@ -63,11 +64,8 @@ export default function ContactForm({
                 send_to: 'AW-17982843958/autmCMmsk4EcELbY8f5C',
             })
 
-            toast('Inquiry Submitted', {
-                description: "We'll get back to you within 24 hours!",
-            })
-            setOpen && setOpen(false)
             form.reset()
+            router.push('/thank-you')
         } catch (error) {
             toast('Error', {
                 description: 'Failed to submit inquiry. Please try again.',
