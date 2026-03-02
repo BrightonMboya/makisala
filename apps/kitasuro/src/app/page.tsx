@@ -6,6 +6,8 @@ import { Pricing } from '@/components/landing/Pricing';
 import { Footer } from '@/components/landing/Footer';
 import { ArrowRight, Compass, Globe, Layout, Library, Share2, Sparkles } from 'lucide-react';
 import Link from 'next/link';
+import CustomizedDesign from '@/components/landing/CustomizedDesign';
+import { Button } from '@repo/ui/button';
 
 export default function LandingPage() {
   const steps = [
@@ -59,7 +61,7 @@ export default function LandingPage() {
         </div>
 
         {/* Deep Dive Feature 1: Builder */}
-        <FeatureHighlight
+        {/* <FeatureHighlight
           align="left"
           title="Stop wrestling with Word docs and spreadsheets"
           description="Drop in accommodations, slot in game drives, and rearrange the whole trip with a drag. Ratiba calculates travel times, maps the route, and totals the pricing as you go."
@@ -75,7 +77,6 @@ export default function LandingPage() {
           ctaLink="/login"
         />
 
-        {/* Deep Dive Feature 2: Content Library */}
         <FeatureHighlight
           align="right"
           title="Every lodge photo and description, ready to go"
@@ -90,7 +91,6 @@ export default function LandingPage() {
           imageAlt="Content Library Interface"
         />
 
-        {/* Deep Dive Feature 3: Proposals */}
         <FeatureHighlight
           align="left"
           title="Send proposals clients actually respond to"
@@ -103,55 +103,62 @@ export default function LandingPage() {
           ]}
           imageSrc="https://brand.makisala.com/share.png"
           imageAlt="Digital Proposal Example"
-        />
+        /> */}
+
+        {/* Design Variety */}
+        <CustomizedDesign />
 
         {/* How It Works */}
-        <section className="relative py-24">
-          <div className="bg-dot-pattern pointer-events-none absolute inset-0 [mask-image:radial-gradient(ellipse_at_center,black_20%,transparent_60%)] opacity-30" />
-          <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <div
-              className="animate-slide-up-fade mb-16 text-center"
-              style={{ '--delay': '0ms' } as React.CSSProperties}
-            >
-              <span className="text-primary border-primary/20 bg-primary/5 mb-4 inline-block rounded-full border px-4 py-1.5 text-sm font-medium">
-                How it works
-              </span>
-              <h2 className="font-heading text-3xl font-bold tracking-tight sm:text-4xl">
-                From enquiry to accepted quote in three steps
-              </h2>
-            </div>
-            <div className="grid gap-8 md:grid-cols-3">
-              {steps.map((step, i) => (
-                <div
-                  key={step.number}
-                  className="animate-slide-up-fade border-border/50 bg-card/50 relative rounded-2xl border p-8"
-                  style={{ '--delay': `${i * 120}ms` } as React.CSSProperties}
-                >
-                  <span className="font-heading text-primary/20 text-6xl font-bold">
-                    {step.number}
-                  </span>
-                  <h3 className="font-heading mt-4 text-xl font-semibold tracking-tight">
-                    {step.title}
-                  </h3>
-                  <p className="text-muted-foreground mt-3 leading-relaxed">{step.description}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
+        <div>
+          <section className="mx-auto border-x w-fit px-8 py-16 space-y-20">
+            <div className="bg-dot-pattern pointer-events-none absolute inset-0 mask-[radial-gradient(ellipse_at_center,black_20%,transparent_60%)] opacity-30" />
+            <div className="relative mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
+              <div
+                className="animate-slide-up-fade mb-16 text-center"
+                style={{ '--delay': '0ms' } as React.CSSProperties}
+              >
+                <span className="text-primary border-primary/20 bg-primary/5 mb-4 inline-block rounded-full border px-4 py-1.5 font-medium">
+                  How it works
+                </span>
+                <h2 className="font-heading text-3xl font-bold tracking-tight sm:text-5xl leading-normal">
+                  From enquiry to accepted quote <br /> in <span className="text-primary">three steps</span>
+                </h2>
+              </div>
+              <div className="grid gap-4 md:grid-cols-3">
+                {steps.map((step, i) => (
+                  <div
+                    key={step.number}
+                    className="animate-slide-up-fade border-border bg-card/50 relative rounded-2xl border p-8"
+                    style={{ '--delay': `${i * 120}ms` } as React.CSSProperties}
+                  >
+                    <span className="font-heading text-primary text-6xl font-bold">
+                      {step.number}
+                    </span>
+                    <h3 className="font-heading mt-4 text-xl font-semibold tracking-tight">
+                      {step.title}
+                    </h3>
+                    <p className="text-muted-foreground mt-3 leading-relaxed text-sm">{step.description}</p>
+                  </div>
+                ))}
+              </div>
 
-        {/* Info boxes */}
-        <section className="py-24">
-          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <div className="grid gap-8 lg:grid-cols-2">
+              <div className="flex justify-center">
+                <Button asChild size="lg" className="rounded-full px-6 mt-8">
+                  <Link href="/sign-up">Get Started</Link>
+                </Button>
+              </div>
+            </div>
+
+
+            <div className="grid gap-4 lg:grid-cols-2 max-w-5xl px-8">
               <article
-                className="animate-slide-up-fade group border-border/60 bg-card/70 rounded-2xl border p-8 transition-all duration-300 hover:shadow-lg"
+                className="animate-slide-up-fade group border-border bg-card/70 rounded-2xl border p-8 transition-all duration-300 hover:shadow-lg"
                 style={{ '--delay': '0ms' } as React.CSSProperties}
               >
                 <h2 className="font-heading text-3xl font-bold tracking-tight">
                   Built for B2B tour operations
                 </h2>
-                <p className="text-muted-foreground mt-4 text-lg leading-relaxed">
+                <p className="text-muted-foreground mt-4 leading-relaxed">
                   From safari operators to destination management companies, Ratiba helps teams run
                   proposals with less back-and-forth and more consistency.
                 </p>
@@ -164,13 +171,13 @@ export default function LandingPage() {
               </article>
 
               <article
-                className="animate-slide-up-fade group border-border/60 bg-card/70 rounded-2xl border p-8 transition-all duration-300 hover:shadow-lg"
+                className="animate-slide-up-fade group border-border bg-card/70 rounded-2xl border p-8 transition-all duration-300 hover:shadow-lg"
                 style={{ '--delay': '100ms' } as React.CSSProperties}
               >
                 <h2 className="font-heading text-3xl font-bold tracking-tight">
                   Evaluating alternatives?
                 </h2>
-                <p className="text-muted-foreground mt-4 text-lg leading-relaxed">
+                <p className="text-muted-foreground mt-4 leading-relaxed">
                   See how Ratiba compares with platforms like Wetu, Safari Office, and Safari Portal
                   for everyday proposal workflows.
                 </p>
@@ -182,8 +189,8 @@ export default function LandingPage() {
                 </Link>
               </article>
             </div>
-          </div>
-        </section>
+          </section>
+        </div>
 
         {/* Testimonial */}
         <div
