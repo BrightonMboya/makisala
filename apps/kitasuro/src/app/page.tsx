@@ -60,56 +60,11 @@ export default function LandingPage() {
           </section>
         </div>
 
-        {/* Deep Dive Feature 1: Builder */}
-        {/* <FeatureHighlight
-          align="left"
-          title="Stop wrestling with Word docs and spreadsheets"
-          description="Drop in accommodations, slot in game drives, and rearrange the whole trip with a drag. Ratiba calculates travel times, maps the route, and totals the pricing as you go."
-          features={[
-            'Drag & drop day reordering',
-            'Auto-generated route maps',
-            'Day-by-day breakdowns',
-            'Built-in pricing calculator',
-          ]}
-          imageSrc="/img_1.png"
-          imageAlt="Itinerary Builder Interface"
-          ctaText="Try the builder"
-          ctaLink="/login"
-        />
-
-        <FeatureHighlight
-          align="right"
-          title="Every lodge photo and description, ready to go"
-          description="No more emailing lodges for updated photos or writing the same Serengeti description for the tenth time. Search, pick, and drop verified content straight into your itinerary."
-          features={[
-            'High-res accommodation photos',
-            'Pre-written destination copy',
-            'Activity and excursion database',
-            'One-click import into any itinerary',
-          ]}
-          imageSrc="https://brand.makisala.com/destination.png"
-          imageAlt="Content Library Interface"
-        />
-
-        <FeatureHighlight
-          align="left"
-          title="Send proposals clients actually respond to"
-          description="Forget flat PDFs that sit in inboxes. Share a live link where clients explore interactive maps, leave comments on specific days, and accept the quote — all in one place."
-          features={[
-            'Looks great on phone, tablet, or desktop',
-            'Interactive route maps',
-            'Day-level client comments',
-            'One-click quote acceptance',
-          ]}
-          imageSrc="https://brand.makisala.com/share.png"
-          imageAlt="Digital Proposal Example"
-        /> */}
-
         {/* Design Variety */}
         <CustomizedDesign />
 
         {/* How It Works */}
-        <div>
+        <div className="border-b">
           <section className="mx-auto border-x w-fit px-8 py-16 space-y-20">
             <div className="bg-dot-pattern pointer-events-none absolute inset-0 mask-[radial-gradient(ellipse_at_center,black_20%,transparent_60%)] opacity-30" />
             <div className="relative mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
@@ -152,7 +107,7 @@ export default function LandingPage() {
 
             <div className="grid gap-4 lg:grid-cols-2 max-w-5xl px-8">
               <article
-                className="animate-slide-up-fade group border-border bg-card/70 rounded-2xl border p-8 transition-all duration-300 hover:shadow-lg"
+                className="animate-slide-up-fade group border-border/60 bg-card/70 rounded-2xl border p-8 transition-all duration-300 hover:shadow-lg"
                 style={{ '--delay': '0ms' } as React.CSSProperties}
               >
                 <h2 className="font-heading text-3xl font-bold tracking-tight">
@@ -171,7 +126,7 @@ export default function LandingPage() {
               </article>
 
               <article
-                className="animate-slide-up-fade group border-border bg-card/70 rounded-2xl border p-8 transition-all duration-300 hover:shadow-lg"
+                className="animate-slide-up-fade group border-border/60 bg-card/70 rounded-2xl border p-8 transition-all duration-300 hover:shadow-lg"
                 style={{ '--delay': '100ms' } as React.CSSProperties}
               >
                 <h2 className="font-heading text-3xl font-bold tracking-tight">
@@ -193,54 +148,59 @@ export default function LandingPage() {
         </div>
 
         {/* Testimonial */}
-        <div
-          id="customers"
-          className="grid-section border-grid-border relative overflow-clip border-y px-4 [.grid-section~&]:border-t-0"
-        >
-          <div className="max-w-grid-width border-grid-border relative z-0 mx-auto border-x px-4 py-20 sm:px-10 sm:py-28">
-            <div className="mx-auto mb-16 max-w-2xl text-center">
-              <h2 className="font-display text-3xl font-medium text-neutral-900 sm:text-4xl">
-                Trusted by tour operator owners
-              </h2>
-              <p className="mt-4 text-base text-neutral-500 sm:text-lg">
-                From boutique safari teams to multi-country operators, owners use Ratiba to build
-                faster proposals and close more enquiries.
-              </p>
-            </div>
+        <div className='border-b'>
+          <div
+            id="customers"
+            className="mx-auto border-x w-fit px-8 space-y-20"
+          >
+            <div className="max-w-5xl relative z-0 mx-auto px-4 py-20 sm:px-10 sm:py-28">
+              <div className="mx-auto mb-16 max-w-2xl text-center">
+                <span className="text-primary border-primary/20 bg-primary/5 mb-4 inline-block rounded-full border px-4 py-1.5 text-sm font-medium">
+                  Testimonials
+                </span>
+                <h2 className="font-display text-3xl font-medium text-neutral-900 sm:text-4xl">
+                  Trusted by tour operator owners
+                </h2>
+                <p className="mt-4 text-base text-neutral-500 sm:text-lg">
+                  From boutique safari teams to multi-country operators, owners use Ratiba to build
+                  faster proposals and close more enquiries.
+                </p>
+              </div>
 
-            <div className="grid gap-6 md:grid-cols-2">
-              <CustomerCard
-                company="Savannah Trails Co."
-                logo="https://assets.dub.co/testimonials/companies/vercel.svg"
-                quote='Before Ratiba, we stitched quotes together in docs and spreadsheets. Now my team sends polished itineraries in under an hour and <strong class="text-neutral-900">we close enquiries faster with fewer back-and-forth emails</strong>.'
-                name="Daniel Kimani"
-                title="Owner, Savannah Trails Co."
-                avatar="https://assets.dub.co/testimonials/people/jorn-van-dijk.jpg"
-              />
-              <CustomerCard
-                company="Kilimanjaro Horizon Safaris"
-                logo="https://assets.dub.co/testimonials/companies/vercel.svg"
-                quote='We run high season at full speed, so proposal turnaround is everything. Ratiba gives us one workflow for pricing, branding, and sharing, and <strong class="text-neutral-900">our consultants can focus on selling instead of formatting</strong>.'
-                name="Aisha Njoroge"
-                title="Founder, Kilimanjaro Horizon Safaris"
-                avatar="https://assets.dub.co/testimonials/people/guillermo-rauch.jpeg"
-              />
-              <CustomerCard
-                company="Mara Family Journeys"
-                logo="https://assets.dub.co/testimonials/companies/clerk.svg"
-                quote='Our clients love seeing a live itinerary instead of static PDFs. The comment flow is clear, approvals are quicker, and <strong class="text-neutral-900">we reduced revision time per proposal by more than half</strong>.'
-                name="Lillian Odhiambo"
-                title="Owner, Mara Family Journeys"
-                avatar="https://assets.dub.co/testimonials/people/nick-parsons.jpeg"
-              />
-              <CustomerCard
-                company="Rift Valley Expeditions"
-                logo="https://assets.dub.co/testimonials/companies/cal.svg"
-                quote='We finally standardized how every consultant builds itineraries. Ratiba keeps quality consistent across the team and <strong class=&quot;text-neutral-900&quot;>helps us protect margins with clearer pricing visibility</strong>.'
-                name="Peter Mwangi"
-                title="Co-owner, Rift Valley Expeditions"
-                avatar="https://assets.dub.co/testimonials/people/peer-richelsen.jpeg"
-              />
+              <div className="grid gap-6 md:grid-cols-2">
+                <CustomerCard
+                  company="Savannah Trails Co."
+                  logo="https://assets.dub.co/testimonials/companies/vercel.svg"
+                  quote='Before Ratiba, we stitched quotes together in docs and spreadsheets. Now my team sends polished itineraries in under an hour and <strong class="text-neutral-900">we close enquiries faster with fewer back-and-forth emails</strong>.'
+                  name="Daniel Kimani"
+                  title="Owner, Savannah Trails Co."
+                  avatar="https://assets.dub.co/testimonials/people/jorn-van-dijk.jpg"
+                />
+                <CustomerCard
+                  company="Kilimanjaro Horizon Safaris"
+                  logo="https://assets.dub.co/testimonials/companies/vercel.svg"
+                  quote='We run high season at full speed, so proposal turnaround is everything. Ratiba gives us one workflow for pricing, branding, and sharing, and <strong class="text-neutral-900">our consultants can focus on selling instead of formatting</strong>.'
+                  name="Aisha Njoroge"
+                  title="Founder, Kilimanjaro Horizon Safaris"
+                  avatar="https://assets.dub.co/testimonials/people/guillermo-rauch.jpeg"
+                />
+                <CustomerCard
+                  company="Mara Family Journeys"
+                  logo="https://assets.dub.co/testimonials/companies/clerk.svg"
+                  quote='Our clients love seeing a live itinerary instead of static PDFs. The comment flow is clear, approvals are quicker, and <strong class="text-neutral-900">we reduced revision time per proposal by more than half</strong>.'
+                  name="Lillian Odhiambo"
+                  title="Owner, Mara Family Journeys"
+                  avatar="https://assets.dub.co/testimonials/people/nick-parsons.jpeg"
+                />
+                <CustomerCard
+                  company="Rift Valley Expeditions"
+                  logo="https://assets.dub.co/testimonials/companies/cal.svg"
+                  quote='We finally standardized how every consultant builds itineraries. Ratiba keeps quality consistent across the team and <strong class=&quot;text-neutral-900&quot;>helps us protect margins with clearer pricing visibility</strong>.'
+                  name="Peter Mwangi"
+                  title="Co-owner, Rift Valley Expeditions"
+                  avatar="https://assets.dub.co/testimonials/people/peer-richelsen.jpeg"
+                />
+              </div>
             </div>
           </div>
         </div>
