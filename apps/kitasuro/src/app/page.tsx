@@ -9,6 +9,7 @@ import Link from 'next/link';
 import CustomizedDesign from '@/components/landing/CustomizedDesign';
 import { Button } from '@repo/ui/button';
 import Faq from '@/components/landing/Faq';
+import CallToAction from '@/components/landing/CallToAction';
 
 export default function LandingPage() {
   const steps = [
@@ -66,7 +67,7 @@ export default function LandingPage() {
 
         {/* How It Works */}
         <div className="border-b">
-          <section className="mx-auto border-x w-fit px-8 py-16 space-y-20">
+          <section className="mx-auto border-x w-fit px-8 py-16 space-y-20 relative">
             <div className="bg-dot-pattern pointer-events-none absolute inset-0 mask-[radial-gradient(ellipse_at_center,black_20%,transparent_60%)] opacity-30" />
             <div className="relative mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
               <div
@@ -213,42 +214,7 @@ export default function LandingPage() {
         <Faq />
 
         {/* CTA Section */}
-        <section className="relative overflow-hidden py-24">
-          <div className="from-primary/5 via-primary/10 absolute inset-0 bg-gradient-to-br to-transparent" />
-          <div className="bg-grid-pattern pointer-events-none absolute inset-0 [mask-image:radial-gradient(ellipse_at_center,black_30%,transparent_70%)] opacity-20" />
-          <div className="relative mx-auto max-w-4xl px-4 text-center">
-            <h2
-              className="animate-slide-up-fade font-heading mb-6 text-4xl font-bold tracking-tight sm:text-5xl"
-              style={{ '--delay': '0ms' } as React.CSSProperties}
-            >
-              Your next proposal could take 10 minutes, not 2 hours
-            </h2>
-            <p
-              className="animate-slide-up-fade text-muted-foreground mb-10 text-xl"
-              style={{ '--delay': '100ms' } as React.CSSProperties}
-            >
-              Sign up, build your first itinerary, and send it to a client today. No credit card
-              needed.
-            </p>
-            <div
-              className="animate-slide-up-fade flex flex-col items-center justify-center gap-4 sm:flex-row"
-              style={{ '--delay': '200ms' } as React.CSSProperties}
-            >
-              <Link
-                href="/sign-up"
-                className="bg-primary text-primary-foreground hover:bg-primary/90 focus-visible:ring-ring shadow-primary/20 inline-flex h-12 items-center justify-center rounded-full px-8 text-sm font-medium shadow-lg transition-colors focus-visible:ring-1 focus-visible:outline-none"
-              >
-                Create your first itinerary free
-              </Link>
-              <Link
-                href="https://cal.com/brightonmboya/30min"
-                className="border-input bg-background hover:bg-accent hover:text-accent-foreground focus-visible:ring-ring inline-flex h-12 items-center justify-center rounded-full border px-8 text-sm font-medium shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none"
-              >
-                Book a demo call
-              </Link>
-            </div>
-          </div>
-        </section>
+        <CallToAction />
       </main>
 
       <Footer />
