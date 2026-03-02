@@ -8,6 +8,7 @@ import { ArrowRight, Compass, Globe, Layout, Library, Share2, Sparkles } from 'l
 import Link from 'next/link';
 import CustomizedDesign from '@/components/landing/CustomizedDesign';
 import { Button } from '@repo/ui/button';
+import Faq from '@/components/landing/Faq';
 
 export default function LandingPage() {
   const steps = [
@@ -207,6 +208,9 @@ export default function LandingPage() {
 
         {/* Pricing Section */}
         <Pricing />
+
+        {/* Frequently Asked Questions */}
+        <Faq />
 
         {/* CTA Section */}
         <section className="relative overflow-hidden py-24">
