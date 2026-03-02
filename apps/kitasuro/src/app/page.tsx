@@ -158,10 +158,10 @@ export default function LandingPage() {
                 <span className="text-primary border-primary/20 bg-primary/5 mb-4 inline-block rounded-full border px-4 py-1.5 text-sm font-medium">
                   Testimonials
                 </span>
-                <h2 className="font-display text-3xl font-medium text-neutral-900 sm:text-4xl">
+                <h2 className="font-display text-3xl font-bold text-neutral-900 sm:text-5xl">
                   Trusted by tour operator owners
                 </h2>
-                <p className="mt-4 text-base text-neutral-500 sm:text-lg">
+                <p className="mt-4 text-base text-neutral-500">
                   From boutique safari teams to multi-country operators, owners use Ratiba to build
                   faster proposals and close more enquiries.
                 </p>
