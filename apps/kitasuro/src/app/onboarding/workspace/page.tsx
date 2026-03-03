@@ -39,23 +39,22 @@ export default function WorkspaceStepPage() {
       return;
     }
 
-    // Optimistically update cache and navigate immediately (non-blocking)
-    setOnboardingData(undefined, (prev) =>
-      prev
-        ? {
-            ...prev,
-            organization: prev.organization
-              ? { ...prev.organization, name: value }
-              : prev.organization,
-          }
-        : prev,
-    );
-    router.push('/onboarding/notification');
-
-    // Fire mutation in background — don't block navigation
     updateOrgMutation.mutate(
       { name: value },
       {
+        onSuccess: () => {
+          setOnboardingData(undefined, (prev) =>
+            prev
+              ? {
+                  ...prev,
+                  organization: prev.organization
+                    ? { ...prev.organization, name: value }
+                    : prev.organization,
+                }
+              : prev,
+          );
+          router.push('/onboarding/notification');
+        },
         onError: (error) => {
           const message = error instanceof Error ? error.message : 'Failed to update agency name';
           toast({ title: message, variant: 'destructive' });

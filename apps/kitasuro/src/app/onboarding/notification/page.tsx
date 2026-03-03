@@ -34,23 +34,28 @@ export default function NotificationStepPage() {
       return;
     }
 
-    // Optimistically update cache and navigate immediately (non-blocking)
-    setOnboardingData(undefined, (prev) =>
-      prev
-        ? {
-            ...prev,
-            organization: prev.organization
-              ? { ...prev.organization, notificationEmail: value }
-              : prev.organization,
-          }
-        : prev,
-    );
-    router.push('/onboarding/tours');
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(value)) {
+      toast({ title: 'Please enter a valid email address', variant: 'destructive' });
+      return;
+    }
 
-    // Fire mutation in background — don't block navigation
     updateOrgMutation.mutate(
       { notificationEmail: value },
       {
+        onSuccess: () => {
+          setOnboardingData(undefined, (prev) =>
+            prev
+              ? {
+                  ...prev,
+                  organization: prev.organization
+                    ? { ...prev.organization, notificationEmail: value }
+                    : prev.organization,
+                }
+              : prev,
+          );
+          router.push('/onboarding/tours');
+        },
         onError: (error) => {
           const message =
             error instanceof Error ? error.message : 'Failed to update notification email';
