@@ -9,19 +9,19 @@ export function useOnboardingState() {
   const { session } = useSession();
   const userId = session?.user?.id;
 
-  const { data: isAdmin = false } = trpc.settings.checkAdmin.useQuery(undefined, {
+  const { data: isAdmin = false, isLoading: isAdminLoading } = trpc.settings.checkAdmin.useQuery(undefined, {
     staleTime: 5 * 60 * 1000,
     enabled: !!userId,
     refetchOnMount: false,
   });
 
-  const { data, isLoading: isLoadingRaw } = trpc.onboarding.getData.useQuery(undefined, {
+  const { data, isLoading: isDataLoading } = trpc.onboarding.getData.useQuery(undefined, {
     staleTime: 5 * 60 * 1000,
     enabled: !!userId,
     refetchOnMount: false,
   });
 
-  const isLoading = isLoadingRaw && !data;
+  const isLoading = !userId || (isDataLoading && !data) || (isAdminLoading && !isAdmin);
 
   const status = data ? checkOnboardingStatus(data.organization, data.tourCount) : null;
   const orgOnboardingComplete = !!data?.organization?.onboardingCompletedAt;
