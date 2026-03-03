@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { FileText, LayoutDashboard, LogOut, Map, Plus, Settings, Users, Library } from 'lucide-react';
+import { FileText, LayoutDashboard, LogOut, Map, Plus, Settings, Users, Library, Zap } from 'lucide-react';
 import {
   Sidebar,
   SidebarContent,
@@ -89,6 +89,12 @@ export function AppSidebar({ serverData }: { serverData?: SidebarServerData | nu
       label: 'Clients',
       href: '/clients',
       active: pathname?.startsWith('/clients'),
+    },
+    {
+      icon: Zap,
+      label: 'Workflows',
+      href: '/workflows',
+      active: pathname?.startsWith('/workflows'),
     },
     {
       icon: Settings,

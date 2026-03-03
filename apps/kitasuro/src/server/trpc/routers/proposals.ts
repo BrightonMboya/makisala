@@ -19,6 +19,7 @@ import {
 import { router, protectedProcedure, adminProcedure, publicProcedure, escapeLikeQuery } from '../init';
 import { checkFeatureAccess, getOrgPlan, ALLOWED_THEMES_BY_TIER } from '@/lib/plans';
 import { env } from '@/lib/env';
+import { scheduleWorkflowsForEvent } from '@/server/workflows/scheduler';
 
 
 interface BuilderData {
@@ -683,6 +684,15 @@ export const proposalsRouter = router({
         .set({ status: 'shared', updatedAt: sql`CURRENT_TIMESTAMP` })
         .where(eq(proposals.id, input.proposalId));
 
+      // Schedule any matching workflows (fire-and-forget)
+      if (proposal.organizationId) {
+        scheduleWorkflowsForEvent(
+          proposal.organizationId,
+          input.proposalId,
+          'proposal_shared',
+        ).catch(() => {});
+      }
+
       return { success: true };
     }),
 
@@ -750,6 +760,15 @@ export const proposalsRouter = router({
         .update(proposals)
         .set({ status: 'accepted', updatedAt: sql`CURRENT_TIMESTAMP` })
         .where(eq(proposals.id, input.proposalId));
+
+      // Schedule any matching workflows (fire-and-forget)
+      if (proposal.organizationId) {
+        scheduleWorkflowsForEvent(
+          proposal.organizationId,
+          input.proposalId,
+          'proposal_accepted',
+        ).catch(() => {}); // Don't fail the mutation if scheduling fails
+      }
 
       return { success: true };
     }),
