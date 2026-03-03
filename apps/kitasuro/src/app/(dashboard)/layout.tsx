@@ -24,37 +24,24 @@ export default async function DashboardLayout({ children }: { children: React.Re
     userImage: string | null;
   } | null = null;
 
-  try {
-    const trpc = await createServerCaller();
-    const [org, userProfile] = await Promise.all([
-      trpc.settings.getOrg(),
-      trpc.settings.getCurrentUser(),
-    ]);
+  const trpc = await createServerCaller();
+  const [org, userProfile] = await Promise.all([
+    trpc.settings.getOrg().catch(() => null),
+    trpc.settings.getCurrentUser().catch(() => null),
+  ]);
 
-    // Server-side onboarding redirect — no client roundtrip needed
-    if (org && !org.onboardingCompletedAt) {
-      redirect('/onboarding');
-    }
-
-    sidebarData = {
-      orgName: org?.name || 'Dashboard',
-      orgLogo: org?.logoUrl || null,
-      userName: userProfile?.name || session.user.name || '',
-      userEmail: session.user.email || '',
-      userImage: userProfile?.image || null,
-    };
-  } catch (error) {
-    // Re-throw redirect errors (Next.js uses thrown responses for redirects)
-    if (error instanceof Error && 'digest' in error) throw error;
-    // Fallback if tRPC calls fail
-    sidebarData = {
-      orgName: 'Dashboard',
-      orgLogo: null,
-      userName: session.user.name || '',
-      userEmail: session.user.email || '',
-      userImage: session.user.image || null,
-    };
+  // Server-side onboarding redirect — no client roundtrip needed
+  if (org && !org.onboardingCompletedAt) {
+    redirect('/onboarding');
   }
+
+  sidebarData = {
+    orgName: org?.name || 'Dashboard',
+    orgLogo: org?.logoUrl || null,
+    userName: userProfile?.name || session.user.name || '',
+    userEmail: session.user.email || '',
+    userImage: userProfile?.image || null,
+  };
 
   return (
     <SessionProvider>

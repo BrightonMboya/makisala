@@ -10,6 +10,8 @@ import { trpc } from '@/lib/trpc';
 import { StepPage } from '../_components/step-page';
 import { useOnboardingState } from '../_components/use-onboarding-state';
 
+const MAX_FILE_SIZE = 5 * 1024 * 1024;
+
 export default function WorkspaceStepPage() {
   const router = useRouter();
   const updateOrgMutation = trpc.settings.updateOrg.useMutation();
@@ -20,8 +22,6 @@ export default function WorkspaceStepPage() {
   const [logoUrl, setLogoUrl] = useState('');
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
   const [initialized, setInitialized] = useState(false);
-
-  const MAX_FILE_SIZE = 5 * 1024 * 1024;
 
   // Initialize form values once data is available (no useEffect needed)
   if (!initialized && onboardingData) {

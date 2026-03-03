@@ -21,7 +21,7 @@ export function useOnboardingState() {
     refetchOnMount: false,
   });
 
-  const isLoading = !userId || (isDataLoading && !data) || (isAdminLoading && !isAdmin);
+  const isLoading = !userId || isDataLoading || isAdminLoading;
 
   const status = data ? checkOnboardingStatus(data.organization, data.tourCount) : null;
   const orgOnboardingComplete = !!data?.organization?.onboardingCompletedAt;

@@ -7,6 +7,7 @@ import { Input } from '@repo/ui/input';
 import { Button } from '@repo/ui/button';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
 import { toast } from '@repo/ui/toast';
+import { z } from 'zod';
 import { trpc } from '@/lib/trpc';
 import { StepPage } from '../_components/step-page';
 import { useOnboardingState } from '../_components/use-onboarding-state';
@@ -34,8 +35,7 @@ export default function NotificationStepPage() {
       return;
     }
 
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(value)) {
+    if (!z.string().email().safeParse(value).success) {
       toast({ title: 'Please enter a valid email address', variant: 'destructive' });
       return;
     }
