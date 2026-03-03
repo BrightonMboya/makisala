@@ -7,6 +7,7 @@ import { renderTeamInvitationEmail } from '../templates/team-invitation';
 import { renderEmailVerificationEmail } from '../templates/email-verification';
 import { renderNoteMentionEmail } from '../templates/note-mention';
 import { renderInquiryNotificationEmail } from '../templates/inquiry-notification';
+import { renderReviewRequestEmail } from '../templates/review-request';
 
 export interface CommentNotificationData {
   proposalId: string;
@@ -521,6 +522,53 @@ export async function sendInquiryNotificationEmail(
       subject: `New Inquiry from ${data.fullName} — ${data.countryOfResidence}`,
       html,
       replyTo: data.email,
+    });
+
+    if (result.error) {
+      return {
+        success: false,
+        error: result.error.message || 'Failed to send email',
+      };
+    }
+
+    return { success: true };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error occurred',
+    };
+  }
+}
+
+export interface ReviewRequestData {
+  clientEmail: string;
+  clientName: string;
+  agencyName: string;
+  proposalTitle: string;
+  reviewUrl?: string;
+}
+
+/**
+ * Sends a review request email to a client after their trip.
+ */
+export async function sendReviewRequestEmail(
+  data: ReviewRequestData,
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const html = renderReviewRequestEmail({
+      clientName: data.clientName,
+      agencyName: data.agencyName,
+      proposalTitle: data.proposalTitle,
+      reviewUrl: data.reviewUrl,
+    });
+
+    const fromEmail = env.RESEND_FROM_EMAIL || 'notifications@makisala.com';
+
+    const result = await resend.emails.send({
+      from: fromEmail,
+      to: data.clientEmail,
+      subject: `How was your ${data.proposalTitle} trip?`,
+      html,
     });
 
     if (result.error) {

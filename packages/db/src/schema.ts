@@ -1015,3 +1015,101 @@ export type NewActivityLibraryItem = typeof activityLibrary.$inferInsert;
 // Transportation types
 export type ProposalTransportation = typeof proposalTransportation.$inferSelect;
 export type NewProposalTransportation = typeof proposalTransportation.$inferInsert;
+
+// ---------- WORKFLOWS ----------
+export const WorkflowTriggerType = pgEnum('workflow_trigger_type', [
+  'proposal_completed',
+  'proposal_accepted',
+  'proposal_shared',
+  'trip_ended',
+  'trip_starting_soon',
+]);
+
+export const WorkflowActionType = pgEnum('workflow_action_type', [
+  'send_email',
+]);
+
+export const WorkflowStatus = pgEnum('workflow_status', ['active', 'disabled']);
+
+export const WorkflowExecutionStatus = pgEnum('workflow_execution_status', [
+  'pending',
+  'running',
+  'completed',
+  'failed',
+]);
+
+export const workflows = pgTable('workflows', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  organizationId: uuid('organization_id')
+    .notNull()
+    .references(() => organizations.id, { onDelete: 'cascade' }),
+  name: text('name').notNull(),
+  description: text('description'),
+  triggerType: WorkflowTriggerType('trigger_type').notNull(),
+  triggerConfig: json('trigger_config').$type<{ delayDays?: number }>().default({}),
+  actionType: WorkflowActionType('action_type').notNull(),
+  actionConfig: json('action_config').$type<{
+    emailSubject: string;
+    emailBody: string;
+    recipientType: 'client' | 'team';
+  }>().notNull(),
+  status: WorkflowStatus('status').default('active').notNull(),
+  createdBy: text('created_by').references(() => user.id, { onDelete: 'set null' }),
+  createdAt: timestamp('created_at', { precision: 3, mode: 'string' })
+    .default(sql`CURRENT_TIMESTAMP`)
+    .notNull(),
+  updatedAt: timestamp('updated_at', { precision: 3, mode: 'string' })
+    .default(sql`CURRENT_TIMESTAMP`)
+    .notNull(),
+}, (table) => [
+  index('idx_workflows_org_status').on(table.organizationId, table.status),
+]);
+
+export const workflowExecutions = pgTable('workflow_executions', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  workflowId: uuid('workflow_id')
+    .notNull()
+    .references(() => workflows.id, { onDelete: 'cascade' }),
+  proposalId: text('proposal_id')
+    .notNull()
+    .references(() => proposals.id, { onDelete: 'cascade' }),
+  status: WorkflowExecutionStatus('execution_status').default('pending').notNull(),
+  scheduledFor: timestamp('scheduled_for', { precision: 3, mode: 'string' }).notNull(),
+  executedAt: timestamp('executed_at', { precision: 3, mode: 'string' }),
+  result: json('result').$type<{ success: boolean; error?: string; emailId?: string }>(),
+  createdAt: timestamp('created_at', { precision: 3, mode: 'string' })
+    .default(sql`CURRENT_TIMESTAMP`)
+    .notNull(),
+}, (table) => [
+  index('idx_workflow_executions_status_scheduled').on(table.status, table.scheduledFor),
+  index('idx_workflow_executions_workflow').on(table.workflowId),
+]);
+
+export const workflowsRelations = relations(workflows, ({ one, many }) => ({
+  organization: one(organizations, {
+    fields: [workflows.organizationId],
+    references: [organizations.id],
+  }),
+  creator: one(user, {
+    fields: [workflows.createdBy],
+    references: [user.id],
+  }),
+  executions: many(workflowExecutions),
+}));
+
+export const workflowExecutionsRelations = relations(workflowExecutions, ({ one }) => ({
+  workflow: one(workflows, {
+    fields: [workflowExecutions.workflowId],
+    references: [workflows.id],
+  }),
+  proposal: one(proposals, {
+    fields: [workflowExecutions.proposalId],
+    references: [proposals.id],
+  }),
+}));
+
+// Workflow types
+export type Workflow = typeof workflows.$inferSelect;
+export type NewWorkflow = typeof workflows.$inferInsert;
+export type WorkflowExecution = typeof workflowExecutions.$inferSelect;
+export type NewWorkflowExecution = typeof workflowExecutions.$inferInsert;

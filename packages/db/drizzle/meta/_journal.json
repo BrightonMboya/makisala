@@ -232,6 +232,13 @@
       "when": 1772555921213,
       "tag": "0032_flowery_iron_man",
       "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1772557880542,
+      "tag": "0033_early_rictor",
+      "breakpoints": true
     }
   ]
 }
