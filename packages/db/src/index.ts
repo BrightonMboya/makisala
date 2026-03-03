@@ -17,3 +17,4 @@ if (process.env.NODE_ENV !== 'production') globalForDb.conn = conn;
 
 export const db = drizzle(conn, { schema });
 export * from './schema';
+export { and, eq, or, gt, gte, lt, lte, desc, asc, sql, ilike, inArray, isNull, isNotNull, not, between, like, count, sum, avg, min, max } from 'drizzle-orm';

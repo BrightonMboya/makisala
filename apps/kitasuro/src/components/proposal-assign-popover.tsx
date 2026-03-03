@@ -33,24 +33,29 @@ export function ProposalAssignPopover({
       const member = teamMembers.find((m) => m.id === memberId);
       if (member) {
         utils.proposals.listForDashboard.setData({ filter: activeFilter }, (old) =>
-          old?.map((p) =>
-            p.id === proposalId
-              ? {
-                  ...p,
-                  assignments: [
-                    ...(p.assignments || []),
-                    {
-                      id: `optimistic-${member.id}`,
-                      createdAt: new Date().toISOString(),
-                      userId: member.id,
-                      proposalId,
-                      assignedBy: null,
-                      user: { id: member.id, name: member.name, image: member.image },
-                    },
-                  ],
-                }
-              : p,
-          ),
+          old
+            ? {
+                ...old,
+                items: old.items.map((p) =>
+                  p.id === proposalId
+                    ? {
+                        ...p,
+                        assignments: [
+                          ...(p.assignments || []),
+                          {
+                            id: `optimistic-${member.id}`,
+                            createdAt: new Date().toISOString(),
+                            userId: member.id,
+                            proposalId,
+                            assignedBy: null,
+                            user: { id: member.id, name: member.name, image: member.image },
+                          },
+                        ],
+                      }
+                    : p,
+                ),
+              }
+            : old,
         );
       }
 
@@ -77,16 +82,21 @@ export function ProposalAssignPopover({
       const previousData = utils.proposals.listForDashboard.getData({ filter: activeFilter });
 
       utils.proposals.listForDashboard.setData({ filter: activeFilter }, (old) =>
-        old?.map((p) =>
-          p.id === proposalId
-            ? {
-                ...p,
-                assignments: (p.assignments || []).filter(
-                  (a) => a.user.id !== memberId,
-                ),
-              }
-            : p,
-        ),
+        old
+          ? {
+              ...old,
+              items: old.items.map((p) =>
+                p.id === proposalId
+                  ? {
+                      ...p,
+                      assignments: (p.assignments || []).filter(
+                        (a) => a.user.id !== memberId,
+                      ),
+                    }
+                  : p,
+              ),
+            }
+          : old,
       );
 
       return { previousData };
@@ -115,8 +125,8 @@ export function ProposalAssignPopover({
   };
 
   // Read optimistic assignee set from tRPC cache
-  const cachedProposals = utils.proposals.listForDashboard.getData({ filter: activeFilter });
-  const currentProposal = cachedProposals?.find((p) => p.id === proposalId);
+  const cachedData = utils.proposals.listForDashboard.getData({ filter: activeFilter });
+  const currentProposal = cachedData?.items?.find((p) => p.id === proposalId);
   const optimisticAssignedIds = new Set(
     (currentProposal?.assignments || []).map((a) => a.user.id),
   );

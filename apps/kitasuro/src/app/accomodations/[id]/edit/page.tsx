@@ -30,7 +30,7 @@ export default async function EditAccomodationPage({
 
     const initialData = {
         ...acc,
-        images: acc.images.map((img) => ({
+        images: (acc as any).images.map((img: any) => ({
             ...img,
             imageUrl: getPublicUrl(img.bucket, img.key),
         })),

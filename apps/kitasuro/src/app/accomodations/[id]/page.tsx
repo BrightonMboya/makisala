@@ -26,7 +26,7 @@ export default async function AccommodationDetailPage({
     notFound();
   }
 
-  const images = acc.images.map((img) => ({
+  const images = (acc as any).images.map((img: any) => ({
     id: img.id,
     url: getPublicUrl(img.bucket, img.key),
   }));

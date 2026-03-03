@@ -125,8 +125,8 @@ export default function TourDetailPage() {
       number_of_days: tour.number_of_days,
       tags: tour.tags || [],
       itineraries:
-        tour.days && tour.days.length > 0
-          ? tour.days.map((day) => ({
+        (tour as any).days && (tour as any).days.length > 0
+          ? (tour as any).days.map((day: any) => ({
               title: day.dayTitle || `Day ${day.dayNumber}`,
               overview: day.overview || '',
               national_park_id: day.national_park_id || '',
@@ -615,11 +615,11 @@ export default function TourDetailPage() {
             </div>
 
             {/* Itinerary Days */}
-            {tour.days && tour.days.length > 0 && (
+            {(tour as any).days && (tour as any).days.length > 0 && (
               <div className="bg-white rounded-xl border border-stone-200 p-6">
                 <h2 className="font-serif text-xl font-bold text-stone-900 mb-4">Itinerary</h2>
                 <div className="space-y-4">
-                  {tour.days.map((day) => (
+                  {(tour as any).days.map((day: any) => (
                     <div key={day.id} className="border-l-2 border-green-600 pl-4 py-2">
                       <h4 className="font-semibold text-stone-900">
                         Day {day.dayNumber}: {day.dayTitle || 'Untitled'}
@@ -630,7 +630,7 @@ export default function TourDetailPage() {
                           <Building2 className="h-4 w-4" />
                           <span>
                             {day.itineraryAccommodations
-                              .map((ia) => ia.accommodation?.name)
+                              .map((ia: any) => ia.accommodation?.name)
                               .filter(Boolean)
                               .join(', ')}
                           </span>

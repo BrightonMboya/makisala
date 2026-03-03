@@ -7,17 +7,19 @@ import {
   proposalActivities,
   proposalMeals,
   proposalTransportation,
+  clients,
   member,
 } from '@repo/db/schema';
-import { and, desc, eq, inArray, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, gte, ilike, inArray, lte, or, sql } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
 import {
   sendProposalShareEmail,
   sendProposalAcceptanceEmail,
 } from '@repo/resend';
-import { router, protectedProcedure, adminProcedure, publicProcedure } from '../init';
+import { router, protectedProcedure, adminProcedure, publicProcedure, escapeLikeQuery } from '../init';
 import { checkFeatureAccess, getOrgPlan, ALLOWED_THEMES_BY_TIER } from '@/lib/plans';
 import { env } from '@/lib/env';
+
 
 interface BuilderData {
   selectedTheme?: string;
@@ -73,11 +75,89 @@ interface BuilderDay {
 }
 
 export const proposalsRouter = router({
-  listForDashboard: protectedProcedure
+  dashboardStats: protectedProcedure
     .input(z.object({ filter: z.enum(['mine', 'all']).default('mine') }))
     .query(async ({ ctx, input }) => {
-      let whereClause = eq(proposals.organizationId, ctx.orgId);
+      // Get proposal IDs for "mine" filter
+      let assignedIds: string[] | null = null;
+      if (input.filter === 'mine') {
+        const assignedRows = await ctx.db
+          .select({ proposalId: proposalAssignments.proposalId })
+          .from(proposalAssignments)
+          .where(eq(proposalAssignments.userId, ctx.user.id));
+        assignedIds = assignedRows.map((r) => r.proposalId);
+        if (assignedIds.length === 0) {
+          return {
+            counts: { draft: 0, shared: 0, accepted: 0, completed: 0, total: 0 },
+            needsAttention: [] as Array<{ id: string; name: string; tourTitle: string | null; startDate: string | null; client: { name: string } | null }>,
+          };
+        }
+      }
 
+      const baseConditions = [eq(proposals.organizationId, ctx.orgId)];
+      if (assignedIds) baseConditions.push(inArray(proposals.id, assignedIds));
+
+      // Status counts
+      const statusRows = await ctx.db
+        .select({
+          status: proposals.status,
+          count: sql<number>`count(*)::int`,
+        })
+        .from(proposals)
+        .where(and(...baseConditions))
+        .groupBy(proposals.status);
+
+      const counts = { draft: 0, shared: 0, accepted: 0, completed: 0, total: 0 };
+      for (const row of statusRows) {
+        counts[row.status as keyof typeof counts] = row.count;
+        counts.total += row.count;
+      }
+
+      // Needs attention: shared proposals with trip starting within 7 days
+      const sevenDaysFromNow = new Date();
+      sevenDaysFromNow.setDate(sevenDaysFromNow.getDate() + 7);
+
+      const needsAttention = await ctx.db.query.proposals.findMany({
+        where: and(
+          ...baseConditions,
+          eq(proposals.status, 'shared'),
+          gte(proposals.startDate, new Date().toISOString()),
+          lte(proposals.startDate, sevenDaysFromNow.toISOString()),
+        ),
+        columns: {
+          id: true,
+          name: true,
+          tourTitle: true,
+          startDate: true,
+        },
+        with: {
+          client: { columns: { name: true } },
+        },
+        orderBy: asc(proposals.startDate),
+        limit: 5,
+      });
+
+      return { counts, needsAttention };
+    }),
+
+  listForDashboard: protectedProcedure
+    .input(
+      z.object({
+        filter: z.enum(['mine', 'all']).default('mine'),
+        status: z.array(z.enum(['draft', 'shared', 'accepted', 'completed'])).optional(),
+        search: z.string().max(200).optional(),
+        startDateFrom: z.string().optional(),
+        startDateTo: z.string().optional(),
+        sortBy: z.enum(['updatedAt', 'startDate', 'createdAt', 'status']).default('updatedAt'),
+        sortOrder: z.enum(['asc', 'desc']).default('desc'),
+        page: z.number().int().min(1).default(1),
+        pageSize: z.number().int().min(1).max(50).default(12),
+      }),
+    )
+    .query(async ({ ctx, input }) => {
+      const conditions: ReturnType<typeof eq>[] = [eq(proposals.organizationId, ctx.orgId)];
+
+      // "mine" filter
       if (input.filter === 'mine') {
         const assignedRows = await ctx.db
           .select({ proposalId: proposalAssignments.proposalId })
@@ -85,17 +165,61 @@ export const proposalsRouter = router({
           .where(eq(proposalAssignments.userId, ctx.user.id));
 
         const assignedIds = assignedRows.map((r) => r.proposalId);
-        if (assignedIds.length === 0) return [];
+        if (assignedIds.length === 0) return { items: [], total: 0, page: 1, pageSize: input.pageSize };
 
-        whereClause = and(
-          eq(proposals.organizationId, ctx.orgId),
-          inArray(proposals.id, assignedIds),
-        )!;
+        conditions.push(inArray(proposals.id, assignedIds));
       }
 
-      return await ctx.db.query.proposals.findMany({
+      // Status filter
+      if (input.status && input.status.length > 0) {
+        conditions.push(inArray(proposals.status, input.status));
+      }
+
+      // Date range filter
+      if (input.startDateFrom) {
+        conditions.push(gte(proposals.startDate, input.startDateFrom));
+      }
+      if (input.startDateTo) {
+        conditions.push(lte(proposals.startDate, input.startDateTo));
+      }
+
+      // Search filter (client name or tour title)
+      if (input.search?.trim()) {
+        const escaped = escapeLikeQuery(input.search.trim());
+        conditions.push(
+          or(
+            ilike(proposals.tourTitle, `%${escaped}%`),
+            ilike(proposals.name, `%${escaped}%`),
+            sql`EXISTS (SELECT 1 FROM ${clients} WHERE ${clients.id} = ${proposals.clientId} AND ${clients.name} ILIKE ${'%' + escaped + '%'})`,
+          )!,
+        );
+      }
+
+      const whereClause = and(...conditions);
+
+      // Sort
+      const sortColumn = {
+        updatedAt: proposals.updatedAt,
+        startDate: proposals.startDate,
+        createdAt: proposals.createdAt,
+        status: proposals.status,
+      }[input.sortBy];
+      const orderFn = input.sortOrder === 'asc' ? asc : desc;
+
+      // Total count
+      const countResult = await ctx.db
+        .select({ total: sql<number>`count(*)::int` })
+        .from(proposals)
+        .where(whereClause);
+      const total = countResult[0]?.total ?? 0;
+
+      // Paginated results
+      const offset = (input.page - 1) * input.pageSize;
+      const items = await ctx.db.query.proposals.findMany({
         where: whereClause,
-        orderBy: desc(proposals.updatedAt),
+        orderBy: orderFn(sortColumn),
+        limit: input.pageSize,
+        offset,
         with: {
           client: true,
           assignments: {
@@ -104,6 +228,9 @@ export const proposalsRouter = router({
                 columns: { id: true, name: true, image: true },
               },
             },
+          },
+          days: {
+            columns: { id: true },
           },
         },
         columns: {
@@ -116,6 +243,8 @@ export const proposalsRouter = router({
           startDate: true,
         },
       });
+
+      return { items, total, page: input.page, pageSize: input.pageSize };
     }),
 
   getById: publicProcedure
@@ -548,6 +677,12 @@ export const proposalsRouter = router({
         throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: result.error });
       }
 
+      // Update proposal status to shared
+      await ctx.db
+        .update(proposals)
+        .set({ status: 'shared', updatedAt: sql`CURRENT_TIMESTAMP` })
+        .where(eq(proposals.id, input.proposalId));
+
       return { success: true };
     }),
 
@@ -609,6 +744,12 @@ export const proposalsRouter = router({
       if (!result.success) {
         throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: result.error });
       }
+
+      // Update proposal status to accepted
+      await ctx.db
+        .update(proposals)
+        .set({ status: 'accepted', updatedAt: sql`CURRENT_TIMESTAMP` })
+        .where(eq(proposals.id, input.proposalId));
 
       return { success: true };
     }),

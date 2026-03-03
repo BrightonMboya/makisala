@@ -581,7 +581,7 @@ export const wildlifeParkOverrides = pgTable('wildlife_park_overrides', {
 });
 
 // ---------- PROPOSALS ----------
-export const ProposalStatus = pgEnum('proposal_status', ['draft', 'shared']);
+export const ProposalStatus = pgEnum('proposal_status', ['draft', 'shared', 'accepted', 'completed']);
 
 export const proposals = pgTable('proposals', {
   id: text('id').primaryKey(),
@@ -619,7 +619,10 @@ export const proposals = pgTable('proposals', {
   updatedAt: timestamp('updated_at', { precision: 3, mode: 'string' })
     .default(sql`CURRENT_TIMESTAMP`)
     .notNull(),
-});
+}, (table) => [
+  index('idx_proposals_org_status').on(table.organizationId, table.status),
+  index('idx_proposals_org_start_date').on(table.organizationId, table.startDate),
+]);
 
 // ---------- PROPOSAL DAYS ----------
 export const proposalDays = pgTable('proposal_days', {

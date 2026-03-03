@@ -17,12 +17,12 @@ export default function ItinerariesPage() {
   const router = useRouter();
   const { session } = useSession();
 
-  const { data: proposals = [], isLoading } = trpc.proposals.listForDashboard.useQuery(
+  const { data: proposalsData, isLoading } = trpc.proposals.listForDashboard.useQuery(
     { filter: 'all' },
     { staleTime: staleTimes.proposals, enabled: !!session?.user?.id },
   );
 
-  const requests: RequestItem[] = proposals.map((p: any) => ({
+  const requests: RequestItem[] = (proposalsData?.items ?? []).map((p: any) => ({
     id: p.id,
     client: p.client?.name || 'Unknown',
     travelers: 0,
@@ -31,8 +31,9 @@ export default function ItinerariesPage() {
     startDate: p.startDate ? new Date(p.startDate).toLocaleDateString() : 'TBD',
     received: new Date(p.createdAt).toLocaleDateString(),
     source: 'Manual',
-    status: p.status === 'shared' ? 'shared' : 'draft',
+    status: p.status,
     assignees: [],
+    dayCount: p.days?.length ?? 0,
   }));
 
   return (

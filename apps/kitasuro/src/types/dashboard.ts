@@ -4,6 +4,8 @@ export type AssignedUser = {
   image: string | null
 }
 
+export type ProposalStatus = 'draft' | 'shared' | 'accepted' | 'completed'
+
 export type RequestItem = {
   id: string
   client: string
@@ -13,6 +15,7 @@ export type RequestItem = {
   startDate: string
   received: string
   source: string
-  status: 'new' | 'working' | 'draft' | 'shared'
+  status: ProposalStatus
   assignees: AssignedUser[]
+  dayCount: number
 }

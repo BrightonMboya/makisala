@@ -21,7 +21,7 @@ export const onboardingRouter = router({
         .where(eq(tours.organizationId, ctx.orgId)),
     ]);
 
-    return { organization: orgData ?? null, tourCount: countResult[0]?.count ?? 0 };
+    return { organization: orgData ?? null, tourCount: (countResult[0]?.count ?? 0) as number };
   }),
 
   markComplete: protectedProcedure.mutation(async ({ ctx }) => {

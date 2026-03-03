@@ -2,8 +2,7 @@ import { NextResponse } from 'next/server';
 import { withAxiom, type AxiomRequest } from 'next-axiom';
 import { auth } from '@/lib/auth';
 import { headers } from 'next/headers';
-import { db, member } from '@repo/db';
-import { and, eq } from 'drizzle-orm';
+import { db, member, and, eq } from '@repo/db';
 import { getOrgPlan } from '@/lib/plans';
 import { serializeError } from '@/lib/logger';
 
