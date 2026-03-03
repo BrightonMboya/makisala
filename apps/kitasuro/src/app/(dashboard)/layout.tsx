@@ -1,4 +1,5 @@
 import { Suspense } from 'react';
+import { redirect } from 'next/navigation';
 import { SidebarInset, SidebarProvider, SidebarTrigger } from '@repo/ui/sidebar';
 import { getSession } from '@/lib/session';
 import { createServerCaller } from '@/server/trpc/caller';
@@ -10,6 +11,10 @@ import { DashboardClientShell } from './dashboard-client-shell';
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const session = await getSession();
 
+  if (!session?.user) {
+    redirect('/login');
+  }
+
   // Fetch sidebar data server-side to avoid flash of fallback UI
   let sidebarData: {
     orgName: string;
@@ -19,30 +24,36 @@ export default async function DashboardLayout({ children }: { children: React.Re
     userImage: string | null;
   } | null = null;
 
-  if (session?.user) {
-    try {
-      const trpc = await createServerCaller();
-      const [org, userProfile] = await Promise.all([
-        trpc.settings.getOrg(),
-        trpc.settings.getCurrentUser(),
-      ]);
-      sidebarData = {
-        orgName: org?.name || 'Dashboard',
-        orgLogo: org?.logoUrl || null,
-        userName: userProfile?.name || session.user.name || '',
-        userEmail: session.user.email || '',
-        userImage: userProfile?.image || null,
-      };
-    } catch {
-      // Fallback if tRPC calls fail
-      sidebarData = {
-        orgName: 'Dashboard',
-        orgLogo: null,
-        userName: session.user.name || '',
-        userEmail: session.user.email || '',
-        userImage: session.user.image || null,
-      };
+  try {
+    const trpc = await createServerCaller();
+    const [org, userProfile] = await Promise.all([
+      trpc.settings.getOrg(),
+      trpc.settings.getCurrentUser(),
+    ]);
+
+    // Server-side onboarding redirect — no client roundtrip needed
+    if (org && !org.onboardingCompletedAt) {
+      redirect('/onboarding');
     }
+
+    sidebarData = {
+      orgName: org?.name || 'Dashboard',
+      orgLogo: org?.logoUrl || null,
+      userName: userProfile?.name || session.user.name || '',
+      userEmail: session.user.email || '',
+      userImage: userProfile?.image || null,
+    };
+  } catch (error) {
+    // Re-throw redirect errors (Next.js uses thrown responses for redirects)
+    if (error instanceof Error && 'digest' in error) throw error;
+    // Fallback if tRPC calls fail
+    sidebarData = {
+      orgName: 'Dashboard',
+      orgLogo: null,
+      userName: session.user.name || '',
+      userEmail: session.user.email || '',
+      userImage: session.user.image || null,
+    };
   }
 
   return (
