@@ -128,7 +128,7 @@ function SignUpForm() {
                             startTransition(async () => {
                                 await authClient.sendVerificationEmail({
                                     email: signupComplete,
-                                    callbackURL: '/dashboard?verified=true',
+                                    callbackURL: '/onboarding?verified=true',
                                 })
                                 toast('Email sent!', {
                                     description: 'A new verification link has been sent.',
@@ -232,7 +232,7 @@ function SignUpForm() {
                         startTransition(async () => {
                             await authClient.signIn.social({
                                 provider: 'google',
-                                callbackURL: inviteToken ? `/login?invite=${inviteToken}` : '/dashboard',
+                                callbackURL: inviteToken ? `/login?invite=${inviteToken}` : '/onboarding',
                             })
                         })
                     }}

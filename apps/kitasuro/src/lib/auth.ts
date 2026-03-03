@@ -53,7 +53,7 @@ export const auth = betterAuth({
   emailVerification: {
     sendVerificationEmail: async ({ user, url }) => {
       const verificationUrl = new URL(url);
-      verificationUrl.searchParams.set('callbackURL', '/dashboard?verified=true');
+      verificationUrl.searchParams.set('callbackURL', '/onboarding?verified=true');
 
       // Use setImmediate to fully decouple email sending from request timing
       // This prevents timing attacks by ensuring consistent response times
