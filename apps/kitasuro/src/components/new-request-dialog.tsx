@@ -260,7 +260,7 @@ export function NewRequestDialog({ open, onOpenChange }: NewRequestDialogProps) 
                   </FormItem>
                 )}
               />
-              <div className="grid grid-cols-2 gap-4">
+              <div className="flex flex-col gap-4">
                 <FormField
                   control={form.control}
                   name="startDate"
