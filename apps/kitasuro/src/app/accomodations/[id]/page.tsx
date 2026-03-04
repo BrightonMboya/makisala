@@ -1,3 +1,5 @@
+import { cache } from 'react';
+import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ArrowLeft, Globe, MapPin } from 'lucide-react';
@@ -7,11 +9,44 @@ import { createServerCaller } from '@/server/trpc/caller';
 import { ImageGallery } from '../_components/ImageGallery';
 import { ContentDisplay } from '../_components/ContentDisplay';
 
-export default async function AccommodationDetailPage({
-  params,
-}: {
+type Props = {
   params: Promise<{ id: string }>;
-}) {
+};
+
+const getCachedAccommodation = cache(async (id: string) => {
+  const trpc = await createServerCaller();
+  return trpc.accommodations.getById({ id });
+});
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { id } = await params;
+  const acc = await getCachedAccommodation(id);
+
+  if (!acc) {
+    return { title: 'Accommodation not found' };
+  }
+
+  const description = acc.overview || acc.enhancedDescription?.slice(0, 160) || acc.name;
+
+  return {
+    title: acc.name,
+    description,
+    openGraph: {
+      title: acc.name,
+      description,
+      type: 'website',
+      images: [
+        {
+          url: `/accomodations/${id}/opengraph-image`,
+          width: 1200,
+          height: 630,
+        },
+      ],
+    },
+  };
+}
+
+export default async function AccommodationDetailPage({ params }: Props) {
   const resolvedParams = await params;
   const id = resolvedParams?.id;
 
@@ -19,8 +54,7 @@ export default async function AccommodationDetailPage({
     notFound();
   }
 
-  const trpc = await createServerCaller();
-  const acc = await trpc.accommodations.getById({ id });
+  const acc = await getCachedAccommodation(id);
 
   if (!acc) {
     notFound();
