@@ -1,9 +1,14 @@
 import { ImageResponse } from 'next/og';
 import { createServerCaller } from '@/server/trpc/caller';
-import { cfImage } from '@/lib/cf-image';
 import { format } from 'date-fns';
 
 export const size = { width: 1200, height: 630 };
+
+// Proxy through wsrv.nl to convert any image (AVIF, WebP, etc.) to JPEG for next/og
+function toOgSafeUrl(url: string | null | undefined, w = 1200, h = 630): string | null {
+  if (!url) return null;
+  return `https://wsrv.nl/?url=${encodeURIComponent(url)}&output=jpg&q=60&w=${w}&h=${h}&fit=cover`;
+}
 
 export default async function OGImage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -32,12 +37,9 @@ export default async function OGImage({ params }: { params: Promise<{ id: string
 
   const title = proposal.tourTitle || proposal.name;
   const orgName = proposal.organization?.name;
-  const ogOptions = { width: 1200, height: 630, fit: 'cover' as const, quality: 70, format: 'jpeg' as const };
-  const logoUrl = proposal.organization?.logoUrl
-    ? cfImage(proposal.organization.logoUrl, { width: 96, height: 96, fit: 'cover', quality: 70, format: 'jpeg' })
-    : null;
+  const logoUrl = toOgSafeUrl(proposal.organization?.logoUrl, 96, 96);
   const dayCount = proposal.days.length;
-  const heroImage = proposal.heroImage ? cfImage(proposal.heroImage, ogOptions) : null;
+  const heroImage = toOgSafeUrl(proposal.heroImage);
 
   const details: string[] = [];
   if (dayCount > 0) details.push(`${dayCount} days`);

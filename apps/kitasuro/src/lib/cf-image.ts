@@ -3,7 +3,7 @@ export interface CfImageOptions {
   height?: number;
   quality?: number;
   fit?: 'scale-down' | 'contain' | 'cover' | 'crop' | 'pad';
-  format?: 'auto' | 'webp' | 'avif' | 'jpeg' | 'json';
+  format?: 'auto' | 'webp' | 'avif' | 'json';
   sharpen?: number;
   brightness?: number;
   contrast?: number;
@@ -56,11 +56,6 @@ export function cfImage(imageUrl: string, options: CfImageOptions = {}): string 
   try {
     const url = new URL(imageUrl);
     const pathname = url.pathname.toLowerCase();
-
-    // // Avoid nesting Cloudflare image transforms.
-    // if (pathname.includes('/cdn-cgi/image/')) {
-    //   return imageUrl
-    // }
 
     // Some R2 assets are stored as AVIF and may fail through Image Resizing.
     // Serve AVIF files directly from the bucket URL instead.

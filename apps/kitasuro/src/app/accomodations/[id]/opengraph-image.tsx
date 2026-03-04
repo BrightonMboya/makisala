@@ -8,6 +8,11 @@ const cormorantBold = fetch(
   'https://fonts.gstatic.com/s/cormorantgaramond/v21/co3umX5slCNuHLi8bLeY9MK7whWMhyjypVO7abI26QOD_hg9GnM.ttf',
 ).then((res) => res.arrayBuffer());
 
+// Proxy through wsrv.nl to convert any image (AVIF, WebP, etc.) to JPEG for next/og
+function toOgSafeUrl(url: string, w = 1200, h = 630): string {
+  return `https://wsrv.nl/?url=${encodeURIComponent(url)}&output=jpg&q=60&w=${w}&h=${h}&fit=cover`;
+}
+
 export default async function OGImage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const trpc = await createServerCaller();
@@ -35,13 +40,7 @@ export default async function OGImage({ params }: { params: Promise<{ id: string
 
   const firstImage = acc.images[0];
   const heroImage = firstImage
-    ? getPublicUrl(firstImage.bucket, firstImage.key, {
-        width: 1200,
-        height: 630,
-        fit: 'cover',
-        quality: 70,
-        format: 'jpeg',
-      })
+    ? toOgSafeUrl(getPublicUrl(firstImage.bucket, firstImage.key))
     : null;
 
   const details: string[] = [];
