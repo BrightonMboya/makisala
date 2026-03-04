@@ -60,13 +60,6 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       title: orgName ? `${title} — ${orgName}` : title,
       description,
       type: 'website',
-      images: [
-        {
-          url: `/proposal/${id}/opengraph-image`,
-          width: 1200,
-          height: 630,
-        },
-      ],
     },
   };
 }

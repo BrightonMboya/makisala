@@ -39,6 +39,7 @@ export function DatePicker({
           className="w-full"
           classNames={{ root: 'w-full', month: 'w-full' }}
           defaultMonth={date}
+          disabled={{ before: new Date() }}
           selected={date}
           onSelect={(d) => {
             setDate(d);

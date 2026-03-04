@@ -1,5 +1,3 @@
-import { cache } from 'react';
-import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ArrowLeft, Globe, MapPin } from 'lucide-react';
@@ -9,44 +7,11 @@ import { createServerCaller } from '@/server/trpc/caller';
 import { ImageGallery } from '../_components/ImageGallery';
 import { ContentDisplay } from '../_components/ContentDisplay';
 
-type Props = {
+export default async function AccommodationDetailPage({
+  params,
+}: {
   params: Promise<{ id: string }>;
-};
-
-const getCachedAccommodation = cache(async (id: string) => {
-  const trpc = await createServerCaller();
-  return trpc.accommodations.getById({ id });
-});
-
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { id } = await params;
-  const acc = await getCachedAccommodation(id);
-
-  if (!acc) {
-    return { title: 'Accommodation not found' };
-  }
-
-  const description = acc.overview || acc.enhancedDescription?.slice(0, 160) || acc.name;
-
-  return {
-    title: acc.name,
-    description,
-    openGraph: {
-      title: acc.name,
-      description,
-      type: 'website',
-      images: [
-        {
-          url: `/accomodations/${id}/opengraph-image`,
-          width: 1200,
-          height: 630,
-        },
-      ],
-    },
-  };
-}
-
-export default async function AccommodationDetailPage({ params }: Props) {
+}) {
   const resolvedParams = await params;
   const id = resolvedParams?.id;
 
@@ -54,7 +19,8 @@ export default async function AccommodationDetailPage({ params }: Props) {
     notFound();
   }
 
-  const acc = await getCachedAccommodation(id);
+  const trpc = await createServerCaller();
+  const acc = await trpc.accommodations.getById({ id });
 
   if (!acc) {
     notFound();
@@ -70,18 +36,14 @@ export default async function AccommodationDetailPage({ params }: Props) {
       <div className="lg:grid lg:grid-cols-2">
         {/* Left Column: Sticky Image Gallery */}
         <div className="relative h-[50vh] w-full bg-gray-100 lg:sticky lg:top-0 lg:h-screen">
-          <ImageGallery 
-            images={images} 
-            accommodationName={acc.name} 
-            className="h-full w-full"
-          />
-          
+          <ImageGallery images={images} accommodationName={acc.name} className="h-full w-full" />
+
           {/* Floating Back Button */}
-          <Button 
-            variant="secondary" 
-            size="icon" 
-            asChild 
-            className="absolute left-4 top-4 z-20 h-10 w-10 rounded-full bg-white/80 backdrop-blur-sm hover:bg-white shadow-sm"
+          <Button
+            variant="secondary"
+            size="icon"
+            asChild
+            className="absolute top-4 left-4 z-20 h-10 w-10 rounded-full bg-white/80 shadow-sm backdrop-blur-sm hover:bg-white"
           >
             <Link href="/content-library">
               <ArrowLeft className="h-5 w-5" />
@@ -93,7 +55,6 @@ export default async function AccommodationDetailPage({ params }: Props) {
         {/* Right Column: Scrollable Content */}
         <div className="flex flex-col p-6 lg:min-h-screen lg:p-12 xl:p-20">
           <div className="mb-8">
-
             <h1 className="mb-4 font-serif text-4xl text-gray-900 lg:text-5xl lg:leading-tight">
               {acc.name}
             </h1>
@@ -120,7 +81,7 @@ export default async function AccommodationDetailPage({ params }: Props) {
           </div>
 
           <div className="mt-2 space-y-12">
-             <ContentDisplay
+            <ContentDisplay
               enhancedDescription={acc.enhancedDescription}
               amenities={acc.amenities}
               roomTypes={acc.roomTypes}
