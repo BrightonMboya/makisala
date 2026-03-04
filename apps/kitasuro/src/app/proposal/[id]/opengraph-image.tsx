@@ -4,6 +4,10 @@ import { format } from 'date-fns';
 
 export const size = { width: 1200, height: 630 };
 
+const cormorantBold = fetch(
+  'https://fonts.gstatic.com/s/cormorantgaramond/v21/co3umX5slCNuHLi8bLeY9MK7whWMhyjypVO7abI26QOD_hg9GnM.ttf',
+).then((res) => res.arrayBuffer());
+
 // Convert image URL to PNG via wsrv.nl proxy (next/og doesn't support WebP)
 function toOgSafeUrl(url: string | null | undefined): string | null {
   if (!url) return null;
@@ -147,6 +151,7 @@ export default async function OGImage({ params }: { params: Promise<{ id: string
             style={{
               color: '#ffffff',
               fontSize: 56,
+              fontFamily: 'Cormorant Garamond',
               fontWeight: 700,
               lineHeight: 1.15,
               maxWidth: '85%',
@@ -232,6 +237,16 @@ export default async function OGImage({ params }: { params: Promise<{ id: string
         </div>
       </div>
     </div>,
-    { ...size },
+    {
+      ...size,
+      fonts: [
+        {
+          name: 'Cormorant Garamond',
+          data: await cormorantBold,
+          style: 'normal',
+          weight: 700,
+        },
+      ],
+    },
   );
 }
