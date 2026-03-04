@@ -147,6 +147,7 @@ export default async function OGImage({ params }: { params: Promise<{ id: string
             style={{
               color: '#ffffff',
               fontSize: 56,
+              fontFamily: 'Cormorant Garamond',
               fontWeight: 700,
               lineHeight: 1.15,
               maxWidth: '85%',

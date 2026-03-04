@@ -36,18 +36,14 @@ export default async function AccommodationDetailPage({
       <div className="lg:grid lg:grid-cols-2">
         {/* Left Column: Sticky Image Gallery */}
         <div className="relative h-[50vh] w-full bg-gray-100 lg:sticky lg:top-0 lg:h-screen">
-          <ImageGallery 
-            images={images} 
-            accommodationName={acc.name} 
-            className="h-full w-full"
-          />
-          
+          <ImageGallery images={images} accommodationName={acc.name} className="h-full w-full" />
+
           {/* Floating Back Button */}
-          <Button 
-            variant="secondary" 
-            size="icon" 
-            asChild 
-            className="absolute left-4 top-4 z-20 h-10 w-10 rounded-full bg-white/80 backdrop-blur-sm hover:bg-white shadow-sm"
+          <Button
+            variant="secondary"
+            size="icon"
+            asChild
+            className="absolute top-4 left-4 z-20 h-10 w-10 rounded-full bg-white/80 shadow-sm backdrop-blur-sm hover:bg-white"
           >
             <Link href="/content-library">
               <ArrowLeft className="h-5 w-5" />
@@ -59,7 +55,6 @@ export default async function AccommodationDetailPage({
         {/* Right Column: Scrollable Content */}
         <div className="flex flex-col p-6 lg:min-h-screen lg:p-12 xl:p-20">
           <div className="mb-8">
-
             <h1 className="mb-4 font-serif text-4xl text-gray-900 lg:text-5xl lg:leading-tight">
               {acc.name}
             </h1>
@@ -86,7 +81,7 @@ export default async function AccommodationDetailPage({
           </div>
 
           <div className="mt-2 space-y-12">
-             <ContentDisplay
+            <ContentDisplay
               enhancedDescription={acc.enhancedDescription}
               amenities={acc.amenities}
               roomTypes={acc.roomTypes}
