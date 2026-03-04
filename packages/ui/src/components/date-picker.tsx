@@ -32,10 +32,12 @@ export function DatePicker({
           {date ? format(date, 'PPP') : <span>Pick a date</span>}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-auto p-0">
+      <PopoverContent align="start" className="w-[--radix-popover-trigger-width] p-0">
         <Calendar
           mode="single"
           captionLayout="dropdown"
+          className="w-full"
+          classNames={{ root: 'w-full', month: 'w-full' }}
           defaultMonth={date}
           selected={date}
           onSelect={(d) => {
