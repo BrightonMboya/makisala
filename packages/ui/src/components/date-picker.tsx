@@ -39,11 +39,15 @@ export function DatePicker({
             <PopoverContent className="w-auto p-0">
                 <Calendar
                     mode="single"
+                    captionLayout="dropdown"
+                    defaultMonth={date}
                     selected={date}
                     onSelect={(d) => {
                         setDate(d)
                         setOpen(false)
                     }}
+                    startMonth={new Date()}
+                    endMonth={new Date(new Date().getFullYear() + 3, 11)}
                     initialFocus
                 />
             </PopoverContent>
