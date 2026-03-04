@@ -3,7 +3,7 @@ export interface CfImageOptions {
   height?: number;
   quality?: number;
   fit?: 'scale-down' | 'contain' | 'cover' | 'crop' | 'pad';
-  format?: 'auto' | 'webp' | 'avif' | 'json';
+  format?: 'auto' | 'webp' | 'avif' | 'jpeg' | 'json';
   sharpen?: number;
   brightness?: number;
   contrast?: number;

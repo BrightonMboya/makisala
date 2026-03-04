@@ -8,11 +8,6 @@ const cormorantBold = fetch(
   'https://fonts.gstatic.com/s/cormorantgaramond/v21/co3umX5slCNuHLi8bLeY9MK7whWMhyjypVO7abI26QOD_hg9GnM.ttf',
 ).then((res) => res.arrayBuffer());
 
-// Convert image URL to PNG via wsrv.nl proxy (next/og doesn't support WebP)
-function toOgSafeUrl(url: string): string {
-  return `https://wsrv.nl/?url=${encodeURIComponent(url)}&output=png&w=1200&h=630&fit=cover`;
-}
-
 export default async function OGImage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const trpc = await createServerCaller();
@@ -40,7 +35,13 @@ export default async function OGImage({ params }: { params: Promise<{ id: string
 
   const firstImage = acc.images[0];
   const heroImage = firstImage
-    ? toOgSafeUrl(getPublicUrl(firstImage.bucket, firstImage.key))
+    ? getPublicUrl(firstImage.bucket, firstImage.key, {
+        width: 1200,
+        height: 630,
+        fit: 'cover',
+        quality: 70,
+        format: 'jpeg',
+      })
     : null;
 
   const details: string[] = [];
