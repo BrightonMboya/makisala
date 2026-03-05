@@ -17,6 +17,7 @@ interface AccomodationFormProps {
         url?: string | null
         overview?: string | null
         description?: string | null
+        enhancedDescription?: string | null
         latitude?: string | null
         longitude?: string | null
         images: { id: string; imageUrl: string }[]
@@ -41,12 +42,13 @@ export default function AccomodationForm({ initialData }: AccomodationFormProps)
         const longitudeRaw = formData.get('longitude') as string
 
         const data = {
-        name: formData.get('name') as string,
-        url: formData.get('url') as string,
-        overview: formData.get('overview') as string,
-        description: formData.get('description') as string,
-        latitude: latitudeRaw || undefined,
-        longitude: longitudeRaw || undefined,
+            name: formData.get('name') as string,
+            url: formData.get('url') as string,
+            overview: formData.get('overview') as string,
+            description: formData.get('description') as string,
+            enhancedDescription: formData.get('enhancedDescription') as string,
+            latitude: latitudeRaw || undefined,
+            longitude: longitudeRaw || undefined,
         }
 
         try {
@@ -127,7 +129,11 @@ export default function AccomodationForm({ initialData }: AccomodationFormProps)
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="description">Full Description</Label>
-                                <Textarea id="description" name="description" defaultValue={initialData?.description || ''} rows={10} placeholder="Detailed description of the accomodation..." />
+                                <Textarea id="description" name="description" defaultValue={initialData?.description || ''} rows={6} placeholder="Detailed description of the accomodation..." />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="enhancedDescription">Property Overview (shown on detail page)</Label>
+                                <Textarea id="enhancedDescription" name="enhancedDescription" defaultValue={initialData?.enhancedDescription || ''} rows={8} placeholder="Rich property overview displayed on the public accommodation page..." />
                             </div>
                         </CardContent>
                     </Card>
@@ -196,7 +202,7 @@ export default function AccomodationForm({ initialData }: AccomodationFormProps)
                                 </label>
                             </div>
                             <p className="text-xs text-gray-500 italic">
-                                * Note: Images will be uploaded to Supabase S3.
+                                * Images are uploaded directly to Cloudflare R2.
                             </p>
                         </CardContent>
                     </Card>

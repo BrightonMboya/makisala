@@ -4,13 +4,11 @@ import { and, desc, eq, ilike, inArray, sql } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
 import { router, publicProcedure, protectedProcedure, escapeLikeQuery } from '../init';
 import { getPublicUrl, uploadToStorage } from '@/lib/storage';
-import { compressImage, replaceExtension } from '@/lib/image-utils';
-
 
 const imageSchema = z.object({
   name: z.string().min(1).max(255),
   type: z.string().min(1).max(100),
-  base64: z.string().min(1).max(14 * 1024 * 1024), // ~10MB binary
+  base64: z.string().min(1).max(14 * 1024 * 1024),
 });
 
 export const accommodationsRouter = router({
@@ -138,6 +136,7 @@ export const accommodationsRouter = router({
         url: z.string().url().optional().or(z.literal('')),
         overview: z.string().max(1000).optional(),
         description: z.string().max(5000).optional(),
+        enhancedDescription: z.string().max(10000).optional(),
         latitude: z.string().optional(),
         longitude: z.string().optional(),
         images: z.array(imageSchema).max(20).optional(),
@@ -151,6 +150,7 @@ export const accommodationsRouter = router({
           url: input.url || undefined,
           overview: input.overview,
           description: input.description,
+          enhancedDescription: input.enhancedDescription,
           latitude: input.latitude,
           longitude: input.longitude,
         })
@@ -165,13 +165,11 @@ export const accommodationsRouter = router({
 
       if (input.images && input.images.length > 0) {
         for (const img of input.images) {
-          const rawBuffer = Buffer.from(img.base64, 'base64');
-          const compressed = await compressImage(rawBuffer);
-          const compressedName = replaceExtension(img.name, compressed.extension);
-          const key = `accommodations/${newAcc.id}/${Date.now()}-${compressedName}`;
+          const buffer = Buffer.from(img.base64, 'base64');
+          const key = `accommodations/${newAcc.id}/${Date.now()}-${img.name}`;
           const { bucket, key: storageKey } = await uploadToStorage({
-            file: compressed.buffer,
-            contentType: compressed.contentType,
+            file: buffer,
+            contentType: img.type,
             key,
             visibility: 'public',
           });
@@ -195,6 +193,7 @@ export const accommodationsRouter = router({
         url: z.string().url().optional().or(z.literal('')),
         overview: z.string().max(1000).optional(),
         description: z.string().max(5000).optional(),
+        enhancedDescription: z.string().max(10000).optional(),
         latitude: z.string().optional(),
         longitude: z.string().optional(),
         newImages: z.array(imageSchema).max(20).optional(),
@@ -211,6 +210,7 @@ export const accommodationsRouter = router({
           url: data.url || undefined,
           overview: data.overview,
           description: data.description,
+          enhancedDescription: data.enhancedDescription,
           latitude: data.latitude,
           longitude: data.longitude,
         })
@@ -227,13 +227,11 @@ export const accommodationsRouter = router({
 
       if (newImages && newImages.length > 0) {
         for (const img of newImages) {
-          const rawBuffer = Buffer.from(img.base64, 'base64');
-          const compressed = await compressImage(rawBuffer);
-          const compressedName = replaceExtension(img.name, compressed.extension);
-          const key = `accommodations/${id}/${Date.now()}-${compressedName}`;
+          const buffer = Buffer.from(img.base64, 'base64');
+          const key = `accommodations/${id}/${Date.now()}-${img.name}`;
           const { bucket, key: storageKey } = await uploadToStorage({
-            file: compressed.buffer,
-            contentType: compressed.contentType,
+            file: buffer,
+            contentType: img.type,
             key,
             visibility: 'public',
           });
