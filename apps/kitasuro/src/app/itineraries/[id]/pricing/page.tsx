@@ -26,6 +26,8 @@ export default function PricingPage() {
     setInclusions,
     exclusions,
     setExclusions,
+    hidePricing,
+    setHidePricing,
   } = useBuilder();
 
   const handleAddRow = () => {
@@ -205,13 +207,15 @@ export default function PricingPage() {
       <div className="flex items-center justify-end gap-2 pr-2">
         <Checkbox
           id="hide-total"
+          checked={hidePricing}
+          onCheckedChange={(checked) => setHidePricing(checked === true)}
           className="border-stone-300 data-[state=checked]:border-stone-900 data-[state=checked]:bg-stone-900"
         />
         <label
           htmlFor="hide-total"
           className="cursor-pointer text-sm font-medium text-stone-600 select-none"
         >
-          Hide total price in user proposal
+          Hide pricing in the final proposal
         </label>
       </div>
 

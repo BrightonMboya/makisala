@@ -1,0 +1,1 @@
+ALTER TABLE "proposals" ADD COLUMN "hide_pricing" boolean DEFAULT false;

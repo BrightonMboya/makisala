@@ -225,6 +225,13 @@
       "when": 1771345167994,
       "tag": "0031_heavy_revanche",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1772728409615,
+      "tag": "0032_organic_imperial_guard",
+      "breakpoints": true
     }
   ]
 }

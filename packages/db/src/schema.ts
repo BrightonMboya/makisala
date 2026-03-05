@@ -611,6 +611,7 @@ export const proposals = pgTable('proposals', {
   countries: text('countries').array(),
   inclusions: text('inclusions').array(),
   exclusions: text('exclusions').array(),
+  hidePricing: boolean('hide_pricing').default(false),
   organizationId: uuid('organization_id').references(() => organizations.id),
   status: ProposalStatus('status').default('draft').notNull(),
   createdAt: timestamp('created_at', { precision: 3, mode: 'string' })

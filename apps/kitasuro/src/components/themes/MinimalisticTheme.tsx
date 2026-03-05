@@ -744,56 +744,60 @@ export default function MinimalisticTheme({ data, onHeroImageChange, onDayImageC
                   </div>
                 </div>
 
-                <div className="mb-8 border-b border-stone-100 pb-8">
-                  <h3 className="mb-6 text-sm font-medium tracking-[0.2em] text-stone-400 uppercase">
-                    Pricing
-                  </h3>
-                  <div className="space-y-2">
-                    <div className="flex items-baseline justify-between">
-                      <span className="text-xs text-stone-400">Total Investment</span>
-                      <span className="font-serif text-2xl text-stone-800">
-                        {data.pricing.total}
-                      </span>
+                {!data.hidePricing && (
+                  <>
+                    <div className="mb-8 border-b border-stone-100 pb-8">
+                      <h3 className="mb-6 text-sm font-medium tracking-[0.2em] text-stone-400 uppercase">
+                        Pricing
+                      </h3>
+                      <div className="space-y-2">
+                        <div className="flex items-baseline justify-between">
+                          <span className="text-xs text-stone-400">Total Investment</span>
+                          <span className="font-serif text-2xl text-stone-800">
+                            {data.pricing.total}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between text-[10px] font-bold tracking-widest text-stone-400 uppercase">
+                          <span>Per Person</span>
+                          <span>{data.pricing.perPerson}</span>
+                        </div>
+                      </div>
                     </div>
-                    <div className="flex items-center justify-between text-[10px] font-bold tracking-widest text-stone-400 uppercase">
-                      <span>Per Person</span>
-                      <span>{data.pricing.perPerson}</span>
+
+                    <div className="mb-10 space-y-8">
+                      <div>
+                        <h4 className="mb-4 flex items-center gap-2 text-[11px] font-bold tracking-[0.2em] text-stone-500 uppercase">
+                          <span className="h-1.5 w-1.5 rounded-full bg-stone-500" />
+                          Inclusions
+                        </h4>
+                        <ul className="space-y-3">
+                          {data.includedItems.map((item, i) => (
+                            <li key={i} className="flex items-start gap-3 text-sm text-stone-600">
+                              <span className="font-bold text-stone-400">+</span>
+                              {item}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
                     </div>
-                  </div>
-                </div>
 
-                <div className="mb-10 space-y-8">
-                  <div>
-                    <h4 className="mb-4 flex items-center gap-2 text-[11px] font-bold tracking-[0.2em] text-stone-500 uppercase">
-                      <span className="h-1.5 w-1.5 rounded-full bg-stone-500" />
-                      Inclusions
-                    </h4>
-                    <ul className="space-y-3">
-                      {data.includedItems.map((item, i) => (
-                        <li key={i} className="flex items-start gap-3 text-sm text-stone-600">
-                          <span className="font-bold text-stone-400">+</span>
-                          {item}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                </div>
-
-                {data.excludedItems && data.excludedItems.length > 0 && (
-                  <div className="mt-8 border-t border-stone-100 pt-8">
-                    <h4 className="mb-4 flex items-center gap-2 text-[11px] font-bold tracking-[0.2em] text-stone-500 uppercase">
-                      <span className="h-1.5 w-1.5 rounded-full bg-stone-300" />
-                      Exclusions
-                    </h4>
-                    <ul className="space-y-3">
-                      {data.excludedItems.map((item, i) => (
-                        <li key={i} className="flex items-start gap-3 text-sm text-stone-700">
-                          <span className="font-bold text-stone-300">-</span>
-                          {item}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
+                    {data.excludedItems && data.excludedItems.length > 0 && (
+                      <div className="mt-8 border-t border-stone-100 pt-8">
+                        <h4 className="mb-4 flex items-center gap-2 text-[11px] font-bold tracking-[0.2em] text-stone-500 uppercase">
+                          <span className="h-1.5 w-1.5 rounded-full bg-stone-300" />
+                          Exclusions
+                        </h4>
+                        <ul className="space-y-3">
+                          {data.excludedItems.map((item, i) => (
+                            <li key={i} className="flex items-start gap-3 text-sm text-stone-700">
+                              <span className="font-bold text-stone-300">-</span>
+                              {item}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </>
                 )}
 
                 <button

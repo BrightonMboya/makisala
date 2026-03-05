@@ -446,6 +446,7 @@ export async function transformProposalToItineraryData(
     accommodations,
     nationalParks: Object.keys(nationalParksMap).length > 0 ? nationalParksMap : undefined,
     transportation: transportation.length > 0 ? transportation : undefined,
+    hidePricing: (proposal as any).hidePricing || false,
     pricing,
     includedItems: inclusions,
     excludedItems: exclusions,

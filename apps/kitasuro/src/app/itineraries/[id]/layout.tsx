@@ -102,6 +102,7 @@ function Header() {
     transferIncluded,
     inclusions,
     exclusions,
+    hidePricing,
     selectedTheme,
     heroImage,
   } = useBuilder();
@@ -137,6 +138,7 @@ function Header() {
         transferIncluded,
         inclusions,
         exclusions,
+        hidePricing,
         selectedTheme,
         heroImage,
       };
@@ -187,6 +189,7 @@ function Header() {
         transferIncluded,
         inclusions,
         exclusions,
+        hidePricing,
         selectedTheme,
         heroImage,
       };
@@ -525,6 +528,7 @@ function BuilderLayoutInner({ children }: { children: React.ReactNode }) {
         extras: (proposal.extras as any) || [],
         inclusions: proposal.inclusions || [],
         exclusions: proposal.exclusions || [],
+        hidePricing: (proposal as any).hidePricing || false,
         selectedTheme: proposal.theme || 'minimalistic',
         heroImage: proposal.heroImage || null,
         days: (proposal.days || []).map((day: any) => ({

@@ -56,6 +56,7 @@ export default function PreviewPage() {
     transferIncluded,
     inclusions,
     exclusions,
+    hidePricing,
     selectedTheme,
     setSelectedTheme,
     heroImage,
@@ -154,6 +155,7 @@ export default function PreviewPage() {
       endCity,
       tourType,
       country: country || undefined,
+      hidePricing,
       nationalParksMap,
       accommodationsMap,
       organization: orgSettings ? {
@@ -179,6 +181,7 @@ export default function PreviewPage() {
     endCity,
     tourType,
     country,
+    hidePricing,
     nationalParksMap,
     accommodationsMap,
     orgSettings,

@@ -63,6 +63,9 @@ export function BuilderProvider({
     'Personal items (souvenirs, etc.)',
   ]);
 
+  // Pricing visibility
+  const [hidePricing, setHidePricing] = useState(false);
+
   // Theme
   const [selectedTheme, setSelectedTheme] = useState<ThemeType>('minimalistic');
   const [heroImage, setHeroImage] = useState<string>(
@@ -146,6 +149,7 @@ export function BuilderProvider({
       if (initialData.extras) setExtras(initialData.extras);
       if (initialData.inclusions) setInclusions(initialData.inclusions);
       if (initialData.exclusions) setExclusions(initialData.exclusions);
+      if (initialData.hidePricing != null) setHidePricing(initialData.hidePricing);
 
       // Add other fields as needed
       if (initialData.theme) setSelectedTheme(initialData.theme);
@@ -221,6 +225,8 @@ export function BuilderProvider({
         setInclusions,
         exclusions,
         setExclusions,
+        hidePricing,
+        setHidePricing,
         selectedTheme,
         setSelectedTheme,
         heroImage,

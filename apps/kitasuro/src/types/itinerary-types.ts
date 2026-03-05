@@ -113,6 +113,10 @@ export type BuilderContextType = {
   exclusions: string[];
   setExclusions: React.Dispatch<React.SetStateAction<string[]>>;
 
+  // Pricing visibility
+  hidePricing: boolean;
+  setHidePricing: React.Dispatch<React.SetStateAction<boolean>>;
+
   // Theme
   selectedTheme: ThemeType;
   setSelectedTheme: React.Dispatch<React.SetStateAction<ThemeType>>;
@@ -212,6 +216,7 @@ export interface ItineraryData {
   accommodations: Accommodation[];
   nationalParks?: Record<string, NationalParkInfo>; // Key is destination value (e.g., 'akagera-np')
   transportation?: ThemeTransportation[]; // Major transfers between destinations
+  hidePricing?: boolean;
   pricing: {
     total: string;
     perPerson: string;

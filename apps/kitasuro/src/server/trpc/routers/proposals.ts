@@ -37,6 +37,7 @@ interface BuilderData {
   countries?: string[] | null;
   inclusions?: string[] | null;
   exclusions?: string[] | null;
+  hidePricing?: boolean;
   days?: BuilderDay[];
 }
 
@@ -182,6 +183,7 @@ export const proposalsRouter = router({
           countries: true,
           inclusions: true,
           exclusions: true,
+          hidePricing: true,
           theme: true,
           heroImage: true,
         },
@@ -294,6 +296,7 @@ export const proposalsRouter = router({
         countries: builderData.countries || null,
         inclusions: builderData.inclusions || null,
         exclusions: builderData.exclusions || null,
+        hidePricing: builderData.hidePricing || false,
         status: input.status || 'draft',
         updatedAt: new Date().toISOString(),
       };
@@ -322,6 +325,7 @@ export const proposalsRouter = router({
             countries: proposalData.countries || null,
             inclusions: proposalData.inclusions || null,
             exclusions: proposalData.exclusions || null,
+            hidePricing: proposalData.hidePricing || false,
             status: proposalData.status || 'draft',
             updatedAt: new Date().toISOString(),
           })

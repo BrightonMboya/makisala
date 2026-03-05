@@ -253,6 +253,7 @@ export default function KuduTheme({ data, onHeroImageChange, onDayImageChange }:
     heroImage,
     itinerary,
     pricing,
+    hidePricing,
     includedItems,
     excludedItems,
     accommodations,
@@ -516,7 +517,7 @@ export default function KuduTheme({ data, onHeroImageChange, onDayImageChange }:
       })}
 
       {/* 4. PRICING SECTION */}
-      <NarrativeSection isPricing>
+      {!hidePricing && <NarrativeSection isPricing>
         <div className="grid w-full max-w-6xl items-start gap-16 lg:grid-cols-2">
           <div>
             <div className="mb-6 flex gap-1 text-yellow-500">
@@ -607,7 +608,7 @@ export default function KuduTheme({ data, onHeroImageChange, onDayImageChange }:
             )}
           </div>
         </div>
-      </NarrativeSection>
+      </NarrativeSection>}
 
       {/* 5. IMPORTANT NOTES SECTION */}
       {importantNotes &&

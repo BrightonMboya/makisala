@@ -129,6 +129,7 @@ export function transformBuilderToItineraryData(params: {
       description?: string;
     }
   >;
+  hidePricing?: boolean;
   organization?: OrganizationInfo;
 }): ItineraryData {
   const {
@@ -149,6 +150,7 @@ export function transformBuilderToItineraryData(params: {
     country: countryParam,
     nationalParksMap,
     accommodationsMap,
+    hidePricing,
     organization,
   } = params;
 
@@ -380,6 +382,7 @@ export function transformBuilderToItineraryData(params: {
     accommodations: accommodationsList,
     nationalParks: Object.keys(themeNationalParks).length > 0 ? themeNationalParks : undefined,
     transportation: transportation.length > 0 ? transportation : undefined,
+    hidePricing,
     pricing,
     includedItems: inclusions,
     excludedItems: exclusions,
