@@ -24,14 +24,34 @@ interface AccomodationFormProps {
     }
 }
 
+interface PendingFile {
+    file: File
+    previewUrl: string
+}
+
 export default function AccomodationForm({ initialData }: AccomodationFormProps) {
     const router = useRouter()
     const [loading, setLoading] = useState(false)
     const [images, setImages] = useState<any[]>(initialData?.images || [])
-    const [newImages, setNewImages] = useState<{ name: string; type: string; base64: string }[]>([])
+    const [pendingFiles, setPendingFiles] = useState<PendingFile[]>([])
     const [removedImageIds, setRemovedImageIds] = useState<string[]>([])
     const createMutation = trpc.accommodations.create.useMutation()
     const updateMutation = trpc.accommodations.update.useMutation()
+
+    async function uploadFiles(files: PendingFile[], folder: string) {
+        if (files.length === 0) return []
+
+        const body = new FormData()
+        body.set('folder', folder)
+        for (const f of files) body.append('files', f.file)
+
+        const res = await fetch('/api/upload', { method: 'POST', body })
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({}))
+            throw new Error(err.error || 'Upload failed')
+        }
+        return (await res.json()).images as { key: string; bucket: string }[]
+    }
 
     async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
         e.preventDefault()
@@ -53,23 +73,28 @@ export default function AccomodationForm({ initialData }: AccomodationFormProps)
 
         try {
             if (initialData) {
+                const uploaded = await uploadFiles(pendingFiles, `accommodations/${initialData.id}`)
                 await updateMutation.mutateAsync({
                     id: initialData.id,
                     ...data,
-                    newImages,
+                    newImages: uploaded,
                     removedImageIds,
                 })
                 router.push('/accomodations')
             } else {
-                const result = await createMutation.mutateAsync({
-                    ...data,
-                    images: newImages,
-                })
-                if (result?.id) {
-                    router.push(`/accomodations/${result.id}/edit`)
-                } else {
-                    router.push('/accomodations')
+                const result = await createMutation.mutateAsync({ ...data })
+                const accId = result?.id
+                if (accId && pendingFiles.length > 0) {
+                    const uploaded = await uploadFiles(pendingFiles, `accommodations/${accId}`)
+                    if (uploaded.length > 0) {
+                        await updateMutation.mutateAsync({
+                            id: accId,
+                            ...data,
+                            newImages: uploaded,
+                        })
+                    }
                 }
+                router.push(accId ? `/accomodations/${accId}/edit` : '/accomodations')
             }
             router.refresh()
         } catch (error) {
@@ -79,21 +104,14 @@ export default function AccomodationForm({ initialData }: AccomodationFormProps)
         }
     }
 
-    const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = e.target.files
         if (!files) return
 
         for (let i = 0; i < files.length; i++) {
             const file = files[i]
             if (!file) continue
-            const reader = new FileReader()
-            reader.onloadend = () => {
-                const base64 = (reader.result as string).split(',')[1]
-                if (base64) {
-                    setNewImages(prev => [...prev, { name: file.name, type: file.type, base64 }])
-                }
-            }
-            reader.readAsDataURL(file)
+            setPendingFiles(prev => [...prev, { file, previewUrl: URL.createObjectURL(file) }])
         }
     }
 
@@ -103,7 +121,11 @@ export default function AccomodationForm({ initialData }: AccomodationFormProps)
     }
 
     const removeNewImage = (index: number) => {
-        setNewImages(prev => prev.filter((_, i) => i !== index))
+        setPendingFiles(prev => {
+            const removed = prev[index]
+            if (removed) URL.revokeObjectURL(removed.previewUrl)
+            return prev.filter((_, i) => i !== index)
+        })
     }
 
     return (
@@ -180,9 +202,9 @@ export default function AccomodationForm({ initialData }: AccomodationFormProps)
                                         </button>
                                     </div>
                                 ))}
-                                {newImages.map((img, i) => (
+                                {pendingFiles.map((img, i) => (
                                     <div key={i} className="relative aspect-square rounded-md overflow-hidden bg-blue-50 border border-blue-200">
-                                        <img src={`data:${img.type};base64,${img.base64}`} alt="" className="object-cover w-full h-full opacity-60" />
+                                        <img src={img.previewUrl} alt="" className="object-cover w-full h-full opacity-60" />
                                         <div className="absolute inset-0 flex items-center justify-center">
                                             <span className="text-[10px] font-medium text-blue-700 bg-white/80 px-1 rounded">New</span>
                                         </div>

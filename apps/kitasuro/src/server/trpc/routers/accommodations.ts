@@ -3,12 +3,11 @@ import { accommodationImages, accommodations } from '@repo/db/schema';
 import { and, desc, eq, ilike, inArray, sql } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
 import { router, publicProcedure, protectedProcedure, escapeLikeQuery } from '../init';
-import { getPublicUrl, uploadToStorage } from '@/lib/storage';
+import { getPublicUrl } from '@/lib/storage';
 
-const imageSchema = z.object({
-  name: z.string().min(1).max(255),
-  type: z.string().min(1).max(100),
-  base64: z.string().min(1).max(14 * 1024 * 1024),
+const uploadedImageSchema = z.object({
+  key: z.string().min(1),
+  bucket: z.string().min(1),
 });
 
 export const accommodationsRouter = router({
@@ -139,7 +138,7 @@ export const accommodationsRouter = router({
         enhancedDescription: z.string().max(10000).optional(),
         latitude: z.string().optional(),
         longitude: z.string().optional(),
-        images: z.array(imageSchema).max(20).optional(),
+        images: z.array(uploadedImageSchema).max(20).optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -165,19 +164,10 @@ export const accommodationsRouter = router({
 
       if (input.images && input.images.length > 0) {
         for (const img of input.images) {
-          const buffer = Buffer.from(img.base64, 'base64');
-          const key = `accommodations/${newAcc.id}/${Date.now()}-${img.name}`;
-          const { bucket, key: storageKey } = await uploadToStorage({
-            file: buffer,
-            contentType: img.type,
-            key,
-            visibility: 'public',
-          });
-
           await ctx.db.insert(accommodationImages).values({
             accommodationId: newAcc.id,
-            bucket,
-            key: storageKey,
+            bucket: img.bucket,
+            key: img.key,
           });
         }
       }
@@ -196,7 +186,7 @@ export const accommodationsRouter = router({
         enhancedDescription: z.string().max(10000).optional(),
         latitude: z.string().optional(),
         longitude: z.string().optional(),
-        newImages: z.array(imageSchema).max(20).optional(),
+        newImages: z.array(uploadedImageSchema).max(20).optional(),
         removedImageIds: z.array(z.string()).max(50).optional(),
       }),
     )
@@ -227,19 +217,10 @@ export const accommodationsRouter = router({
 
       if (newImages && newImages.length > 0) {
         for (const img of newImages) {
-          const buffer = Buffer.from(img.base64, 'base64');
-          const key = `accommodations/${id}/${Date.now()}-${img.name}`;
-          const { bucket, key: storageKey } = await uploadToStorage({
-            file: buffer,
-            contentType: img.type,
-            key,
-            visibility: 'public',
-          });
-
           await ctx.db.insert(accommodationImages).values({
             accommodationId: id,
-            bucket,
-            key: storageKey,
+            bucket: img.bucket,
+            key: img.key,
           });
         }
       }
