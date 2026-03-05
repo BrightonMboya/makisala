@@ -32,7 +32,14 @@ import {
   X,
 } from 'lucide-react';
 import Image from 'next/image';
-import { AnimatedRouteMarker, Map, MapMarker, MapRoute, MarkerContent, MarkerTooltip } from '@repo/ui/map';
+import {
+  AnimatedRouteMarker,
+  Map,
+  MapMarker,
+  MapRoute,
+  MarkerContent,
+  MarkerTooltip,
+} from '@repo/ui/map';
 import type { ItineraryData } from '@/types/itinerary-types';
 import { cn } from '@/lib/utils';
 import { trpc } from '@/lib/trpc';
@@ -571,8 +578,11 @@ const JourneyOverview = ({ data }: { data: ItineraryData }) => (
                         : day.title}
                     </h4>
                     {(() => {
-                      const activityLocs = [...new Set(day.activities.map((a) => a.location).filter(Boolean))];
-                      const displayLocation = activityLocs.length > 0 ? activityLocs.join(' & ') : day.destination;
+                      const activityLocs = [
+                        ...new Set(day.activities.map((a) => a.location).filter(Boolean)),
+                      ];
+                      const displayLocation =
+                        activityLocs.length > 0 ? activityLocs.join(' & ') : day.destination;
                       return displayLocation ? (
                         <p className="flex items-center gap-1.5 text-sm text-stone-500">
                           <MapPin className="h-3.5 w-3.5" />
@@ -609,9 +619,6 @@ const PricingSection = ({ data, onConfirm }: { data: ItineraryData; onConfirm: (
           </p>
           <div className="mb-8">
             <span className="font-serif text-6xl text-white lg:text-7xl">{data.pricing.total}</span>
-            <span className="ml-4 text-lg text-stone-500">
-              {data.pricing.perPerson ? 'per person' : 'total'}
-            </span>
           </div>
           <p className="max-w-md text-base leading-relaxed font-light text-stone-400">
             A comprehensive journey including accommodations, expert guides, and unforgettable
@@ -707,7 +714,8 @@ const DaySection = ({
 
   // Derive location from activity locations, falling back to day.destination (national park)
   const activityLocations = [...new Set(day.activities.map((a) => a.location).filter(Boolean))];
-  const dayLocation = activityLocations.length > 0 ? activityLocations.join(' & ') : day.destination;
+  const dayLocation =
+    activityLocations.length > 0 ? activityLocations.join(' & ') : day.destination;
 
   // Destination image - previewImage first, then park's featured image, then fallback
   const destinationImage =
@@ -777,9 +785,7 @@ const DaySection = ({
                   d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"
                 />
               </svg>
-              <span className="text-xs font-medium tracking-wider uppercase">
-                Change Image
-              </span>
+              <span className="text-xs font-medium tracking-wider uppercase">Change Image</span>
             </button>
           </div>
         )}
@@ -792,7 +798,10 @@ const DaySection = ({
               viewport={{ once: true }}
             >
               <div className="mb-4 flex items-end gap-6">
-                <span className="-mb-2 font-serif text-8xl leading-none text-white/40 lg:text-9xl" style={{ textShadow: '0 2px 12px rgba(0,0,0,0.4)' }}>
+                <span
+                  className="-mb-2 font-serif text-8xl leading-none text-white/40 lg:text-9xl"
+                  style={{ textShadow: '0 2px 12px rgba(0,0,0,0.4)' }}
+                >
                   {String(day.day).padStart(2, '0')}
                 </span>
                 <div>
@@ -1050,9 +1059,7 @@ const DaySection = ({
                               {meal === 'Lunch' && (
                                 <UtensilsCrossed className="h-3.5 w-3.5 text-orange-600" />
                               )}
-                              {meal === 'Dinner' && (
-                                <Wine className="h-3.5 w-3.5 text-rose-600" />
-                              )}
+                              {meal === 'Dinner' && <Wine className="h-3.5 w-3.5 text-rose-600" />}
                               {meal}
                             </span>
                           ))}
@@ -1110,7 +1117,7 @@ const Footer = ({ data, onConfirm }: { data: ItineraryData; onConfirm: () => voi
               <p className="mb-4 text-xs font-light tracking-[0.3em] text-stone-500 uppercase">
                 About {data.organization.name}
               </p>
-              <p className="text-base leading-relaxed font-light text-stone-400 whitespace-pre-line">
+              <p className="text-base leading-relaxed font-light whitespace-pre-line text-stone-400">
                 {data.organization.aboutDescription}
               </p>
             </div>
@@ -1120,7 +1127,7 @@ const Footer = ({ data, onConfirm }: { data: ItineraryData; onConfirm: () => voi
               <p className="mb-4 text-xs font-light tracking-[0.3em] text-stone-500 uppercase">
                 Payment Terms & Conditions
               </p>
-              <p className="text-sm leading-relaxed font-light text-stone-500 whitespace-pre-line">
+              <p className="text-sm leading-relaxed font-light whitespace-pre-line text-stone-500">
                 {data.organization.paymentTerms}
               </p>
             </div>
@@ -1166,7 +1173,11 @@ interface DiscoveryThemeProps {
   onDayImageChange?: (dayNumber: number, url: string) => void;
 }
 
-export default function DiscoveryTheme({ data, onHeroImageChange, onDayImageChange }: DiscoveryThemeProps) {
+export default function DiscoveryTheme({
+  data,
+  onHeroImageChange,
+  onDayImageChange,
+}: DiscoveryThemeProps) {
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [confirmName, setConfirmName] = useState(data.clientName || '');
   const [isConfirming, setIsConfirming] = useState(false);
@@ -1214,13 +1225,20 @@ export default function DiscoveryTheme({ data, onHeroImageChange, onDayImageChan
       {data.itinerary.map((day, index) => (
         <React.Fragment key={day.day}>
           {index > 0 && (
-            <div className="flex items-center justify-center py-8 bg-white">
+            <div className="flex items-center justify-center bg-white py-8">
               <div className="h-px w-16 bg-stone-200" />
               <div className="mx-4 h-1.5 w-1.5 rounded-full bg-stone-300" />
               <div className="h-px w-16 bg-stone-200" />
             </div>
           )}
-          <DaySection day={day} data={data} isEven={index % 2 === 1} onDayImageChange={onDayImageChange} hoveredDayImage={hoveredDayImage} setHoveredDayImage={setHoveredDayImage} />
+          <DaySection
+            day={day}
+            data={data}
+            isEven={index % 2 === 1}
+            onDayImageChange={onDayImageChange}
+            hoveredDayImage={hoveredDayImage}
+            setHoveredDayImage={setHoveredDayImage}
+          />
         </React.Fragment>
       ))}
 

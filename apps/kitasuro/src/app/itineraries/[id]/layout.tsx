@@ -12,13 +12,73 @@ import { SidebarProvider, SidebarInset, SidebarTrigger } from '@repo/ui/sidebar'
 import { AppSidebar } from '@/components/app-sidebar';
 import { NotesPanel } from '@/components/notes-panel';
 import type { TravelerGroup } from '@/types/itinerary-types';
-import { useMemo, Suspense } from 'react';
+import { useMemo, Suspense, useState, useRef, useEffect } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { trpc } from '@/lib/trpc';
 import { toast } from '@repo/ui/toast';
 import { useProposalData, useClientData } from '@/lib/hooks/use-proposal-data';
 import { SessionProvider } from '@/components/session-context';
 import { PlanProvider } from '@/components/plan-context';
+
+function InlineEditableTitle({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [draft, setDraft] = useState(value);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    setDraft(value);
+  }, [value]);
+
+  useEffect(() => {
+    if (isEditing) {
+      inputRef.current?.focus();
+      inputRef.current?.select();
+    }
+  }, [isEditing]);
+
+  const commit = () => {
+    const trimmed = draft.trim();
+    onChange(trimmed);
+    setIsEditing(false);
+  };
+
+  if (isEditing) {
+    return (
+      <input
+        ref={inputRef}
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={commit}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') commit();
+          if (e.key === 'Escape') {
+            setDraft(value);
+            setIsEditing(false);
+          }
+        }}
+        className="rounded border border-stone-300 bg-white px-2 py-0.5 text-base font-medium text-stone-600 outline-none focus:border-green-500 focus:ring-1 focus:ring-green-500"
+        placeholder="New Tour Request"
+      />
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={() => setIsEditing(true)}
+      className="cursor-text rounded px-2 py-0.5 text-base font-medium text-stone-600 hover:bg-stone-100"
+      title="Click to edit tour name"
+    >
+      {value || 'New Tour Request'}
+    </button>
+  );
+}
 
 function Header() {
   const pathname = usePathname();
@@ -31,6 +91,7 @@ function Header() {
     setTravelerGroups,
     clientId,
     tourTitle,
+    setTourTitle,
     days,
     startDate,
     pricingRows,
@@ -199,9 +260,7 @@ function Header() {
             <div className="flex items-center gap-2 font-serif font-bold text-stone-900">
               <span className="text-lg">{clientName || 'New Client'}</span>
               <span className="text-stone-300">/</span>
-              <span className="text-base font-medium text-stone-600">
-                {tourTitle || 'New Tour Request'}
-              </span>
+              <InlineEditableTitle value={tourTitle} onChange={setTourTitle} />
             </div>
           </div>
         </div>
