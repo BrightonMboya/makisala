@@ -39,8 +39,8 @@ function extractMeta(html: string, attr: string, value: string) {
   return null;
 }
 
-function extractJsonLdBlocks(html: string) {
-  const blocks: any[] = [];
+function extractJsonLdBlocks(html: string): Record<string, unknown>[] {
+  const blocks: Record<string, unknown>[] = [];
   const re = /<script[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi;
   let match;
   while ((match = re.exec(html)) !== null) {
@@ -88,6 +88,8 @@ function extractListingId(url: string) {
   return m?.[1] ?? null;
 }
 
+// NOTE: These URL patterns are based on Airbnb's current CDN structure and may
+// need updating if Airbnb changes their image hosting paths.
 function extractListingImagesFromHtml(html: string, listingId: string | null) {
   const normalizedHtml = html.replace(/\\\//g, '/');
   const escapedListingId = listingId ? escapeRegExp(listingId) : null;

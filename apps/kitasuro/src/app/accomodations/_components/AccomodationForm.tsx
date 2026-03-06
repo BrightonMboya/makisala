@@ -8,6 +8,7 @@ import { Label } from '@repo/ui/label'
 import { Textarea } from '@repo/ui/textarea'
 import { Card, CardContent, CardHeader, CardTitle } from '@repo/ui/card'
 import { X, Upload, Loader2, MapPin, Link2 } from 'lucide-react'
+import { useToast } from '@repo/ui/use-toast'
 import { trpc } from '@/lib/trpc'
 
 interface AccomodationFormProps {
@@ -42,7 +43,8 @@ function isPendingFile(img: PendingImage): img is PendingFile {
 export default function AccomodationForm({ initialData }: AccomodationFormProps) {
     const router = useRouter()
     const [loading, setLoading] = useState(false)
-    const [images, setImages] = useState<any[]>(initialData?.images || [])
+    const { toast } = useToast()
+    const [images, setImages] = useState<{ id: string; imageUrl: string }[]>(initialData?.images || [])
     const [pendingImages, setPendingImages] = useState<PendingImage[]>([])
     const [removedImageIds, setRemovedImageIds] = useState<string[]>([])
     const createMutation = trpc.accommodations.create.useMutation()
@@ -108,7 +110,11 @@ export default function AccomodationForm({ initialData }: AccomodationFormProps)
                 lngRef.current.value = String(data.location.longitude)
             }
         } catch (error) {
-            alert(error instanceof Error ? error.message : 'Failed to scrape Airbnb listing')
+            toast({
+                title: 'Import failed',
+                description: error instanceof Error ? error.message : 'Failed to scrape Airbnb listing',
+                variant: 'destructive',
+            })
         } finally {
             setScraping(false)
         }
@@ -200,7 +206,11 @@ export default function AccomodationForm({ initialData }: AccomodationFormProps)
             }
             router.refresh()
         } catch (error) {
-            alert('Failed to save accomodation')
+            toast({
+                title: 'Save failed',
+                description: 'Failed to save accomodation',
+                variant: 'destructive',
+            })
         } finally {
             setLoading(false)
         }
