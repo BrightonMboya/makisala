@@ -97,8 +97,6 @@ export function CreatableAsyncCombobox({
     const seq = ++searchSeqRef.current;
     setIsLoading(true);
 
-    const controller = new AbortController();
-
     onSearch(trimmed)
       .then((results) => {
         if (searchSeqRef.current === seq) {
@@ -113,8 +111,6 @@ export function CreatableAsyncCombobox({
           setItems([]);
         }
       });
-
-    return () => controller.abort();
   }, [debouncedSearch, open, onSearch]);
 
   const handleOpenChange = React.useCallback((isOpen: boolean) => {

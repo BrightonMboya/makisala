@@ -46,7 +46,7 @@ import { Input } from '@repo/ui/input';
 import type { BuilderActivity, BuilderDay, TransportModeType } from '@/types/itinerary-types';
 import { addDays, format } from 'date-fns';
 import { trpc } from '@/lib/trpc';
-import { searchPlaces } from '@/lib/geocoding';
+import { searchPlaces, parseGeoValue, buildGeoValue } from '@/lib/geocoding';
 
 type Day = BuilderDay;
 type Activity = BuilderActivity;
@@ -303,7 +303,7 @@ function SortableDayRow({
       const results = await searchPlaces(query, countries);
 
       return results.map((r) => ({
-        value: `geo:${r.latitude},${r.longitude}::${r.name}`,
+        value: buildGeoValue(r.latitude, r.longitude, r.name),
         label: r.displayName,
       }));
     },
@@ -312,8 +312,8 @@ function SortableDayRow({
 
   // Get destination label from stored value
   const handleGetDestinationLabel = useCallback(async (id: string) => {
-    const geoMatch = id.match(/^geo:(-?[\d.]+),(-?[\d.]+)::(.+)$/);
-    if (geoMatch) return geoMatch[3]!;
+    const geo = parseGeoValue(id);
+    if (geo) return geo.name;
     return id;
   }, []);
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
@@ -391,17 +391,13 @@ function SortableDayRow({
           <CreatableAsyncCombobox
             value={day.destination}
             onChange={(val) => {
-              const geoMatch = val.match(/^geo:(-?[\d.]+),(-?[\d.]+)::(.+)$/);
-              if (geoMatch) {
-                // Photon geocoding result — store name + coordinates
-                const lat = parseFloat(geoMatch[1]!);
-                const lng = parseFloat(geoMatch[2]!);
-                const name = geoMatch[3]!;
+              const geo = parseGeoValue(val);
+              if (geo) {
                 onUpdateMultiple(day.id, {
                   destination: val,
-                  destinationName: name,
-                  destinationLat: lat,
-                  destinationLng: lng,
+                  destinationName: geo.name,
+                  destinationLat: geo.lat,
+                  destinationLng: geo.lng,
                 });
               } else {
                 // National park UUID or custom text — clear geo coords

@@ -15,7 +15,7 @@ import { Label } from '@repo/ui/label';
 import { airports } from '@/lib/data/itinerary-data';
 import { useBuilder } from '@/components/itinerary-builder/builder-context';
 import { CreatableAsyncCombobox } from '@/components/itinerary-builder/creatable-async-combobox';
-import { searchPlaces } from '@/lib/geocoding';
+import { searchPlaces, parseGeoValue, buildGeoValue } from '@/lib/geocoding';
 import { CountryPicker } from '@/components/itinerary-builder/country-picker';
 
 export default function DayByDayPage() {
@@ -50,7 +50,7 @@ export default function DayByDayPage() {
       const countryList = countries.length > 0 ? countries : country ? [country] : undefined;
       const results = await searchPlaces(query, countryList);
       return results.map((r) => ({
-        value: `geo:${r.latitude},${r.longitude}::${r.name}`,
+        value: buildGeoValue(r.latitude, r.longitude, r.name),
         label: r.displayName,
       }));
     },
@@ -68,13 +68,10 @@ export default function DayByDayPage() {
         setCoords(null);
         return;
       }
-      const match = value.match(/^geo:(-?[\d.]+),(-?[\d.]+)::(.+)$/);
-      if (match) {
-        const lat = parseFloat(match[1]!);
-        const lng = parseFloat(match[2]!);
-        const name = match[3]!;
-        setCity(name);
-        setCoords([lng, lat]);
+      const geo = parseGeoValue(value);
+      if (geo) {
+        setCity(geo.name);
+        setCoords([geo.lng, geo.lat]);
       } else {
         setCity(value);
         setCoords(null);

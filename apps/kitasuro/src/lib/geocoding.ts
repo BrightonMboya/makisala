@@ -51,6 +51,18 @@ function buildDisplayName(p: PhotonFeature['properties']): string {
   return unique.join(', ');
 }
 
+const GEO_VALUE_RE = /^geo:(-?[\d.]+),(-?[\d.]+)::(.+)$/;
+
+export function parseGeoValue(value: string) {
+  const match = value.match(GEO_VALUE_RE);
+  if (!match) return null;
+  return { lat: parseFloat(match[1]!), lng: parseFloat(match[2]!), name: match[3]! };
+}
+
+export function buildGeoValue(lat: number, lng: number, name: string) {
+  return `geo:${lat},${lng}::${name}`;
+}
+
 export async function searchPlaces(
   query: string,
   countries?: string[],
@@ -62,7 +74,8 @@ export async function searchPlaces(
     lang: 'en',
   });
 
-  // Use location bias from the first country to prioritize nearby results
+  // Photon's location bias ranks nearby results higher but does NOT
+  // restrict results to the given country — unrelated regions may still appear.
   if (countries && countries.length > 0) {
     const center = COUNTRY_CENTERS[countries[0]!.toLowerCase()];
     if (center) {

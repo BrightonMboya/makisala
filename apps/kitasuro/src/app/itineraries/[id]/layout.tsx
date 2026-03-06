@@ -18,6 +18,7 @@ import { trpc } from '@/lib/trpc';
 import { toast } from '@repo/ui/toast';
 import { useProposalData, useClientData } from '@/lib/hooks/use-proposal-data';
 import { SessionProvider } from '@/components/session-context';
+import { buildGeoValue } from '@/lib/geocoding';
 import { PlanProvider } from '@/components/plan-context';
 
 function InlineEditableTitle({
@@ -548,7 +549,7 @@ function BuilderLayoutInner({ children }: { children: React.ReactNode }) {
           date: undefined,
           destination: day.nationalParkId
             || (day.destinationLat && day.destinationLng
-              ? `geo:${day.destinationLat},${day.destinationLng}::${day.destinationName || 'Destination'}`
+              ? buildGeoValue(parseFloat(day.destinationLat), parseFloat(day.destinationLng), day.destinationName || 'Destination')
               : null),
           destinationName: day.destinationName || null,
           destinationLat: day.destinationLat ? parseFloat(day.destinationLat) : null,
