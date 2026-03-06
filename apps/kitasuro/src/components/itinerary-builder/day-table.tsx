@@ -43,11 +43,10 @@ import { CreatableAsyncCombobox } from './creatable-async-combobox';
 import { Textarea } from '@repo/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@repo/ui/select';
 import { Input } from '@repo/ui/input';
-import type { TransportModeType } from '@/types/itinerary-types';
+import type { BuilderActivity, BuilderDay, TransportModeType } from '@/types/itinerary-types';
 import { addDays, format } from 'date-fns';
 import { trpc } from '@/lib/trpc';
-
-import type { BuilderActivity, BuilderDay } from '@/types/itinerary-types';
+import { searchPlaces, parseGeoValue, buildGeoValue } from '@/lib/geocoding';
 
 type Day = BuilderDay;
 type Activity = BuilderActivity;
@@ -56,10 +55,12 @@ export function DayTable({
   days,
   setDays,
   startDate,
+  countries,
 }: {
   days: Day[];
   setDays: React.Dispatch<React.SetStateAction<Day[]>>;
   startDate?: Date;
+  countries?: string[];
 }) {
   const [isActivityModalOpen, setIsActivityModalOpen] = useState(false);
   const [selectedDayId, setSelectedDayId] = useState<string | null>(null);
@@ -154,10 +155,21 @@ export function DayTable({
   };
 
   const handleUpdateDay = (dayId: string, field: keyof Day, value: any) => {
-    setDays(
-      days.map((day) => {
+    setDays((prev) =>
+      prev.map((day) => {
         if (day.id === dayId) {
           return { ...day, [field]: value };
+        }
+        return day;
+      }),
+    );
+  };
+
+  const handleUpdateDayMultiple = (dayId: string, updates: Partial<Day>) => {
+    setDays((prev) =>
+      prev.map((day) => {
+        if (day.id === dayId) {
+          return { ...day, ...updates };
         }
         return day;
       }),
@@ -185,11 +197,13 @@ export function DayTable({
               <SortableDayRow
                 key={day.id}
                 day={day}
+                countries={countries}
                 onAddActivity={handleAddActivity}
                 onToggleMeal={handleToggleMeal}
                 onDelete={handleDeleteDay}
                 onDuplicate={handleDuplicateDay}
                 onUpdate={handleUpdateDay}
+                onUpdateMultiple={handleUpdateDayMultiple}
               />
             ))}
           </div>
@@ -230,6 +244,7 @@ export function DayTable({
           dayId={selectedDay.dayNumber.toString()}
           initialActivities={selectedDay.activities}
           onSave={(activities) => handleSaveActivities(selectedDay.id, activities)}
+          countries={countries}
         />
       )}
     </div>
@@ -238,26 +253,33 @@ export function DayTable({
 
 function SortableDayRow({
   day,
+  countries,
   onAddActivity,
   onToggleMeal,
   onDelete,
   onDuplicate,
   onUpdate,
+  onUpdateMultiple,
 }: {
   day: Day;
+  countries?: string[];
   onAddActivity: (id: string) => void;
   onToggleMeal: (id: string, meal: 'breakfast' | 'lunch' | 'dinner') => void;
   onDelete: (id: string) => void;
   onDuplicate: (id: string) => void;
   onUpdate: (id: string, field: keyof Day, value: any) => void;
+  onUpdateMultiple: (id: string, updates: Partial<Day>) => void;
 }) {
   const utils = trpc.useUtils();
 
   // Callbacks for async accommodation search
-  const handleAccommodationSearch = useCallback(async (query: string) => {
-    const results = await utils.accommodations.search.fetch({ query, limit: 10 });
-    return results.map((acc) => ({ value: acc.id, label: acc.name }));
-  }, [utils]);
+  const handleAccommodationSearch = useCallback(
+    async (query: string) => {
+      const results = await utils.accommodations.search.fetch({ query, limit: 10 });
+      return results.map((acc) => ({ value: acc.id, label: acc.name }));
+    },
+    [utils],
+  );
 
   // Only fetch label if we don't already have the accommodation name
   // This prevents N+1 queries when proposal data already includes names
@@ -274,22 +296,26 @@ function SortableDayRow({
   );
 
   // Destination search handler
-  const handleDestinationSearch = useCallback(async (query: string) => {
-    const results = await utils.nationalParks.search.fetch({ query, limit: 10 });
-    return results.map((p) => ({ value: p.id, label: p.name }));
-  }, [utils]);
+  const handleDestinationSearch = useCallback(
+    async (query: string) => {
+      if (query.length < 2) return [];
 
-  // Get destination label by ID
+      const results = await searchPlaces(query, countries);
+
+      return results.map((r) => ({
+        value: buildGeoValue(r.latitude, r.longitude, r.name),
+        label: r.displayName,
+      }));
+    },
+    [countries],
+  );
+
+  // Get destination label from stored value
   const handleGetDestinationLabel = useCallback(async (id: string) => {
-    // Check if it's a UUID (national park ID) vs custom text
-    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
-    if (!isUUID) {
-      // Custom text, return as-is
-      return id;
-    }
-    const park = await utils.nationalParks.getById.fetch({ id });
-    return park?.name || null;
-  }, [utils]);
+    const geo = parseGeoValue(id);
+    if (geo) return geo.name;
+    return id;
+  }, []);
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: day.id,
   });
@@ -364,9 +390,28 @@ function SortableDayRow({
         <div className="col-span-3 min-w-0">
           <CreatableAsyncCombobox
             value={day.destination}
-            onChange={(val) => onUpdate(day.id, 'destination', val)}
+            onChange={(val) => {
+              const geo = parseGeoValue(val);
+              if (geo) {
+                onUpdateMultiple(day.id, {
+                  destination: val,
+                  destinationName: geo.name,
+                  destinationLat: geo.lat,
+                  destinationLng: geo.lng,
+                });
+              } else {
+                // National park UUID or custom text — clear geo coords
+                onUpdateMultiple(day.id, {
+                  destination: val,
+                  destinationName: null,
+                  destinationLat: null,
+                  destinationLng: null,
+                });
+              }
+            }}
             onSearch={handleDestinationSearch}
             onGetLabel={handleGetDestinationLabel}
+            initialLabel={day.destinationName}
             placeholder="Select Destination"
             createLabel="Use"
           />
@@ -553,16 +598,9 @@ function SortableDayRow({
                   distanceKm: null,
                   notes: '',
                 };
-                // Pre-populate origin from the day's destination
-                if (day.destination && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(day.destination)) {
-                  onUpdate(day.id, 'transfer', emptyTransfer);
-                  const park = await utils.nationalParks.getById.fetch({ id: day.destination });
-                  if (park) {
-                    onUpdate(day.id, 'transfer', { ...emptyTransfer, originName: park.name });
-                  }
-                } else {
-                  onUpdate(day.id, 'transfer', { ...emptyTransfer, originName: day.destination || '' });
-                }
+                // Pre-populate origin from the day's destination name
+                const originName = day.destinationName || '';
+                onUpdate(day.id, 'transfer', { ...emptyTransfer, originName });
               }
               setIsTransferExpanded(true);
             }}
@@ -640,7 +678,9 @@ function TransferFields({
             className="h-9 text-xs"
             placeholder="e.g. Akagera NP, Lodge name..."
             value={current.destinationName}
-            onChange={(e) => onUpdate({ ...current, destinationId: null, destinationName: e.target.value })}
+            onChange={(e) =>
+              onUpdate({ ...current, destinationId: null, destinationName: e.target.value })
+            }
           />
         </div>
       </div>
@@ -662,7 +702,9 @@ function TransferFields({
           </Select>
         </div>
         <div className="space-y-1">
-          <label className="text-[10px] font-medium text-stone-500 uppercase">Duration (hours)</label>
+          <label className="text-[10px] font-medium text-stone-500 uppercase">
+            Duration (hours)
+          </label>
           <Input
             type="number"
             min={0}

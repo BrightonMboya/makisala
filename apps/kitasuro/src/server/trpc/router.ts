@@ -11,7 +11,6 @@ import { contentLibraryRouter } from './routers/contentLibrary';
 import { settingsRouter } from './routers/settings';
 import { toursRouter } from './routers/tours';
 import { proposalsRouter } from './routers/proposals';
-
 export const appRouter = router({
   clients: clientsRouter,
   nationalParks: nationalParksRouter,

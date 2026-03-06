@@ -4,7 +4,7 @@ import { Button } from '@repo/ui/button';
 import { ArrowRight, CheckCircle } from 'lucide-react';
 import { DayTable } from '@/components/itinerary-builder/day-table';
 import { DatePicker } from '@repo/ui/date-picker';
-import { useEffect, useMemo, useRef } from 'react';
+import React, { useCallback, useEffect, useRef } from 'react';
 import { addDays, format } from 'date-fns';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
@@ -13,8 +13,9 @@ import { Combobox } from '@repo/ui/combobox';
 import { Checkbox } from '@repo/ui/checkbox';
 import { Label } from '@repo/ui/label';
 import { airports } from '@/lib/data/itinerary-data';
-import { CITIES } from '@/lib/data/cities';
 import { useBuilder } from '@/components/itinerary-builder/builder-context';
+import { CreatableAsyncCombobox } from '@/components/itinerary-builder/creatable-async-combobox';
+import { searchPlaces, parseGeoValue, buildGeoValue } from '@/lib/geocoding';
 import { CountryPicker } from '@/components/itinerary-builder/country-picker';
 
 export default function DayByDayPage() {
@@ -28,8 +29,12 @@ export default function DayByDayPage() {
     setStartDate,
     startCity,
     setStartCity,
+    startCityCoordinates,
+    setStartCityCoordinates,
     endCity,
     setEndCity,
+    endCityCoordinates,
+    setEndCityCoordinates,
     transferIncluded,
     setTransferIncluded,
     pickupPoint,
@@ -39,17 +44,41 @@ export default function DayByDayPage() {
     setCountries,
   } = useBuilder();
 
-  // Filter cities based on selected countries (multi-country support)
-  // Note: Use city.value (lowercase) as the value prop because cmdk lowercases values internally
-  const citiesList = useMemo(() => {
-    const countryValues = countries.length > 0
-      ? countries.map((c) => c.toLowerCase())
-      : country ? [country.toLowerCase()] : [];
-    const filtered = countryValues.length > 0
-      ? CITIES.filter((city) => countryValues.includes(city.country))
-      : CITIES;
-    return filtered.map((city) => ({ value: city.value, label: city.label }));
-  }, [countries, country]);
+  const searchCities = useCallback(
+    async (query: string) => {
+      if (!query) return [];
+      const countryList = countries.length > 0 ? countries : country ? [country] : undefined;
+      const results = await searchPlaces(query, countryList);
+      return results.map((r) => ({
+        value: buildGeoValue(r.latitude, r.longitude, r.name),
+        label: r.displayName,
+      }));
+    },
+    [countries, country],
+  );
+
+  const handleCitySelect = useCallback(
+    (
+      value: string,
+      setCity: React.Dispatch<React.SetStateAction<string>>,
+      setCoords: React.Dispatch<React.SetStateAction<[number, number] | null>>,
+    ) => {
+      if (!value) {
+        setCity('');
+        setCoords(null);
+        return;
+      }
+      const geo = parseGeoValue(value);
+      if (geo) {
+        setCity(geo.name);
+        setCoords([geo.lng, geo.lat]);
+      } else {
+        setCity(value);
+        setCoords(null);
+      }
+    },
+    [],
+  );
 
   // Track if we've already updated dates for this startDate
   const lastStartDateRef = useRef<Date | undefined>(undefined);
@@ -99,12 +128,15 @@ export default function DayByDayPage() {
                   <span className="ml-2 text-green-600 capitalize">({country})</span>
                 )}
               </label>
-              <Combobox
-                items={citiesList}
-                value={startCity}
-                onChange={setStartCity}
-                placeholder="Select start city"
+              <CreatableAsyncCombobox
+                value={startCity || null}
+                onChange={(v) => handleCitySelect(v, setStartCity, setStartCityCoordinates)}
+                onSearch={searchCities}
+                initialLabel={startCity || null}
+                placeholder="Search start city..."
+                createLabel="Use"
                 className="border-stone-200 bg-stone-50"
+
               />
             </div>
             <div className="space-y-2">
@@ -114,12 +146,15 @@ export default function DayByDayPage() {
                   <span className="ml-2 text-green-600 capitalize">({country})</span>
                 )}
               </label>
-              <Combobox
-                items={citiesList}
-                value={endCity}
-                onChange={setEndCity}
-                placeholder="Select end city"
+              <CreatableAsyncCombobox
+                value={endCity || null}
+                onChange={(v) => handleCitySelect(v, setEndCity, setEndCityCoordinates)}
+                onSearch={searchCities}
+                initialLabel={endCity || null}
+                placeholder="Search end city..."
+                createLabel="Use"
                 className="border-stone-200 bg-stone-50"
+
               />
             </div>
           </div>
@@ -179,6 +214,7 @@ export default function DayByDayPage() {
           days={days}
           setDays={setDays}
           startDate={startDate}
+          countries={countries.length > 0 ? countries : country ? [country] : undefined}
         />
       </div>
 

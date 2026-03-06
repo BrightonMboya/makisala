@@ -18,6 +18,7 @@ import { trpc } from '@/lib/trpc';
 import { toast } from '@repo/ui/toast';
 import { useProposalData, useClientData } from '@/lib/hooks/use-proposal-data';
 import { SessionProvider } from '@/components/session-context';
+import { buildGeoValue } from '@/lib/geocoding';
 import { PlanProvider } from '@/components/plan-context';
 
 function InlineEditableTitle({
@@ -97,7 +98,9 @@ function Header() {
     pricingRows,
     extras,
     startCity,
+    startCityCoordinates,
     endCity,
+    endCityCoordinates,
     pickupPoint,
     transferIncluded,
     inclusions,
@@ -133,7 +136,11 @@ function Header() {
         clientId,
         tourTitle,
         startCity,
+        startCityLat: startCityCoordinates ? String(startCityCoordinates[1]) : null,
+        startCityLng: startCityCoordinates ? String(startCityCoordinates[0]) : null,
         endCity,
+        endCityLat: endCityCoordinates ? String(endCityCoordinates[1]) : null,
+        endCityLng: endCityCoordinates ? String(endCityCoordinates[0]) : null,
         pickupPoint,
         transferIncluded,
         inclusions,
@@ -184,7 +191,11 @@ function Header() {
         clientId,
         tourTitle,
         startCity,
+        startCityLat: startCityCoordinates ? String(startCityCoordinates[1]) : null,
+        startCityLng: startCityCoordinates ? String(startCityCoordinates[0]) : null,
         endCity,
+        endCityLat: endCityCoordinates ? String(endCityCoordinates[1]) : null,
+        endCityLng: endCityCoordinates ? String(endCityCoordinates[0]) : null,
         pickupPoint,
         transferIncluded,
         inclusions,
@@ -536,7 +547,13 @@ function BuilderLayoutInner({ children }: { children: React.ReactNode }) {
           dayNumber: day.dayNumber,
           title: day.title || undefined,
           date: undefined,
-          destination: day.nationalParkId || null,
+          destination: day.nationalParkId
+            || (day.destinationLat && day.destinationLng
+              ? buildGeoValue(parseFloat(day.destinationLat), parseFloat(day.destinationLng), day.destinationName || 'Destination')
+              : null),
+          destinationName: day.destinationName || null,
+          destinationLat: day.destinationLat ? parseFloat(day.destinationLat) : null,
+          destinationLng: day.destinationLng ? parseFloat(day.destinationLng) : null,
           accommodation: day.accommodations?.[0]?.accommodationId || null,
           accommodationName: day.accommodations?.[0]?.accommodation?.name || null,
           description: day.description || '',

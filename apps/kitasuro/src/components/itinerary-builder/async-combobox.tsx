@@ -166,8 +166,8 @@ export function AsyncCombobox({
                   <CommandItem
                     key={item.value}
                     value={item.value}
-                    onSelect={(currentValue) => {
-                      onChange(currentValue === value ? '' : currentValue);
+                    onSelect={() => {
+                      onChange(item.value === value ? '' : item.value);
                       setDisplayLabel(item.label);
                       setOpen(false);
                     }}
