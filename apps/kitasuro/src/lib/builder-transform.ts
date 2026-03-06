@@ -17,7 +17,6 @@ import type {
   TripOverview,
 } from '@/types/itinerary-types';
 import { capitalize } from '@/lib/utils';
-import { CITIES } from '@/lib/data/cities';
 
 // Transport mode labels
 const transportModeLabels: Record<TransportModeType, string> = {
@@ -57,46 +56,6 @@ function calculatePricing(
   };
 }
 
-function getCityCoordinates(city: string | null): Location | undefined {
-  if (!city) return undefined;
-  const cityLower = city.toLowerCase().trim();
-
-  // Try exact match by value first (value is lowercase like "kigali")
-  const exactMatch = CITIES.find((c) => c.value === cityLower);
-  if (exactMatch) {
-    return {
-      name: exactMatch.label,
-      coordinates: exactMatch.coordinates,
-    };
-  }
-
-  // Try match by label (case-insensitive)
-  const labelMatch = CITIES.find((c) => c.label.toLowerCase() === cityLower);
-  if (labelMatch) {
-    return {
-      name: labelMatch.label,
-      coordinates: labelMatch.coordinates,
-    };
-  }
-
-  // Try partial match
-  const partialMatch = CITIES.find(
-    (c) =>
-      cityLower.includes(c.value) ||
-      c.value.includes(cityLower) ||
-      cityLower.includes(c.label.toLowerCase()) ||
-      c.label.toLowerCase().includes(cityLower),
-  );
-  if (partialMatch) {
-    return {
-      name: partialMatch.label,
-      coordinates: partialMatch.coordinates,
-    };
-  }
-
-  return undefined;
-}
-
 // Transform builder context data to ItineraryData format (for preview page)
 // This is a client-safe function that doesn't use database imports
 export function transformBuilderToItineraryData(params: {
@@ -112,7 +71,9 @@ export function transformBuilderToItineraryData(params: {
   selectedTheme: ThemeType;
   heroImage: string;
   startCity?: string;
+  startCityCoordinates?: [number, number] | null;
   endCity?: string;
+  endCityCoordinates?: [number, number] | null;
   tourType?: string;
   country?: string;
   nationalParksMap: Record<
@@ -145,7 +106,9 @@ export function transformBuilderToItineraryData(params: {
     selectedTheme,
     heroImage,
     startCity,
+    startCityCoordinates,
     endCity,
+    endCityCoordinates,
     tourType,
     country: countryParam,
     nationalParksMap,
@@ -169,9 +132,13 @@ export function transformBuilderToItineraryData(params: {
       };
     });
 
-    // Get destination name only from a resolved national park
+    // Get destination name from national park or stored name (for Nominatim results)
     const destinationData = day.destination ? nationalParksMap[day.destination] : null;
-    const destinationName = destinationData?.name ? capitalize(destinationData.name) : '';
+    const destinationName = destinationData?.name
+      ? capitalize(destinationData.name)
+      : day.destinationName
+        ? capitalize(day.destinationName)
+        : '';
 
     // Use user-set title if defined, otherwise generate from destination/activity
     let title = day.title !== undefined
@@ -264,17 +231,23 @@ export function transformBuilderToItineraryData(params: {
 
   // Generate map data (simplified for preview)
   const mapLocations: Location[] = [];
-  const seenParks = new Set<string>();
+  const seenDestinations = new Set<string>();
 
   days.forEach((day) => {
-    if (day.destination && !seenParks.has(day.destination)) {
-      seenParks.add(day.destination);
+    if (day.destination && !seenDestinations.has(day.destination)) {
+      seenDestinations.add(day.destination);
       const parkData = nationalParksMap[day.destination];
-      // All national parks must have coordinates in the database
       if (parkData?.longitude && parkData?.latitude) {
+        // National park with coordinates from DB
         mapLocations.push({
           name: parkData.name,
           coordinates: [parseFloat(parkData.longitude), parseFloat(parkData.latitude)],
+        });
+      } else if (day.destinationLat != null && day.destinationLng != null) {
+        // Non-park destination with stored coordinates (from Nominatim)
+        mapLocations.push({
+          name: day.destinationName || day.destination,
+          coordinates: [day.destinationLng, day.destinationLat],
         });
       }
     }
@@ -282,9 +255,13 @@ export function transformBuilderToItineraryData(params: {
 
   const duration = `${days.length} Days`;
 
-  // Get start/end city locations
-  const startLocation = getCityCoordinates(startCity || null);
-  const endLocation = getCityCoordinates(endCity || null);
+  // Get start/end city locations from stored coordinates
+  const startLocation: Location | undefined = startCityCoordinates
+    ? { name: startCity || 'Start', coordinates: startCityCoordinates }
+    : undefined;
+  const endLocation: Location | undefined = endCityCoordinates
+    ? { name: endCity || 'End', coordinates: endCityCoordinates }
+    : undefined;
 
   // Build trip overview for theme display
   const totalTravelers = travelerGroups.reduce((acc, g) => acc + g.count, 0);
@@ -295,7 +272,7 @@ export function transformBuilderToItineraryData(params: {
   days.forEach((day) => {
     if (day.destination) {
       const parkData = nationalParksMap[day.destination];
-      const rawName = parkData?.name || day.destination;
+      const rawName = parkData?.name || day.destinationName || day.destination;
       const name = capitalize(rawName);
       if (!seenDestNames.has(name)) {
         seenDestNames.add(name);

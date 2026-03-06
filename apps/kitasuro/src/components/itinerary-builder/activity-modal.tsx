@@ -35,6 +35,7 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import { CreatableAsyncCombobox } from './creatable-async-combobox';
 import { trpc } from '@/lib/trpc';
+import { searchPlaces } from '@/lib/geocoding';
 
 const moments = ['Morning', 'Afternoon', 'Evening', 'Half Day', 'Full Day', 'Night'] as const;
 
@@ -44,12 +45,14 @@ export function ActivityModal({
   dayId,
   initialActivities,
   onSave,
+  countries,
 }: {
   isOpen: boolean;
   onClose: () => void;
   dayId: string | null;
   initialActivities: Activity[];
   onSave: (activities: Activity[]) => void;
+  countries?: string[];
 }) {
   const [activities, setActivities] = useState<Activity[]>([]);
   const utils = trpc.useUtils();
@@ -67,11 +70,12 @@ export function ActivityModal({
     return { value: activity.name, label: activity.name };
   }, [createActivityMutation]);
 
-  // Location search handler
+  // Location search handler — Photon autocomplete
   const handleLocationSearch = useCallback(async (query: string) => {
-    const results = await utils.nationalParks.search.fetch({ query, limit: 10 });
-    return results.map((p) => ({ value: p.name, label: p.name }));
-  }, [utils]);
+    if (query.length < 2) return [];
+    const results = await searchPlaces(query, countries);
+    return results.map((r) => ({ value: r.name, label: r.displayName }));
+  }, [countries]);
 
   useEffect(() => {
     if (isOpen) {

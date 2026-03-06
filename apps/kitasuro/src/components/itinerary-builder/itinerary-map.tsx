@@ -25,15 +25,24 @@ export function ItineraryMap({ days, className, nationalParksMap = {}, startLoca
 
     days.forEach((day) => {
       if (day.destination) {
-        // Only add if not the same as the last point to avoid loops in the line drawing if staying multiple days
         const lastPoint = points[points.length - 1];
-        if (!lastPoint || lastPoint.name !== day.destination) {
-          const park = nationalParksMap[day.destination];
-          // All national parks must have coordinates in the database
-          if (park?.longitude && park?.latitude) {
+        const park = nationalParksMap[day.destination];
+        if (park?.longitude && park?.latitude) {
+          // National park with coordinates from DB
+          if (!lastPoint || lastPoint.name !== park.name) {
             points.push({
               name: park.name,
               coordinates: [parseFloat(park.longitude), parseFloat(park.latitude)],
+              day: day.dayNumber,
+            });
+          }
+        } else if (day.destinationLat != null && day.destinationLng != null) {
+          // Non-park destination with stored coordinates (from Nominatim)
+          const name = day.destinationName || day.destination;
+          if (!lastPoint || lastPoint.name !== name) {
+            points.push({
+              name,
+              coordinates: [day.destinationLng, day.destinationLat],
               day: day.dayNumber,
             });
           }

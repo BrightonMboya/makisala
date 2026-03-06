@@ -14,49 +14,8 @@ import type {
   TripOverview,
 } from '@/types/itinerary-types';
 import type { Proposal } from '@repo/db/schema';
-import { CITIES } from '@/lib/data/cities';
 import { getPublicUrl } from '@/lib/storage';
 import { capitalize } from '@/lib/utils';
-
-function getCityCoordinates(city: string | null): Location | undefined {
-  if (!city) return undefined;
-  const cityLower = city.toLowerCase().trim();
-
-  // Try exact match by value first (value is lowercase like "kigali")
-  const exactMatch = CITIES.find((c) => c.value === cityLower);
-  if (exactMatch) {
-    return {
-      name: exactMatch.label,
-      coordinates: exactMatch.coordinates,
-    };
-  }
-
-  // Try match by label (case-insensitive)
-  const labelMatch = CITIES.find((c) => c.label.toLowerCase() === cityLower);
-  if (labelMatch) {
-    return {
-      name: labelMatch.label,
-      coordinates: labelMatch.coordinates,
-    };
-  }
-
-  // Try partial match
-  const partialMatch = CITIES.find(
-    (c) =>
-      cityLower.includes(c.value) ||
-      c.value.includes(cityLower) ||
-      cityLower.includes(c.label.toLowerCase()) ||
-      c.label.toLowerCase().includes(cityLower),
-  );
-  if (partialMatch) {
-    return {
-      name: partialMatch.label,
-      coordinates: partialMatch.coordinates,
-    };
-  }
-
-  return undefined;
-}
 
 // Transport mode labels
 const transportModeLabels: Record<TransportModeType, string> = {
@@ -113,6 +72,9 @@ export async function transformProposalToItineraryData(
       title: string | null;
       description: string | null;
       previewImage?: string | null;
+      destinationName?: string | null;
+      destinationLat?: string | null;
+      destinationLng?: string | null;
       nationalPark?: {
         id: string;
         name: string;
@@ -198,7 +160,11 @@ export async function transformProposalToItineraryData(
     });
 
     // Use stored title, or generate from destination/activity (same logic as builder-transform)
-    const destinationName = day.nationalPark ? capitalize(day.nationalPark.name) : '';
+    const destinationName = day.nationalPark
+      ? capitalize(day.nationalPark.name)
+      : day.destinationName
+        ? capitalize(day.destinationName)
+        : '';
     let title = day.title || '';
     if (!title || title === `Day ${day.dayNumber}`) {
       // Regenerate if title was never set or is just the default placeholder
@@ -249,7 +215,7 @@ export async function transformProposalToItineraryData(
       date: dateStr,
       title,
       description: day.description || undefined,
-      destination: day.nationalPark?.name ? capitalize(day.nationalPark.name) : undefined,
+      destination: destinationName || undefined,
       nationalParkId: day.nationalPark?.id,
       activities,
       accommodation: accommodationName,
@@ -286,14 +252,13 @@ export async function transformProposalToItineraryData(
   });
   const accommodations = Array.from(accommodationMap.values());
 
-  // Generate map data from national parks
+  // Generate map data from national parks and non-park destinations
   const mapLocations: Location[] = [];
-  const seenParks = new Set<string>();
+  const seenDestinations = new Set<string>();
 
   proposalDays.forEach((day) => {
-    if (day.nationalPark && !seenParks.has(day.nationalPark.id)) {
-      seenParks.add(day.nationalPark.id);
-      // All national parks must have coordinates in the database
+    if (day.nationalPark && !seenDestinations.has(day.nationalPark.id)) {
+      seenDestinations.add(day.nationalPark.id);
       if (day.nationalPark.latitude && day.nationalPark.longitude) {
         mapLocations.push({
           name: day.nationalPark.name,
@@ -301,6 +266,15 @@ export async function transformProposalToItineraryData(
             parseFloat(day.nationalPark.longitude),
             parseFloat(day.nationalPark.latitude),
           ],
+        });
+      }
+    } else if (!day.nationalPark && day.destinationLat && day.destinationLng) {
+      const key = `${day.destinationLat},${day.destinationLng}`;
+      if (!seenDestinations.has(key)) {
+        seenDestinations.add(key);
+        mapLocations.push({
+          name: day.destinationName || 'Destination',
+          coordinates: [parseFloat(day.destinationLng), parseFloat(day.destinationLat)],
         });
       }
     }
@@ -380,12 +354,14 @@ export async function transformProposalToItineraryData(
   const destinationNames: string[] = [];
   const seenDestNames = new Set<string>();
   proposalDays.forEach((day) => {
-    if (day.nationalPark) {
-      const name = capitalize(day.nationalPark.name);
-      if (!seenDestNames.has(name)) {
-        seenDestNames.add(name);
-        destinationNames.push(name);
-      }
+    const name = day.nationalPark
+      ? capitalize(day.nationalPark.name)
+      : day.destinationName
+        ? capitalize(day.destinationName)
+        : null;
+    if (name && !seenDestNames.has(name)) {
+      seenDestNames.add(name);
+      destinationNames.push(name);
     }
   });
 
@@ -393,8 +369,14 @@ export async function transformProposalToItineraryData(
   const firstDayDate = itinerary[0]?.date;
   const lastDayDate = itinerary[itinerary.length - 1]?.date;
 
-  const startLocation = getCityCoordinates(proposal.startCity);
-  const endLocation = getCityCoordinates(proposal.endCity);
+  const startLocation: Location | undefined =
+    proposal.startCityLat && proposal.startCityLng
+      ? { name: proposal.startCity || 'Start', coordinates: [parseFloat(proposal.startCityLng), parseFloat(proposal.startCityLat)] }
+      : undefined;
+  const endLocation: Location | undefined =
+    proposal.endCityLat && proposal.endCityLng
+      ? { name: proposal.endCity || 'End', coordinates: [parseFloat(proposal.endCityLng), parseFloat(proposal.endCityLat)] }
+      : undefined;
 
   const tripOverview: TripOverview = {
     tourType: (proposal as any).tourType || undefined,

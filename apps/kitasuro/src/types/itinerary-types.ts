@@ -18,6 +18,9 @@ export type BuilderDay = {
   accommodation: string | null;
   accommodationName?: string | null; // Cached name to avoid re-fetching
   destination: string | null;
+  destinationName?: string | null; // Cached display name (for non-park destinations)
+  destinationLat?: number | null;
+  destinationLng?: number | null;
   activities: BuilderActivity[];
   meals: {
     breakfast: boolean;
@@ -94,8 +97,12 @@ export type BuilderContextType = {
   setStartDate: React.Dispatch<React.SetStateAction<Date | undefined>>;
   startCity: string;
   setStartCity: React.Dispatch<React.SetStateAction<string>>;
+  startCityCoordinates: [number, number] | null;
+  setStartCityCoordinates: React.Dispatch<React.SetStateAction<[number, number] | null>>;
   endCity: string;
   setEndCity: React.Dispatch<React.SetStateAction<string>>;
+  endCityCoordinates: [number, number] | null;
+  setEndCityCoordinates: React.Dispatch<React.SetStateAction<[number, number] | null>>;
   transferIncluded: string;
   setTransferIncluded: React.Dispatch<React.SetStateAction<string>>;
   pickupPoint: string;

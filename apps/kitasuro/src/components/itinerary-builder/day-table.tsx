@@ -46,6 +46,7 @@ import { Input } from '@repo/ui/input';
 import type { TransportModeType } from '@/types/itinerary-types';
 import { addDays, format } from 'date-fns';
 import { trpc } from '@/lib/trpc';
+import { searchPlaces } from '@/lib/geocoding';
 
 import type { BuilderActivity, BuilderDay } from '@/types/itinerary-types';
 
@@ -56,10 +57,12 @@ export function DayTable({
   days,
   setDays,
   startDate,
+  countries,
 }: {
   days: Day[];
   setDays: React.Dispatch<React.SetStateAction<Day[]>>;
   startDate?: Date;
+  countries?: string[];
 }) {
   const [isActivityModalOpen, setIsActivityModalOpen] = useState(false);
   const [selectedDayId, setSelectedDayId] = useState<string | null>(null);
@@ -154,8 +157,8 @@ export function DayTable({
   };
 
   const handleUpdateDay = (dayId: string, field: keyof Day, value: any) => {
-    setDays(
-      days.map((day) => {
+    setDays((prev) =>
+      prev.map((day) => {
         if (day.id === dayId) {
           return { ...day, [field]: value };
         }
@@ -185,6 +188,7 @@ export function DayTable({
               <SortableDayRow
                 key={day.id}
                 day={day}
+                countries={countries}
                 onAddActivity={handleAddActivity}
                 onToggleMeal={handleToggleMeal}
                 onDelete={handleDeleteDay}
@@ -230,6 +234,7 @@ export function DayTable({
           dayId={selectedDay.dayNumber.toString()}
           initialActivities={selectedDay.activities}
           onSave={(activities) => handleSaveActivities(selectedDay.id, activities)}
+          countries={countries}
         />
       )}
     </div>
@@ -238,6 +243,7 @@ export function DayTable({
 
 function SortableDayRow({
   day,
+  countries,
   onAddActivity,
   onToggleMeal,
   onDelete,
@@ -245,6 +251,7 @@ function SortableDayRow({
   onUpdate,
 }: {
   day: Day;
+  countries?: string[];
   onAddActivity: (id: string) => void;
   onToggleMeal: (id: string, meal: 'breakfast' | 'lunch' | 'dinner') => void;
   onDelete: (id: string) => void;
@@ -273,23 +280,24 @@ function SortableDayRow({
     [day.accommodationName, utils],
   );
 
-  // Destination search handler
+  // Destination search handler - calls Nominatim directly from browser (no tRPC round-trip)
   const handleDestinationSearch = useCallback(async (query: string) => {
-    const results = await utils.nationalParks.search.fetch({ query, limit: 10 });
-    return results.map((p) => ({ value: p.id, label: p.name }));
-  }, [utils]);
+    if (query.length < 2) return [];
 
-  // Get destination label by ID
+    const results = await searchPlaces(query, countries);
+
+    return results.map((r) => ({
+      value: `geo:${r.latitude},${r.longitude}::${r.name}`,
+      label: r.displayName,
+    }));
+  }, [countries]);
+
+  // Get destination label from stored value
   const handleGetDestinationLabel = useCallback(async (id: string) => {
-    // Check if it's a UUID (national park ID) vs custom text
-    const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
-    if (!isUUID) {
-      // Custom text, return as-is
-      return id;
-    }
-    const park = await utils.nationalParks.getById.fetch({ id });
-    return park?.name || null;
-  }, [utils]);
+    const geoMatch = id.match(/^geo:(-?[\d.]+),(-?[\d.]+)::(.+)$/);
+    if (geoMatch) return geoMatch[3]!;
+    return id;
+  }, []);
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: day.id,
   });
@@ -364,9 +372,28 @@ function SortableDayRow({
         <div className="col-span-3 min-w-0">
           <CreatableAsyncCombobox
             value={day.destination}
-            onChange={(val) => onUpdate(day.id, 'destination', val)}
+            onChange={(val) => {
+              const geoMatch = val.match(/^geo:(-?[\d.]+),(-?[\d.]+)::(.+)$/);
+              if (geoMatch) {
+                // Nominatim result — store name + coordinates
+                const lat = parseFloat(geoMatch[1]!);
+                const lng = parseFloat(geoMatch[2]!);
+                const name = geoMatch[3]!;
+                onUpdate(day.id, 'destination', val);
+                onUpdate(day.id, 'destinationName', name);
+                onUpdate(day.id, 'destinationLat', lat);
+                onUpdate(day.id, 'destinationLng', lng);
+              } else {
+                // National park UUID or custom text — clear geo coords
+                onUpdate(day.id, 'destination', val);
+                onUpdate(day.id, 'destinationName', null);
+                onUpdate(day.id, 'destinationLat', null);
+                onUpdate(day.id, 'destinationLng', null);
+              }
+            }}
             onSearch={handleDestinationSearch}
             onGetLabel={handleGetDestinationLabel}
+            initialLabel={day.destinationName}
             placeholder="Select Destination"
             createLabel="Use"
           />
@@ -553,16 +580,9 @@ function SortableDayRow({
                   distanceKm: null,
                   notes: '',
                 };
-                // Pre-populate origin from the day's destination
-                if (day.destination && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(day.destination)) {
-                  onUpdate(day.id, 'transfer', emptyTransfer);
-                  const park = await utils.nationalParks.getById.fetch({ id: day.destination });
-                  if (park) {
-                    onUpdate(day.id, 'transfer', { ...emptyTransfer, originName: park.name });
-                  }
-                } else {
-                  onUpdate(day.id, 'transfer', { ...emptyTransfer, originName: day.destination || '' });
-                }
+                // Pre-populate origin from the day's destination name
+                const originName = day.destinationName || '';
+                onUpdate(day.id, 'transfer', { ...emptyTransfer, originName });
               }
               setIsTransferExpanded(true);
             }}

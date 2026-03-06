@@ -34,7 +34,9 @@ export function BuilderProvider({
   const [days, setDays] = useState<BuilderDay[]>([]);
   const [startDate, setStartDate] = useState<Date | undefined>(undefined);
   const [startCity, setStartCity] = useState('');
+  const [startCityCoordinates, setStartCityCoordinates] = useState<[number, number] | null>(null);
   const [endCity, setEndCity] = useState('');
+  const [endCityCoordinates, setEndCityCoordinates] = useState<[number, number] | null>(null);
   const [transferIncluded, setTransferIncluded] = useState('included');
   const [pickupPoint, setPickupPoint] = useState('');
 
@@ -156,7 +158,13 @@ export function BuilderProvider({
       if (initialData.selectedTheme) setSelectedTheme(initialData.selectedTheme);
       if (initialData.heroImage) setHeroImage(initialData.heroImage);
       if (initialData.startCity) setStartCity(initialData.startCity);
+      if (initialData.startCityLat && initialData.startCityLng) {
+        setStartCityCoordinates([parseFloat(initialData.startCityLng), parseFloat(initialData.startCityLat)]);
+      }
       if (initialData.endCity) setEndCity(initialData.endCity);
+      if (initialData.endCityLat && initialData.endCityLng) {
+        setEndCityCoordinates([parseFloat(initialData.endCityLng), parseFloat(initialData.endCityLat)]);
+      }
     }
   }, [initialData]);
 
@@ -211,8 +219,12 @@ export function BuilderProvider({
         setStartDate,
         startCity,
         setStartCity,
+        startCityCoordinates,
+        setStartCityCoordinates,
         endCity,
         setEndCity,
+        endCityCoordinates,
+        setEndCityCoordinates,
         transferIncluded,
         setTransferIncluded,
         pickupPoint,

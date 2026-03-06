@@ -596,7 +596,11 @@ export const proposals = pgTable('proposals', {
   heroImage: text('hero_image'),
   startDate: timestamp('start_date', { precision: 3, mode: 'string' }),
   startCity: text('start_city'),
+  startCityLat: numeric('start_city_lat', { precision: 10, scale: 7 }),
+  startCityLng: numeric('start_city_lng', { precision: 10, scale: 7 }),
   endCity: text('end_city'),
+  endCityLat: numeric('end_city_lat', { precision: 10, scale: 7 }),
+  endCityLng: numeric('end_city_lng', { precision: 10, scale: 7 }),
   pickupPoint: text('pickup_point'),
   transferIncluded: text('transfer_included'),
   // Pricing data stored as JSON for flexibility
@@ -635,6 +639,9 @@ export const proposalDays = pgTable('proposal_days', {
   nationalParkId: uuid('national_park_id').references(() => nationalParks.id, {
     onDelete: 'set null',
   }),
+  destinationName: text('destination_name'),
+  destinationLat: numeric('destination_lat', { precision: 10, scale: 7 }),
+  destinationLng: numeric('destination_lng', { precision: 10, scale: 7 }),
   createdAt: timestamp('created_at', { precision: 3, mode: 'string' })
     .default(sql`CURRENT_TIMESTAMP`)
     .notNull(),

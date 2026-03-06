@@ -14,6 +14,7 @@ import {
   CommandSeparator,
 } from '@repo/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@repo/ui/popover';
+import { useDebouncedValue } from '@/hooks/use-debounced-value';
 
 interface CreatableAsyncComboboxProps {
   value: string | null;
@@ -38,29 +39,18 @@ export function CreatableAsyncCombobox({
   placeholder = 'Select item...',
   createLabel = 'Use',
   className,
-  debounceMs = 300,
+  debounceMs = 150,
 }: CreatableAsyncComboboxProps) {
   const [open, setOpen] = React.useState(false);
   const [searchValue, setSearchValue] = React.useState('');
+  const debouncedSearch = useDebouncedValue(searchValue, debounceMs);
   const [items, setItems] = React.useState<{ value: string; label: string }[]>([]);
   const [isLoading, setIsLoading] = React.useState(false);
   const [isCreating, setIsCreating] = React.useState(false);
   const [hasSearched, setHasSearched] = React.useState(false);
   const [displayLabel, setDisplayLabel] = React.useState<string | null>(initialLabel ?? null);
-  const debounceRef = React.useRef<NodeJS.Timeout | null>(null);
   const fetchedValueRef = React.useRef<string | null>(null);
-
-  // Fetch initial items when popover opens
-  React.useEffect(() => {
-    if (open && items.length === 0 && !hasSearched) {
-      setIsLoading(true);
-      onSearch('').then((results) => {
-        setItems(results);
-        setIsLoading(false);
-        setHasSearched(true);
-      });
-    }
-  }, [open]);
+  const searchSeqRef = React.useRef(0);
 
   // Resolve display label for selected value
   React.useEffect(() => {
@@ -87,39 +77,34 @@ export function CreatableAsyncCombobox({
         if (label) setDisplayLabel(label);
       });
     } else {
-      // For custom text values (non-UUID), use the value itself as label
       setDisplayLabel(value);
       fetchedValueRef.current = value;
     }
   }, [value, items, onGetLabel, displayLabel]);
 
-  const handleSearch = React.useCallback(
-    (query: string) => {
-      setSearchValue(query);
-      setIsLoading(true);
+  // Fire search when debounced value changes
+  React.useEffect(() => {
+    if (!open) return;
+
+    const trimmed = debouncedSearch.trim();
+    if (!trimmed) {
+      setItems([]);
+      setIsLoading(false);
       setHasSearched(false);
+      return;
+    }
 
-      if (debounceRef.current) {
-        clearTimeout(debounceRef.current);
-      }
+    const seq = ++searchSeqRef.current;
+    setIsLoading(true);
 
-      debounceRef.current = setTimeout(async () => {
-        const results = await onSearch(query);
+    onSearch(trimmed).then((results) => {
+      if (searchSeqRef.current === seq) {
         setItems(results);
         setIsLoading(false);
         setHasSearched(true);
-      }, debounceMs);
-    },
-    [onSearch, debounceMs],
-  );
-
-  React.useEffect(() => {
-    return () => {
-      if (debounceRef.current) {
-        clearTimeout(debounceRef.current);
       }
-    };
-  }, []);
+    });
+  }, [debouncedSearch, open, onSearch]);
 
   const handleOpenChange = React.useCallback((isOpen: boolean) => {
     setOpen(isOpen);
@@ -174,10 +159,10 @@ export function CreatableAsyncCombobox({
           <CommandInput
             placeholder="Search..."
             value={searchValue}
-            onValueChange={handleSearch}
+            onValueChange={setSearchValue}
           />
           <CommandList>
-            {isLoading ? (
+            {isLoading || (searchValue.trim() && searchValue !== debouncedSearch) ? (
               <div className="flex items-center justify-center py-6">
                 <Loader2 className="h-4 w-4 animate-spin text-stone-400" />
               </div>
@@ -192,8 +177,8 @@ export function CreatableAsyncCombobox({
                     <CommandItem
                       key={item.value}
                       value={item.value}
-                      onSelect={(currentValue) => {
-                        onChange(currentValue === value ? '' : currentValue);
+                      onSelect={() => {
+                        onChange(item.value === value ? '' : item.value);
                         setDisplayLabel(item.label);
                         setOpen(false);
                       }}

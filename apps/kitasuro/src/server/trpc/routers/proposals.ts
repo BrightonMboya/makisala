@@ -28,7 +28,11 @@ interface BuilderData {
   heroImage?: string | null;
   startDate?: string | null;
   startCity?: string | null;
+  startCityLat?: string | null;
+  startCityLng?: string | null;
   endCity?: string | null;
+  endCityLat?: string | null;
+  endCityLng?: string | null;
   pickupPoint?: string | null;
   transferIncluded?: string | null;
   travelerGroups?: Array<{ id: string; count: number; type: string }> | null;
@@ -67,6 +71,9 @@ interface BuilderDay {
   description?: string | null;
   previewImage?: string | null;
   destination?: string;
+  destinationName?: string | null;
+  destinationLat?: number | null;
+  destinationLng?: number | null;
   accommodation?: string;
   activities?: BuilderActivity[];
   meals?: { breakfast?: boolean; lunch?: boolean; dinner?: boolean };
@@ -131,7 +138,7 @@ export const proposalsRouter = router({
           tour: { columns: { country: true, tourName: true } },
           client: { columns: { name: true, email: true } },
           days: {
-            columns: { dayNumber: true, title: true, description: true, previewImage: true },
+            columns: { dayNumber: true, title: true, description: true, previewImage: true, destinationName: true, destinationLat: true, destinationLng: true },
             with: {
               nationalPark: {
                 columns: { id: true, name: true, country: true, park_overview: true, latitude: true, longitude: true },
@@ -174,7 +181,11 @@ export const proposalsRouter = router({
           clientId: true,
           startDate: true,
           startCity: true,
+          startCityLat: true,
+          startCityLng: true,
           endCity: true,
+          endCityLat: true,
+          endCityLng: true,
           pickupPoint: true,
           transferIncluded: true,
           travelerGroups: true,
@@ -195,6 +206,9 @@ export const proposalsRouter = router({
               dayNumber: true,
               title: true,
               nationalParkId: true,
+              destinationName: true,
+              destinationLat: true,
+              destinationLng: true,
               description: true,
               previewImage: true,
             },
@@ -287,7 +301,11 @@ export const proposalsRouter = router({
         heroImage: builderData.heroImage || null,
         startDate: builderData.startDate ? new Date(builderData.startDate).toISOString() : null,
         startCity: builderData.startCity || null,
+        startCityLat: builderData.startCityLat || null,
+        startCityLng: builderData.startCityLng || null,
         endCity: builderData.endCity || null,
+        endCityLat: builderData.endCityLat || null,
+        endCityLng: builderData.endCityLng || null,
         pickupPoint: builderData.pickupPoint || null,
         transferIncluded: builderData.transferIncluded || null,
         pricingRows: builderData.pricingRows || null,
@@ -316,7 +334,11 @@ export const proposalsRouter = router({
             heroImage: proposalData.heroImage || null,
             startDate: proposalData.startDate || null,
             startCity: proposalData.startCity || null,
+            startCityLat: proposalData.startCityLat || null,
+            startCityLng: proposalData.startCityLng || null,
             endCity: proposalData.endCity || null,
+            endCityLat: proposalData.endCityLat || null,
+            endCityLng: proposalData.endCityLng || null,
             pickupPoint: proposalData.pickupPoint || null,
             transferIncluded: proposalData.transferIncluded || null,
             travelerGroups: proposalData.travelerGroups || null,
@@ -379,6 +401,9 @@ export const proposalsRouter = router({
               description: day.description || null,
               previewImage: day.previewImage || null,
               nationalParkId,
+              destinationName: day.destinationName || null,
+              destinationLat: day.destinationLat != null ? String(day.destinationLat) : null,
+              destinationLng: day.destinationLng != null ? String(day.destinationLng) : null,
             })
             .returning();
 
