@@ -643,8 +643,8 @@ function TransferFields({
     onUpdate({ ...current, [field]: value });
   };
 
-  // Parse duration into hours for display
-  const durationHours = current.durationMinutes ? Math.round(current.durationMinutes / 60) : '';
+  // Parse duration into hours for display (supports decimals like 0.5, 1.5)
+  const durationHours = current.durationMinutes ? current.durationMinutes / 60 : '';
 
   return (
     <div className="space-y-3 border-t border-stone-100 pt-2">
@@ -708,11 +708,12 @@ function TransferFields({
           <Input
             type="number"
             min={0}
+            step={0.5}
             className="h-9 text-xs"
             placeholder="0"
             value={durationHours}
             onChange={(e) => {
-              const h = parseInt(e.target.value) || 0;
+              const h = parseFloat(e.target.value) || 0;
               update('durationMinutes', h * 60 || null);
             }}
           />

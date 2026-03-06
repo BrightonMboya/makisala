@@ -41,7 +41,7 @@ import {
   MarkerTooltip,
 } from '@repo/ui/map';
 import type { ItineraryData } from '@/types/itinerary-types';
-import { cn } from '@/lib/utils';
+import { capitalize, cn } from '@/lib/utils';
 import { trpc } from '@/lib/trpc';
 
 // ============================================================================
@@ -467,7 +467,9 @@ const IntroductionSection = ({ data }: { data: ItineraryData }) => {
                 <span className="text-[10px] font-light tracking-[0.2em] text-stone-400 uppercase">
                   Country
                 </span>
-                <span className="mt-1 text-sm font-medium text-stone-700">{overview.country}</span>
+                <span className="mt-1 text-sm font-medium text-stone-700">
+                  {capitalize(overview.country)}
+                </span>
               </div>
             )}
             {overview.country && (overview.travelerCount || overview.travelDates) && (
