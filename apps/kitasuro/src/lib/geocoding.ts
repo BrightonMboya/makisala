@@ -36,8 +36,8 @@ interface PhotonFeature {
 export interface GeocodingResult {
   name: string;
   displayName: string;
-  latitude: string;
-  longitude: string;
+  latitude: number;
+  longitude: number;
 }
 
 function buildDisplayName(p: PhotonFeature['properties']): string {
@@ -83,7 +83,7 @@ export async function searchPlaces(
   return data.features.map((f) => ({
     name: f.properties.name || query,
     displayName: buildDisplayName(f.properties),
-    latitude: String(f.geometry.coordinates[1]),
-    longitude: String(f.geometry.coordinates[0]),
+    latitude: f.geometry.coordinates[1]!,
+    longitude: f.geometry.coordinates[0]!,
   }));
 }

@@ -50,7 +50,7 @@ export default function DayByDayPage() {
       const countryList = countries.length > 0 ? countries : country ? [country] : undefined;
       const results = await searchPlaces(query, countryList);
       return results.map((r) => ({
-        value: `${r.latitude},${r.longitude}::${r.name}`,
+        value: `geo:${r.latitude},${r.longitude}::${r.name}`,
         label: r.displayName,
       }));
     },
@@ -68,7 +68,7 @@ export default function DayByDayPage() {
         setCoords(null);
         return;
       }
-      const match = value.match(/^(-?[\d.]+),(-?[\d.]+)::(.+)$/);
+      const match = value.match(/^geo:(-?[\d.]+),(-?[\d.]+)::(.+)$/);
       if (match) {
         const lat = parseFloat(match[1]!);
         const lng = parseFloat(match[2]!);
@@ -139,7 +139,7 @@ export default function DayByDayPage() {
                 placeholder="Search start city..."
                 createLabel="Use"
                 className="border-stone-200 bg-stone-50"
-                debounceMs={400}
+
               />
             </div>
             <div className="space-y-2">
@@ -157,7 +157,7 @@ export default function DayByDayPage() {
                 placeholder="Search end city..."
                 createLabel="Use"
                 className="border-stone-200 bg-stone-50"
-                debounceMs={400}
+
               />
             </div>
           </div>

@@ -39,7 +39,7 @@ export function CreatableAsyncCombobox({
   placeholder = 'Select item...',
   createLabel = 'Use',
   className,
-  debounceMs = 150,
+  debounceMs = 300,
 }: CreatableAsyncComboboxProps) {
   const [open, setOpen] = React.useState(false);
   const [searchValue, setSearchValue] = React.useState('');
@@ -97,13 +97,24 @@ export function CreatableAsyncCombobox({
     const seq = ++searchSeqRef.current;
     setIsLoading(true);
 
-    onSearch(trimmed).then((results) => {
-      if (searchSeqRef.current === seq) {
-        setItems(results);
-        setIsLoading(false);
-        setHasSearched(true);
-      }
-    });
+    const controller = new AbortController();
+
+    onSearch(trimmed)
+      .then((results) => {
+        if (searchSeqRef.current === seq) {
+          setItems(results);
+          setIsLoading(false);
+          setHasSearched(true);
+        }
+      })
+      .catch(() => {
+        if (searchSeqRef.current === seq) {
+          setIsLoading(false);
+          setItems([]);
+        }
+      });
+
+    return () => controller.abort();
   }, [debouncedSearch, open, onSearch]);
 
   const handleOpenChange = React.useCallback((isOpen: boolean) => {

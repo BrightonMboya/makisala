@@ -43,12 +43,10 @@ import { CreatableAsyncCombobox } from './creatable-async-combobox';
 import { Textarea } from '@repo/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@repo/ui/select';
 import { Input } from '@repo/ui/input';
-import type { TransportModeType } from '@/types/itinerary-types';
+import type { BuilderActivity, BuilderDay, TransportModeType } from '@/types/itinerary-types';
 import { addDays, format } from 'date-fns';
 import { trpc } from '@/lib/trpc';
 import { searchPlaces } from '@/lib/geocoding';
-
-import type { BuilderActivity, BuilderDay } from '@/types/itinerary-types';
 
 type Day = BuilderDay;
 type Activity = BuilderActivity;
@@ -167,6 +165,17 @@ export function DayTable({
     );
   };
 
+  const handleUpdateDayMultiple = (dayId: string, updates: Partial<Day>) => {
+    setDays((prev) =>
+      prev.map((day) => {
+        if (day.id === dayId) {
+          return { ...day, ...updates };
+        }
+        return day;
+      }),
+    );
+  };
+
   const selectedDay = days.find((d) => d.id === selectedDayId);
 
   return (
@@ -194,6 +203,7 @@ export function DayTable({
                 onDelete={handleDeleteDay}
                 onDuplicate={handleDuplicateDay}
                 onUpdate={handleUpdateDay}
+                onUpdateMultiple={handleUpdateDayMultiple}
               />
             ))}
           </div>
@@ -249,6 +259,7 @@ function SortableDayRow({
   onDelete,
   onDuplicate,
   onUpdate,
+  onUpdateMultiple,
 }: {
   day: Day;
   countries?: string[];
@@ -257,14 +268,18 @@ function SortableDayRow({
   onDelete: (id: string) => void;
   onDuplicate: (id: string) => void;
   onUpdate: (id: string, field: keyof Day, value: any) => void;
+  onUpdateMultiple: (id: string, updates: Partial<Day>) => void;
 }) {
   const utils = trpc.useUtils();
 
   // Callbacks for async accommodation search
-  const handleAccommodationSearch = useCallback(async (query: string) => {
-    const results = await utils.accommodations.search.fetch({ query, limit: 10 });
-    return results.map((acc) => ({ value: acc.id, label: acc.name }));
-  }, [utils]);
+  const handleAccommodationSearch = useCallback(
+    async (query: string) => {
+      const results = await utils.accommodations.search.fetch({ query, limit: 10 });
+      return results.map((acc) => ({ value: acc.id, label: acc.name }));
+    },
+    [utils],
+  );
 
   // Only fetch label if we don't already have the accommodation name
   // This prevents N+1 queries when proposal data already includes names
@@ -280,17 +295,20 @@ function SortableDayRow({
     [day.accommodationName, utils],
   );
 
-  // Destination search handler - calls Nominatim directly from browser (no tRPC round-trip)
-  const handleDestinationSearch = useCallback(async (query: string) => {
-    if (query.length < 2) return [];
+  // Destination search handler
+  const handleDestinationSearch = useCallback(
+    async (query: string) => {
+      if (query.length < 2) return [];
 
-    const results = await searchPlaces(query, countries);
+      const results = await searchPlaces(query, countries);
 
-    return results.map((r) => ({
-      value: `geo:${r.latitude},${r.longitude}::${r.name}`,
-      label: r.displayName,
-    }));
-  }, [countries]);
+      return results.map((r) => ({
+        value: `geo:${r.latitude},${r.longitude}::${r.name}`,
+        label: r.displayName,
+      }));
+    },
+    [countries],
+  );
 
   // Get destination label from stored value
   const handleGetDestinationLabel = useCallback(async (id: string) => {
@@ -375,20 +393,24 @@ function SortableDayRow({
             onChange={(val) => {
               const geoMatch = val.match(/^geo:(-?[\d.]+),(-?[\d.]+)::(.+)$/);
               if (geoMatch) {
-                // Nominatim result — store name + coordinates
+                // Photon geocoding result — store name + coordinates
                 const lat = parseFloat(geoMatch[1]!);
                 const lng = parseFloat(geoMatch[2]!);
                 const name = geoMatch[3]!;
-                onUpdate(day.id, 'destination', val);
-                onUpdate(day.id, 'destinationName', name);
-                onUpdate(day.id, 'destinationLat', lat);
-                onUpdate(day.id, 'destinationLng', lng);
+                onUpdateMultiple(day.id, {
+                  destination: val,
+                  destinationName: name,
+                  destinationLat: lat,
+                  destinationLng: lng,
+                });
               } else {
                 // National park UUID or custom text — clear geo coords
-                onUpdate(day.id, 'destination', val);
-                onUpdate(day.id, 'destinationName', null);
-                onUpdate(day.id, 'destinationLat', null);
-                onUpdate(day.id, 'destinationLng', null);
+                onUpdateMultiple(day.id, {
+                  destination: val,
+                  destinationName: null,
+                  destinationLat: null,
+                  destinationLng: null,
+                });
               }
             }}
             onSearch={handleDestinationSearch}
@@ -660,7 +682,9 @@ function TransferFields({
             className="h-9 text-xs"
             placeholder="e.g. Akagera NP, Lodge name..."
             value={current.destinationName}
-            onChange={(e) => onUpdate({ ...current, destinationId: null, destinationName: e.target.value })}
+            onChange={(e) =>
+              onUpdate({ ...current, destinationId: null, destinationName: e.target.value })
+            }
           />
         </div>
       </div>
@@ -682,7 +706,9 @@ function TransferFields({
           </Select>
         </div>
         <div className="space-y-1">
-          <label className="text-[10px] font-medium text-stone-500 uppercase">Duration (hours)</label>
+          <label className="text-[10px] font-medium text-stone-500 uppercase">
+            Duration (hours)
+          </label>
           <Input
             type="number"
             min={0}
