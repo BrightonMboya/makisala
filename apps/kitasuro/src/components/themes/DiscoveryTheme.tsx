@@ -44,6 +44,11 @@ import type { ItineraryData } from '@/types/itinerary-types';
 import { capitalize, cn } from '@/lib/utils';
 import { trpc } from '@/lib/trpc';
 
+function joinList(items: string[]): string {
+  if (items.length <= 2) return items.join(' & ');
+  return items.slice(0, -1).join(', ') + ' & ' + items[items.length - 1];
+}
+
 // ============================================================================
 // CINEMATIC IMAGE GALLERY
 // ============================================================================
@@ -576,7 +581,7 @@ const JourneyOverview = ({ data }: { data: ItineraryData }) => (
                     </p>
                     <h4 className="mb-1 font-serif text-lg text-stone-800">
                       {day.activities.length > 0
-                        ? day.activities.map((a) => a.activity).join(' & ')
+                        ? joinList(day.activities.map((a) => a.activity))
                         : day.title}
                     </h4>
                     {(() => {
@@ -584,7 +589,7 @@ const JourneyOverview = ({ data }: { data: ItineraryData }) => (
                         ...new Set(day.activities.map((a) => a.location).filter(Boolean)),
                       ];
                       const displayLocation =
-                        activityLocs.length > 0 ? activityLocs.join(' & ') : day.destination;
+                        activityLocs.length > 0 ? joinList(activityLocs) : day.destination;
                       return displayLocation ? (
                         <p className="flex items-center gap-1.5 text-sm text-stone-500">
                           <MapPin className="h-3.5 w-3.5" />
@@ -717,7 +722,7 @@ const DaySection = ({
   // Derive location from activity locations, falling back to day.destination (national park)
   const activityLocations = [...new Set(day.activities.map((a) => a.location).filter(Boolean))];
   const dayLocation =
-    activityLocations.length > 0 ? activityLocations.join(' & ') : day.destination;
+    activityLocations.length > 0 ? joinList(activityLocations) : day.destination;
 
   // Destination image - previewImage first, then park's featured image, then fallback
   const destinationImage =
@@ -817,7 +822,9 @@ const DaySection = ({
                 </div>
               </div>
               <h2 className="max-w-3xl font-serif text-4xl leading-tight text-white lg:text-5xl xl:text-6xl">
-                {day.title}
+                {day.activities.length > 0
+                  ? joinList(day.activities.map((a) => a.activity))
+                  : day.title}
               </h2>
             </motion.div>
           </div>
