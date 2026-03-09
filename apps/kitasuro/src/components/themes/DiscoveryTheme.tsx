@@ -589,7 +589,7 @@ const JourneyOverview = ({ data }: { data: ItineraryData }) => (
                         ...new Set(day.activities.map((a) => a.location).filter(Boolean)),
                       ];
                       const displayLocation =
-                        activityLocs.length > 0 ? joinList(activityLocs) : day.destination;
+                        activityLocs.length > 0 ? joinList(activityLocs as string[]) : day.destination;
                       return displayLocation ? (
                         <p className="flex items-center gap-1.5 text-sm text-stone-500">
                           <MapPin className="h-3.5 w-3.5" />
@@ -722,7 +722,7 @@ const DaySection = ({
   // Derive location from activity locations, falling back to day.destination (national park)
   const activityLocations = [...new Set(day.activities.map((a) => a.location).filter(Boolean))];
   const dayLocation =
-    activityLocations.length > 0 ? joinList(activityLocations) : day.destination;
+    activityLocations.length > 0 ? joinList(activityLocations as string[]) : day.destination;
 
   // Destination image - previewImage first, then park's featured image, then fallback
   const destinationImage =
