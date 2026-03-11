@@ -23,6 +23,7 @@ const transportModeLabels: Record<TransportModeType, string> = {
   road_4x4: '4WD Safari Vehicle',
   road_shuttle: 'Shuttle/Minibus',
   road_bus: 'Coach Bus',
+  mini_bus: 'Mini bus',
   flight_domestic: 'Domestic Flight',
   flight_bush: 'Bush/Charter Flight',
 };
@@ -78,7 +79,13 @@ export function transformBuilderToItineraryData(params: {
   country?: string;
   nationalParksMap: Record<
     string,
-    { id: string; name: string; latitude?: string | null; longitude?: string | null; park_overview?: Array<{ title?: string; name?: string; description: string }> | null }
+    {
+      id: string;
+      name: string;
+      latitude?: string | null;
+      longitude?: string | null;
+      park_overview?: Array<{ title?: string; name?: string; description: string }> | null;
+    }
   >;
   accommodationsMap: Record<
     string,
@@ -141,11 +148,12 @@ export function transformBuilderToItineraryData(params: {
         : '';
 
     // Use user-set title if defined, otherwise generate from destination/activity
-    let title = day.title !== undefined
-      ? day.title
-      : (destinationName ? `Explore ${destinationName}` : '')
-        || capitalize(day.activities[0]?.name || '')
-        || `Day ${day.dayNumber}`;
+    let title =
+      day.title !== undefined
+        ? day.title
+        : (destinationName ? `Explore ${destinationName}` : '') ||
+          capitalize(day.activities[0]?.name || '') ||
+          `Day ${day.dayNumber}`;
 
     // Get accommodation name from map
     const accommodationData = day.accommodation ? accommodationsMap[day.accommodation] : null;
@@ -199,7 +207,8 @@ export function transformBuilderToItineraryData(params: {
   const firstParkId = firstDay?.destination;
   const firstDestination = firstParkId ? nationalParksMap[firstParkId]?.name : null;
 
-  const country = countryParam || (firstDestination ? firstDestination.toLowerCase() : tourTitle.toLowerCase());
+  const country =
+    countryParam || (firstDestination ? firstDestination.toLowerCase() : tourTitle.toLowerCase());
   const countryDisplayName = country.charAt(0).toUpperCase() + country.slice(1).toLowerCase();
   const location = countryDisplayName;
 
@@ -287,15 +296,7 @@ export function transformBuilderToItineraryData(params: {
 
   const tripOverview: TripOverview = {
     tourType: tourType || undefined,
-    country:
-      countryParam ||
-      (country === 'rwanda'
-        ? 'Rwanda'
-        : country === 'tanzania'
-          ? 'Tanzania'
-          : country === 'botswana'
-            ? 'Botswana'
-            : undefined),
+    country: countryParam,
     travelerCount: totalTravelers > 0 ? totalTravelers : undefined,
     travelDates:
       firstDayDate && lastDayDate ? { start: firstDayDate, end: lastDayDate } : undefined,
