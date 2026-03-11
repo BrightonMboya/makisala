@@ -13,6 +13,6 @@ export type RequestItem = {
   startDate: string
   received: string
   source: string
-  status: 'new' | 'working' | 'draft' | 'shared'
+  status: 'draft' | 'shared' | 'awaiting_payment' | 'paid' | 'booked' | 'cancelled'
   assignees: AssignedUser[]
 }

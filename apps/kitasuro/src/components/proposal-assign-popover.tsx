@@ -11,14 +11,17 @@ import { staleTimes } from '@/lib/query-keys';
 interface ProposalAssignPopoverProps {
   proposalId: string;
   activeFilter: 'mine' | 'all';
+  currentAssigneeIds?: string[];
 }
 
 export function ProposalAssignPopover({
   proposalId,
   activeFilter,
+  currentAssigneeIds = [],
 }: ProposalAssignPopoverProps) {
   const utils = trpc.useUtils();
   const [open, setOpen] = useState(false);
+  const [optimisticIds, setOptimisticIds] = useState<Set<string> | null>(null);
 
   const { data: teamMembers = [], isLoading } = trpc.notes.getTeamMembers.useQuery(undefined, {
     staleTime: staleTimes.teamMembers,
@@ -26,83 +29,55 @@ export function ProposalAssignPopover({
   });
 
   const assignMutation = trpc.proposals.assign.useMutation({
-    onMutate: async ({ userId: memberId }) => {
-      await utils.proposals.listForDashboard.cancel({ filter: activeFilter });
-      const previousData = utils.proposals.listForDashboard.getData({ filter: activeFilter });
-
-      const member = teamMembers.find((m) => m.id === memberId);
-      if (member) {
-        utils.proposals.listForDashboard.setData({ filter: activeFilter }, (old) =>
-          old?.map((p) =>
-            p.id === proposalId
-              ? {
-                  ...p,
-                  assignments: [
-                    ...(p.assignments || []),
-                    {
-                      id: `optimistic-${member.id}`,
-                      createdAt: new Date().toISOString(),
-                      userId: member.id,
-                      proposalId,
-                      assignedBy: null,
-                      user: { id: member.id, name: member.name, image: member.image },
-                    },
-                  ],
-                }
-              : p,
-          ),
-        );
-      }
-
-      return { previousData };
+    onMutate: ({ userId: memberId }) => {
+      setOptimisticIds((prev) => {
+        const next = new Set(prev ?? assignedIds);
+        next.add(memberId);
+        return next;
+      });
     },
     onSuccess: (_result, { userId: memberId }) => {
       const member = teamMembers.find((m) => m.id === memberId);
       toast({ title: `Assigned to ${member?.name || 'team member'}` });
     },
-    onError: (_err, _vars, context) => {
-      if (context?.previousData) {
-        utils.proposals.listForDashboard.setData({ filter: activeFilter }, context.previousData);
-      }
+    onError: (_err, { userId: memberId }) => {
+      setOptimisticIds((prev) => {
+        if (!prev) return prev;
+        const next = new Set(prev);
+        next.delete(memberId);
+        return next;
+      });
       toast({ title: 'Failed to assign proposal', variant: 'destructive' });
     },
     onSettled: () => {
-      utils.proposals.listForDashboard.invalidate({ filter: activeFilter });
+      setOptimisticIds(null);
+      utils.proposals.listForDashboard.invalidate();
     },
   });
 
   const unassignMutation = trpc.proposals.unassign.useMutation({
-    onMutate: async ({ userId: memberId }) => {
-      await utils.proposals.listForDashboard.cancel({ filter: activeFilter });
-      const previousData = utils.proposals.listForDashboard.getData({ filter: activeFilter });
-
-      utils.proposals.listForDashboard.setData({ filter: activeFilter }, (old) =>
-        old?.map((p) =>
-          p.id === proposalId
-            ? {
-                ...p,
-                assignments: (p.assignments || []).filter(
-                  (a) => a.user.id !== memberId,
-                ),
-              }
-            : p,
-        ),
-      );
-
-      return { previousData };
+    onMutate: ({ userId: memberId }) => {
+      setOptimisticIds((prev) => {
+        const next = new Set(prev ?? assignedIds);
+        next.delete(memberId);
+        return next;
+      });
     },
     onSuccess: (_result, { userId: memberId }) => {
       const member = teamMembers.find((m) => m.id === memberId);
       toast({ title: `Unassigned ${member?.name || 'team member'}` });
     },
-    onError: (_err, _vars, context) => {
-      if (context?.previousData) {
-        utils.proposals.listForDashboard.setData({ filter: activeFilter }, context.previousData);
-      }
+    onError: (_err, { userId: memberId }) => {
+      setOptimisticIds((prev) => {
+        const next = new Set(prev ?? assignedIds);
+        next.add(memberId);
+        return next;
+      });
       toast({ title: 'Failed to unassign proposal', variant: 'destructive' });
     },
     onSettled: () => {
-      utils.proposals.listForDashboard.invalidate({ filter: activeFilter });
+      setOptimisticIds(null);
+      utils.proposals.listForDashboard.invalidate();
     },
   });
 
@@ -114,12 +89,8 @@ export function ProposalAssignPopover({
     }
   };
 
-  // Read optimistic assignee set from tRPC cache
-  const cachedProposals = utils.proposals.listForDashboard.getData({ filter: activeFilter });
-  const currentProposal = cachedProposals?.find((p) => p.id === proposalId);
-  const optimisticAssignedIds = new Set(
-    (currentProposal?.assignments || []).map((a) => a.user.id),
-  );
+  const assignedIds = new Set(currentAssigneeIds);
+  const displayIds = optimisticIds ?? assignedIds;
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -155,7 +126,7 @@ export function ProposalAssignPopover({
             </div>
           ) : (
             teamMembers.map((m) => {
-              const isAssigned = optimisticAssignedIds.has(m.id);
+              const isAssigned = displayIds.has(m.id);
 
               return (
                 <button

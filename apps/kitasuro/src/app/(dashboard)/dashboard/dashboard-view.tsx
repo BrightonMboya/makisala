@@ -1,7 +1,7 @@
 'use client';
 
 import { Input } from '@repo/ui/input';
-import { Clock, FileText, Search } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Clock, FileText, Search } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -9,6 +9,8 @@ import { useDebounce } from '@repo/ui/use-debounce';
 import { trpc } from '@/lib/trpc';
 import { staleTimes } from '@/lib/query-keys';
 import type { AssignedUser, RequestItem } from '@/types/dashboard';
+import { PROPOSAL_STATUSES, getStatusConfig } from '@/lib/proposal-status';
+import { ProposalStatusDropdown } from '@/components/proposal-status-dropdown';
 import { NotesPanel } from '@/components/notes-panel';
 import { ProposalAssignPopover } from '@/components/proposal-assign-popover';
 import type { AppRouter } from '@/server/trpc/router';
@@ -21,6 +23,8 @@ interface DashboardViewProps {
   initialIsAdmin: RouterOutputs['settings']['checkAdmin'];
 }
 
+const PAGE_SIZE = 20;
+
 export function DashboardView({
   initialProposals,
   initialIsAdmin,
@@ -29,51 +33,70 @@ export function DashboardView({
   const [searchQuery, setSearchQuery] = useState('');
   const debouncedQuery = useDebounce(searchQuery, 300);
   const [activeFilter, setActiveFilter] = useState<'mine' | 'all'>('mine');
+  const [statusFilter, setStatusFilter] = useState<RequestItem['status'] | undefined>(undefined);
+  const [page, setPage] = useState(1);
+
+  // Reset page when filters change
+  const handleFilterChange = (filter: 'mine' | 'all') => {
+    setActiveFilter(filter);
+    setPage(1);
+  };
+  const handleStatusFilter = (status: RequestItem['status'] | undefined) => {
+    setStatusFilter(status);
+    setPage(1);
+  };
+  const handleSearchChange = (value: string) => {
+    setSearchQuery(value);
+    setPage(1);
+  };
 
   const { data: isAdmin = false } = trpc.settings.checkAdmin.useQuery(undefined, {
     staleTime: staleTimes.dashboardData,
     initialData: initialIsAdmin,
   });
 
-  const { data: proposals = [], isLoading: proposalsLoading } = trpc.proposals.listForDashboard.useQuery(
-    { filter: activeFilter },
+  const queryInput = {
+    filter: activeFilter,
+    page,
+    pageSize: PAGE_SIZE,
+    status: statusFilter,
+    search: debouncedQuery || undefined,
+  };
+
+  const isDefaultQuery =
+    activeFilter === 'mine' && page === 1 && !statusFilter && !debouncedQuery;
+
+  const { data, isLoading: proposalsLoading } = trpc.proposals.listForDashboard.useQuery(
+    queryInput,
     {
       staleTime: staleTimes.proposals,
-      initialData: activeFilter === 'mine' ? initialProposals : undefined,
+      initialData: isDefaultQuery ? initialProposals : undefined,
+      placeholderData: (prev) => prev,
     },
   );
 
-  const isLoading = proposalsLoading;
+  const proposals = data?.items ?? [];
+  const totalPages = data?.totalPages ?? 0;
+  const totalCount = data?.totalCount ?? 0;
 
-  const requests: RequestItem[] = proposals
-    .map((p: any): RequestItem => ({
-      id: p.id,
-      client: p.client?.name || 'Unknown',
-      travelers: 0,
-      country: 'Unknown',
-      title: p.tourTitle || p.name,
-      startDate: p.startDate ? new Date(p.startDate).toLocaleDateString() : 'TBD',
-      received: new Date(p.createdAt).toLocaleDateString(),
-      source: 'Manual',
-      status: p.status === 'shared' ? 'shared' : 'draft',
-      assignees: (p.assignments || []).map((a: any): AssignedUser => ({
-        id: a.user.id,
-        name: a.user.name,
-        image: a.user.image,
-      })),
-    }))
-    .filter((req) => {
-      if (!debouncedQuery.trim()) return true;
-      const query = debouncedQuery.toLowerCase();
-      return (
-        req.client.toLowerCase().includes(query) ||
-        req.title.toLowerCase().includes(query) ||
-        req.status.toLowerCase().includes(query)
-      );
-    });
+  const requests: RequestItem[] = proposals.map((p: any): RequestItem => ({
+    id: p.id,
+    client: p.client?.name || 'Unknown',
+    travelers: 0,
+    country: 'Unknown',
+    title: p.tourTitle || p.name,
+    startDate: p.startDate ? new Date(p.startDate).toLocaleDateString() : 'TBD',
+    received: new Date(p.createdAt).toLocaleDateString(),
+    source: 'Manual',
+    status: p.status || 'draft',
+    assignees: (p.assignments || []).map((a: any): AssignedUser => ({
+      id: a.user.id,
+      name: a.user.name,
+      image: a.user.image,
+    })),
+  }));
 
-  // Show loading state only when switching to "all" filter (no initialData for it)
-  if (isLoading && !proposals.length) {
+  if (proposalsLoading && !data) {
     return (
       <div className="flex h-full items-center justify-center bg-stone-50">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-green-600 border-t-transparent"></div>
@@ -83,61 +106,90 @@ export function DashboardView({
 
   return (
     <div className="flex h-full flex-col bg-stone-50">
-      <header className="flex items-center justify-between border-b border-stone-200 bg-white px-8 py-4">
-        <div className="flex items-center gap-4">
-          <h2 className="font-serif text-2xl font-bold text-stone-900">Dashboard</h2>
-          <div className="flex rounded-lg border border-stone-200 bg-stone-50 p-0.5">
-            <button
-              className={`rounded-md px-3 py-1 text-sm font-medium transition-colors ${
-                activeFilter === 'mine'
-                  ? 'bg-white text-stone-900 shadow-sm'
-                  : 'text-stone-500 hover:text-stone-700'
-              }`}
-              onClick={() => setActiveFilter('mine')}
-            >
-              My Proposals
-            </button>
-            <button
-              className={`rounded-md px-3 py-1 text-sm font-medium transition-colors ${
-                activeFilter === 'all'
-                  ? 'bg-white text-stone-900 shadow-sm'
-                  : 'text-stone-500 hover:text-stone-700'
-              }`}
-              onClick={() => setActiveFilter('all')}
-            >
-              All Proposals
-            </button>
+      <header className="border-b border-stone-200 bg-white px-8 py-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <h2 className="font-serif text-2xl font-bold text-stone-900">Dashboard</h2>
+            <div className="flex rounded-lg border border-stone-200 bg-stone-50 p-0.5">
+              <button
+                className={`rounded-md px-3 py-1 text-sm font-medium transition-colors ${
+                  activeFilter === 'mine'
+                    ? 'bg-white text-stone-900 shadow-sm'
+                    : 'text-stone-500 hover:text-stone-700'
+                }`}
+                onClick={() => handleFilterChange('mine')}
+              >
+                My Proposals
+              </button>
+              <button
+                className={`rounded-md px-3 py-1 text-sm font-medium transition-colors ${
+                  activeFilter === 'all'
+                    ? 'bg-white text-stone-900 shadow-sm'
+                    : 'text-stone-500 hover:text-stone-700'
+                }`}
+                onClick={() => handleFilterChange('all')}
+              >
+                All Proposals
+              </button>
+            </div>
+          </div>
+          <div className="flex items-center gap-4">
+            <div className="relative w-64">
+              <Search className="absolute top-2.5 left-2.5 h-4 w-4 text-stone-400" />
+              <Input
+                placeholder="Search proposals..."
+                className="pl-9"
+                value={searchQuery}
+                onChange={(e) => handleSearchChange(e.target.value)}
+              />
+            </div>
           </div>
         </div>
-        <div className="flex items-center gap-4">
-          <div className="relative w-64">
-            <Search className="absolute top-2.5 left-2.5 h-4 w-4 text-stone-400" />
-            <Input
-              placeholder="Search proposals..."
-              className="pl-9"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
+        <div className="mt-3 flex flex-wrap gap-1.5">
+          <button
+            className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+              !statusFilter
+                ? 'bg-stone-900 text-white'
+                : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
+            }`}
+            onClick={() => handleStatusFilter(undefined)}
+          >
+            All
+          </button>
+          {PROPOSAL_STATUSES.map((s) => {
+            const cfg = getStatusConfig(s);
+            const isActive = statusFilter === s;
+            return (
+              <button
+                key={s}
+                className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+                  isActive ? `${cfg.bg} ${cfg.text} ring-1 ring-current` : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
+                }`}
+                onClick={() => handleStatusFilter(isActive ? undefined : s)}
+              >
+                {cfg.label}
+              </button>
+            );
+          })}
         </div>
       </header>
 
-      <div className="p-8">
+      <div className="flex-1 p-8">
         {requests.length === 0 ? (
           <div className="py-24 text-center">
             <div className="mx-auto mb-4 h-12 w-12 text-stone-300">
               <FileText className="h-full w-full" />
             </div>
             <h3 className="text-lg font-medium text-stone-900">
-              {debouncedQuery.trim()
+              {debouncedQuery.trim() || statusFilter
                 ? 'No matching proposals'
                 : activeFilter === 'mine'
                   ? 'No proposals assigned to you'
                   : 'No proposals yet'}
             </h3>
             <p className="mt-1 text-stone-500">
-              {debouncedQuery.trim()
-                ? 'Try adjusting your search terms.'
+              {debouncedQuery.trim() || statusFilter
+                ? 'Try adjusting your search or filters.'
                 : activeFilter === 'mine'
                   ? 'Switch to "All Proposals" to see everything, or create a new proposal.'
                   : 'Create your first proposal using the sidebar button.'}
@@ -157,15 +209,11 @@ export function DashboardView({
                       <h3 className="font-serif text-lg font-bold text-stone-900 group-hover:text-green-800">
                         {req.client}
                       </h3>
-                      <span
-                        className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                          req.status === 'shared'
-                            ? 'bg-green-100 text-green-800'
-                            : 'bg-stone-100 text-stone-800'
-                        }`}
-                      >
-                        {req.status === 'shared' ? 'Shared' : 'Draft'}
-                      </span>
+                      <ProposalStatusDropdown
+                        proposalId={req.id}
+                        status={req.status}
+                        activeFilter={activeFilter}
+                      />
                     </div>
                     <p className="mt-1 text-sm text-stone-600">{req.title}</p>
                   </div>
@@ -213,6 +261,7 @@ export function DashboardView({
                     <ProposalAssignPopover
                       proposalId={req.id}
                       activeFilter={activeFilter}
+                      currentAssigneeIds={req.assignees.map((a) => a.id)}
                     />
                   )}
                   <button
@@ -231,6 +280,37 @@ export function DashboardView({
           </div>
         )}
       </div>
+
+      {totalPages > 1 && (
+        <div className="border-t border-stone-200 bg-white px-8 py-3">
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-stone-500">
+              {totalCount} proposal{totalCount !== 1 ? 's' : ''}
+            </p>
+            <div className="flex items-center gap-2">
+              <button
+                className="inline-flex items-center gap-1 rounded-md border border-stone-200 px-3 py-1.5 text-sm font-medium text-stone-700 transition-colors hover:bg-stone-50 disabled:cursor-not-allowed disabled:opacity-50"
+                disabled={page <= 1}
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+              >
+                <ChevronLeft className="h-4 w-4" />
+                Previous
+              </button>
+              <span className="px-2 text-sm text-stone-600">
+                Page {page} of {totalPages}
+              </span>
+              <button
+                className="inline-flex items-center gap-1 rounded-md border border-stone-200 px-3 py-1.5 text-sm font-medium text-stone-700 transition-colors hover:bg-stone-50 disabled:cursor-not-allowed disabled:opacity-50"
+                disabled={page >= totalPages}
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              >
+                Next
+                <ChevronRight className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -11,16 +11,19 @@ import { useRouter } from 'next/navigation';
 import { trpc } from '@/lib/trpc';
 import { staleTimes } from '@/lib/query-keys';
 import type { RequestItem } from '@/types/dashboard';
+import { getStatusConfig } from '@/lib/proposal-status';
 import { useSession } from '@/components/session-context';
 
 export default function ItinerariesPage() {
   const router = useRouter();
   const { session } = useSession();
 
-  const { data: proposals = [], isLoading } = trpc.proposals.listForDashboard.useQuery(
-    { filter: 'all' },
+  const { data, isLoading } = trpc.proposals.listForDashboard.useQuery(
+    { filter: 'all', page: 1, pageSize: 100 },
     { staleTime: staleTimes.proposals, enabled: !!session?.user?.id },
   );
+
+  const proposals = data?.items ?? [];
 
   const requests: RequestItem[] = proposals.map((p: any) => ({
     id: p.id,
@@ -31,7 +34,7 @@ export default function ItinerariesPage() {
     startDate: p.startDate ? new Date(p.startDate).toLocaleDateString() : 'TBD',
     received: new Date(p.createdAt).toLocaleDateString(),
     source: 'Manual',
-    status: p.status === 'shared' ? 'shared' : 'draft',
+    status: p.status || 'draft',
     assignees: [],
   }));
 
@@ -72,11 +75,14 @@ export default function ItinerariesPage() {
                     <div>
                       <div className="flex items-center gap-3">
                         <h3 className="font-serif text-lg font-bold text-stone-900 group-hover:text-green-800">{req.client}</h3>
-                        <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                          req.status === 'shared' ? 'bg-green-100 text-green-800' : 'bg-stone-100 text-stone-800'
-                        }`}>
-                          {req.status === 'shared' ? 'Shared' : 'Draft'}
-                        </span>
+                        {(() => {
+                          const cfg = getStatusConfig(req.status);
+                          return (
+                            <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${cfg.bg} ${cfg.text}`}>
+                              {cfg.label}
+                            </span>
+                          );
+                        })()}
                       </div>
                       <p className="text-sm text-stone-600 mt-1">{req.title}</p>
                     </div>
