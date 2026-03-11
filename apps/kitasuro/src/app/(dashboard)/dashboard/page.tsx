@@ -12,17 +12,15 @@ export default async function DashboardPage() {
 
   const trpc = await createServerCaller();
 
-  const [proposals, isAdmin, onboardingData] = await Promise.all([
+  const [proposals, isAdmin] = await Promise.all([
     trpc.proposals.listForDashboard({ filter: 'mine' }),
     trpc.settings.checkAdmin(),
-    trpc.onboarding.getData(),
   ]);
 
   return (
     <DashboardView
       initialProposals={proposals}
       initialIsAdmin={isAdmin}
-      initialOnboardingData={onboardingData}
     />
   );
 }

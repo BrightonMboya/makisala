@@ -342,7 +342,7 @@ function LoginForm() {
                     startTransition(async () => {
                       await authClient.sendVerificationEmail({
                         email: unverifiedEmail,
-                        callbackURL: '/dashboard?verified=true',
+                        callbackURL: '/onboarding?verified=true',
                       });
                       toast('Email sent!', {
                         description: 'A new verification link has been sent to your email.',

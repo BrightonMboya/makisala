@@ -11,39 +11,31 @@ import { staleTimes } from '@/lib/query-keys';
 import type { AssignedUser, RequestItem } from '@/types/dashboard';
 import { NotesPanel } from '@/components/notes-panel';
 import { ProposalAssignPopover } from '@/components/proposal-assign-popover';
-import type { AppRouter } from '@/server/trpc/router';
-import type { inferRouterOutputs } from '@trpc/server';
 
-type RouterOutputs = inferRouterOutputs<AppRouter>;
-
-interface DashboardViewProps {
-  initialProposals: RouterOutputs['proposals']['listForDashboard'];
-  initialIsAdmin: RouterOutputs['settings']['checkAdmin'];
+interface DashboardClientProps {
+  initialProposals: any[];
+  initialIsAdmin: boolean;
 }
 
-export function DashboardView({
-  initialProposals,
-  initialIsAdmin,
-}: DashboardViewProps) {
+export function DashboardClient({ initialProposals, initialIsAdmin }: DashboardClientProps) {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
   const debouncedQuery = useDebounce(searchQuery, 300);
   const [activeFilter, setActiveFilter] = useState<'mine' | 'all'>('mine');
 
-  const { data: isAdmin = false } = trpc.settings.checkAdmin.useQuery(undefined, {
+  const { data: isAdmin = initialIsAdmin } = trpc.settings.checkAdmin.useQuery(undefined, {
     staleTime: staleTimes.dashboardData,
     initialData: initialIsAdmin,
   });
 
-  const { data: proposals = [], isLoading: proposalsLoading } = trpc.proposals.listForDashboard.useQuery(
+  const { data: proposals = initialProposals } = trpc.proposals.listForDashboard.useQuery(
     { filter: activeFilter },
     {
       staleTime: staleTimes.proposals,
-      initialData: activeFilter === 'mine' ? initialProposals : undefined,
+      // Only use initialData for the default filter
+      ...(activeFilter === 'mine' ? { initialData: initialProposals } : {}),
     },
   );
-
-  const isLoading = proposalsLoading;
 
   const requests: RequestItem[] = proposals
     .map((p: any): RequestItem => ({
@@ -71,15 +63,6 @@ export function DashboardView({
         req.status.toLowerCase().includes(query)
       );
     });
-
-  // Show loading state only when switching to "all" filter (no initialData for it)
-  if (isLoading && !proposals.length) {
-    return (
-      <div className="flex h-full items-center justify-center bg-stone-50">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-green-600 border-t-transparent"></div>
-      </div>
-    );
-  }
 
   return (
     <div className="flex h-full flex-col bg-stone-50">

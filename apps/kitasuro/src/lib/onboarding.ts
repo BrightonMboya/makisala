@@ -1,3 +1,25 @@
+export const ONBOARDING_STEPS = ['workspace', 'notification', 'tours', 'plan', 'success'] as const;
+
+export type OnboardingStepName = (typeof ONBOARDING_STEPS)[number];
+
+export function getNextStep({
+  isComplete,
+  organizationNameComplete,
+  notificationEmailComplete,
+  hasToursComplete,
+}: {
+  isComplete?: boolean;
+  organizationNameComplete?: boolean;
+  notificationEmailComplete?: boolean;
+  hasToursComplete?: boolean;
+}): OnboardingStepName {
+  if (isComplete) return 'success';
+  if (!organizationNameComplete) return 'workspace';
+  if (!notificationEmailComplete) return 'notification';
+  if (!hasToursComplete) return 'tours';
+  return 'plan';
+}
+
 export interface OnboardingStep {
   complete: boolean;
   current: string | null;
