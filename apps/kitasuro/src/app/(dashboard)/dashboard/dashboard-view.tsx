@@ -10,7 +10,6 @@ import { trpc } from '@/lib/trpc';
 import { staleTimes } from '@/lib/query-keys';
 import type { AssignedUser, RequestItem } from '@/types/dashboard';
 import { checkOnboardingStatus } from '@/lib/onboarding';
-import { Onboarding } from '../_components/onboarding';
 import { NotesPanel } from '@/components/notes-panel';
 import { ProposalAssignPopover } from '@/components/proposal-assign-popover';
 import type { AppRouter } from '@/server/trpc/router';
@@ -74,12 +73,6 @@ export function DashboardView({
     }
   }, [onboardingStatus?.isComplete, orgOnboardingComplete]);
 
-  // Callback to refetch data when tours are updated during onboarding
-  const handleToursUpdated = () => {
-    utils.onboarding.getData.invalidate();
-  };
-
-  const isOnboarded = orgOnboardingComplete || onboardingStatus?.isComplete;
   const isLoading = proposalsLoading || onboardingLoading;
 
   const requests: RequestItem[] = proposals
@@ -118,18 +111,6 @@ export function DashboardView({
     );
   }
 
-  // Show onboarding if not complete
-  if (!isOnboarded && onboardingStatus) {
-    return (
-      <Onboarding
-        status={onboardingStatus}
-        organizationName={onboardingData?.organization?.name}
-        onToursUpdated={handleToursUpdated}
-      />
-    );
-  }
-
-  // Show regular dashboard
   return (
     <div className="flex h-full flex-col bg-stone-50">
       <header className="flex items-center justify-between border-b border-stone-200 bg-white px-8 py-4">

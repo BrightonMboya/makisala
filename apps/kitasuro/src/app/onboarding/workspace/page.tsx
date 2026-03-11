@@ -109,7 +109,16 @@ export default function WorkspaceStepPage() {
   };
 
   if (isLoading) {
-    return <div className="h-8 w-8 animate-spin rounded-full border-4 border-green-600 border-t-transparent" />;
+    return (
+      <div className="mx-auto w-full max-w-xl space-y-4">
+        <div className="flex justify-center gap-4">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className="h-9 w-9 animate-pulse rounded-full bg-stone-200" />
+          ))}
+        </div>
+        <div className="h-72 animate-pulse rounded-2xl bg-stone-100" />
+      </div>
+    );
   }
 
   return (
