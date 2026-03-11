@@ -46,7 +46,7 @@ import { Input } from '@repo/ui/input';
 import type { BuilderActivity, BuilderDay, TransportModeType } from '@/types/itinerary-types';
 import { addDays, format } from 'date-fns';
 import { trpc } from '@/lib/trpc';
-import { searchPlaces, parseGeoValue, buildGeoValue } from '@/lib/geocoding';
+import { buildGeoValue, parseGeoValue, searchPlaces } from '@/lib/geocoding';
 
 type Day = BuilderDay;
 type Activity = BuilderActivity;
@@ -696,6 +696,7 @@ function TransferFields({
               <SelectItem value="road_4x4">4WD Safari</SelectItem>
               <SelectItem value="road_shuttle">Shuttle</SelectItem>
               <SelectItem value="road_bus">Bus</SelectItem>
+              <SelectItem value="mini_bus">Mini Bus</SelectItem>
               <SelectItem value="flight_domestic">Domestic Flight</SelectItem>
               <SelectItem value="flight_bush">Bush Flight</SelectItem>
             </SelectContent>

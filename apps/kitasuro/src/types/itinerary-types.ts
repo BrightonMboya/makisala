@@ -69,6 +69,7 @@ export type TransportModeType =
   | 'road_4x4'
   | 'road_shuttle'
   | 'road_bus'
+  | 'mini_bus'
   | 'flight_domestic'
   | 'flight_bush';
 

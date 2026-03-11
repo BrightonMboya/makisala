@@ -22,6 +22,7 @@ const transportModeLabels: Record<TransportModeType, string> = {
   road_4x4: '4WD Safari Vehicle',
   road_shuttle: 'Shuttle/Minibus',
   road_bus: 'Coach Bus',
+  mini_bus: 'Mini Bus',
   flight_domestic: 'Domestic Flight',
   flight_bush: 'Bush/Charter Flight',
 };
@@ -137,12 +138,14 @@ export async function transformProposalToItineraryData(
   // Determine location from countries array, tour country, or fallback
   const countries = proposal.countries?.filter(Boolean) || [];
   const tourCountry = (proposal as any).tour?.country;
-  const location = countries.length > 0
-    ? countries.map((c: string) => c.charAt(0).toUpperCase() + c.slice(1).toLowerCase()).join(' & ')
-    : tourCountry
-      ? tourCountry.charAt(0).toUpperCase() + tourCountry.slice(1).toLowerCase()
-      : 'East Africa';
-
+  const location =
+    countries.length > 0
+      ? countries
+          .map((c: string) => c.charAt(0).toUpperCase() + c.slice(1).toLowerCase())
+          .join(' & ')
+      : tourCountry
+        ? tourCountry.charAt(0).toUpperCase() + tourCountry.slice(1).toLowerCase()
+        : 'East Africa';
 
   // Convert days from relational data
   const itinerary: ThemeDay[] = proposalDays.map((day, index) => {
@@ -170,8 +173,8 @@ export async function transformProposalToItineraryData(
       // Regenerate if title was never set or is just the default placeholder
       title = destinationName
         ? `Explore ${destinationName}`
-        : (activities.length > 0 && activities[0] ? activities[0].activity : '')
-          || `Day ${day.dayNumber}`;
+        : (activities.length > 0 && activities[0] ? activities[0].activity : '') ||
+          `Day ${day.dayNumber}`;
     } else {
       title = capitalize(title);
     }
@@ -371,11 +374,17 @@ export async function transformProposalToItineraryData(
 
   const startLocation: Location | undefined =
     proposal.startCityLat && proposal.startCityLng
-      ? { name: proposal.startCity || 'Start', coordinates: [parseFloat(proposal.startCityLng), parseFloat(proposal.startCityLat)] }
+      ? {
+          name: proposal.startCity || 'Start',
+          coordinates: [parseFloat(proposal.startCityLng), parseFloat(proposal.startCityLat)],
+        }
       : undefined;
   const endLocation: Location | undefined =
     proposal.endCityLat && proposal.endCityLng
-      ? { name: proposal.endCity || 'End', coordinates: [parseFloat(proposal.endCityLng), parseFloat(proposal.endCityLat)] }
+      ? {
+          name: proposal.endCity || 'End',
+          coordinates: [parseFloat(proposal.endCityLng), parseFloat(proposal.endCityLat)],
+        }
       : undefined;
 
   const tripOverview: TripOverview = {
