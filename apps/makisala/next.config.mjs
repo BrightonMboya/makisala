@@ -1,6 +1,7 @@
 import { createJiti } from 'jiti'
 import { fileURLToPath } from 'node:url'
 import createMDX from '@next/mdx'
+import { withAxiom } from 'next-axiom'
 
 const jiti = createJiti(fileURLToPath(import.meta.url))
 jiti('./src/lib/env')
@@ -47,4 +48,4 @@ const nextConfig = {
     },
 }
 
-export default withMDX(nextConfig)
+export default withAxiom(withMDX(nextConfig))

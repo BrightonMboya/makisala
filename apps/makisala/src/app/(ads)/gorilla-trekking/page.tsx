@@ -1,6 +1,4 @@
-import { Button } from '@repo/ui/button'
 import {
-    Camera,
     Check,
     Clock,
     Heart,
@@ -9,11 +7,14 @@ import {
     Mountain,
     Quote,
     Shield,
+    Star,
+    TreePine,
     Users,
 } from 'lucide-react'
 import type { Metadata } from 'next'
-import ContactForm from '@/components/contact-form'
 import LandingNav from '@/components/landing-nav'
+import GorillaTrekForm from '@/app/(ads)/gorilla-trekking/_components/gorilla-trek-form'
+import StickyMobileCTA from '@/app/(ads)/gorilla-trekking/_components/sticky-mobile-cta'
 import { BreadcrumbSchema, FAQSchema, TouristTripSchema } from '@/components/schema'
 import { FAQ } from '@/components/faq'
 import { BASE_URL } from '@/lib/constants'
@@ -38,7 +39,7 @@ const faqs = [
     },
     {
         question: 'Is gorilla trekking safe?',
-        answer: 'Yes. Mountain gorillas are habituated to human presence and are gentle by nature. You are accompanied by experienced trackers and armed rangers at all times. Rwanda and Uganda both have excellent safety records for gorilla trekking.',
+        answer: 'Yes. Mountain gorillas are habituated to human presence and are gentle by nature. You are accompanied by experienced trackers and armed rangers at all times. Rwanda has an excellent safety record for gorilla trekking.',
     },
     {
         question: 'How far in advance should I book?',
@@ -51,52 +52,22 @@ const testimonials = [
         name: 'Sarah & James K.',
         location: 'London, UK',
         avatar: 'https://res.cloudinary.com/dr2tdyz2w/image/upload/v1771673594/thispersondoesnotexist.com_winzmz.jpg',
-        text: 'We saw a silverback with twin babies -our guide Joseph knew exactly where to find the Susa family. The hour we spent with them felt like five minutes. Worth every penny.',
+        text: 'We saw a silverback with twin babies — our guide Joseph knew exactly where to find the Susa family. The hour we spent with them felt like five minutes. Worth every penny.',
+        rating: 5,
     },
     {
         name: 'Michael T.',
         location: 'Toronto, Canada',
         avatar: 'https://res.cloudinary.com/dr2tdyz2w/image/upload/v1771673624/thispersondoesnotexist.com_lhoykn.jpg',
         text: 'Makisala handled everything flawlessly. Permits, transport, a beautiful lodge with volcano views. All we had to do was show up and trek. The gorilla encounter changed my perspective on wildlife forever.',
+        rating: 5,
     },
     {
         name: 'Anna & David R.',
         location: 'Sydney, Australia',
         avatar: 'https://res.cloudinary.com/dr2tdyz2w/image/upload/v1771673637/thispersondoesnotexist.com_lbc4hj.jpg',
-        text: 'We compared five operators before choosing Makisala. Best decision -they secured our permits when everyone else said June was sold out. The experience itself was beyond words.',
-    },
-]
-
-const galleryImages = [
-    {
-        src: 'https://assets.makisala.com/destinations/rwanda/gorilla_trekking.jpg',
-        alt: 'Silverback gorilla in Volcanoes National Park',
-        tall: false,
-    },
-    {
-        src: 'https://assets.makisala.com/destinations/rwanda/gorilla_trekking_rwandajpg.jpg',
-        alt: 'Trekking group hiking through bamboo forest',
-        tall: false,
-    },
-    {
-        src: 'https://assets.makisala.com/destinations/rwanda/mountain_gorilla.jpg',
-        alt: 'Baby gorilla playing in the undergrowth',
-        tall: false,
-    },
-    {
-        src: 'https://assets.makisala.com/destinations/rwanda/mountain_gorilla_rwanda.jpg',
-        alt: 'Virunga Mountains landscape at sunrise',
-        tall: false,
-    },
-    {
-        src: 'https://assets.makisala.com/destinations/rwanda/volcanoes_national_park.jpg',
-        alt: 'Safari lodge with volcano views',
-        tall: false,
-    },
-    {
-        src: 'https://assets.makisala.com/destinations/rwanda/rwanda_mountain_gorilla_trekking.jpg',
-        alt: 'Gorilla family resting in a clearing',
-        tall: false,
+        text: 'We compared five operators before choosing Makisala. Best decision — they secured our permits when everyone else said June was sold out. The experience itself was beyond words.',
+        rating: 5,
     },
 ]
 
@@ -128,6 +99,10 @@ export async function generateMetadata(): Promise<Metadata> {
         title: 'Gorilla Trekking in Rwanda | From $3,500 | Makisala Safaris',
         description:
             "Trek to see mountain gorillas in Rwanda's Volcanoes National Park. All-inclusive 4-day package from $3,500 including permits, accommodation, and expert guides. Book now.",
+        robots: {
+            index: false,
+            follow: false,
+        },
         openGraph: {
             title: 'Gorilla Trekking in Rwanda | From $3,500 | Makisala Safaris',
             description:
@@ -176,13 +151,15 @@ export default function GorillaTrekkingPage() {
                 }}
             />
 
-            {/* Hide the global footer on this landing page to keep visitors focused */}
-            {/* eslint-disable-next-line react/no-unknown-property */}
-            <style>{`html > footer { display: none !important; }`}</style>
+            <style>{`html > footer { display: none !important; } .woot-widget-bubble, .woot-widget-holder, .woot--bubble-holder { display: none !important; }`}</style>
             <LandingNav />
+            <StickyMobileCTA />
+
             <div className="bg-background min-h-screen">
-                {/* Hero Section */}
-                <section className="relative flex h-[80dvh] items-center justify-start lg:h-screen">
+                {/* ============================================================
+                    SECTION 1 — HERO WITH INLINE FORM (ABOVE THE FOLD)
+                    ============================================================ */}
+                <section id="inquiry-form" className="relative min-h-[90vh] lg:min-h-screen">
                     <div className="absolute inset-0">
                         <Image
                             src={heroImage}
@@ -191,130 +168,210 @@ export default function GorillaTrekkingPage() {
                             className="object-cover"
                             priority
                         />
-                        <div className="absolute inset-0 bg-black/80 lg:bg-black/75" />
+                        <div className="absolute inset-0 bg-black/70" />
                     </div>
-                    <div className="relative z-10 mt-20 px-6 sm:px-10 lg:px-16">
-                        <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-white/15 px-4 py-2 text-sm font-medium text-white backdrop-blur-sm">
-                            <Shield className="h-4 w-4 text-white" />
-                            Only 96 permits issued per day
-                        </div>
-                        <h1 className="mb-4 max-w-4xl text-3xl font-bold text-white md:text-6xl lg:text-7xl">
-                            Secure Your Gorilla Trekking Permit in Rwanda
-                        </h1>
-                        <p className="mb-6 max-w-2xl text-xl font-light text-white/90 md:text-2xl">
-                            Only a limited number of permits are issued each day. We help you
-                            reserve yours and design the journey around it.
-                        </p>
-                        <p className="mb-8 text-lg font-semibold text-white">
-                            From <span className="text-3xl">$3,500</span> per person
-                        </p>
-                        <div className="flex flex-col gap-4 sm:flex-row">
-                            <a href="#inquiry-form">
-                                <Button
-                                    size="lg"
-                                    className="bg-primary hover:bg-primary/90 px-8 py-3 text-lg font-medium"
-                                >
-                                    Check Permit Availability
-                                </Button>
-                            </a>
-                            <a href="#whats-included">
-                                <Button
-                                    size="lg"
-                                    variant="outline"
-                                    className="border-2 border-white bg-transparent px-8 py-3 text-lg font-medium text-white hover:bg-white hover:text-black"
-                                >
-                                    See What's Included
-                                </Button>
-                            </a>
-                        </div>
-                        <p className="mt-4 text-sm text-white/70">
-                            No payment required to inquire. Response within 24 hours.
-                        </p>
-                    </div>
-                </section>
 
-                {/* Trust Bar */}
-                <section className="border-b bg-white py-5">
-                    <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-center gap-x-6 gap-y-3 px-6 text-sm font-medium text-gray-700 lg:flex-nowrap lg:justify-between">
-                        <span className="whitespace-nowrap">Local East Africa Operator</span>
-                        <span className="hidden text-gray-300 lg:inline">|</span>
-                        <span className="whitespace-nowrap">Permit Secured Directly Through Rwanda Development Board</span>
-                        <span className="hidden text-gray-300 lg:inline">|</span>
-                        <span className="whitespace-nowrap">Personalized Itineraries, Not Group Tours</span>
-                    </div>
-                </section>
+                    <div className="relative z-10 mx-auto flex max-w-7xl flex-col gap-8 px-5 pt-24 pb-12 sm:px-8 lg:flex-row lg:items-center lg:gap-12 lg:pt-28 lg:pb-16">
+                        {/* Left: Copy */}
+                        <div className="flex-1 lg:pr-4">
+                            <div className="mb-5 inline-flex items-center gap-2 rounded-full bg-white/15 px-4 py-2 text-sm font-medium text-white backdrop-blur-sm">
+                                <Shield className="h-4 w-4" />
+                                Only 96 permits issued per day — book early
+                            </div>
 
-                {/* Why Gorilla Permits Must Be Secured Early */}
-                <section className="py-16 lg:py-20">
-                    <div className="mx-auto max-w-4xl px-6">
-                        <h2 className="mb-6 text-3xl font-bold md:text-4xl">
-                            Why Gorilla Permits Must Be Secured Early
-                        </h2>
-                        <div className="text-muted-foreground space-y-4 text-lg leading-relaxed">
-                            <p>
-                                The $1,500 gorilla trekking permit is a government-issued
-                                conservation fee set by the Rwanda Development Board. It is not
-                                our fee -it funds gorilla protection and community development.
+                            <h1 className="mb-5 text-3xl leading-tight font-bold tracking-tight text-white sm:text-4xl md:text-5xl lg:text-[3.25rem]">
+                                Gorilla Trekking in Rwanda — Secure Your Permit Before They Sell Out
+                            </h1>
+
+                            <p className="mb-6 max-w-xl text-lg leading-relaxed text-white/90 md:text-xl">
+                                Private gorilla trekking tours from{' '}
+                                <span className="font-semibold text-white">$3,500 per person</span>{' '}
+                                — including the $1,500 government permit, accommodation, guides, and
+                                all transfers.
                             </p>
-                            <p>
-                                Only approximately 96 permits are available per day across all
-                                gorilla families in Volcanoes National Park. Each permit is tied
-                                to a specific date, and once a date is full, no additional
-                                visitors can trek.
-                            </p>
-                            <p>
-                                Permit availability determines your travel dates -not the other
-                                way around. This is why early planning matters.
-                            </p>
-                            <p>
-                                We handle the permit-securing process once you confirm your
-                                preferred dates, then build your full itinerary around the
-                                confirmed permit.
-                            </p>
+
+                            <div className="mb-6 flex flex-col gap-3 text-sm text-white/80 sm:flex-row sm:gap-6">
+                                <span className="flex items-center gap-2">
+                                    <MapPin className="h-4 w-4 text-white/60" />
+                                    Rwanda-based operator
+                                </span>
+                                <span className="flex items-center gap-2">
+                                    <Users className="h-4 w-4 text-white/60" />
+                                    Personalized itineraries
+                                </span>
+                                <span className="flex items-center gap-2">
+                                    <Clock className="h-4 w-4 text-white/60" />
+                                    Response within 24 hours
+                                </span>
+                            </div>
+
+                            {/* Social proof snippet */}
+                            <div className="flex items-center gap-3">
+                                <div className="flex -space-x-2">
+                                    {testimonials.map((t, i) => (
+                                        <div
+                                            key={i}
+                                            className="relative h-8 w-8 overflow-hidden rounded-full border-2 border-white/30"
+                                        >
+                                            <Image
+                                                src={t.avatar}
+                                                alt={t.name}
+                                                fill
+                                                className="object-cover"
+                                                sizes="32px"
+                                            />
+                                        </div>
+                                    ))}
+                                </div>
+                                <div className="flex items-center gap-1">
+                                    {[...Array(5)].map((_, i) => (
+                                        <Star
+                                            key={i}
+                                            className="h-4 w-4 fill-yellow-400 text-yellow-400"
+                                        />
+                                    ))}
+                                </div>
+                                <span className="text-sm text-white/70">
+                                    Trusted by travelers worldwide
+                                </span>
+                            </div>
                         </div>
-                        <div className="mt-6 rounded-lg border border-amber-200 bg-amber-50 px-5 py-4">
-                            <p className="text-sm font-medium text-amber-800">
-                                <strong>Important:</strong> Peak season dates (June -September)
-                                often sell out 3–6 months in advance.
-                            </p>
+
+                        {/* Right: Form */}
+                        <div className="w-full shrink-0 lg:w-[420px]">
+                            <div className="rounded-2xl border border-white/10 bg-white p-6 shadow-2xl md:p-8">
+                                <h2 className="mb-1 text-xl font-bold text-gray-900">
+                                    Check Gorilla Permit Availability
+                                </h2>
+                                <p className="text-muted-foreground mb-5 text-sm">
+                                    Tell us when you want to go. We'll check permit availability and
+                                    send you a personalized itinerary.
+                                </p>
+                                <GorillaTrekForm />
+                            </div>
                         </div>
                     </div>
                 </section>
 
-                {/* Photo Gallery */}
+                {/* ============================================================
+                    SECTION 2 — TRUST SIGNALS
+                    ============================================================ */}
+                <section className="border-b bg-white py-6">
+                    <div className="mx-auto grid max-w-5xl grid-cols-2 gap-4 px-6 sm:grid-cols-3 lg:grid-cols-5">
+                        {[
+                            {
+                                icon: <MapPin className="text-primary h-5 w-5" />,
+                                text: 'Rwanda-based operator',
+                            },
+                            {
+                                icon: <Users className="text-primary h-5 w-5" />,
+                                text: 'Local expert guides',
+                            },
+                            {
+                                icon: <Shield className="text-primary h-5 w-5" />,
+                                text: 'Gorilla permit included',
+                            },
+                            {
+                                icon: <Heart className="text-primary h-5 w-5" />,
+                                text: 'Custom itineraries',
+                            },
+                            {
+                                icon: <Check className="text-primary h-5 w-5" />,
+                                text: 'Secure booking',
+                            },
+                        ].map((item, i) => (
+                            <div
+                                key={i}
+                                className="flex items-center gap-2 text-sm font-medium text-gray-700"
+                            >
+                                {item.icon}
+                                <span>{item.text}</span>
+                            </div>
+                        ))}
+                    </div>
+                </section>
+
+                {/* ============================================================
+                    SECTION 3 — THE EXPERIENCE
+                    ============================================================ */}
                 <section className="py-16 lg:py-20">
                     <div className="mx-auto max-w-6xl px-6">
-                        <h2 className="mb-3 text-center text-3xl font-bold md:text-4xl">
-                            Moments from the Trek
-                        </h2>
-                        <p className="text-muted-foreground mb-10 text-center text-lg">
-                            Real photos from our gorilla trekking expeditions
-                        </p>
-                        <div className="columns-1 gap-4 sm:columns-2 lg:columns-3">
-                            {galleryImages.map((img, i) => (
-                                <div
-                                    key={i}
-                                    className="mb-4 break-inside-avoid overflow-hidden rounded-xl"
-                                >
-                                    <div
-                                        className={`relative ${img.tall ? 'aspect-[3/4]' : 'aspect-[4/3]'}`}
-                                    >
-                                        <Image
-                                            src={img.src}
-                                            alt={img.alt}
-                                            fill
-                                            className="object-cover transition-transform duration-300 hover:scale-105"
-                                            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                                        />
-                                    </div>
+                        <div className="grid items-center gap-10 lg:grid-cols-2">
+                            <div>
+                                <h2 className="mb-5 text-3xl font-bold md:text-4xl">
+                                    An Encounter You'll Never Forget
+                                </h2>
+                                <div className="text-muted-foreground space-y-4 text-lg leading-relaxed">
+                                    <p>
+                                        Trek through the misty bamboo forests of Volcanoes National
+                                        Park to meet a habituated family of mountain gorillas. Sit
+                                        just seven meters away as silverbacks, mothers, and playful
+                                        juveniles go about their day — an hour-long encounter that
+                                        most travelers describe as life-changing.
+                                    </p>
+                                    <p>
+                                        Only 96 visitors per day are permitted. Small groups of 8
+                                        are led by expert trackers and armed rangers. Your visit
+                                        directly funds gorilla conservation and local communities.
+                                    </p>
                                 </div>
-                            ))}
+                                <div className="mt-6 grid grid-cols-2 gap-4">
+                                    {[
+                                        {
+                                            icon: <TreePine className="h-5 w-5" />,
+                                            text: 'Rainforest trekking',
+                                        },
+                                        {
+                                            icon: <Users className="h-5 w-5" />,
+                                            text: 'Max 8 per group',
+                                        },
+                                        {
+                                            icon: <Clock className="h-5 w-5" />,
+                                            text: '1 hour with gorillas',
+                                        },
+                                        {
+                                            icon: <Heart className="h-5 w-5" />,
+                                            text: 'Conservation impact',
+                                        },
+                                    ].map((item, i) => (
+                                        <div
+                                            key={i}
+                                            className="text-muted-foreground flex items-center gap-2 text-sm font-medium"
+                                        >
+                                            <span className="text-primary">{item.icon}</span>
+                                            {item.text}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-3">
+                                <div className="relative aspect-[3/4] overflow-hidden rounded-xl">
+                                    <Image
+                                        src="https://assets.makisala.com/destinations/rwanda/gorilla_trekking.jpg"
+                                        alt="Silverback gorilla in Volcanoes National Park"
+                                        fill
+                                        className="object-cover"
+                                        sizes="(max-width: 1024px) 50vw, 25vw"
+                                    />
+                                </div>
+                                <div className="relative aspect-[3/4] overflow-hidden rounded-xl">
+                                    <Image
+                                        src="https://assets.makisala.com/destinations/rwanda/mountain_gorilla.jpg"
+                                        alt="Baby gorilla playing in the undergrowth"
+                                        fill
+                                        className="object-cover"
+                                        sizes="(max-width: 1024px) 50vw, 25vw"
+                                    />
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </section>
 
-                {/* What's Included */}
-                <section id="whats-included" className="bg-gray-50 py-16 lg:py-20">
+                {/* ============================================================
+                    SECTION 4 — WHAT'S INCLUDED
+                    ============================================================ */}
+                <section className="bg-gray-50 py-16 lg:py-20">
                     <div className="mx-auto max-w-6xl px-6">
                         <div className="mb-4 text-center">
                             <h2 className="mb-3 text-3xl font-bold md:text-4xl">
@@ -330,36 +387,44 @@ export default function GorillaTrekkingPage() {
                                 {
                                     icon: <Mountain className="text-primary h-6 w-6" />,
                                     title: 'Gorilla Trekking Permit',
-                                    desc: 'Rwanda permit worth $1,500 included. Guaranteed availability when you book with us.',
-                                },
-                                {
-                                    icon: <Shield className="text-primary h-6 w-6" />,
-                                    title: 'Expert Guides & Trackers',
-                                    desc: 'English-speaking guides with years of experience in Volcanoes National Park.',
+                                    desc: 'Rwanda permit worth $1,500 included. We secure availability for your dates.',
+                                    value: '$1,500 value',
                                 },
                                 {
                                     icon: <Heart className="text-primary h-6 w-6" />,
                                     title: 'Quality Accommodation',
-                                    desc: '3 nights in carefully selected lodges near the park with stunning volcano views.',
+                                    desc: '3 nights in selected lodges near the park with stunning volcano views.',
+                                },
+                                {
+                                    icon: <Shield className="text-primary h-6 w-6" />,
+                                    title: 'Professional Guide',
+                                    desc: 'English-speaking guide with years of experience in Volcanoes National Park.',
                                 },
                                 {
                                     icon: <MapPin className="text-primary h-6 w-6" />,
-                                    title: 'All Ground Transport',
-                                    desc: "Airport pickup, all transfers, and a scenic drive through Rwanda's rolling hills.",
+                                    title: 'All Transportation',
+                                    desc: 'Airport pickup, all transfers, and scenic drive through Rwanda.',
                                 },
                                 {
-                                    icon: <Camera className="text-primary h-6 w-6" />,
-                                    title: 'Full Board Meals',
-                                    desc: 'All meals included -breakfast, lunch, and dinner throughout your trip.',
+                                    icon: <Check className="text-primary h-6 w-6" />,
+                                    title: 'Park Entry Fees',
+                                    desc: 'All national park fees and conservation contributions covered.',
                                 },
                                 {
                                     icon: <Clock className="text-primary h-6 w-6" />,
-                                    title: 'Park & Entry Fees',
-                                    desc: 'All national park fees and conservation contributions are covered.',
+                                    title: 'Full Board Meals',
+                                    desc: 'All meals included — breakfast, lunch, and dinner throughout your trip.',
                                 },
                             ].map((item, i) => (
                                 <div key={i} className="rounded-xl border bg-white p-6 shadow-sm">
-                                    <div className="mb-3">{item.icon}</div>
+                                    <div className="mb-3 flex items-center justify-between">
+                                        {item.icon}
+                                        {'value' in item && item.value && (
+                                            <span className="rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-800">
+                                                {item.value}
+                                            </span>
+                                        )}
+                                    </div>
                                     <h3 className="mb-2 text-lg font-semibold">{item.title}</h3>
                                     <p className="text-muted-foreground text-sm leading-relaxed">
                                         {item.desc}
@@ -370,22 +435,28 @@ export default function GorillaTrekkingPage() {
                     </div>
                 </section>
 
-                {/* Itinerary Overview */}
+                {/* ============================================================
+                    SECTION 5 — SAMPLE ITINERARY
+                    ============================================================ */}
                 <section className="py-16 lg:py-20">
                     <div className="mx-auto max-w-4xl px-6">
                         <h2 className="mb-3 text-3xl font-bold md:text-4xl">
                             Your 4-Day Itinerary
                         </h2>
                         <p className="text-muted-foreground mb-10 text-lg">
-                            Every detail planned so you can focus on the experience.
+                            A sample schedule — we customize every trip to your preferences.
                         </p>
-                        <div className="space-y-6">
+                        <div className="space-y-0">
                             {itineraryDays.map((day, index) => (
-                                <div key={index} className="flex gap-4 rounded-xl border p-6">
-                                    <div className="bg-primary flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white">
+                                <div key={index} className="relative flex gap-4 pb-8 last:pb-0">
+                                    {/* Timeline line */}
+                                    {index < itineraryDays.length - 1 && (
+                                        <div className="bg-primary/20 absolute top-10 left-5 h-full w-px" />
+                                    )}
+                                    <div className="bg-primary relative z-10 flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-bold text-white">
                                         {index + 1}
                                     </div>
-                                    <div>
+                                    <div className="rounded-xl border bg-white p-5 shadow-sm flex-1">
                                         <h3 className="mb-1 text-lg font-semibold">
                                             Day {index + 1}: {day.name}
                                         </h3>
@@ -399,8 +470,51 @@ export default function GorillaTrekkingPage() {
                     </div>
                 </section>
 
-                {/* Testimonials */}
+                {/* ============================================================
+                    SECTION 6 — WHY BOOK WITH MAKISALA
+                    ============================================================ */}
                 <section className="bg-gray-50 py-16 lg:py-20">
+                    <div className="mx-auto max-w-4xl px-6">
+                        <h2 className="mb-10 text-center text-3xl font-bold md:text-4xl">
+                            Why Book with Makisala
+                        </h2>
+                        <div className="grid gap-8 md:grid-cols-2">
+                            {[
+                                {
+                                    title: 'Based in East Africa',
+                                    desc: 'We operate from the ground with direct relationships with parks, lodges, and local guides. No middlemen.',
+                                },
+                                {
+                                    title: 'Permit Secured Directly',
+                                    desc: 'We coordinate directly with the Rwanda Development Board to lock your permit as soon as dates are confirmed.',
+                                },
+                                {
+                                    title: 'Direct Communication',
+                                    desc: 'You talk to the people who will host you — not a call center. WhatsApp, email, or phone — however you prefer.',
+                                },
+                                {
+                                    title: 'Itinerary Built Around You',
+                                    desc: 'Want to extend with a Serengeti safari or Zanzibar beach? We customize around your confirmed permit dates.',
+                                },
+                            ].map((item, i) => (
+                                <div key={i} className="flex gap-4">
+                                    <Check className="text-primary mt-1 h-6 w-6 shrink-0" />
+                                    <div>
+                                        <h3 className="mb-1 text-lg font-semibold">{item.title}</h3>
+                                        <p className="text-muted-foreground leading-relaxed">
+                                            {item.desc}
+                                        </p>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </section>
+
+                {/* ============================================================
+                    SECTION 7 — SOCIAL PROOF (TESTIMONIALS)
+                    ============================================================ */}
+                <section className="py-16 lg:py-20">
                     <div className="mx-auto max-w-5xl px-6">
                         <h2 className="mb-3 text-center text-3xl font-bold md:text-4xl">
                             What Our Trekkers Say
@@ -411,7 +525,15 @@ export default function GorillaTrekkingPage() {
                         <div className="grid gap-6 md:grid-cols-3">
                             {testimonials.map((t, i) => (
                                 <div key={i} className="rounded-xl border bg-white p-6 shadow-sm">
-                                    <Quote className="text-primary/30 mb-3 h-8 w-8" />
+                                    <div className="mb-3 flex items-center gap-1">
+                                        {[...Array(t.rating)].map((_, j) => (
+                                            <Star
+                                                key={j}
+                                                className="h-4 w-4 fill-yellow-400 text-yellow-400"
+                                            />
+                                        ))}
+                                    </div>
+                                    <Quote className="text-primary/20 mb-2 h-6 w-6" />
                                     <p className="text-muted-foreground mb-4 leading-relaxed">
                                         {t.text}
                                     </p>
@@ -438,159 +560,50 @@ export default function GorillaTrekkingPage() {
                     </div>
                 </section>
 
-                {/* Why Makisala */}
-                <section className="py-16 lg:py-20">
-                    <div className="mx-auto max-w-4xl px-6">
-                        <h2 className="mb-10 text-center text-3xl font-bold md:text-4xl">
-                            Why Book with Makisala
-                        </h2>
-                        <div className="grid gap-8 md:grid-cols-2">
-                            {[
-                                {
-                                    title: 'Based in East Africa',
-                                    desc: 'We operate from the ground with direct relationships with parks, lodges, and local guides. No middlemen.',
-                                },
-                                {
-                                    title: 'Permit Secured Directly',
-                                    desc: 'We coordinate directly with the Rwanda Development Board to lock your permit as soon as dates are confirmed.',
-                                },
-                                {
-                                    title: 'Conservation-Led Access',
-                                    desc: 'Only 8 visitors per gorilla family per day. Your trek is a controlled, ranger-led visit -not a group tour.',
-                                },
-                                {
-                                    title: 'Itinerary Built Around You',
-                                    desc: 'Want to extend with a Serengeti safari or Zanzibar? We customize around your confirmed permit dates.',
-                                },
-                            ].map((item, i) => (
-                                <div key={i} className="flex gap-4">
-                                    <Check className="text-primary mt-1 h-6 w-6 shrink-0" />
-                                    <div>
-                                        <h3 className="mb-1 text-lg font-semibold">{item.title}</h3>
-                                        <p className="text-muted-foreground leading-relaxed">
-                                            {item.desc}
-                                        </p>
-                                    </div>
-                                </div>
-                            ))}
+                {/* ============================================================
+                    SECTION 8 — SECOND FORM + CONTACT OPTIONS
+                    ============================================================ */}
+                <section id="bottom-form" className="bg-gray-900 py-16 lg:py-20">
+                    <div className="mx-auto max-w-xl px-6">
+                        <div className="mb-8 text-center">
+                            <h2 className="mb-3 text-3xl font-bold text-white md:text-4xl">
+                                Ready to Plan Your Trek?
+                            </h2>
+                            <p className="text-lg text-gray-300">
+                                Tell us your preferred dates and group size. We'll confirm permit
+                                availability and send a personalized itinerary within 24 hours.
+                            </p>
                         </div>
-                        <p className="text-muted-foreground mt-10 text-center text-base">
-                            You'll be hosted by our East Africa team on the ground -not routed
-                            through resellers.
-                        </p>
-                    </div>
-                </section>
-
-                {/* Price Anchor + CTA */}
-                <section className="py-16 lg:py-20">
-                    <div className="mx-auto max-w-3xl px-6 text-center">
-                        <h2 className="mb-4 text-3xl font-bold md:text-4xl">
-                            All-Inclusive from $3,500 Per Person
-                        </h2>
-                        <p className="text-muted-foreground mb-3 text-lg">
-                            Your gorilla permit alone costs $1,500. This package covers everything
-                            else -lodging, meals, transport, guides, and park fees -for just
-                            $2,000 more.
-                        </p>
-                        <p className="text-muted-foreground mb-3 max-w-2xl mx-auto text-base">
-                            To secure your trekking permit, a deposit equal to the permit cost is
-                            required. This allows us to lock your date with the park immediately.
-                            The remaining balance is scheduled after your itinerary is finalized.
-                        </p>
-                        <p className="mb-8 text-sm font-medium text-amber-700">
-                            June -September 2026 permits are filling fast
-                        </p>
-                        <a href="#inquiry-form">
-                            <Button
-                                size="lg"
-                                className="bg-primary hover:bg-primary/90 px-10 py-3 text-lg font-medium"
-                            >
-                                <Users className="mr-2 h-5 w-5" />
-                                Check Availability
-                            </Button>
-                        </a>
+                        <div className="rounded-2xl border border-gray-700 bg-white p-6 shadow-xl md:p-8">
+                            <GorillaTrekForm />
+                        </div>
+                        <div className="mt-8 text-center">
+                            <p className="mb-4 text-sm text-gray-400">
+                                Prefer to reach us directly?
+                            </p>
+                            <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
+                                <a
+                                    href="https://wa.me/255788323254"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center gap-2 rounded-full bg-green-600 px-6 py-3 text-sm font-medium text-white transition-colors hover:bg-green-700"
+                                >
+                                    <MessageCircle className="h-5 w-5" />
+                                    WhatsApp Us
+                                </a>
+                                <a
+                                    href="mailto:info@makisala.com"
+                                    className="inline-flex items-center gap-2 rounded-full border border-gray-600 px-6 py-3 text-sm font-medium text-gray-300 transition-colors hover:bg-gray-800"
+                                >
+                                    info@makisala.com
+                                </a>
+                            </div>
+                        </div>
                     </div>
                 </section>
 
                 {/* FAQ */}
                 <FAQ faqs={faqs} />
-
-                {/* How It Works */}
-                <section className="bg-gray-50 py-16 lg:py-20">
-                    <div className="mx-auto max-w-3xl px-6">
-                        <h2 className="mb-10 text-center text-3xl font-bold md:text-4xl">
-                            How It Works
-                        </h2>
-                        <div className="grid gap-8 md:grid-cols-3">
-                            {[
-                                {
-                                    step: '1',
-                                    title: 'You tell us your preferred dates',
-                                    desc: 'Share your travel window and group size through the form below.',
-                                },
-                                {
-                                    step: '2',
-                                    title: 'We verify permit availability',
-                                    desc: 'We check directly with the Rwanda Development Board for your dates.',
-                                },
-                                {
-                                    step: '3',
-                                    title: 'We secure permits and build your safari',
-                                    desc: 'Once confirmed, we lock your permit and design the full itinerary.',
-                                },
-                            ].map((item, i) => (
-                                <div key={i} className="text-center">
-                                    <div className="bg-primary mx-auto mb-4 flex h-10 w-10 items-center justify-center rounded-full text-sm font-bold text-white">
-                                        {item.step}
-                                    </div>
-                                    <h3 className="mb-2 text-base font-semibold">{item.title}</h3>
-                                    <p className="text-muted-foreground text-sm leading-relaxed">
-                                        {item.desc}
-                                    </p>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                </section>
-
-                {/* Inline Inquiry Form */}
-                <section
-                    id="inquiry-form"
-                    className="from-primary/10 to-secondary/10 bg-gradient-to-r py-20"
-                >
-                    <div className="mx-auto max-w-xl px-6">
-                        <div className="mb-8 text-center">
-                            <h2 className="mb-4 text-3xl font-bold md:text-4xl">
-                                Check Available Dates
-                            </h2>
-                            <p className="text-muted-foreground text-lg">
-                                Tell us your preferred dates and group size. We'll confirm permit
-                                availability within 24 hours.
-                            </p>
-                        </div>
-                        <div className="rounded-xl border bg-white p-6 shadow-sm md:p-8">
-                            <ContactForm />
-                        </div>
-                        <p className="text-muted-foreground mt-4 text-center text-sm">
-                            We'll confirm permit availability and propose an itinerary. No
-                            obligation.
-                        </p>
-                        <div className="mt-6 text-center">
-                            <p className="text-muted-foreground mb-3 text-sm">
-                                Prefer to chat? Reach us directly:
-                            </p>
-                            <a
-                                href="https://wa.me/255788323254"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="inline-flex items-center gap-2 rounded-full bg-green-600 px-6 py-3 text-sm font-medium text-white transition-colors hover:bg-green-700"
-                            >
-                                <MessageCircle className="h-5 w-5" />
-                                WhatsApp: +255 788 323 254
-                            </a>
-                        </div>
-                    </div>
-                </section>
             </div>
         </main>
     )

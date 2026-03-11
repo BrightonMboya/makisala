@@ -211,7 +211,14 @@ export async function createInquiry(data: NewInquiries & { phoneNumber?: string 
             pageUrl: data.url || '',
         })
     } catch (error) {
-        console.error('Failed to send inquiry notification email:', error)
+        const { Logger } = await import('next-axiom')
+        const log = new Logger()
+        log.error('Failed to send inquiry notification email', {
+            error: error instanceof Error ? error.message : String(error),
+            email: data.email,
+            url: data.url,
+        })
+        await log.flush()
     }
 
     return newInquiry
