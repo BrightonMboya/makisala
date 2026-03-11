@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
+import { ONBOARDING_STEPS } from '@/lib/onboarding';
 import { StepPage } from '../_components/step-page';
 import { PlanSelector } from './plan-selector';
 
@@ -11,8 +12,8 @@ export default function PlanStepPage() {
 
   return (
     <StepPage
-      step={4}
-      total={5}
+      step={ONBOARDING_STEPS.indexOf('plan') + 1}
+      total={ONBOARDING_STEPS.length}
       title="Choose your plan"
       description="Find a plan that fits your agency, or start on the free plan."
       className="max-w-4xl"

@@ -22,6 +22,8 @@ import { checkout } from '@/lib/auth-client';
 import { toast } from '@repo/ui/toast';
 import { PLAN_CONFIG, type PlanTier } from '@/lib/plans-config';
 
+const YEARLY_DISCOUNT = 0.17;
+
 const PLAN_TAGLINES: Record<PlanTier, string> = {
   free: 'For solo operators getting started with their first proposals.',
   starter: 'For small agencies that need PDF exports and more proposals.',
@@ -29,15 +31,7 @@ const PLAN_TAGLINES: Record<PlanTier, string> = {
   business: 'For established agencies that need custom domains and unlimited seats.',
 };
 
-const PLAN_FEATURES: Record<PlanTier, { text: string; icon: typeof FileText; disabled?: boolean }[]> = {
-  free: [
-    { text: '2 active proposals', icon: FileText },
-    { text: 'Content library', icon: FileText },
-    { text: 'Minimalistic theme', icon: Palette },
-    { text: 'Own image uploads', icon: Image, disabled: true },
-    { text: 'Team members', icon: Users, disabled: true },
-    { text: 'PDF export', icon: FileText, disabled: true },
-  ],
+const PLAN_FEATURES: Partial<Record<PlanTier, { text: string; icon: typeof FileText; disabled?: boolean }[]>> = {
   starter: [
     { text: '5 active proposals', icon: FileText },
     { text: 'Content library', icon: FileText },
@@ -104,6 +98,26 @@ export function PlanSelector() {
 
   return (
     <div className="overflow-hidden [container-type:inline-size]">
+      {/* Single billing toggle above all plans */}
+      <div className="mb-5 flex items-center justify-center">
+        <label className="flex cursor-pointer items-center gap-2">
+          <span className={`text-sm font-medium ${!yearly ? 'text-stone-900' : 'text-stone-500'}`}>Monthly</span>
+          <Switch
+            checked={yearly}
+            onCheckedChange={setYearly}
+            className="h-5 w-9 data-[state=checked]:bg-green-700"
+          />
+          <span className={`text-sm font-medium ${yearly ? 'text-stone-900' : 'text-stone-500'}`}>Yearly</span>
+          <span
+            className={`inline-flex rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700 transition-all duration-150 ${
+              yearly ? 'opacity-100' : '-translate-x-2 opacity-0'
+            }`}
+          >
+            Save {Math.round(YEARLY_DISCOUNT * 100)}%
+          </span>
+        </label>
+      </div>
+
       <div
         className="mx-auto grid max-w-[calc(var(--cols)*280px)] grid-cols-[repeat(var(--cols),1fr)] max-lg:w-[calc(var(--cols)*100cqw+(var(--cols)-1)*32px)] max-lg:max-w-none max-lg:translate-x-[calc(-1*var(--index)*(100cqw+32px))] max-lg:gap-x-8 max-lg:transition-transform"
         style={
@@ -115,7 +129,7 @@ export function PlanSelector() {
       >
         {PAID_TIERS.map((tier) => {
           const config = PLAN_CONFIG[tier];
-          const features = PLAN_FEATURES[tier];
+          const features = PLAN_FEATURES[tier] ?? [];
           const isHighlighted = tier === HIGHLIGHT_TIER;
 
           return (
@@ -142,29 +156,10 @@ export function PlanSelector() {
                   {/* Price */}
                   <div className="mt-1">
                     <span className="text-base tabular-nums text-stone-700">
-                      ${yearly ? Math.round(config.price * 0.83) : config.price}
+                      ${yearly ? Math.round(config.price * (1 - YEARLY_DISCOUNT)) : config.price}
                     </span>
                     <span className="text-sm text-stone-400"> per month</span>
                   </div>
-
-                  {/* Billing toggle */}
-                  <label className="mt-4 flex cursor-pointer items-center gap-1.5">
-                    <Switch
-                      checked={yearly}
-                      onCheckedChange={setYearly}
-                      className="h-4 w-7 data-[state=checked]:bg-stone-900"
-                    />
-                    <div className="flex items-center gap-1 text-sm font-medium text-stone-600">
-                      <span>Billed yearly</span>
-                      <span
-                        className={`inline-flex rounded-full border border-stone-200 bg-stone-100 px-1.5 py-0.5 text-[0.625rem] font-medium text-stone-600 transition-all duration-150 ${
-                          yearly ? 'opacity-100' : '-translate-x-2 opacity-0'
-                        }`}
-                      >
-                        Save 17%
-                      </span>
-                    </div>
-                  </label>
                 </div>
 
                 {/* Tagline */}
@@ -208,9 +203,9 @@ export function PlanSelector() {
 
                 {/* Feature list */}
                 <ul className="flex flex-col gap-2.5 pb-3 text-sm">
-                  {features.map((feature, idx) => (
+                  {features.map((feature) => (
                     <li
-                      key={idx}
+                      key={feature.text}
                       className={`flex items-center gap-2 text-stone-600 ${
                         feature.disabled ? 'opacity-40' : ''
                       }`}

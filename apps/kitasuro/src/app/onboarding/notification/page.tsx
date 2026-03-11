@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Input } from '@repo/ui/input';
@@ -9,6 +9,7 @@ import { ArrowLeft, ArrowRight } from 'lucide-react';
 import { toast } from '@repo/ui/toast';
 import { z } from 'zod';
 import { trpc } from '@/lib/trpc';
+import { ONBOARDING_STEPS } from '@/lib/onboarding';
 import { StepPage } from '../_components/step-page';
 import { useOnboardingState } from '../_components/use-onboarding-state';
 
@@ -20,11 +21,12 @@ export default function NotificationStepPage() {
   const [notificationEmail, setNotificationEmail] = useState('');
   const [initialized, setInitialized] = useState(false);
 
-  // Initialize form values once data is available
-  if (!initialized && onboardingData) {
-    setNotificationEmail(onboardingData.organization?.notificationEmail || '');
-    setInitialized(true);
-  }
+  useEffect(() => {
+    if (!initialized && onboardingData) {
+      setNotificationEmail(onboardingData.organization?.notificationEmail || '');
+      setInitialized(true);
+    }
+  }, [onboardingData, initialized]);
 
   const onContinue = () => {
     if (!isAdmin) return;
@@ -80,8 +82,8 @@ export default function NotificationStepPage() {
 
   return (
     <StepPage
-      step={2}
-      total={5}
+      step={ONBOARDING_STEPS.indexOf('notification') + 1}
+      total={ONBOARDING_STEPS.length}
       title="Add notification email"
       description="Get client comments and proposal updates delivered to one inbox."
     >

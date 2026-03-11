@@ -4,12 +4,11 @@ import { Input } from '@repo/ui/input';
 import { Clock, FileText, Search } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useDebounce } from '@repo/ui/use-debounce';
 import { trpc } from '@/lib/trpc';
 import { staleTimes } from '@/lib/query-keys';
 import type { AssignedUser, RequestItem } from '@/types/dashboard';
-import { checkOnboardingStatus } from '@/lib/onboarding';
 import { NotesPanel } from '@/components/notes-panel';
 import { ProposalAssignPopover } from '@/components/proposal-assign-popover';
 import type { AppRouter } from '@/server/trpc/router';
@@ -20,16 +19,13 @@ type RouterOutputs = inferRouterOutputs<AppRouter>;
 interface DashboardViewProps {
   initialProposals: RouterOutputs['proposals']['listForDashboard'];
   initialIsAdmin: RouterOutputs['settings']['checkAdmin'];
-  initialOnboardingData: RouterOutputs['onboarding']['getData'];
 }
 
 export function DashboardView({
   initialProposals,
   initialIsAdmin,
-  initialOnboardingData,
 }: DashboardViewProps) {
   const router = useRouter();
-  const utils = trpc.useUtils();
   const [searchQuery, setSearchQuery] = useState('');
   const debouncedQuery = useDebounce(searchQuery, 300);
   const [activeFilter, setActiveFilter] = useState<'mine' | 'all'>('mine');
@@ -47,33 +43,7 @@ export function DashboardView({
     },
   );
 
-  const { data: onboardingData, isLoading: onboardingLoading } = trpc.onboarding.getData.useQuery(
-    undefined,
-    {
-      staleTime: staleTimes.dashboardData,
-      initialData: initialOnboardingData,
-    },
-  );
-
-  const markCompleteMutation = trpc.onboarding.markComplete.useMutation();
-
-  // Check if org has already completed onboarding (stored at org level)
-  const orgOnboardingComplete = !!onboardingData?.organization?.onboardingCompletedAt;
-
-  // Calculate onboarding status from fetched data (only if org hasn't completed onboarding)
-  const onboardingStatus =
-    onboardingData && !orgOnboardingComplete
-      ? checkOnboardingStatus(onboardingData.organization, onboardingData.tourCount)
-      : null;
-
-  // When all onboarding steps are complete, persist to org level in database
-  useEffect(() => {
-    if (onboardingStatus?.isComplete && !orgOnboardingComplete) {
-      markCompleteMutation.mutate();
-    }
-  }, [onboardingStatus?.isComplete, orgOnboardingComplete]);
-
-  const isLoading = proposalsLoading || onboardingLoading;
+  const isLoading = proposalsLoading;
 
   const requests: RequestItem[] = proposals
     .map((p: any): RequestItem => ({

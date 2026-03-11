@@ -1,22 +1,23 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { CheckCircle2, ArrowRight } from 'lucide-react';
+import { CheckCircle2, Circle, ArrowRight } from 'lucide-react';
 import { Button } from '@repo/ui/button';
 import { StepPage } from '../_components/step-page';
 import { useOnboardingState } from '../_components/use-onboarding-state';
 import { trpc } from '@/lib/trpc';
+import { ONBOARDING_STEPS } from '@/lib/onboarding';
 
-const COMPLETED_ITEMS = [
-  'Agency workspace configured',
-  'Notification email connected',
-  'Tour templates added',
-];
+const STEP_LABELS: Record<string, string> = {
+  organizationName: 'Agency workspace configured',
+  notificationEmail: 'Notification email connected',
+  hasTours: 'Tour templates added',
+};
 
 export default function SuccessStepPage() {
   const router = useRouter();
   const markCompleteMutation = trpc.onboarding.markComplete.useMutation();
-  const { isLoading, invalidate } = useOnboardingState();
+  const { isLoading, status, invalidate } = useOnboardingState();
 
   const finish = async () => {
     await markCompleteMutation.mutateAsync();
@@ -28,10 +29,17 @@ export default function SuccessStepPage() {
     return <LoadingSkeleton />;
   }
 
+  const stepEntries = status
+    ? Object.entries(status.steps).map(([key, value]) => ({
+        label: STEP_LABELS[key] || key,
+        complete: value.complete,
+      }))
+    : [];
+
   return (
     <StepPage
-      step={5}
-      total={5}
+      step={ONBOARDING_STEPS.length}
+      total={ONBOARDING_STEPS.length}
       title="You're all set!"
       description="Your workspace is configured and ready to go. Start creating proposals for your clients."
     >
@@ -47,16 +55,19 @@ export default function SuccessStepPage() {
             </div>
             <h3 className="text-base font-semibold text-green-900">Setup complete</h3>
             <ul className="mt-3 space-y-2.5">
-              {COMPLETED_ITEMS.map((item, i) => (
+              {stepEntries.map((entry) => (
                 <li
-                  key={item}
-                  className="flex items-center gap-2.5 text-sm text-green-800"
-                  style={{ animationDelay: `${(i + 1) * 150}ms` }}
+                  key={entry.label}
+                  className={`flex items-center gap-2.5 text-sm ${entry.complete ? 'text-green-800' : 'text-stone-400'}`}
                 >
-                  <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-green-700/10">
-                    <CheckCircle2 className="h-3.5 w-3.5 text-green-700" />
+                  <div className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full ${entry.complete ? 'bg-green-700/10' : 'bg-stone-100'}`}>
+                    {entry.complete ? (
+                      <CheckCircle2 className="h-3.5 w-3.5 text-green-700" />
+                    ) : (
+                      <Circle className="h-3.5 w-3.5 text-stone-300" />
+                    )}
                   </div>
-                  {item}
+                  {entry.label}
                 </li>
               ))}
             </ul>

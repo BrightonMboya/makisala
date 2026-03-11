@@ -4,7 +4,11 @@ import { checkOnboardingStatus, getNextStep } from '@/lib/onboarding';
 
 export default async function OnboardingIndexPage() {
   const trpc = await createServerCaller();
-  const data = await trpc.onboarding.getData();
+  const data = await trpc.onboarding.getData().catch(() => null);
+
+  if (!data) {
+    redirect('/onboarding/workspace');
+  }
 
   const status = checkOnboardingStatus(data.organization, data.tourCount);
 

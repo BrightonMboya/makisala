@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, ArrowRight, CheckCircle2, Circle, Map } from 'lucide-react';
 import { Button } from '@repo/ui/button';
+import { ONBOARDING_STEPS } from '@/lib/onboarding';
 import { StepPage } from '../_components/step-page';
 import { useOnboardingState } from '../_components/use-onboarding-state';
 import { TemplateBrowser } from '@/app/(dashboard)/_components/template-browser';
@@ -27,8 +28,8 @@ export default function ToursStepPage() {
 
   return (
     <StepPage
-      step={3}
-      total={5}
+      step={ONBOARDING_STEPS.indexOf('tours') + 1}
+      total={ONBOARDING_STEPS.length}
       title="Add your first tour"
       description="Clone a shared template so your team can build and send proposals faster."
     >

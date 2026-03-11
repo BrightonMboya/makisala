@@ -1,12 +1,13 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Input } from '@repo/ui/input';
 import { Button } from '@repo/ui/button';
 import { ArrowRight } from 'lucide-react';
 import { toast } from '@repo/ui/toast';
 import { trpc } from '@/lib/trpc';
+import { ONBOARDING_STEPS } from '@/lib/onboarding';
 import { StepPage } from '../_components/step-page';
 import { useOnboardingState } from '../_components/use-onboarding-state';
 
@@ -23,12 +24,13 @@ export default function WorkspaceStepPage() {
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
   const [initialized, setInitialized] = useState(false);
 
-  // Initialize form values once data is available (no useEffect needed)
-  if (!initialized && onboardingData) {
-    setAgencyName(onboardingData.organization?.name || '');
-    setLogoUrl(onboardingData.organization?.logoUrl || '');
-    setInitialized(true);
-  }
+  useEffect(() => {
+    if (!initialized && onboardingData) {
+      setAgencyName(onboardingData.organization?.name || '');
+      setLogoUrl(onboardingData.organization?.logoUrl || '');
+      setInitialized(true);
+    }
+  }, [onboardingData, initialized]);
 
   const onContinue = () => {
     if (!isAdmin) return;
@@ -123,8 +125,8 @@ export default function WorkspaceStepPage() {
 
   return (
     <StepPage
-      step={1}
-      total={5}
+      step={ONBOARDING_STEPS.indexOf('workspace') + 1}
+      total={ONBOARDING_STEPS.length}
       title="Create your workspace"
       description="Set your agency name and logo. These appear on proposal pages and shared itineraries."
     >
