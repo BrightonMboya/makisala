@@ -8,14 +8,15 @@ import {
   proposalMeals,
   proposalTransportation,
   member,
+  clients,
 } from '@repo/db/schema';
-import { and, desc, eq, ilike, inArray, or, sql, count } from 'drizzle-orm';
+import { and, desc, eq, inArray, or, sql, count } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
 import {
   sendProposalShareEmail,
   sendProposalAcceptanceEmail,
 } from '@repo/resend';
-import { router, protectedProcedure, adminProcedure, publicProcedure } from '../init';
+import { router, protectedProcedure, adminProcedure, publicProcedure, escapeLikeQuery } from '../init';
 import { checkFeatureAccess, getOrgPlan, ALLOWED_THEMES_BY_TIER } from '@/lib/plans';
 import { env } from '@/lib/env';
 
@@ -115,11 +116,17 @@ export const proposalsRouter = router({
       }
 
       if (input.search?.trim()) {
-        const pattern = `%${input.search.trim()}%`;
+        const pattern = `%${escapeLikeQuery(input.search.trim())}%`;
         conditions.push(
           or(
-            ilike(proposals.name, pattern),
-            ilike(proposals.tourTitle, pattern),
+            sql`${proposals.name} ilike ${pattern} escape '\\'`,
+            sql`${proposals.tourTitle} ilike ${pattern} escape '\\'`,
+            sql`exists (
+              select 1
+              from ${clients}
+              where ${clients.id} = ${proposals.clientId}
+                and ${clients.name} ilike ${pattern} escape '\\'
+            )`,
           )!,
         );
       }
