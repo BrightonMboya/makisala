@@ -15,7 +15,7 @@ export default function LandingNav() {
                     </div>
                     <a href="#inquiry-form">
                         <Button className="bg-primary px-6 py-2 text-sm font-medium text-white">
-                            Plan My Gorilla Trek
+                            Check Availability
                         </Button>
                     </a>
                 </div>

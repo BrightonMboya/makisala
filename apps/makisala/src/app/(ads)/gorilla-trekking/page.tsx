@@ -5,6 +5,7 @@ import {
     MapPin,
     MessageCircle,
     Mountain,
+    Phone,
     Quote,
     Shield,
     Star,
@@ -51,21 +52,21 @@ const testimonials = [
     {
         name: 'Sarah & James K.',
         location: 'London, UK',
-        avatar: 'https://res.cloudinary.com/dr2tdyz2w/image/upload/v1771673594/thispersondoesnotexist.com_winzmz.jpg',
+        initials: 'SJ',
         text: 'We saw a silverback with twin babies — our guide Joseph knew exactly where to find the Susa family. The hour we spent with them felt like five minutes. Worth every penny.',
         rating: 5,
     },
     {
         name: 'Michael T.',
         location: 'Toronto, Canada',
-        avatar: 'https://res.cloudinary.com/dr2tdyz2w/image/upload/v1771673624/thispersondoesnotexist.com_lhoykn.jpg',
+        initials: 'MT',
         text: 'Makisala handled everything flawlessly. Permits, transport, a beautiful lodge with volcano views. All we had to do was show up and trek. The gorilla encounter changed my perspective on wildlife forever.',
         rating: 5,
     },
     {
         name: 'Anna & David R.',
         location: 'Sydney, Australia',
-        avatar: 'https://res.cloudinary.com/dr2tdyz2w/image/upload/v1771673637/thispersondoesnotexist.com_lbc4hj.jpg',
+        initials: 'AD',
         text: 'We compared five operators before choosing Makisala. Best decision — they secured our permits when everyone else said June was sold out. The experience itself was beyond words.',
         rating: 5,
     },
@@ -168,7 +169,7 @@ export default function GorillaTrekkingPage() {
                             className="object-cover"
                             priority
                         />
-                        <div className="absolute inset-0 bg-black/70" />
+                        <div className="absolute inset-0 bg-black/80" />
                     </div>
 
                     <div className="relative z-10 mx-auto flex max-w-7xl flex-col gap-8 px-5 pt-24 pb-12 sm:px-8 lg:flex-row lg:items-center lg:gap-12 lg:pt-28 lg:pb-16">
@@ -207,22 +208,6 @@ export default function GorillaTrekkingPage() {
 
                             {/* Social proof snippet */}
                             <div className="flex items-center gap-3">
-                                <div className="flex -space-x-2">
-                                    {testimonials.map((t, i) => (
-                                        <div
-                                            key={i}
-                                            className="relative h-8 w-8 overflow-hidden rounded-full border-2 border-white/30"
-                                        >
-                                            <Image
-                                                src={t.avatar}
-                                                alt={t.name}
-                                                fill
-                                                className="object-cover"
-                                                sizes="32px"
-                                            />
-                                        </div>
-                                    ))}
-                                </div>
                                 <div className="flex items-center gap-1">
                                     {[...Array(5)].map((_, i) => (
                                         <Star
@@ -232,8 +217,28 @@ export default function GorillaTrekkingPage() {
                                     ))}
                                 </div>
                                 <span className="text-sm text-white/70">
-                                    Trusted by travelers worldwide
+                                    Rated 5/5 by past trekkers
                                 </span>
+                            </div>
+
+                            {/* WhatsApp CTA */}
+                            <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+                                <a
+                                    href="https://wa.me/255788323254?text=Hi%2C%20I%27m%20interested%20in%20gorilla%20trekking%20in%20Rwanda.%20Can%20you%20help%20me%20check%20permit%20availability%3F"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center justify-center gap-2 rounded-full bg-green-600 px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-green-700"
+                                >
+                                    <MessageCircle className="h-5 w-5" />
+                                    Chat on WhatsApp — Get a Reply in Minutes
+                                </a>
+                                <a
+                                    href="tel:+255788323254"
+                                    className="inline-flex items-center justify-center gap-2 rounded-full border border-white/30 px-6 py-3 text-sm font-medium text-white transition-colors hover:bg-white/10"
+                                >
+                                    <Phone className="h-4 w-4" />
+                                    Call Us
+                                </a>
                             </div>
                         </div>
 
@@ -241,11 +246,11 @@ export default function GorillaTrekkingPage() {
                         <div className="w-full shrink-0 lg:w-[420px]">
                             <div className="rounded-2xl border border-white/10 bg-white p-6 shadow-2xl md:p-8">
                                 <h2 className="mb-1 text-xl font-bold text-gray-900">
-                                    Check Gorilla Permit Availability
+                                    Check Permit Availability
                                 </h2>
                                 <p className="text-muted-foreground mb-5 text-sm">
-                                    Tell us when you want to go. We'll check permit availability and
-                                    send you a personalized itinerary.
+                                    Tell us your dates — we'll confirm availability and send you a
+                                    free, personalized quote. No commitment.
                                 </p>
                                 <GorillaTrekForm />
                             </div>
@@ -538,14 +543,8 @@ export default function GorillaTrekkingPage() {
                                         {t.text}
                                     </p>
                                     <div className="flex items-center gap-3">
-                                        <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-full bg-gray-200">
-                                            <Image
-                                                src={t.avatar}
-                                                alt={t.name}
-                                                fill
-                                                className="object-cover"
-                                                sizes="40px"
-                                            />
+                                        <div className="bg-primary/10 text-primary flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-semibold">
+                                            {t.initials}
                                         </div>
                                         <div>
                                             <p className="font-semibold">{t.name}</p>
@@ -567,11 +566,11 @@ export default function GorillaTrekkingPage() {
                     <div className="mx-auto max-w-xl px-6">
                         <div className="mb-8 text-center">
                             <h2 className="mb-3 text-3xl font-bold text-white md:text-4xl">
-                                Ready to Plan Your Trek?
+                                Check If Your Dates Are Available
                             </h2>
                             <p className="text-lg text-gray-300">
-                                Tell us your preferred dates and group size. We'll confirm permit
-                                availability and send a personalized itinerary within 24 hours.
+                                Permits sell out months ahead. Tell us when you want to go and we'll
+                                confirm availability within 24 hours — no commitment.
                             </p>
                         </div>
                         <div className="rounded-2xl border border-gray-700 bg-white p-6 shadow-xl md:p-8">
@@ -583,7 +582,7 @@ export default function GorillaTrekkingPage() {
                             </p>
                             <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
                                 <a
-                                    href="https://wa.me/255788323254"
+                                    href="https://wa.me/255788323254?text=Hi%2C%20I%27m%20interested%20in%20gorilla%20trekking%20in%20Rwanda.%20Can%20you%20help%20me%20check%20permit%20availability%3F"
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="inline-flex items-center gap-2 rounded-full bg-green-600 px-6 py-3 text-sm font-medium text-white transition-colors hover:bg-green-700"
