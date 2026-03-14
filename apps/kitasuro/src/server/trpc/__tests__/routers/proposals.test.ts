@@ -23,13 +23,20 @@ describe('proposals router', () => {
       const mockProposals = [
         { id: 'p-1', name: 'Proposal 1', status: 'draft' },
       ];
+      db._results.set('select', [{ value: 1 }]);
       db._results.set('query.proposals.findMany', mockProposals);
 
       const result = await caller.proposals.listForDashboard({ filter: 'all' });
-      expect(result).toHaveLength(1);
+      expect(result).toEqual({
+        items: mockProposals,
+        totalCount: 1,
+        page: 1,
+        pageSize: 20,
+        totalPages: 1,
+      });
     });
 
-    test('returns empty array when no assignments for "mine" filter', async () => {
+    test('returns empty paginated result when no assignments for "mine" filter', async () => {
       const { ctx, db } = createProtectedContext();
       const caller = createCaller(ctx);
 
@@ -37,21 +44,57 @@ describe('proposals router', () => {
       db._results.set('select', []);
 
       const result = await caller.proposals.listForDashboard({ filter: 'mine' });
-      expect(result).toEqual([]);
+      expect(result).toEqual({
+        items: [],
+        totalCount: 0,
+        page: 1,
+        pageSize: 20,
+        totalPages: 0,
+      });
     });
 
     test('returns assigned proposals for "mine" filter', async () => {
       const { ctx, db } = createProtectedContext();
       const caller = createCaller(ctx);
 
-      // Return assignment rows
-      db._results.set('select', [{ proposalId: 'p-1' }]);
-      db._results.set('query.proposals.findMany', [
+      const items = [
         { id: 'p-1', name: 'My Proposal' },
-      ]);
+      ];
+      // First select: assignment rows. Second select: count().
+      db._resultsQueue.set('select', [[{ proposalId: 'p-1' }], [{ value: 1 }]]);
+      db._results.set('query.proposals.findMany', items);
 
       const result = await caller.proposals.listForDashboard({ filter: 'mine' });
-      expect(result).toHaveLength(1);
+      expect(result).toEqual({
+        items,
+        totalCount: 1,
+        page: 1,
+        pageSize: 20,
+        totalPages: 1,
+      });
+    });
+
+    test('returns pagination metadata for later pages', async () => {
+      const { ctx, db } = createProtectedContext();
+      const caller = createCaller(ctx);
+
+      const items = [{ id: 'p-21', name: 'Proposal 21', status: 'draft' }];
+      db._results.set('select', [{ value: 21 }]);
+      db._results.set('query.proposals.findMany', items);
+
+      const result = await caller.proposals.listForDashboard({
+        filter: 'all',
+        page: 2,
+        pageSize: 20,
+      });
+
+      expect(result).toEqual({
+        items,
+        totalCount: 21,
+        page: 2,
+        pageSize: 20,
+        totalPages: 2,
+      });
     });
 
     test('handles database error on listForDashboard', async () => {

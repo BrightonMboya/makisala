@@ -13,7 +13,7 @@ export default async function DashboardPage() {
   const trpc = await createServerCaller();
 
   const [proposals, isAdmin] = await Promise.all([
-    trpc.proposals.listForDashboard({ filter: 'mine' }),
+    trpc.proposals.listForDashboard({ filter: 'mine', page: 1, pageSize: 20 }),
     trpc.settings.checkAdmin(),
   ]);
 

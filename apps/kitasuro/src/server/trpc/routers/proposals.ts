@@ -8,14 +8,15 @@ import {
   proposalMeals,
   proposalTransportation,
   member,
+  clients,
 } from '@repo/db/schema';
-import { and, desc, eq, inArray, sql } from 'drizzle-orm';
+import { and, desc, eq, inArray, or, sql, count } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
 import {
   sendProposalShareEmail,
   sendProposalAcceptanceEmail,
 } from '@repo/resend';
-import { router, protectedProcedure, adminProcedure, publicProcedure } from '../init';
+import { router, protectedProcedure, adminProcedure, publicProcedure, escapeLikeQuery } from '../init';
 import { checkFeatureAccess, getOrgPlan, ALLOWED_THEMES_BY_TIER } from '@/lib/plans';
 import { env } from '@/lib/env';
 
@@ -82,9 +83,19 @@ interface BuilderDay {
 
 export const proposalsRouter = router({
   listForDashboard: protectedProcedure
-    .input(z.object({ filter: z.enum(['mine', 'all']).default('mine') }))
+    .input(
+      z.object({
+        filter: z.enum(['mine', 'all']).default('mine'),
+        page: z.number().int().min(1).default(1),
+        pageSize: z.number().int().min(1).max(100).default(20),
+        status: z
+          .enum(['draft', 'shared', 'awaiting_payment', 'paid', 'booked', 'cancelled'])
+          .optional(),
+        search: z.string().optional(),
+      }),
+    )
     .query(async ({ ctx, input }) => {
-      let whereClause = eq(proposals.organizationId, ctx.orgId);
+      const conditions = [eq(proposals.organizationId, ctx.orgId)];
 
       if (input.filter === 'mine') {
         const assignedRows = await ctx.db
@@ -93,37 +104,71 @@ export const proposalsRouter = router({
           .where(eq(proposalAssignments.userId, ctx.user.id));
 
         const assignedIds = assignedRows.map((r) => r.proposalId);
-        if (assignedIds.length === 0) return [];
+        if (assignedIds.length === 0) {
+          return { items: [], totalCount: 0, page: input.page, pageSize: input.pageSize, totalPages: 0 };
+        }
 
-        whereClause = and(
-          eq(proposals.organizationId, ctx.orgId),
-          inArray(proposals.id, assignedIds),
-        )!;
+        conditions.push(inArray(proposals.id, assignedIds));
       }
 
-      return await ctx.db.query.proposals.findMany({
-        where: whereClause,
-        orderBy: desc(proposals.updatedAt),
-        with: {
-          client: true,
-          assignments: {
-            with: {
-              user: {
-                columns: { id: true, name: true, image: true },
+      if (input.status) {
+        conditions.push(eq(proposals.status, input.status));
+      }
+
+      if (input.search?.trim()) {
+        const pattern = `%${escapeLikeQuery(input.search.trim())}%`;
+        conditions.push(
+          or(
+            sql`${proposals.name} ilike ${pattern} escape '\\'`,
+            sql`${proposals.tourTitle} ilike ${pattern} escape '\\'`,
+            sql`exists (
+              select 1
+              from ${clients}
+              where ${clients.id} = ${proposals.clientId}
+                and ${clients.name} ilike ${pattern} escape '\\'
+            )`,
+          )!,
+        );
+      }
+
+      const whereClause = and(...conditions)!;
+
+      const [countResult, items] = await Promise.all([
+        ctx.db
+          .select({ value: count() })
+          .from(proposals)
+          .where(whereClause),
+        ctx.db.query.proposals.findMany({
+          where: whereClause,
+          orderBy: desc(proposals.createdAt),
+          offset: (input.page - 1) * input.pageSize,
+          limit: input.pageSize,
+          with: {
+            client: true,
+            assignments: {
+              with: {
+                user: {
+                  columns: { id: true, name: true, image: true },
+                },
               },
             },
           },
-        },
-        columns: {
-          id: true,
-          name: true,
-          status: true,
-          createdAt: true,
-          updatedAt: true,
-          tourTitle: true,
-          startDate: true,
-        },
-      });
+          columns: {
+            id: true,
+            name: true,
+            status: true,
+            createdAt: true,
+            updatedAt: true,
+            tourTitle: true,
+            startDate: true,
+          },
+        }),
+      ]);
+
+      const totalCount = countResult[0]?.value ?? 0;
+      const totalPages = Math.ceil(totalCount / input.pageSize);
+
+      return { items, totalCount, page: input.page, pageSize: input.pageSize, totalPages };
     }),
 
   getById: publicProcedure
@@ -255,7 +300,7 @@ export const proposalsRouter = router({
         id: z.string(),
         name: z.string(),
         data: z.record(z.string(), z.unknown()),
-        status: z.enum(['draft', 'shared']).optional(),
+        status: z.enum(['draft', 'shared', 'awaiting_payment', 'paid', 'booked', 'cancelled']).optional(),
         tourId: z.string(),
       }),
     )
@@ -577,6 +622,12 @@ export const proposalsRouter = router({
         throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: result.error });
       }
 
+      // Auto-transition status to shared
+      await ctx.db
+        .update(proposals)
+        .set({ status: 'shared', updatedAt: new Date().toISOString() })
+        .where(eq(proposals.id, input.proposalId));
+
       return { success: true };
     }),
 
@@ -638,6 +689,37 @@ export const proposalsRouter = router({
       if (!result.success) {
         throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: result.error });
       }
+
+      // Auto-transition status to awaiting_payment
+      await ctx.db
+        .update(proposals)
+        .set({ status: 'awaiting_payment', updatedAt: new Date().toISOString() })
+        .where(eq(proposals.id, input.proposalId));
+
+      return { success: true };
+    }),
+
+  updateStatus: protectedProcedure
+    .input(
+      z.object({
+        proposalId: z.string(),
+        status: z.enum(['draft', 'shared', 'awaiting_payment', 'paid', 'booked', 'cancelled']),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const proposal = await ctx.db.query.proposals.findFirst({
+        where: and(eq(proposals.id, input.proposalId), eq(proposals.organizationId, ctx.orgId)),
+        columns: { id: true },
+      });
+
+      if (!proposal) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Proposal not found' });
+      }
+
+      await ctx.db
+        .update(proposals)
+        .set({ status: input.status })
+        .where(eq(proposals.id, input.proposalId));
 
       return { success: true };
     }),

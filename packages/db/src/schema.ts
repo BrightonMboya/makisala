@@ -581,7 +581,14 @@ export const wildlifeParkOverrides = pgTable('wildlife_park_overrides', {
 });
 
 // ---------- PROPOSALS ----------
-export const ProposalStatus = pgEnum('proposal_status', ['draft', 'shared']);
+export const ProposalStatus = pgEnum('proposal_status', [
+  'draft',
+  'shared',
+  'awaiting_payment',
+  'paid',
+  'booked',
+  'cancelled',
+]);
 
 export const proposals = pgTable('proposals', {
   id: text('id').primaryKey(),
