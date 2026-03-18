@@ -1,386 +1,692 @@
+'use client';
+
 import { Navbar } from '@/components/landing/Navbar';
 import { Hero } from '@/components/landing/Hero';
-import { FeatureGrid } from '@/components/landing/FeatureGrid';
-import { FeatureHighlight } from '@/components/landing/FeatureHighlight';
-import { Pricing } from '@/components/landing/Pricing';
+import { FeaturesSection } from '@/components/landing/FeaturesSection';
+import { Reviews } from '@/components/landing/Reviews';
 import { Footer } from '@/components/landing/Footer';
-import { ArrowRight, Compass, Globe, Layout, Library, Share2, Sparkles } from 'lucide-react';
-import Link from 'next/link';
+import { motion } from 'framer-motion';
+
+const fadeUp = {
+  initial: { opacity: 0, y: 20 },
+  whileInView: { opacity: 1, y: 0 },
+  viewport: { once: true, margin: '-80px' as const },
+  transition: { duration: 0.7, ease: [0.16, 1, 0.3, 1] as const },
+};
 
 export default function LandingPage() {
-  const coreFeatures = [
-    {
-      title: 'Drag-and-Drop Builder',
-      description:
-        'Add accommodations, activities, and transfers. Rearrange days with a drag. Your itinerary stays organized.',
-      icon: Compass,
-    },
-    {
-      title: 'Ready-Made Content',
-      description:
-        'Stop Googling for lodge photos. Pull from a library of verified images and descriptions for top destinations.',
-      icon: Library,
-    },
-    {
-      title: 'Shareable Proposals',
-      description:
-        'Send a link, not a PDF attachment. Clients view, comment, and accept your proposal from any device.',
-      icon: Share2,
-    },
-    {
-      title: 'Works Offline',
-      description: 'Your clients can pull up their itinerary mid-safari, even with no signal.',
-      icon: Globe,
-    },
-    {
-      title: 'AI Writing Assist',
-      description:
-        'Stuck on a description? Generate polished copy for any destination or activity in seconds.',
-      icon: Sparkles,
-    },
-    {
-      title: 'Your Brand, Your Look',
-      description:
-        'Pick a theme, add your logo, and match your brand colors. Every proposal looks like it came from your team.',
-      icon: Layout,
-    },
-  ];
-
-  const steps = [
-    {
-      number: '01',
-      title: 'Build your itinerary',
-      description:
-        'Drag in accommodations, activities, and transfers. The builder handles maps, pricing, and day structure.',
-    },
-    {
-      number: '02',
-      title: 'Personalize for your client',
-      description:
-        'Add your brand, tailor descriptions, and fine-tune the experience for each traveler.',
-    },
-    {
-      number: '03',
-      title: 'Share and close',
-      description: 'Send a live link. Clients review, comment, and accept — all in one place.',
-    },
-  ];
-
   return (
-    <div className="bg-background text-foreground selection:bg-primary/20 selection:text-primary min-h-screen">
+    <div style={{ backgroundColor: '#F8F7F5', color: '#261B07' }}>
       <Navbar />
 
       <main>
         <Hero />
 
-        {/* Trusted By / Social Proof */}
-        <section className="border-border/40 border-y py-12">
-          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <p
-              className="animate-slide-up-fade text-muted-foreground text-center text-sm font-medium"
-              style={{ '--delay': '700ms' } as React.CSSProperties}
+        {/* Trusted By */}
+        <section
+          id="customers"
+          className="flex flex-col items-center overflow-hidden"
+          style={{ paddingBlock: '64px', gap: '32px' }}
+        >
+          <motion.h2
+            {...fadeUp}
+            className="text-center"
+            style={{
+              fontSize: '56px',
+              letterSpacing: '-2px',
+              lineHeight: '68px',
+              color: '#261B07',
+              fontWeight: 580,
+              paddingInline: '112px',
+            }}
+          >
+            Built for modern travel teams
+          </motion.h2>
+          {/* Marquee */}
+          <div className="relative w-full">
+            {/* Fade edges */}
+            <div
+              className="pointer-events-none absolute inset-y-0 left-0 z-10 w-24"
+              style={{
+                background:
+                  'linear-gradient(to right, #F8F7F5, transparent)',
+              }}
+            />
+            <div
+              className="pointer-events-none absolute inset-y-0 right-0 z-10 w-24"
+              style={{
+                background:
+                  'linear-gradient(to left, #F8F7F5, transparent)',
+              }}
+            />
+            <motion.div
+              className="flex w-max"
+              animate={{ x: ['0%', '-50%'] }}
+              transition={{
+                x: {
+                  repeat: Infinity,
+                  repeatType: 'loop',
+                  duration: 20,
+                  ease: 'linear',
+                },
+              }}
+              style={{ gap: '24px' }}
             >
-              Trusted by tour operators across Africa
-            </p>
-            <div className="mt-8 flex flex-wrap items-center justify-center gap-x-12 gap-y-4">
-              {['Safari operators', 'DMC teams', 'Travel agencies', 'Luxury outfitters'].map(
-                (label, i) => (
-                  <span
-                    key={label}
-                    className="animate-slide-up-fade text-muted-foreground/50 font-heading text-lg font-semibold tracking-tight"
-                    style={{ '--delay': `${750 + i * 80}ms` } as React.CSSProperties}
+              {/* Duplicate logos for seamless loop */}
+              {[...Array(2)].map((_, setIndex) =>
+                Array.from({ length: 8 }).map((__, i) => (
+                  <div
+                    key={`${setIndex}-${i}`}
+                    className="flex shrink-0 items-center justify-center rounded-lg"
+                    style={{
+                      width: '120px',
+                      height: '40px',
+                      backgroundColor: '#EEECEA',
+                      marginRight: i < 7 || setIndex < 1 ? '0px' : '0px',
+                    }}
                   >
-                    {label}
-                  </span>
-                ),
+                    <span
+                      style={{
+                        fontSize: '14px',
+                        color: 'rgba(38,27,7,0.4)',
+                        fontWeight: 400,
+                      }}
+                    >
+                      Logo
+                    </span>
+                  </div>
+                )),
               )}
-            </div>
+            </motion.div>
           </div>
         </section>
 
-        {/* Features Grid Section */}
-        <section id="features" className="py-24">
-          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <div
-              className="animate-slide-up-fade mb-16 text-center"
-              style={{ '--delay': '0ms' } as React.CSSProperties}
+        <FeaturesSection />
+
+        {/* Collaboration section */}
+        <section
+          className="flex flex-col"
+          style={{ paddingBlock: '80px', paddingInline: '112px', gap: '32px' }}
+        >
+          <div className="mx-auto" style={{ maxWidth: '1216px', width: '100%' }}>
+            {/* Header */}
+            <motion.div
+              {...fadeUp}
+              className="flex flex-col items-center"
+              style={{ gap: '16px', marginBottom: '32px' }}
             >
-              <span className="text-primary border-primary/20 bg-primary/5 mb-4 inline-block rounded-full border px-4 py-1.5 text-sm font-medium">
-                Features
-              </span>
-              <h2 className="font-heading text-3xl font-bold tracking-tight sm:text-4xl">
-                Less admin, more bookings
+              <h2
+                className="text-center"
+                style={{
+                  fontSize: '56px',
+                  letterSpacing: '-2px',
+                  lineHeight: '68px',
+                  color: '#261B07',
+                  fontWeight: 580,
+                }}
+              >
+                One team. One itinerary.
               </h2>
-              <p className="text-muted-foreground mx-auto mt-4 max-w-2xl text-lg">
-                Every tool a tour operator needs to go from enquiry to confirmed booking, faster.
+              <p
+                className="text-center"
+                style={{
+                  fontSize: '20px',
+                  lineHeight: '24px',
+                  color: '#261B07',
+                  fontWeight: 400,
+                  maxWidth: '700px',
+                }}
+              >
+                Sales, ops, and managers work in one shared space.
               </p>
-            </div>
-            <FeatureGrid features={coreFeatures} />
-          </div>
-        </section>
+            </motion.div>
 
-        {/* Deep Dive Feature 1: Builder */}
-        <FeatureHighlight
-          align="left"
-          title="Stop wrestling with Word docs and spreadsheets"
-          description="Drop in accommodations, slot in game drives, and rearrange the whole trip with a drag. Ratiba calculates travel times, maps the route, and totals the pricing as you go."
-          features={[
-            'Drag & drop day reordering',
-            'Auto-generated route maps',
-            'Day-by-day breakdowns',
-            'Built-in pricing calculator',
-          ]}
-          imageSrc="/img_1.png"
-          imageAlt="Itinerary Builder Interface"
-          ctaText="Try the builder"
-          ctaLink="/login"
-        />
-
-        {/* Deep Dive Feature 2: Content Library */}
-        <FeatureHighlight
-          align="right"
-          title="Every lodge photo and description, ready to go"
-          description="No more emailing lodges for updated photos or writing the same Serengeti description for the tenth time. Search, pick, and drop verified content straight into your itinerary."
-          features={[
-            'High-res accommodation photos',
-            'Pre-written destination copy',
-            'Activity and excursion database',
-            'One-click import into any itinerary',
-          ]}
-          imageSrc="https://brand.makisala.com/destination.png"
-          imageAlt="Content Library Interface"
-        />
-
-        {/* Deep Dive Feature 3: Proposals */}
-        <FeatureHighlight
-          align="left"
-          title="Send proposals clients actually respond to"
-          description="Forget flat PDFs that sit in inboxes. Share a live link where clients explore interactive maps, leave comments on specific days, and accept the quote — all in one place."
-          features={[
-            'Looks great on phone, tablet, or desktop',
-            'Interactive route maps',
-            'Day-level client comments',
-            'One-click quote acceptance',
-          ]}
-          imageSrc="https://brand.makisala.com/share.png"
-          imageAlt="Digital Proposal Example"
-        />
-
-        {/* How It Works */}
-        <section className="relative py-24">
-          <div className="bg-dot-pattern pointer-events-none absolute inset-0 [mask-image:radial-gradient(ellipse_at_center,black_20%,transparent_60%)] opacity-30" />
-          <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <div
-              className="animate-slide-up-fade mb-16 text-center"
-              style={{ '--delay': '0ms' } as React.CSSProperties}
-            >
-              <span className="text-primary border-primary/20 bg-primary/5 mb-4 inline-block rounded-full border px-4 py-1.5 text-sm font-medium">
-                How it works
-              </span>
-              <h2 className="font-heading text-3xl font-bold tracking-tight sm:text-4xl">
-                From enquiry to accepted quote in three steps
-              </h2>
-            </div>
-            <div className="grid gap-8 md:grid-cols-3">
-              {steps.map((step, i) => (
-                <div
-                  key={step.number}
-                  className="animate-slide-up-fade border-border/50 bg-card/50 relative rounded-2xl border p-8"
-                  style={{ '--delay': `${i * 120}ms` } as React.CSSProperties}
+            {/* Cards */}
+            <div className="flex" style={{ gap: '16px' }}>
+              {[
+                {
+                  title: 'Tag the right teammate instantly',
+                  description:
+                    'Bring the right person into the right itinerary fast.',
+                  tags: ['@mentions', 'Shared workspace', 'Faster approvals', 'Clear ownership'],
+                },
+                {
+                  title: 'Keep pricing and trip details aligned',
+                  description:
+                    'Keep pricing and trip details in sync.',
+                  tags: ['Live edits', 'One version', 'Accurate pricing'],
+                },
+                {
+                  title: 'Capture client feedback in context',
+                  description:
+                    'Clients comment on the proposal in context.',
+                  tags: ['Live comments', 'Fewer calls', 'Less confusion'],
+                },
+              ].map((card, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, y: 16 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, margin: '-40px' }}
+                  transition={{
+                    duration: 0.6,
+                    delay: i * 0.1,
+                    ease: [0.16, 1, 0.3, 1] as const,
+                  }}
+                  className="flex flex-1 flex-col rounded-2xl border"
+                  style={{
+                    backgroundColor: '#FFFFFF',
+                    borderColor: 'rgba(38,27,7,0.08)',
+                    padding: '24px',
+                    gap: '12px',
+                  }}
                 >
-                  <span className="font-heading text-primary/20 text-6xl font-bold">
-                    {step.number}
-                  </span>
-                  <h3 className="font-heading mt-4 text-xl font-semibold tracking-tight">
-                    {step.title}
+                  <h3
+                    style={{
+                      fontSize: '20px',
+                      lineHeight: '24px',
+                      color: '#261B07',
+                      fontWeight: 580,
+                    }}
+                  >
+                    {card.title}
                   </h3>
-                  <p className="text-muted-foreground mt-3 leading-relaxed">{step.description}</p>
-                </div>
+                  <p
+                    style={{
+                      fontSize: '16px',
+                      lineHeight: '150%',
+                      color: 'rgba(38,27,7,0.7)',
+                      fontWeight: 400,
+                    }}
+                  >
+                    {card.description}
+                  </p>
+                  <div className="flex flex-wrap" style={{ gap: '8px' }}>
+                    {card.tags.map((tag) => (
+                      <span
+                        key={tag}
+                        className="rounded-lg"
+                        style={{
+                          backgroundColor: '#EEECEA',
+                          padding: '8px 12px',
+                          fontSize: '14px',
+                          lineHeight: '18px',
+                          color: '#261B07',
+                          fontWeight: 400,
+                        }}
+                      >
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                </motion.div>
               ))}
             </div>
           </div>
         </section>
 
-        {/* Info boxes */}
-        <section className="py-24">
-          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <div className="grid gap-8 lg:grid-cols-2">
-              <article
-                className="animate-slide-up-fade group border-border/60 bg-card/70 rounded-2xl border p-8 transition-all duration-300 hover:shadow-lg"
-                style={{ '--delay': '0ms' } as React.CSSProperties}
+        {/* Value Props */}
+        <section
+          className="flex"
+          style={{
+            paddingTop: '0px',
+            paddingRight: '112px',
+            paddingBottom: '80px',
+            paddingLeft: '112px',
+            gap: '16px',
+          }}
+        >
+          {[
+            {
+              title: 'Win back proposal time',
+              description:
+                'Build the itinerary and send faster.',
+            },
+            {
+              title: 'Make your brand look premium',
+              description:
+                'Look polished in every proposal.',
+            },
+            {
+              title: 'Pay for growth, not headcount',
+              description:
+                'Grow without seat-based pricing.',
+            },
+          ].map((prop, i) => (
+            <motion.div
+              key={i}
+              initial={{ opacity: 0, y: 16 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: '-40px' }}
+              transition={{
+                duration: 0.6,
+                delay: i * 0.1,
+                ease: [0.16, 1, 0.3, 1] as const,
+              }}
+              className="flex flex-1 flex-col rounded-2xl border"
+              style={{
+                backgroundColor: '#FFFFFF',
+                borderColor: 'rgba(38,27,7,0.08)',
+                padding: '28px',
+                gap: '12px',
+              }}
+            >
+              <h3
+                style={{
+                  fontSize: '20px',
+                  lineHeight: '24px',
+                  color: '#261B07',
+                  fontWeight: 580,
+                }}
               >
-                <h2 className="font-heading text-3xl font-bold tracking-tight">
-                  Built for B2B tour operations
-                </h2>
-                <p className="text-muted-foreground mt-4 text-lg leading-relaxed">
-                  From safari operators to destination management companies, Ratiba helps teams run
-                  proposals with less back-and-forth and more consistency.
-                </p>
-                <Link
-                  href="/for-tour-operators"
-                  className="text-primary mt-6 inline-flex items-center text-sm font-medium hover:underline"
-                >
-                  Explore solutions for operators <ArrowRight className="ml-1 h-4 w-4" />
-                </Link>
-              </article>
+                {prop.title}
+              </h3>
+              <p
+                style={{
+                  fontSize: '16px',
+                  lineHeight: '150%',
+                  color: 'rgba(38,27,7,0.7)',
+                  fontWeight: 400,
+                }}
+              >
+                {prop.description}
+              </p>
+            </motion.div>
+          ))}
+        </section>
 
-              <article
-                className="animate-slide-up-fade group border-border/60 bg-card/70 rounded-2xl border p-8 transition-all duration-300 hover:shadow-lg"
-                style={{ '--delay': '100ms' } as React.CSSProperties}
+        <Reviews />
+
+        {/* All the FP&A essentials */}
+        <section
+          id="features"
+          className="flex flex-col"
+          style={{ paddingBlock: '80px', paddingInline: '112px', gap: '48px' }}
+        >
+          <div className="mx-auto" style={{ maxWidth: '1216px', width: '100%' }}>
+            <motion.h2
+              {...fadeUp}
+              className="text-center"
+              style={{
+                fontSize: '56px',
+                letterSpacing: '-2px',
+                lineHeight: '68px',
+                color: '#261B07',
+                fontWeight: 580,
+                marginBottom: '48px',
+              }}
+            >
+              Built for better proposals
+            </motion.h2>
+
+            <div className="flex" style={{ gap: '16px' }}>
+              {/* Left column */}
+              <div
+                className="flex shrink-0 flex-col"
+                style={{ width: '340px', gap: '16px' }}
               >
-                <h2 className="font-heading text-3xl font-bold tracking-tight">
-                  Evaluating alternatives?
-                </h2>
-                <p className="text-muted-foreground mt-4 text-lg leading-relaxed">
-                  See how Ratiba compares with platforms like Wetu, Safari Office, and Safari Portal
-                  for everyday proposal workflows.
-                </p>
-                <Link
-                  href="/compare"
-                  className="text-primary mt-6 inline-flex items-center text-sm font-medium hover:underline"
+                {/* Scenario planning */}
+                <motion.div
+                  {...fadeUp}
+                  className="flex flex-col rounded-xl border"
+                  style={{
+                    backgroundColor: '#FFFFFF',
+                    borderColor: 'rgba(38,27,7,0.08)',
+                    padding: '20px',
+                    gap: '8px',
+                  }}
                 >
-                  View comparison pages <ArrowRight className="ml-1 h-4 w-4" />
-                </Link>
-              </article>
+                  <h3
+                    style={{
+                      fontSize: '16px',
+                      lineHeight: '20px',
+                      color: '#261B07',
+                      fontWeight: 580,
+                    }}
+                  >
+                    AI-assisted itinerary builder
+                  </h3>
+                  <p
+                    style={{
+                      fontSize: '16px',
+                      lineHeight: '150%',
+                      color: 'rgba(38,27,7,0.7)',
+                      fontWeight: 400,
+                    }}
+                  >
+                    Build day-by-day itineraries faster.
+                  </p>
+                </motion.div>
+
+                {/* Collaborative budgeting */}
+                <motion.div
+                  {...fadeUp}
+                  className="flex flex-col rounded-xl border"
+                  style={{
+                    backgroundColor: '#FFFFFF',
+                    borderColor: 'rgba(38,27,7,0.08)',
+                    padding: '20px',
+                    gap: '8px',
+                  }}
+                >
+                  <h3
+                    style={{
+                      fontSize: '16px',
+                      lineHeight: '20px',
+                      color: '#261B07',
+                      fontWeight: 580,
+                    }}
+                  >
+                    Transparent pricing tools
+                  </h3>
+                  <p
+                    style={{
+                      fontSize: '16px',
+                      lineHeight: '150%',
+                      color: 'rgba(38,27,7,0.7)',
+                      fontWeight: 400,
+                    }}
+                  >
+                    Clear pricing clients can understand.
+                  </p>
+                </motion.div>
+
+                {/* AI hover mode */}
+                <motion.div
+                  {...fadeUp}
+                  className="flex items-center gap-2"
+                  style={{ padding: '20px' }}
+                >
+                  <span
+                    style={{
+                      fontSize: '16px',
+                      lineHeight: '20px',
+                      color: '#261B07',
+                      fontWeight: 580,
+                    }}
+                >
+                  Proposal comments
+                </span>
+                <span
+                    className="rounded-full px-2 py-0.5"
+                    style={{
+                      backgroundColor: '#261B07',
+                      color: '#F8F7F5',
+                      fontSize: '11px',
+                      fontWeight: 580,
+                      lineHeight: '14px',
+                    }}
+                >
+                  Included
+                </span>
+              </motion.div>
+
+                {/* Interactive reporting */}
+                <motion.div {...fadeUp} style={{ padding: '20px' }}>
+                  <span
+                    style={{
+                      fontSize: '16px',
+                      lineHeight: '20px',
+                      color: '#261B07',
+                      fontWeight: 580,
+                    }}
+                  >
+                    Shareable proposal links
+                  </span>
+                </motion.div>
+              </div>
+
+              {/* Right — screenshot placeholder */}
+              <div
+                className="hidden flex-1 items-center justify-center rounded-2xl md:flex"
+                style={{ backgroundColor: '#EEECEA' }}
+              >
+                <span style={{ color: 'rgba(38,27,7,0.4)', fontSize: '16px' }}>
+                  Feature Screenshot
+                </span>
+              </div>
             </div>
           </div>
         </section>
 
-        {/* Testimonial */}
-        <div
-          id="customers"
-          className="grid-section border-grid-border relative overflow-clip border-y px-4 [.grid-section~&]:border-t-0"
+        {/* More Features Grid */}
+        <section
+          className="flex"
+          style={{
+            paddingTop: '0px',
+            paddingRight: '112px',
+            paddingBottom: '80px',
+            paddingLeft: '112px',
+          }}
         >
-          <div className="max-w-grid-width border-grid-border relative z-0 mx-auto border-x px-4 py-20 sm:px-10 sm:py-28">
-            <div className="mx-auto mb-16 max-w-2xl text-center">
-              <h2 className="font-display text-3xl font-medium text-neutral-900 sm:text-4xl">
-                Trusted by tour operator owners
-              </h2>
-              <p className="mt-4 text-base text-neutral-500 sm:text-lg">
-                From boutique safari teams to multi-country operators, owners use Ratiba to build
-                faster proposals and close more enquiries.
-              </p>
+          <div className="mx-auto flex" style={{ maxWidth: '1216px', width: '100%', gap: '16px' }}>
+            {/* Left column */}
+            <div
+              className="flex shrink-0 flex-col"
+              style={{ width: '340px', gap: '16px' }}
+            >
+              {[
+                {
+                  title: 'Accommodation content library',
+                  description:
+                    'Find content faster.',
+                },
+                {
+                  title: 'Own images and custom content',
+                  description:
+                    'Make every proposal feel on-brand.',
+                },
+                {
+                  title: 'Easy for the whole team to use',
+                  description:
+                    'Easy to learn. Easy to use.',
+                },
+              ].map((feature, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, y: 16 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, margin: '-40px' }}
+                  transition={{
+                    duration: 0.6,
+                    delay: i * 0.1,
+                    ease: [0.16, 1, 0.3, 1] as const,
+                  }}
+                  className="flex flex-col"
+                  style={{ padding: '20px', gap: '8px' }}
+                >
+                  <h3
+                    style={{
+                      fontSize: '16px',
+                      lineHeight: '20px',
+                      color: '#261B07',
+                      fontWeight: 580,
+                    }}
+                  >
+                    {feature.title}
+                  </h3>
+                  <p
+                    style={{
+                      fontSize: '16px',
+                      lineHeight: '150%',
+                      color: 'rgba(38,27,7,0.7)',
+                      fontWeight: 400,
+                    }}
+                  >
+                    {feature.description}
+                  </p>
+                </motion.div>
+              ))}
             </div>
 
-            <div className="grid gap-6 md:grid-cols-2">
-              <CustomerCard
-                company="Savannah Trails Co."
-                logo="https://assets.dub.co/testimonials/companies/vercel.svg"
-                quote='Before Ratiba, we stitched quotes together in docs and spreadsheets. Now my team sends polished itineraries in under an hour and <strong class="text-neutral-900">we close enquiries faster with fewer back-and-forth emails</strong>.'
-                name="Daniel Kimani"
-                title="Owner, Savannah Trails Co."
-                avatar="https://assets.dub.co/testimonials/people/jorn-van-dijk.jpg"
-              />
-              <CustomerCard
-                company="Kilimanjaro Horizon Safaris"
-                logo="https://assets.dub.co/testimonials/companies/vercel.svg"
-                quote='We run high season at full speed, so proposal turnaround is everything. Ratiba gives us one workflow for pricing, branding, and sharing, and <strong class="text-neutral-900">our consultants can focus on selling instead of formatting</strong>.'
-                name="Aisha Njoroge"
-                title="Founder, Kilimanjaro Horizon Safaris"
-                avatar="https://assets.dub.co/testimonials/people/guillermo-rauch.jpeg"
-              />
-              <CustomerCard
-                company="Mara Family Journeys"
-                logo="https://assets.dub.co/testimonials/companies/clerk.svg"
-                quote='Our clients love seeing a live itinerary instead of static PDFs. The comment flow is clear, approvals are quicker, and <strong class="text-neutral-900">we reduced revision time per proposal by more than half</strong>.'
-                name="Lillian Odhiambo"
-                title="Owner, Mara Family Journeys"
-                avatar="https://assets.dub.co/testimonials/people/nick-parsons.jpeg"
-              />
-              <CustomerCard
-                company="Rift Valley Expeditions"
-                logo="https://assets.dub.co/testimonials/companies/cal.svg"
-                quote='We finally standardized how every consultant builds itineraries. Ratiba keeps quality consistent across the team and <strong class=&quot;text-neutral-900&quot;>helps us protect margins with clearer pricing visibility</strong>.'
-                name="Peter Mwangi"
-                title="Co-owner, Rift Valley Expeditions"
-                avatar="https://assets.dub.co/testimonials/people/peer-richelsen.jpeg"
-              />
+            {/* Right — screenshot placeholder */}
+            <div
+              className="hidden flex-1 items-center justify-center rounded-2xl md:flex"
+              style={{ backgroundColor: '#EEECEA' }}
+            >
+              <span style={{ color: 'rgba(38,27,7,0.4)', fontSize: '16px' }}>
+                Feature Screenshot
+              </span>
             </div>
           </div>
-        </div>
+        </section>
 
-        {/* Pricing Section */}
-        <Pricing />
+        {/* Onboarding / Fast track to clarity */}
+        <section
+          className="flex flex-col"
+          style={{ paddingBlock: '80px', paddingInline: '112px', gap: '48px' }}
+        >
+          <div className="mx-auto" style={{ maxWidth: '1216px', width: '100%' }}>
+            {/* Header */}
+            <motion.div
+              {...fadeUp}
+              className="flex flex-col items-center"
+              style={{ gap: '16px', marginBottom: '48px' }}
+            >
+              <h2
+                className="text-center"
+                style={{
+                  fontSize: '56px',
+                  letterSpacing: '-2px',
+                  lineHeight: '68px',
+                  color: '#261B07',
+                  fontWeight: 580,
+                }}
+              >
+                Fast track to clarity
+              </h2>
+              <p
+                className="text-center"
+                style={{
+                  fontSize: '16px',
+                  lineHeight: '20px',
+                  color: '#261B07',
+                  fontWeight: 400,
+                  maxWidth: '640px',
+                }}
+              >
+                Start building a unified model you can trust as the source of
+                truth for planning and forecasting.
+              </p>
+            </motion.div>
 
-        {/* CTA Section */}
-        <section className="relative overflow-hidden py-24">
-          <div className="from-primary/5 via-primary/10 absolute inset-0 bg-gradient-to-br to-transparent" />
-          <div className="bg-grid-pattern pointer-events-none absolute inset-0 [mask-image:radial-gradient(ellipse_at_center,black_30%,transparent_70%)] opacity-20" />
-          <div className="relative mx-auto max-w-4xl px-4 text-center">
-            <h2
-              className="animate-slide-up-fade font-heading mb-6 text-4xl font-bold tracking-tight sm:text-5xl"
-              style={{ '--delay': '0ms' } as React.CSSProperties}
+            <motion.p
+              {...fadeUp}
+              className="mb-10 text-center"
+              style={{
+                fontSize: '24px',
+                lineHeight: '30px',
+                color: '#261B07',
+                fontWeight: 580,
+              }}
             >
-              Your next proposal could take 10 minutes, not 2 hours
-            </h2>
-            <p
-              className="animate-slide-up-fade text-muted-foreground mb-10 text-xl"
-              style={{ '--delay': '100ms' } as React.CSSProperties}
-            >
-              Sign up, build your first itinerary, and send it to a client today. No credit card
-              needed.
-            </p>
-            <div
-              className="animate-slide-up-fade flex flex-col items-center justify-center gap-4 sm:flex-row"
-              style={{ '--delay': '200ms' } as React.CSSProperties}
-            >
-              <Link
-                href="/sign-up"
-                className="bg-primary text-primary-foreground hover:bg-primary/90 focus-visible:ring-ring shadow-primary/20 inline-flex h-12 items-center justify-center rounded-full px-8 text-sm font-medium shadow-lg transition-colors focus-visible:ring-1 focus-visible:outline-none"
-              >
-                Create your first itinerary free
-              </Link>
-              <Link
-                href="https://cal.com/brightonmboya/30min"
-                className="border-input bg-background hover:bg-accent hover:text-accent-foreground focus-visible:ring-ring inline-flex h-12 items-center justify-center rounded-full border px-8 text-sm font-medium shadow-sm transition-colors focus-visible:ring-1 focus-visible:outline-none"
-              >
-                Book a demo call
-              </Link>
+              Onboarding guided by finance experts
+            </motion.p>
+
+            {/* Step cards */}
+            <div className="flex" style={{ gap: '24px' }}>
+              {[
+                {
+                  step: '01',
+                  title: 'Kickoff',
+                  subtitle: 'Integrate all your sources',
+                  description:
+                    'Connect data from our 750+ integrations. Including your HRIS, ERP, CRM, and more.',
+                  duration: '1-week average',
+                },
+                {
+                  step: '02',
+                  title: 'Model',
+                  subtitle: 'Build your model',
+                  description:
+                    'Create your P&L, cashflow, headcount model, and more. Build out your projections, scenarios, and plans.',
+                  duration: '4-week average',
+                },
+                {
+                  step: '03',
+                  title: 'Strategize',
+                  subtitle: 'Get continuous support',
+                  description:
+                    'Stay aligned with our team through strategic check-ins and real-time support in a dedicated Slack channel.',
+                  duration: 'Ongoing',
+                },
+              ].map((step, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, y: 16 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, margin: '-40px' }}
+                  transition={{
+                    duration: 0.6,
+                    delay: i * 0.1,
+                    ease: [0.16, 1, 0.3, 1] as const,
+                  }}
+                  className="flex flex-1 flex-col rounded-2xl border"
+                  style={{
+                    backgroundColor: '#FFFFFF',
+                    borderColor: 'rgba(38,27,7,0.08)',
+                    padding: '28px',
+                    gap: '16px',
+                  }}
+                >
+                  <p
+                    style={{
+                      fontSize: '16px',
+                      lineHeight: '20px',
+                      color: 'rgba(38,27,7,0.4)',
+                      fontWeight: 580,
+                    }}
+                  >
+                    {step.step}
+                  </p>
+                  <p
+                    style={{
+                      fontSize: '16px',
+                      lineHeight: '20px',
+                      color: '#261B07',
+                      fontWeight: 580,
+                    }}
+                  >
+                    {step.title}
+                  </p>
+                  <p
+                    style={{
+                      fontSize: '16px',
+                      lineHeight: '20px',
+                      color: '#261B07',
+                      fontWeight: 580,
+                    }}
+                  >
+                    {step.subtitle}
+                  </p>
+                  <p
+                    style={{
+                      fontSize: '16px',
+                      lineHeight: '150%',
+                      color: 'rgba(38,27,7,0.7)',
+                      fontWeight: 400,
+                    }}
+                  >
+                    {step.description}
+                  </p>
+                  <p
+                    style={{
+                      fontSize: '16px',
+                      lineHeight: '20px',
+                      color: '#261B07',
+                      fontWeight: 490,
+                    }}
+                  >
+                    {step.duration}
+                  </p>
+                </motion.div>
+              ))}
             </div>
           </div>
         </section>
       </main>
 
       <Footer />
-    </div>
-  );
-}
-
-function CustomerCard({
-  company,
-  quote,
-  name,
-  title,
-  avatar,
-}: {
-  company: string;
-  logo: string;
-  quote: string;
-  name: string;
-  title: string;
-  avatar: string;
-}) {
-  return (
-    <div className="rounded-xl border border-neutral-200 bg-white p-8">
-      <div className="mb-6 text-lg font-bold tracking-tight text-neutral-900">{company}</div>
-      <blockquote
-        className="text-sm leading-relaxed text-neutral-600"
-        dangerouslySetInnerHTML={{ __html: `&ldquo;${quote}&rdquo;` }}
-      />
-      <div className="mt-4 flex items-center gap-3">
-        <img
-          alt={name}
-          src={avatar}
-          width={40}
-          height={40}
-          className="size-10 rounded-full border border-neutral-200"
-          loading="lazy"
-        />
-        <div>
-          <p className="text-sm font-medium text-neutral-900">{name}</p>
-          <p className="text-xs text-neutral-500">{title}</p>
-        </div>
-      </div>
     </div>
   );
 }

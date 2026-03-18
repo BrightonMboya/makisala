@@ -25,7 +25,16 @@
       "Bash(git rebase:*)",
       "Bash(git stash:*)",
       "WebFetch(domain:api.github.com)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "mcp__paper__write_html",
+      "mcp__paper__get_screenshot",
+      "mcp__paper__update_styles",
+      "Bash(cd:*)",
+      "Bash(npx tsx:*)",
+      "mcp__paper__get_basic_info",
+      "mcp__paper__get_font_family_info",
+      "mcp__paper__create_artboard",
+      "mcp__paper__finish_working_on_nodes"
     ]
   }
 }

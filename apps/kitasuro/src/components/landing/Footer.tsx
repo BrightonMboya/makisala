@@ -1,123 +1,181 @@
 import Link from 'next/link';
 
+const columns = [
+  {
+    title: 'Product',
+    links: [
+      { label: 'Book a demo', href: 'https://cal.com/brightonmboya/30min' },
+      { label: 'Planning', href: '#' },
+      { label: 'Modeling', href: '#' },
+      { label: 'Reporting', href: '#' },
+      { label: 'Security', href: '#' },
+    ],
+  },
+  {
+    title: 'Comparisons',
+    links: [
+      { label: 'Excel', href: '#' },
+      { label: 'Abacum', href: '#' },
+      { label: 'Datarails', href: '#' },
+      { label: 'Mosaic', href: '#' },
+      { label: 'Pigment', href: '#' },
+      { label: 'Anaplan', href: '#' },
+    ],
+  },
+  {
+    title: 'Resources',
+    links: [
+      { label: 'Success Stories', href: '#' },
+      { label: 'AngelList', href: '#' },
+      { label: 'RevenueCat', href: '#' },
+      { label: 'Glossary', href: '#' },
+      { label: 'Docs', href: '#' },
+    ],
+  },
+  {
+    title: 'Company',
+    links: [
+      { label: 'Runway blog', href: '#' },
+      { label: 'About Runway', href: '#' },
+      { label: 'Careers', href: '#' },
+      { label: 'Contact us', href: '#' },
+    ],
+  },
+  {
+    title: 'Social',
+    links: [
+      { label: 'YouTube', href: '#' },
+      { label: 'Instagram', href: '#' },
+      { label: 'LinkedIn', href: '#' },
+    ],
+  },
+];
+
 export function Footer() {
   return (
-    <footer className="border-t border-border/40 bg-background">
-      <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8 lg:py-16">
-        <div className="grid grid-cols-2 gap-8 md:grid-cols-4 lg:grid-cols-5">
-          <div className="col-span-2 lg:col-span-2">
-            <Link href="/" className="mb-4 flex items-center gap-2.5">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-                <span className="font-heading text-xl leading-none font-bold">R</span>
+    <footer
+      className="border-t"
+      style={{
+        paddingBlock: '64px',
+        paddingInline: '112px',
+        borderColor: 'rgba(38,27,7,0.1)',
+      }}
+    >
+      <div className="mx-auto" style={{ maxWidth: '1216px' }}>
+        {/* Top row */}
+        <div className="flex" style={{ gap: '48px' }}>
+          {/* Brand */}
+          <div style={{ width: '280px', flexShrink: 0 }}>
+            <Link href="/" className="mb-4 flex items-center gap-2">
+              <div
+                className="flex h-7 w-7 items-center justify-center rounded-md"
+                style={{ backgroundColor: '#261B07' }}
+              >
+                <span
+                  className="text-sm font-bold leading-none"
+                  style={{ color: '#F8F7F5' }}
+                >
+                  R
+                </span>
               </div>
-              <span className="font-heading text-lg font-semibold tracking-tight">Ratiba</span>
+              <span
+                className="text-base"
+                style={{ color: '#261B07', fontWeight: 600, letterSpacing: '-0.3px' }}
+              >
+                Ratiba
+              </span>
             </Link>
-            <p className="max-w-xs text-sm leading-relaxed text-muted-foreground">
-              Itinerary and proposal software for tour operators and travel agencies. Build, share,
-              and close from one place.
+            <p
+              className="mt-3"
+              style={{
+                fontSize: '16px',
+                lineHeight: '150%',
+                color: 'rgba(38,27,7,0.6)',
+                fontWeight: 400,
+              }}
+            >
+              Runway is the modern and intuitive way to model, plan, and align
+              your business for everyone on your team.
             </p>
-            {/* Social links placeholder */}
-            <div className="mt-6 flex gap-4">
-              <span className="text-muted-foreground/50 text-xs">Follow us — coming soon</span>
+          </div>
+
+          {/* Link columns */}
+          {columns.map((col) => (
+            <div key={col.title} className="flex-1">
+              <h3
+                className="mb-4"
+                style={{
+                  fontSize: '14px',
+                  lineHeight: '18px',
+                  color: 'rgba(38,27,7,0.5)',
+                  fontWeight: 490,
+                }}
+              >
+                {col.title}
+              </h3>
+              <ul style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                {col.links.map((link) => (
+                  <li key={link.label}>
+                    <Link
+                      href={link.href}
+                      className="transition-opacity hover:opacity-60"
+                      style={{
+                        fontSize: '16px',
+                        lineHeight: '20px',
+                        color: '#261B07',
+                        fontWeight: 400,
+                      }}
+                    >
+                      {link.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
             </div>
-          </div>
-
-          <div>
-            <h3 className="text-foreground text-sm font-semibold tracking-wider uppercase">
-              Product
-            </h3>
-            <ul className="mt-4 space-y-3">
-              <li>
-                <Link href="/#features" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                  Features
-                </Link>
-              </li>
-              <li>
-                <Link href="/#pricing" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                  Pricing
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/for-tour-operators"
-                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  For Tour Operators
-                </Link>
-              </li>
-              <li>
-                <Link href="/compare" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                  Compare Alternatives
-                </Link>
-              </li>
-            </ul>
-          </div>
-
-          <div>
-            <h3 className="text-foreground text-sm font-semibold tracking-wider uppercase">
-              Resources
-            </h3>
-            <ul className="mt-4 space-y-3">
-              <li>
-                <Link
-                  href="/compare/wetu-alternative"
-                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  Wetu Alternative
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/compare/safari-office-alternative"
-                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  Safari Office Alternative
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/compare/safari-portal-alternative"
-                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  Safari Portal Alternative
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="https://cal.com/brightonmboya/30min"
-                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  Book a Demo
-                </Link>
-              </li>
-            </ul>
-          </div>
-
-          <div>
-            <h3 className="text-foreground text-sm font-semibold tracking-wider uppercase">
-              Account
-            </h3>
-            <ul className="mt-4 space-y-3">
-              <li>
-                <Link href="/sign-up" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                  Start Free Trial
-                </Link>
-              </li>
-              <li>
-                <Link href="/login" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                  Log In
-                </Link>
-              </li>
-            </ul>
-          </div>
+          ))}
         </div>
 
-        {/* Bottom bar with gradient top border */}
-        <div className="relative mt-12 pt-8">
-          <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-border to-transparent" />
-          <p className="text-xs text-muted-foreground text-center">
-            &copy; {new Date().getFullYear()} Ratiba. All rights reserved.
+        {/* Bottom bar */}
+        <div
+          className="mt-12 flex items-center justify-between border-t pt-6"
+          style={{ borderColor: 'rgba(38,27,7,0.1)' }}
+        >
+          <p
+            style={{
+              fontSize: '14px',
+              lineHeight: '18px',
+              color: 'rgba(38,27,7,0.4)',
+              fontWeight: 400,
+            }}
+          >
+            2026
           </p>
+          <div className="flex" style={{ gap: '24px' }}>
+            <Link
+              href="#"
+              className="transition-opacity hover:opacity-60"
+              style={{
+                fontSize: '14px',
+                lineHeight: '18px',
+                color: 'rgba(38,27,7,0.4)',
+                fontWeight: 400,
+              }}
+            >
+              Terms of service
+            </Link>
+            <Link
+              href="#"
+              className="transition-opacity hover:opacity-60"
+              style={{
+                fontSize: '14px',
+                lineHeight: '18px',
+                color: 'rgba(38,27,7,0.4)',
+                fontWeight: 400,
+              }}
+            >
+              Privacy policy
+            </Link>
+          </div>
         </div>
       </div>
     </footer>
