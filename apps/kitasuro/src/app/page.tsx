@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { Navbar } from '@/components/landing/Navbar';
 import { Hero } from '@/components/landing/Hero';
 import { FeaturesSection } from '@/components/landing/FeaturesSection';
@@ -48,15 +49,13 @@ export default function LandingPage() {
             <div
               className="pointer-events-none absolute inset-y-0 left-0 z-10 w-24"
               style={{
-                background:
-                  'linear-gradient(to right, #F8F7F5, transparent)',
+                background: 'linear-gradient(to right, #F8F7F5, transparent)',
               }}
             />
             <div
               className="pointer-events-none absolute inset-y-0 right-0 z-10 w-24"
               style={{
-                background:
-                  'linear-gradient(to left, #F8F7F5, transparent)',
+                background: 'linear-gradient(to left, #F8F7F5, transparent)',
               }}
             />
             <motion.div
@@ -146,20 +145,17 @@ export default function LandingPage() {
               {[
                 {
                   title: 'Tag the right teammate instantly',
-                  description:
-                    'Bring the right person into the right itinerary fast.',
+                  description: 'Bring the right person into the right itinerary fast.',
                   tags: ['@mentions', 'Shared workspace', 'Faster approvals', 'Clear ownership'],
                 },
                 {
                   title: 'Keep pricing and trip details aligned',
-                  description:
-                    'Keep pricing and trip details in sync.',
+                  description: 'Keep pricing and trip details in sync.',
                   tags: ['Live edits', 'One version', 'Accurate pricing'],
                 },
                 {
                   title: 'Capture client feedback in context',
-                  description:
-                    'Clients comment on the proposal in context.',
+                  description: 'Clients comment on the proposal in context.',
                   tags: ['Live comments', 'Fewer calls', 'Less confusion'],
                 },
               ].map((card, i) => (
@@ -239,18 +235,15 @@ export default function LandingPage() {
           {[
             {
               title: 'Win back proposal time',
-              description:
-                'Build the itinerary and send faster.',
+              description: 'Build the itinerary and send faster.',
             },
             {
               title: 'Make your brand look premium',
-              description:
-                'Look polished in every proposal.',
+              description: 'Look polished in every proposal.',
             },
             {
               title: 'Pay for growth, not headcount',
-              description:
-                'Grow without seat-based pricing.',
+              description: 'Grow without seat-based pricing.',
             },
           ].map((prop, i) => (
             <motion.div
@@ -297,247 +290,13 @@ export default function LandingPage() {
 
         <Reviews />
 
-        {/* All the FP&A essentials */}
+        {/* Sample Itineraries */}
         <section
           id="features"
           className="flex flex-col"
-          style={{ paddingBlock: '80px', paddingInline: '112px', gap: '48px' }}
+          style={{ paddingBlock: '80px', paddingInline: '112px' }}
         >
           <div className="mx-auto" style={{ maxWidth: '1216px', width: '100%' }}>
-            <motion.h2
-              {...fadeUp}
-              className="text-center"
-              style={{
-                fontSize: '56px',
-                letterSpacing: '-2px',
-                lineHeight: '68px',
-                color: '#261B07',
-                fontWeight: 580,
-                marginBottom: '48px',
-              }}
-            >
-              Built for better proposals
-            </motion.h2>
-
-            <div className="flex" style={{ gap: '16px' }}>
-              {/* Left column */}
-              <div
-                className="flex shrink-0 flex-col"
-                style={{ width: '340px', gap: '16px' }}
-              >
-                {/* Scenario planning */}
-                <motion.div
-                  {...fadeUp}
-                  className="flex flex-col rounded-xl border"
-                  style={{
-                    backgroundColor: '#FFFFFF',
-                    borderColor: 'rgba(38,27,7,0.08)',
-                    padding: '20px',
-                    gap: '8px',
-                  }}
-                >
-                  <h3
-                    style={{
-                      fontSize: '16px',
-                      lineHeight: '20px',
-                      color: '#261B07',
-                      fontWeight: 580,
-                    }}
-                  >
-                    AI-assisted itinerary builder
-                  </h3>
-                  <p
-                    style={{
-                      fontSize: '16px',
-                      lineHeight: '150%',
-                      color: 'rgba(38,27,7,0.7)',
-                      fontWeight: 400,
-                    }}
-                  >
-                    Build day-by-day itineraries faster.
-                  </p>
-                </motion.div>
-
-                {/* Collaborative budgeting */}
-                <motion.div
-                  {...fadeUp}
-                  className="flex flex-col rounded-xl border"
-                  style={{
-                    backgroundColor: '#FFFFFF',
-                    borderColor: 'rgba(38,27,7,0.08)',
-                    padding: '20px',
-                    gap: '8px',
-                  }}
-                >
-                  <h3
-                    style={{
-                      fontSize: '16px',
-                      lineHeight: '20px',
-                      color: '#261B07',
-                      fontWeight: 580,
-                    }}
-                  >
-                    Transparent pricing tools
-                  </h3>
-                  <p
-                    style={{
-                      fontSize: '16px',
-                      lineHeight: '150%',
-                      color: 'rgba(38,27,7,0.7)',
-                      fontWeight: 400,
-                    }}
-                  >
-                    Clear pricing clients can understand.
-                  </p>
-                </motion.div>
-
-                {/* AI hover mode */}
-                <motion.div
-                  {...fadeUp}
-                  className="flex items-center gap-2"
-                  style={{ padding: '20px' }}
-                >
-                  <span
-                    style={{
-                      fontSize: '16px',
-                      lineHeight: '20px',
-                      color: '#261B07',
-                      fontWeight: 580,
-                    }}
-                >
-                  Proposal comments
-                </span>
-                <span
-                    className="rounded-full px-2 py-0.5"
-                    style={{
-                      backgroundColor: '#261B07',
-                      color: '#F8F7F5',
-                      fontSize: '11px',
-                      fontWeight: 580,
-                      lineHeight: '14px',
-                    }}
-                >
-                  Included
-                </span>
-              </motion.div>
-
-                {/* Interactive reporting */}
-                <motion.div {...fadeUp} style={{ padding: '20px' }}>
-                  <span
-                    style={{
-                      fontSize: '16px',
-                      lineHeight: '20px',
-                      color: '#261B07',
-                      fontWeight: 580,
-                    }}
-                  >
-                    Shareable proposal links
-                  </span>
-                </motion.div>
-              </div>
-
-              {/* Right — screenshot placeholder */}
-              <div
-                className="hidden flex-1 items-center justify-center rounded-2xl md:flex"
-                style={{ backgroundColor: '#EEECEA' }}
-              >
-                <span style={{ color: 'rgba(38,27,7,0.4)', fontSize: '16px' }}>
-                  Feature Screenshot
-                </span>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* More Features Grid */}
-        <section
-          className="flex"
-          style={{
-            paddingTop: '0px',
-            paddingRight: '112px',
-            paddingBottom: '80px',
-            paddingLeft: '112px',
-          }}
-        >
-          <div className="mx-auto flex" style={{ maxWidth: '1216px', width: '100%', gap: '16px' }}>
-            {/* Left column */}
-            <div
-              className="flex shrink-0 flex-col"
-              style={{ width: '340px', gap: '16px' }}
-            >
-              {[
-                {
-                  title: 'Accommodation content library',
-                  description:
-                    'Find content faster.',
-                },
-                {
-                  title: 'Own images and custom content',
-                  description:
-                    'Make every proposal feel on-brand.',
-                },
-                {
-                  title: 'Easy for the whole team to use',
-                  description:
-                    'Easy to learn. Easy to use.',
-                },
-              ].map((feature, i) => (
-                <motion.div
-                  key={i}
-                  initial={{ opacity: 0, y: 16 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true, margin: '-40px' }}
-                  transition={{
-                    duration: 0.6,
-                    delay: i * 0.1,
-                    ease: [0.16, 1, 0.3, 1] as const,
-                  }}
-                  className="flex flex-col"
-                  style={{ padding: '20px', gap: '8px' }}
-                >
-                  <h3
-                    style={{
-                      fontSize: '16px',
-                      lineHeight: '20px',
-                      color: '#261B07',
-                      fontWeight: 580,
-                    }}
-                  >
-                    {feature.title}
-                  </h3>
-                  <p
-                    style={{
-                      fontSize: '16px',
-                      lineHeight: '150%',
-                      color: 'rgba(38,27,7,0.7)',
-                      fontWeight: 400,
-                    }}
-                  >
-                    {feature.description}
-                  </p>
-                </motion.div>
-              ))}
-            </div>
-
-            {/* Right — screenshot placeholder */}
-            <div
-              className="hidden flex-1 items-center justify-center rounded-2xl md:flex"
-              style={{ backgroundColor: '#EEECEA' }}
-            >
-              <span style={{ color: 'rgba(38,27,7,0.4)', fontSize: '16px' }}>
-                Feature Screenshot
-              </span>
-            </div>
-          </div>
-        </section>
-
-        {/* Onboarding / Fast track to clarity */}
-        <section
-          className="flex flex-col"
-          style={{ paddingBlock: '80px', paddingInline: '112px', gap: '48px' }}
-        >
-          <div className="mx-auto" style={{ maxWidth: '1216px', width: '100%' }}>
-            {/* Header */}
             <motion.div
               {...fadeUp}
               className="flex flex-col items-center"
@@ -553,64 +312,56 @@ export default function LandingPage() {
                   fontWeight: 580,
                 }}
               >
-                Fast track to clarity
+                Get a glimpse of what&apos;s <em>possible</em>
               </h2>
               <p
                 className="text-center"
                 style={{
-                  fontSize: '16px',
-                  lineHeight: '20px',
-                  color: '#261B07',
+                  fontSize: '18px',
+                  lineHeight: '28px',
+                  color: 'rgba(38,27,7,0.7)',
                   fontWeight: 400,
-                  maxWidth: '640px',
                 }}
               >
-                Start building a unified model you can trust as the source of
-                truth for planning and forecasting.
+                Explore some sample itineraries below — all made with Ratiba.
               </p>
             </motion.div>
 
-            <motion.p
-              {...fadeUp}
-              className="mb-10 text-center"
-              style={{
-                fontSize: '24px',
-                lineHeight: '30px',
-                color: '#261B07',
-                fontWeight: 580,
-              }}
-            >
-              Onboarding guided by finance experts
-            </motion.p>
-
-            {/* Step cards */}
-            <div className="flex" style={{ gap: '24px' }}>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4" style={{ gap: '16px' }}>
               {[
                 {
-                  step: '01',
-                  title: 'Kickoff',
-                  subtitle: 'Integrate all your sources',
-                  description:
-                    'Connect data from our 750+ integrations. Including your HRIS, ERP, CRM, and more.',
-                  duration: '1-week average',
+                  badge: { label: 'Custom', color: '#FFE0EC' },
+                  title: 'Custom Safari',
+                  subtitle: 'Custom Gorilla Trekking Safari',
+                  href: 'https://proposals.makisala.com/proposal/fesyck',
+                  image:
+                    'https://assets.makisala.com/cdn-cgi/image/quality=85,format=auto,fit=scale-down,sharpen=1/destinations/rwanda/gorilla.jpg',
                 },
                 {
-                  step: '02',
-                  title: 'Model',
-                  subtitle: 'Build your model',
-                  description:
-                    'Create your P&L, cashflow, headcount model, and more. Build out your projections, scenarios, and plans.',
-                  duration: '4-week average',
+                  badge: { label: 'Lookbook', color: '#E0F0FF' },
+                  title: 'Zanzibar Escape',
+                  subtitle: 'Zanzibar Lookbook Escape',
+                  href: 'https://proposals.makisala.com/proposal/qgzaka',
+                  image:
+                    'https://assets.makisala.com/cdn-cgi/image/quality=85,format=auto,fit=scale-down,sharpen=1/organizations/411c36e8-0808-46f4-a3b2-130a3eecc349/images/1772879807340-43ed50b7c65549688f1c879fd60ce826-800.webp',
                 },
                 {
-                  step: '03',
-                  title: 'Strategize',
-                  subtitle: 'Get continuous support',
-                  description:
-                    'Stay aligned with our team through strategic check-ins and real-time support in a dedicated Slack channel.',
-                  duration: 'Ongoing',
+                  badge: { label: 'Branded', color: '#FFE0EC' },
+                  title: 'Signature Journey',
+                  subtitle: 'Northern Circuit Branded Journey',
+                  href: 'https://proposals.makisala.com/proposal/rnxdpk',
+                  image:
+                    'https://assets.makisala.com/cdn-cgi/image/quality=85,format=auto,fit=scale-down,sharpen=1/organizations/411c36e8-0808-46f4-a3b2-130a3eecc349/images/1770650569417-pexels-isis-petroni-280715053-13142739.webp',
                 },
-              ].map((step, i) => (
+                {
+                  badge: { label: 'Honeymoon', color: '#E0F0FF' },
+                  title: 'Honeymoon Escape',
+                  subtitle: 'Romantic Honeymoon Escape',
+                  href: 'https://proposals.makisala.com/proposal/lmxmro',
+                  image:
+                    'https://assets.makisala.com/cdn-cgi/image/quality=85,format=auto,fit=scale-down,sharpen=1/accommodations/c1a5284f-5401-4b86-b3c0-16c2df4c5fe1/24.jpg',
+                },
+              ].map((item, i) => (
                 <motion.div
                   key={i}
                   initial={{ opacity: 0, y: 16 }}
@@ -618,71 +369,165 @@ export default function LandingPage() {
                   viewport={{ once: true, margin: '-40px' }}
                   transition={{
                     duration: 0.6,
-                    delay: i * 0.1,
+                    delay: i * 0.06,
                     ease: [0.16, 1, 0.3, 1] as const,
                   }}
-                  className="flex flex-1 flex-col rounded-2xl border"
+                  className="flex flex-col rounded-[24px] border transition-transform hover:-translate-y-1"
                   style={{
-                    backgroundColor: '#FFFFFF',
                     borderColor: 'rgba(38,27,7,0.08)',
-                    padding: '28px',
-                    gap: '16px',
+                    backgroundColor: '#FFFFFF',
+                    boxShadow: '0 16px 36px rgba(38,27,7,0.06)',
                   }}
                 >
-                  <p
-                    style={{
-                      fontSize: '16px',
-                      lineHeight: '20px',
-                      color: 'rgba(38,27,7,0.4)',
-                      fontWeight: 580,
-                    }}
+                  <Link
+                    href={item.href}
+                    className="flex flex-col p-4 transition-opacity hover:opacity-90"
+                    style={{ gap: '16px' }}
                   >
-                    {step.step}
-                  </p>
-                  <p
-                    style={{
-                      fontSize: '16px',
-                      lineHeight: '20px',
-                      color: '#261B07',
-                      fontWeight: 580,
-                    }}
-                  >
-                    {step.title}
-                  </p>
-                  <p
-                    style={{
-                      fontSize: '16px',
-                      lineHeight: '20px',
-                      color: '#261B07',
-                      fontWeight: 580,
-                    }}
-                  >
-                    {step.subtitle}
-                  </p>
-                  <p
-                    style={{
-                      fontSize: '16px',
-                      lineHeight: '150%',
-                      color: 'rgba(38,27,7,0.7)',
-                      fontWeight: 400,
-                    }}
-                  >
-                    {step.description}
-                  </p>
-                  <p
-                    style={{
-                      fontSize: '16px',
-                      lineHeight: '20px',
-                      color: '#261B07',
-                      fontWeight: 490,
-                    }}
-                  >
-                    {step.duration}
-                  </p>
+                    {/* Image preview */}
+                    <div
+                      className="flex items-center justify-center overflow-hidden rounded-[18px] border"
+                      style={{
+                        backgroundColor: '#F6F2EB',
+                        aspectRatio: '16 / 10',
+                        borderColor: 'rgba(38,27,7,0.06)',
+                        padding: '12px',
+                      }}
+                    >
+                      <div
+                        className="flex h-full w-full items-center justify-center overflow-hidden rounded-[14px]"
+                        style={{ backgroundColor: '#EEECEA' }}
+                      >
+                        {item.image ? (
+                          <img
+                            src={item.image}
+                            alt={item.title}
+                            className="h-full w-full object-cover object-top"
+                          />
+                        ) : (
+                          <span style={{ color: 'rgba(38,27,7,0.3)', fontSize: '14px' }}>
+                            {item.title}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div
+                      className="flex flex-col"
+                      style={{ gap: '10px', paddingInline: '4px', paddingBottom: '6px' }}
+                    >
+                      <div>
+                        <span
+                          className="rounded-full px-2.5 py-1"
+                          style={{
+                            backgroundColor: item.badge.color,
+                            fontSize: '12px',
+                            fontWeight: 500,
+                            lineHeight: '16px',
+                            color: '#261B07',
+                          }}
+                        >
+                          {item.badge.label}
+                        </span>
+                      </div>
+
+                      <div className="flex flex-col" style={{ gap: '4px' }}>
+                        <h3
+                          style={{
+                            fontSize: '20px',
+                            lineHeight: '26px',
+                            color: '#261B07',
+                            fontWeight: 580,
+                            letterSpacing: '-0.02em',
+                          }}
+                        >
+                          {item.title}
+                        </h3>
+                        <p
+                          style={{
+                            fontSize: '14px',
+                            lineHeight: '20px',
+                            color: 'rgba(38,27,7,0.55)',
+                            fontWeight: 400,
+                          }}
+                        >
+                          {item.subtitle}
+                        </p>
+                      </div>
+                    </div>
+                  </Link>
                 </motion.div>
               ))}
             </div>
           </div>
+        </section>
+
+        <section
+          className="flex flex-col"
+          style={{ paddingBlock: '96px', paddingInline: '112px' }}
+        >
+          <motion.div
+            {...fadeUp}
+            className="mx-auto flex flex-col items-center rounded-[28px] border text-center"
+            style={{
+              maxWidth: '960px',
+              width: '100%',
+              padding: '56px 40px',
+              gap: '20px',
+              backgroundColor: '#FFFFFF',
+              borderColor: 'rgba(38,27,7,0.08)',
+              boxShadow: '0 18px 40px rgba(38,27,7,0.05)',
+            }}
+          >
+            <h2
+              style={{
+                fontSize: '46px',
+                letterSpacing: '-2px',
+                lineHeight: '52px',
+                color: '#261B07',
+                fontWeight: 580,
+                maxWidth: '620px',
+              }}
+            >
+              Ready to show clients something better?
+            </h2>
+            <p
+              style={{
+                fontSize: '18px',
+                lineHeight: '28px',
+                color: 'rgba(38,27,7,0.7)',
+                fontWeight: 400,
+                maxWidth: '560px',
+              }}
+            >
+              Build the itinerary together, price it clearly, and send a proposal clients can
+              comment on in real time.
+            </p>
+            <div className="flex flex-wrap items-center justify-center" style={{ gap: '14px' }}>
+              <Link
+                href="https://cal.com/brightonmboya/30min"
+                className="rounded-[12px] px-6 py-3 text-sm transition-opacity hover:opacity-90"
+                style={{
+                  backgroundColor: '#261B07',
+                  color: '#F8F7F5',
+                  fontWeight: 580,
+                }}
+              >
+                Book a demo
+              </Link>
+              <Link
+                href="/proposal/5a428b26-dde0-4ae8-a3a8-93c8f3938527"
+                className="rounded-[12px] border px-6 py-3 text-sm transition-opacity hover:opacity-70"
+                style={{
+                  borderColor: 'rgba(38,27,7,0.18)',
+                  color: '#261B07',
+                  fontWeight: 580,
+                }}
+              >
+                View sample proposal
+              </Link>
+            </div>
+          </motion.div>
         </section>
       </main>
 

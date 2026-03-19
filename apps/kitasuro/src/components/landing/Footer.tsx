@@ -5,48 +5,15 @@ const columns = [
     title: 'Product',
     links: [
       { label: 'Book a demo', href: 'https://cal.com/brightonmboya/30min' },
-      { label: 'Planning', href: '#' },
-      { label: 'Modeling', href: '#' },
-      { label: 'Reporting', href: '#' },
-      { label: 'Security', href: '#' },
-    ],
-  },
-  {
-    title: 'Comparisons',
-    links: [
-      { label: 'Excel', href: '#' },
-      { label: 'Abacum', href: '#' },
-      { label: 'Datarails', href: '#' },
-      { label: 'Mosaic', href: '#' },
-      { label: 'Pigment', href: '#' },
-      { label: 'Anaplan', href: '#' },
-    ],
-  },
-  {
-    title: 'Resources',
-    links: [
-      { label: 'Success Stories', href: '#' },
-      { label: 'AngelList', href: '#' },
-      { label: 'RevenueCat', href: '#' },
-      { label: 'Glossary', href: '#' },
-      { label: 'Docs', href: '#' },
+      { label: 'See sample proposal', href: '/proposal/5a428b26-dde0-4ae8-a3a8-93c8f3938527' },
     ],
   },
   {
     title: 'Company',
     links: [
-      { label: 'Runway blog', href: '#' },
-      { label: 'About Runway', href: '#' },
-      { label: 'Careers', href: '#' },
-      { label: 'Contact us', href: '#' },
-    ],
-  },
-  {
-    title: 'Social',
-    links: [
-      { label: 'YouTube', href: '#' },
-      { label: 'Instagram', href: '#' },
-      { label: 'LinkedIn', href: '#' },
+      { label: 'For tour operators', href: '/for-tour-operators' },
+      { label: 'Login', href: '/login' },
+      { label: 'Sign up', href: '/sign-up' },
     ],
   },
 ];
@@ -71,10 +38,7 @@ export function Footer() {
                 className="flex h-7 w-7 items-center justify-center rounded-md"
                 style={{ backgroundColor: '#261B07' }}
               >
-                <span
-                  className="text-sm font-bold leading-none"
-                  style={{ color: '#F8F7F5' }}
-                >
+                <span className="text-sm leading-none font-bold" style={{ color: '#F8F7F5' }}>
                   R
                 </span>
               </div>
@@ -94,52 +58,49 @@ export function Footer() {
                 fontWeight: 400,
               }}
             >
-              Runway is the modern and intuitive way to model, plan, and align
-              your business for everyone on your team.
+              Ratiba helps travel teams build itineraries faster and send proposals clients can
+              review, comment on, and approve.
             </p>
           </div>
 
           {/* Link columns */}
-          {columns.map((col) => (
-            <div key={col.title} className="flex-1">
-              <h3
-                className="mb-4"
-                style={{
-                  fontSize: '14px',
-                  lineHeight: '18px',
-                  color: 'rgba(38,27,7,0.5)',
-                  fontWeight: 490,
-                }}
-              >
-                {col.title}
-              </h3>
-              <ul style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                {col.links.map((link) => (
-                  <li key={link.label}>
-                    <Link
-                      href={link.href}
-                      className="transition-opacity hover:opacity-60"
-                      style={{
-                        fontSize: '16px',
-                        lineHeight: '20px',
-                        color: '#261B07',
-                        fontWeight: 400,
-                      }}
-                    >
-                      {link.label}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
+          {/*{columns.map((col) => (*/}
+          {/*  <div key={col.title} className="flex-1">*/}
+          {/*    <h3*/}
+          {/*      className="mb-4"*/}
+          {/*      style={{*/}
+          {/*        fontSize: '14px',*/}
+          {/*        lineHeight: '18px',*/}
+          {/*        color: 'rgba(38,27,7,0.5)',*/}
+          {/*        fontWeight: 490,*/}
+          {/*      }}*/}
+          {/*    >*/}
+          {/*      {col.title}*/}
+          {/*    </h3>*/}
+          {/*    <ul style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>*/}
+          {/*      {col.links.map((link) => (*/}
+          {/*        <li key={link.label}>*/}
+          {/*          <Link*/}
+          {/*            href={link.href}*/}
+          {/*            className="transition-opacity hover:opacity-60"*/}
+          {/*            style={{*/}
+          {/*              fontSize: '16px',*/}
+          {/*              lineHeight: '20px',*/}
+          {/*              color: '#261B07',*/}
+          {/*              fontWeight: 400,*/}
+          {/*            }}*/}
+          {/*          >*/}
+          {/*            {link.label}*/}
+          {/*          </Link>*/}
+          {/*        </li>*/}
+          {/*      ))}*/}
+          {/*    </ul>*/}
+          {/*  </div>*/}
+          {/*))}*/}
         </div>
 
         {/* Bottom bar */}
-        <div
-          className="mt-12 flex items-center justify-between border-t pt-6"
-          style={{ borderColor: 'rgba(38,27,7,0.1)' }}
-        >
+        <div className="mt-12 border-t pt-6" style={{ borderColor: 'rgba(38,27,7,0.1)' }}>
           <p
             style={{
               fontSize: '14px',
@@ -148,34 +109,8 @@ export function Footer() {
               fontWeight: 400,
             }}
           >
-            2026
+            2026 Ratiba
           </p>
-          <div className="flex" style={{ gap: '24px' }}>
-            <Link
-              href="#"
-              className="transition-opacity hover:opacity-60"
-              style={{
-                fontSize: '14px',
-                lineHeight: '18px',
-                color: 'rgba(38,27,7,0.4)',
-                fontWeight: 400,
-              }}
-            >
-              Terms of service
-            </Link>
-            <Link
-              href="#"
-              className="transition-opacity hover:opacity-60"
-              style={{
-                fontSize: '14px',
-                lineHeight: '18px',
-                color: 'rgba(38,27,7,0.4)',
-                fontWeight: 400,
-              }}
-            >
-              Privacy policy
-            </Link>
-          </div>
         </div>
       </div>
     </footer>
