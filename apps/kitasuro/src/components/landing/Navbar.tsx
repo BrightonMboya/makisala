@@ -7,6 +7,7 @@ import { Menu, X } from 'lucide-react';
 const navLinks = [
   { href: '/#customers', label: 'Why Ratiba' },
   { href: '/#features', label: 'Features' },
+  { href: '/pricing', label: 'Pricing' },
   { href: '/login', label: 'Login' },
 ];
 
