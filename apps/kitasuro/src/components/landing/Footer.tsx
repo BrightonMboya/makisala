@@ -21,18 +21,16 @@ const columns = [
 export function Footer() {
   return (
     <footer
-      className="border-t"
+      className="border-t px-6 py-12 md:py-16 lg:px-28"
       style={{
-        paddingBlock: '64px',
-        paddingInline: '112px',
         borderColor: 'rgba(38,27,7,0.1)',
       }}
     >
       <div className="mx-auto" style={{ maxWidth: '1216px' }}>
         {/* Top row */}
-        <div className="flex" style={{ gap: '48px' }}>
+        <div className="flex flex-col gap-8 md:flex-row md:gap-12">
           {/* Brand */}
-          <div style={{ width: '280px', flexShrink: 0 }}>
+          <div className="w-full md:w-[280px] md:shrink-0">
             <Link href="/" className="mb-4 flex items-center gap-2">
               <div
                 className="flex h-7 w-7 items-center justify-center rounded-md"

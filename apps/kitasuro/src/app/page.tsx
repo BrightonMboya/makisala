@@ -15,6 +15,31 @@ const fadeUp = {
   transition: { duration: 0.7, ease: [0.16, 1, 0.3, 1] as const },
 };
 
+const trustedLogos = [
+  {
+    name: 'Nomad Tanzania',
+    src: '/logos/nomad.svg',
+    width: 128,
+  },
+  {
+    name: 'Lemala Camps & Lodges',
+    src: '/logos/lemala.svg',
+    width: 156,
+    invertOnLight: true,
+  },
+  {
+    name: 'Asilia Africa',
+    src: '/logos/asilia.svg',
+    width: 132,
+  },
+  {
+    name: 'Elewana Collection',
+    src: '/logos/elewana.png',
+    width: 136,
+    invertOnLight: true,
+  },
+];
+
 export default function LandingPage() {
   return (
     <div style={{ backgroundColor: '#F8F7F5', color: '#261B07' }}>
@@ -26,19 +51,18 @@ export default function LandingPage() {
         {/* Trusted By */}
         <section
           id="customers"
-          className="flex flex-col items-center overflow-hidden"
-          style={{ paddingBlock: '64px', gap: '32px' }}
+          className="flex flex-col items-center overflow-hidden py-12 md:py-16"
+          style={{ gap: '32px' }}
         >
           <motion.h2
             {...fadeUp}
-            className="text-center"
+            className="px-6 text-center lg:px-28"
             style={{
-              fontSize: '56px',
+              fontSize: 'clamp(32px, 5vw, 56px)',
               letterSpacing: '-2px',
-              lineHeight: '68px',
+              lineHeight: '1.2',
               color: '#261B07',
               fontWeight: 580,
-              paddingInline: '112px',
             }}
           >
             Built for modern travel teams
@@ -71,28 +95,27 @@ export default function LandingPage() {
               }}
               style={{ gap: '24px' }}
             >
-              {/* Duplicate logos for seamless loop */}
               {[...Array(2)].map((_, setIndex) =>
-                Array.from({ length: 8 }).map((__, i) => (
+                trustedLogos.map((logo) => (
                   <div
-                    key={`${setIndex}-${i}`}
-                    className="flex shrink-0 items-center justify-center rounded-lg"
+                    key={`${setIndex}-${logo.name}`}
+                    className="flex shrink-0 items-center justify-center"
                     style={{
-                      width: '120px',
-                      height: '40px',
-                      backgroundColor: '#EEECEA',
-                      marginRight: i < 7 || setIndex < 1 ? '0px' : '0px',
+                      width: '188px',
+                      height: '48px',
                     }}
                   >
-                    <span
+                    <img
+                      src={logo.src}
+                      alt={logo.name}
                       style={{
-                        fontSize: '14px',
-                        color: 'rgba(38,27,7,0.4)',
-                        fontWeight: 400,
+                        width: `${logo.width}px`,
+                        maxHeight: '30px',
+                        objectFit: 'contain',
+                        opacity: 0.72,
+                        filter: logo.invertOnLight ? 'brightness(0) saturate(100%)' : 'none',
                       }}
-                    >
-                      Logo
-                    </span>
+                    />
                   </div>
                 )),
               )}
@@ -104,8 +127,8 @@ export default function LandingPage() {
 
         {/* Collaboration section */}
         <section
-          className="flex flex-col"
-          style={{ paddingBlock: '80px', paddingInline: '112px', gap: '32px' }}
+          className="flex flex-col px-6 py-12 md:py-20 lg:px-28"
+          style={{ gap: '32px' }}
         >
           <div className="mx-auto" style={{ maxWidth: '1216px', width: '100%' }}>
             {/* Header */}
@@ -117,9 +140,9 @@ export default function LandingPage() {
               <h2
                 className="text-center"
                 style={{
-                  fontSize: '56px',
+                  fontSize: 'clamp(32px, 5vw, 56px)',
                   letterSpacing: '-2px',
-                  lineHeight: '68px',
+                  lineHeight: '1.2',
                   color: '#261B07',
                   fontWeight: 580,
                 }}
@@ -141,7 +164,7 @@ export default function LandingPage() {
             </motion.div>
 
             {/* Cards */}
-            <div className="flex" style={{ gap: '16px' }}>
+            <div className="flex flex-col md:flex-row" style={{ gap: '16px' }}>
               {[
                 {
                   title: 'Tag the right teammate instantly',
@@ -223,12 +246,9 @@ export default function LandingPage() {
 
         {/* Value Props */}
         <section
-          className="flex"
+          className="flex flex-col px-6 pb-12 md:flex-row md:pb-20 lg:px-28"
           style={{
             paddingTop: '0px',
-            paddingRight: '112px',
-            paddingBottom: '80px',
-            paddingLeft: '112px',
             gap: '16px',
           }}
         >
@@ -293,8 +313,7 @@ export default function LandingPage() {
         {/* Sample Itineraries */}
         <section
           id="features"
-          className="flex flex-col"
-          style={{ paddingBlock: '80px', paddingInline: '112px' }}
+          className="flex flex-col px-6 py-12 md:py-20 lg:px-28"
         >
           <div className="mx-auto" style={{ maxWidth: '1216px', width: '100%' }}>
             <motion.div
@@ -305,9 +324,9 @@ export default function LandingPage() {
               <h2
                 className="text-center"
                 style={{
-                  fontSize: '56px',
+                  fontSize: 'clamp(32px, 5vw, 56px)',
                   letterSpacing: '-2px',
-                  lineHeight: '68px',
+                  lineHeight: '1.2',
                   color: '#261B07',
                   fontWeight: 580,
                 }}
@@ -463,8 +482,7 @@ export default function LandingPage() {
         </section>
 
         <section
-          className="flex flex-col"
-          style={{ paddingBlock: '96px', paddingInline: '112px' }}
+          className="flex flex-col px-6 py-16 md:py-24 lg:px-28"
         >
           <motion.div
             {...fadeUp}
@@ -472,7 +490,7 @@ export default function LandingPage() {
             style={{
               maxWidth: '960px',
               width: '100%',
-              padding: '56px 40px',
+              padding: 'clamp(32px, 5vw, 56px) clamp(20px, 4vw, 40px)',
               gap: '20px',
               backgroundColor: '#FFFFFF',
               borderColor: 'rgba(38,27,7,0.08)',
@@ -481,9 +499,9 @@ export default function LandingPage() {
           >
             <h2
               style={{
-                fontSize: '46px',
+                fontSize: 'clamp(28px, 4vw, 46px)',
                 letterSpacing: '-2px',
-                lineHeight: '52px',
+                lineHeight: '1.15',
                 color: '#261B07',
                 fontWeight: 580,
                 maxWidth: '620px',

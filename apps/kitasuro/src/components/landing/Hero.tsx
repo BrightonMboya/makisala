@@ -97,7 +97,7 @@ export function Hero() {
       </section>
 
       {/* Hero Image Placeholder */}
-      <div style={{ paddingInline: '112px', paddingBottom: '64px' }}>
+      <div className="px-6 pb-10 md:pb-16 lg:px-28">
         <div
           className="mx-auto flex items-center justify-center rounded-2xl"
           style={{
