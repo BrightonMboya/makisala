@@ -46,6 +46,7 @@ export function FeaturesSection() {
 
   return (
     <section
+      id="features"
       ref={containerRef}
       className="relative"
       style={{ height: `${features.length * 100}vh` }}

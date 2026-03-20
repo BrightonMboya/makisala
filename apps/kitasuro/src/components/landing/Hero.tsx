@@ -72,7 +72,7 @@ export function Hero() {
           className="flex flex-col items-center gap-4 sm:flex-row"
         >
           <Link
-            href="https://cal.com/brightonmboya/30min"
+            href="/demo"
             className="w-full rounded-[10px] px-6 py-3 text-center text-sm transition-opacity hover:opacity-90 sm:w-auto"
             style={{
               backgroundColor: '#261B07',

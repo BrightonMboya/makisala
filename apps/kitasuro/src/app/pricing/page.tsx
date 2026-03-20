@@ -554,7 +554,7 @@ export default function PricingPage() {
                 Start free trial
               </Link>
               <Link
-                href="https://cal.com/brightonmboya/30min"
+                href="/demo"
                 className="rounded-[12px] border px-6 py-3 text-sm transition-opacity hover:opacity-70"
                 style={{
                   borderColor: 'rgba(38,27,7,0.18)',

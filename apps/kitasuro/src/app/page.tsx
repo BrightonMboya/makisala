@@ -515,7 +515,7 @@ export default function LandingPage() {
             </p>
             <div className="flex flex-wrap items-center justify-center" style={{ gap: '14px' }}>
               <Link
-                href="https://cal.com/brightonmboya/30min"
+                href="/demo"
                 className="rounded-[12px] px-6 py-3 text-sm transition-opacity hover:opacity-90"
                 style={{
                   backgroundColor: '#261B07',

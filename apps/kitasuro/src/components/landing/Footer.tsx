@@ -4,7 +4,7 @@ const columns = [
   {
     title: 'Product',
     links: [
-      { label: 'Book a demo', href: 'https://cal.com/brightonmboya/30min' },
+      { label: 'Book a demo', href: '/demo' },
       { label: 'See sample proposal', href: '/proposal/5a428b26-dde0-4ae8-a3a8-93c8f3938527' },
     ],
   },

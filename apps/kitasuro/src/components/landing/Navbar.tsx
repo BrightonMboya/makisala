@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { Menu, X } from 'lucide-react';
 
 const navLinks = [
-  { href: '/#customers', label: 'Why Ratiba' },
+  { href: '/#why-ratiba', label: 'Why Ratiba' },
   { href: '/#features', label: 'Features' },
   { href: '/pricing', label: 'Pricing' },
   { href: '/login', label: 'Login' },
@@ -59,7 +59,7 @@ export function Navbar() {
           </Link>
         ))}
         <Link
-          href="https://cal.com/brightonmboya/30min"
+          href="/demo"
           className="rounded-lg px-4 py-2 text-sm transition-opacity hover:opacity-90"
           style={{
             backgroundColor: '#261B07',
@@ -102,7 +102,7 @@ export function Navbar() {
               </Link>
             ))}
             <Link
-              href="https://cal.com/brightonmboya/30min"
+              href="/demo"
               className="mt-2 block rounded-lg px-4 py-2.5 text-center text-sm"
               style={{
                 backgroundColor: '#261B07',
