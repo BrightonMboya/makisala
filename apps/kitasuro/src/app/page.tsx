@@ -126,10 +126,7 @@ export default function LandingPage() {
         <FeaturesSection />
 
         {/* Collaboration section */}
-        <section
-          className="flex flex-col px-6 py-12 md:py-20 lg:px-28"
-          style={{ gap: '32px' }}
-        >
+        <section className="flex flex-col px-6 py-12 md:py-20 lg:px-28" style={{ gap: '32px' }}>
           <div className="mx-auto" style={{ maxWidth: '1216px', width: '100%' }}>
             {/* Header */}
             <motion.div
@@ -311,10 +308,7 @@ export default function LandingPage() {
         <Reviews />
 
         {/* Sample Itineraries */}
-        <section
-          id="features"
-          className="flex flex-col px-6 py-12 md:py-20 lg:px-28"
-        >
+        <section id="features" className="flex flex-col px-6 py-12 md:py-20 lg:px-28">
           <div className="mx-auto" style={{ maxWidth: '1216px', width: '100%' }}>
             <motion.div
               {...fadeUp}
@@ -481,9 +475,7 @@ export default function LandingPage() {
           </div>
         </section>
 
-        <section
-          className="flex flex-col px-6 py-16 md:py-24 lg:px-28"
-        >
+        <section className="flex flex-col px-6 py-16 md:py-24 lg:px-28">
           <motion.div
             {...fadeUp}
             className="mx-auto flex flex-col items-center rounded-[28px] border text-center"
@@ -534,7 +526,7 @@ export default function LandingPage() {
                 Book a demo
               </Link>
               <Link
-                href="/proposal/5a428b26-dde0-4ae8-a3a8-93c8f3938527"
+                href="/proposal/tjksu"
                 className="rounded-[12px] border px-6 py-3 text-sm transition-opacity hover:opacity-70"
                 style={{
                   borderColor: 'rgba(38,27,7,0.18)',

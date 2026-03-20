@@ -27,6 +27,8 @@ const features = [
   },
 ];
 
+const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
+
 export function FeaturesSection() {
   const containerRef = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({
@@ -35,9 +37,10 @@ export function FeaturesSection() {
   });
 
   const [activeIndex, setActiveIndex] = useState(0);
+  const lastFeatureIndex = features.length - 1;
 
   useMotionValueEvent(scrollYProgress, 'change', (latest) => {
-    const index = Math.min(features.length - 1, Math.floor(latest * features.length));
+    const index = Math.round(clamp(latest, 0, 1) * lastFeatureIndex);
     setActiveIndex(index);
   });
 
@@ -45,7 +48,7 @@ export function FeaturesSection() {
     <section
       ref={containerRef}
       className="relative"
-      style={{ height: `${(features.length + 1) * 100}vh` }}
+      style={{ height: `${features.length * 100}vh` }}
     >
       <div className="sticky top-0 flex h-screen items-center overflow-hidden">
         <div className="mx-auto w-full px-6 lg:px-28" style={{ maxWidth: '1216px' }}>
@@ -85,12 +88,21 @@ export function FeaturesSection() {
                 return (
                   <motion.div
                     key={i}
+                    onClick={() => {
+                      if (!containerRef.current) return;
+                      const containerTop =
+                        containerRef.current.getBoundingClientRect().top + window.scrollY;
+                      const scrollDistance = containerRef.current.scrollHeight - window.innerHeight;
+                      const progress = lastFeatureIndex === 0 ? 0 : i / lastFeatureIndex;
+                      setActiveIndex(i);
+                      window.scrollTo({ top: containerTop + progress * scrollDistance, behavior: 'auto' });
+                    }}
                     animate={{
                       backgroundColor: isActive ? '#FFFFFF' : 'rgba(255,255,255,0)',
                       borderColor: isActive ? 'rgba(38,27,7,0.08)' : 'rgba(38,27,7,0)',
                     }}
                     transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] as const }}
-                    className="flex flex-col rounded-xl border"
+                    className="flex cursor-pointer flex-col rounded-xl border"
                     style={{ padding: '20px', gap: '8px' }}
                   >
                     <div className="flex items-center gap-2">

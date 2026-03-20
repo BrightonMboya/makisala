@@ -48,7 +48,7 @@ export function Hero() {
             maxWidth: '900px',
           }}
         >
-          Build faster itineraries. Win more trips.
+          Build faster itineraries. Sell more trips.
         </motion.h1>
 
         <motion.p
@@ -69,11 +69,11 @@ export function Hero() {
         <motion.div
           {...fadeUp}
           transition={{ ...fadeUp.transition, delay: 0.2 }}
-          className="flex items-center gap-4"
+          className="flex flex-col items-center gap-4 sm:flex-row"
         >
           <Link
             href="https://cal.com/brightonmboya/30min"
-            className="rounded-[10px] px-6 py-3 text-sm transition-opacity hover:opacity-90"
+            className="w-full rounded-[10px] px-6 py-3 text-center text-sm transition-opacity hover:opacity-90 sm:w-auto"
             style={{
               backgroundColor: '#261B07',
               color: '#F8F7F5',
@@ -84,7 +84,7 @@ export function Hero() {
           </Link>
           <Link
             href="/proposal/tjksu"
-            className="rounded-[10px] border px-6 py-3 text-sm transition-opacity hover:opacity-70"
+            className="w-full rounded-[10px] border px-6 py-3 text-center text-sm transition-opacity hover:opacity-70 sm:w-auto"
             style={{
               borderColor: 'rgba(38,27,7,0.2)',
               color: '#261B07',
@@ -98,18 +98,12 @@ export function Hero() {
 
       {/* Hero Image Placeholder */}
       <div className="px-6 pb-10 md:pb-16 lg:px-28">
-        <div
-          className="mx-auto flex items-center justify-center rounded-2xl"
-          style={{
-            backgroundColor: '#EEECEA',
-            height: '500px',
-            maxWidth: '1216px',
-          }}
-        >
-          <span style={{ color: 'rgba(38,27,7,0.4)', fontSize: '16px' }}>
-            Product Screenshot
-          </span>
-        </div>
+        <img
+          src="https://brand.makisala.com/Screenshot%202026-02-27%20at%2019.58.52.png"
+          alt="Kitasuro product screenshot"
+          className="mx-auto w-full rounded-2xl"
+          style={{ maxWidth: '1216px' }}
+        />
       </div>
     </>
   );
