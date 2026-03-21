@@ -1,9 +1,13 @@
 'use client';
 
+import Cal, { getCalApi } from '@calcom/embed-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
+import { log, serializeError } from '@/lib/logger';
+
+const CAL_LINK = 'brightonmboya/30min';
 
 const trustedLogos = [
   { name: 'Nomad Tanzania', src: '/logos/nomad.svg', width: 138 },
@@ -23,8 +27,7 @@ const roles = [
 
 const testimonials = [
   {
-    quote:
-      'We went from spending hours on proposals to having them ready in minutes.',
+    quote: 'We went from spending hours on proposals to having them ready in minutes.',
     name: 'James Mwangi',
     role: 'Head of Sales',
   },
@@ -46,6 +49,23 @@ export default function DemoPage() {
   const router = useRouter();
   const [submitting, setSubmitting] = useState(false);
   const [testimonialIndex, setTestimonialIndex] = useState(0);
+  const [schedulePromptOpen, setSchedulePromptOpen] = useState(false);
+  const [submittedContact, setSubmittedContact] = useState<{ name: string; email: string } | null>(
+    null,
+  );
+
+  // Listen for booking success
+  useEffect(() => {
+    (async function () {
+      const cal = await getCalApi({ namespace: '30min' });
+      cal('on', {
+        action: 'bookingSuccessful',
+        callback: () => {
+          router.push('/demo/confirmation');
+        },
+      });
+    })();
+  }, [router]);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -59,242 +79,117 @@ export default function DemoPage() {
     setSubmitting(true);
 
     const form = e.currentTarget;
-    const formData = new FormData(form);
+    const fd = new FormData(form);
+    const name = fd.get('fullName') as string;
+    const email = fd.get('email') as string;
 
     try {
       await fetch('/api/demo', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          fullName: formData.get('fullName'),
-          email: formData.get('email'),
-          company: formData.get('company'),
-          role: formData.get('role'),
+          fullName: name,
+          email,
+          company: fd.get('company'),
+          role: fd.get('role'),
         }),
       });
-      router.push('/demo/confirmation');
-    } catch {
-      router.push('/demo/confirmation');
+    } catch (err) {
+      log.error('Demo form submission failed', serializeError(err));
     } finally {
       setSubmitting(false);
     }
+
+    setSubmittedContact({ name, email });
+    setSchedulePromptOpen(true);
   };
 
   return (
-    <div
-      className="flex min-h-screen items-center justify-center"
-      style={{
-        backgroundColor: '#F8F7F5',
-        color: '#261B07',
-        padding: '48px 24px',
-      }}
-    >
-      <div
-        className="flex w-full flex-col lg:flex-row"
-        style={{ maxWidth: '1216px', gap: '16px' }}
-      >
+    <div className="flex min-h-screen items-center justify-center bg-[#F8F7F5] px-6 py-12 text-[#261B07]">
+      <div className="flex w-full max-w-[1216px] flex-col gap-4 lg:flex-row">
         {/* ── Left: Dark form card ── */}
-        <div
-          className="flex flex-1 flex-col overflow-hidden"
-          style={{
-            backgroundColor: '#261B07',
-            borderRadius: '12px',
-            padding: '6px',
-            gap: '6px',
-          }}
-        >
+        <div className="flex flex-1 flex-col gap-1.5 overflow-hidden rounded-xl bg-[#261B07] p-1.5">
           {/* Dark header area */}
-          <div className="flex flex-col" style={{ padding: '32px', gap: '16px' }}>
+          <div className="flex flex-col gap-4 p-8">
             <Link
               href="/"
-              className="text-sm transition-opacity hover:opacity-80"
-              style={{
-                color: 'rgba(248,247,245,0.72)',
-                textDecoration: 'underline',
-                fontSize: '14px',
-              }}
+              className="text-sm text-[rgba(248,247,245,0.72)] underline transition-opacity hover:opacity-80"
             >
               &larr; Back to homepage
             </Link>
-            <h1
-              style={{
-                fontSize: '36px',
-                fontWeight: 584,
-                lineHeight: '40.5px',
-                letterSpacing: '-0.36px',
-                color: '#F8F7F5',
-              }}
-            >
+            <h1 className="text-4xl leading-[40.5px] font-[584] tracking-[-0.36px] text-[#F8F7F5]">
               Talk to a human
             </h1>
           </div>
 
           {/* White form area */}
-          <div
-            className="flex flex-1 flex-col"
-            style={{
-              backgroundColor: '#F8F7F5',
-              borderRadius: '8px',
-              overflow: 'hidden',
-            }}
-          >
-            <div
-              className="flex flex-1 flex-col justify-between"
-              style={{ padding: '32px', gap: '32px' }}
-            >
-              <>
-                  <form
-                    onSubmit={handleSubmit}
-                    className="flex flex-col"
-                    style={{ gap: '16px' }}
-                  >
-                    <FormField label="Full name" name="fullName" required />
-                    <FormField label="Company" name="company" required />
-                    <SelectField
-                      label="Role"
-                      name="role"
-                      options={roles}
-                      placeholder="Select one"
-                      required
-                    />
-                    <FormField
-                      label="Work email"
-                      name="email"
-                      type="email"
-                      required
-                    />
+          <div className="flex flex-1 flex-col overflow-hidden rounded-lg bg-[#F8F7F5]">
+            <div className="flex flex-1 flex-col justify-between gap-8 p-8">
+              <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+                <FormField label="Full name" name="fullName" required />
+                <FormField label="Company" name="company" required />
+                <SelectField
+                  label="Role"
+                  name="role"
+                  options={roles}
+                  placeholder="Select one"
+                  required
+                />
+                <FormField label="Work email" name="email" type="email" required />
 
-                    <button
-                      type="submit"
-                      disabled={submitting}
-                      className="w-full transition-opacity hover:opacity-90 disabled:opacity-60"
-                      style={{
-                        backgroundColor: '#261B07',
-                        color: '#F8F7F5',
-                        fontWeight: 584,
-                        fontSize: '14px',
-                        lineHeight: '20px',
-                        padding: '14px',
-                        borderRadius: '8px',
-                        marginTop: '4px',
-                      }}
-                    >
-                      {submitting ? 'Submitting...' : 'Book a demo'}
-                    </button>
-                  </form>
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="mt-[4px] w-full cursor-pointer rounded-md bg-[#261B07] p-[14px] text-[#F8F7F5] transition-opacity hover:opacity-90 disabled:opacity-60"
+                >
+                  {submitting ? 'Submitting...' : 'Book a demo'}
+                </button>
+              </form>
 
-                  {/* Footer */}
-                  <div
-                    className="flex items-center justify-between"
-                    style={{
-                      paddingTop: '16px',
-                      borderTop: '1px solid rgb(227,223,213)',
-                    }}
-                  >
-                    <span
-                      style={{
-                        fontSize: '14px',
-                        fontWeight: 492,
-                        letterSpacing: '-0.14px',
-                        color: '#261B07',
-                      }}
-                    >
-                      200+ tour operators
-                    </span>
-                    <Link
-                      href="/proposal/tjksu"
-                      className="transition-opacity hover:opacity-70"
-                      style={{
-                        fontSize: '14px',
-                        fontWeight: 492,
-                        letterSpacing: '-0.14px',
-                        color: '#261B07',
-                        textDecoration: 'underline',
-                      }}
-                    >
-                      See a sample proposal
-                    </Link>
-                  </div>
-              </>
+              {/* Footer */}
+              <div className="flex items-center justify-between border-t border-[rgb(227,223,213)] pt-4">
+                <span className="text-sm font-[492] tracking-[-0.14px] text-[#261B07]">
+                  200+ tour operators
+                </span>
+                <Link
+                  href="/proposal/tjksu"
+                  className="text-sm font-[492] tracking-[-0.14px] text-[#261B07] underline transition-opacity hover:opacity-70"
+                >
+                  See a sample proposal
+                </Link>
+              </div>
             </div>
           </div>
         </div>
 
         {/* ── Right: Content card ── */}
-        <div
-          className="flex flex-1 flex-col justify-between overflow-hidden"
-          style={{
-            backgroundColor: '#FFFFFF',
-            borderRadius: '12px',
-            boxShadow: 'rgba(38,27,7,0.06) 0px 4px 8px 0px',
-          }}
-        >
-          <div
-            className="flex flex-1 flex-col justify-between"
-            style={{ padding: '32px', gap: '32px' }}
-          >
-            <div className="flex flex-col" style={{ gap: '32px' }}>
+        <div className="flex flex-1 flex-col justify-between overflow-hidden rounded-xl bg-white shadow-[0_4px_8px_0_rgba(38,27,7,0.06)]">
+          <div className="flex flex-1 flex-col justify-between gap-8 p-8">
+            <div className="flex flex-col gap-8">
               {/* Logo */}
               <Link href="/" className="flex items-center gap-2">
-                <div
-                  className="flex h-7 w-7 items-center justify-center rounded-md"
-                  style={{ backgroundColor: '#261B07' }}
-                >
-                  <span
-                    className="text-sm font-bold leading-none"
-                    style={{ color: '#F8F7F5' }}
-                  >
-                    R
-                  </span>
+                <div className="flex h-7 w-7 items-center justify-center rounded-md bg-[#261B07]">
+                  <span className="text-sm leading-none font-bold text-[#F8F7F5]">R</span>
                 </div>
-                <span
-                  style={{
-                    fontWeight: 600,
-                    letterSpacing: '-0.3px',
-                    color: '#261B07',
-                    fontSize: '16px',
-                  }}
-                >
+                <span className="text-base font-semibold tracking-[-0.3px] text-[#261B07]">
                   Ratiba
                 </span>
               </Link>
 
               {/* Headline */}
-              <h1
-                style={{
-                  fontSize: '56px',
-                  fontWeight: 584,
-                  lineHeight: '63px',
-                  letterSpacing: '-1.12px',
-                  color: '#261B07',
-                }}
-              >
+              <h1 className="text-[56px] leading-[63px] font-[584] tracking-[-1.12px] text-[#261B07]">
                 Build faster. Sell more.
               </h1>
 
               {/* Description */}
-              <p
-                style={{
-                  fontSize: '20px',
-                  lineHeight: '25px',
-                  letterSpacing: '-0.2px',
-                  color: '#261B07',
-                }}
-              >
-                Ratiba helps tour operators and travel agencies build itineraries
-                faster and send proposals clients love.
+              <p className="text-xl leading-[25px] tracking-[-0.2px] text-[#261B07]">
+                Ratiba helps tour operators and travel agencies build itineraries faster and send
+                proposals clients love.
               </p>
             </div>
 
             {/* Single testimonial with crossfade */}
-            <div
-              className="relative overflow-hidden rounded-xl"
-              style={{
-                backgroundColor: '#F8F7F5',
-                padding: '24px',
-                minHeight: '140px',
-              }}
-            >
+            <div className="relative min-h-[140px] overflow-hidden rounded-xl bg-[#F8F7F5] p-6">
               <AnimatePresence mode="wait">
                 <motion.div
                   key={testimonialIndex}
@@ -302,53 +197,22 @@ export default function DemoPage() {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}
                   transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-                  className="flex flex-col"
-                  style={{ gap: '16px' }}
+                  className="flex flex-col gap-4"
                 >
-                  <p
-                    style={{
-                      fontSize: '16px',
-                      lineHeight: '24px',
-                      color: 'rgba(38,27,7,0.8)',
-                      fontStyle: 'italic',
-                    }}
-                  >
+                  <p className="text-base leading-6 text-[rgba(38,27,7,0.8)] italic">
                     &ldquo;{testimonials[testimonialIndex]!.quote}&rdquo;
                   </p>
-                  <div className="flex items-center" style={{ gap: '10px' }}>
-                    <div
-                      className="flex h-9 w-9 items-center justify-center"
-                      style={{
-                        backgroundColor: '#E3DFD5',
-                        borderRadius: '8px',
-                        fontSize: '13px',
-                        fontWeight: 584,
-                        color: '#261B07',
-                      }}
-                    >
-                      {testimonials[testimonialIndex]!.name
-                        .split(' ')
+                  <div className="flex items-center gap-2.5">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#E3DFD5] text-[13px] font-[584] text-[#261B07]">
+                      {testimonials[testimonialIndex]!.name.split(' ')
                         .map((n) => n[0])
                         .join('')}
                     </div>
                     <div className="flex flex-col">
-                      <span
-                        style={{
-                          fontSize: '14px',
-                          fontWeight: 584,
-                          lineHeight: '17px',
-                          color: '#261B07',
-                        }}
-                      >
+                      <span className="text-sm leading-[17px] font-[584] text-[#261B07]">
                         {testimonials[testimonialIndex]!.name}
                       </span>
-                      <span
-                        style={{
-                          fontSize: '13px',
-                          lineHeight: '17px',
-                          color: 'rgba(38,27,7,0.5)',
-                        }}
-                      >
+                      <span className="text-[13px] leading-[17px] text-[rgba(38,27,7,0.5)]">
                         {testimonials[testimonialIndex]!.role}
                       </span>
                     </div>
@@ -358,53 +222,27 @@ export default function DemoPage() {
             </div>
 
             {/* Logo marquee with label */}
-            <div className="flex flex-col" style={{ gap: '12px' }}>
-              <p
-                style={{
-                  fontSize: '12px',
-                  fontWeight: 490,
-                  color: 'rgba(38,27,7,0.4)',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.05em',
-                }}
-              >
+            <div className="flex flex-col gap-3">
+              <p className="text-xs font-[490] tracking-[0.05em] text-[rgba(38,27,7,0.4)] uppercase">
                 Built for modern travel companies
               </p>
               <div className="relative overflow-hidden">
-                <div
-                  className="pointer-events-none absolute inset-y-0 left-0 z-10 w-12"
-                  style={{
-                    background: 'linear-gradient(to right, #FFFFFF, transparent)',
-                  }}
-                />
-                <div
-                  className="pointer-events-none absolute inset-y-0 right-0 z-10 w-12"
-                  style={{
-                    background: 'linear-gradient(to left, #FFFFFF, transparent)',
-                  }}
-                />
-                <div
-                  className="flex w-max animate-marquee"
-                  style={{ gap: '24px' }}
-                >
+                <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-12 bg-gradient-to-r from-white to-transparent" />
+                <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-12 bg-gradient-to-l from-white to-transparent" />
+                <div className="animate-marquee flex w-max gap-6">
                   {[...Array(3)].map((_, setIndex) =>
                     trustedLogos.map((logo) => (
                       <div
                         key={`${setIndex}-${logo.name}`}
-                        className="flex shrink-0 items-center justify-center"
-                        style={{ width: '140px', height: '36px' }}
+                        className="flex h-9 w-[140px] shrink-0 items-center justify-center"
                       >
                         <img
                           src={logo.src}
                           alt={logo.name}
+                          className="max-h-[26px] object-contain opacity-50"
                           style={{
                             width: `${logo.width}px`,
-                            maxHeight: '26px',
-                            objectFit: 'contain',
-                            opacity: 0.5,
-                            filter: logo.invert
-                              ? 'brightness(0) saturate(100%)'
-                              : 'none',
+                            filter: logo.invert ? 'brightness(0) saturate(100%)' : 'none',
                           }}
                         />
                       </div>
@@ -416,6 +254,43 @@ export default function DemoPage() {
           </div>
         </div>
       </div>
+
+      <AnimatePresence>
+        {schedulePromptOpen ? (
+          <motion.div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(38,27,7,0.38)] px-6"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <motion.div
+              initial={{ opacity: 0, y: 12, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 8, scale: 0.98 }}
+              transition={{ duration: 0.24, ease: [0.16, 1, 0.3, 1] }}
+              className="flex max-h-[90vh] w-full max-w-2xl flex-col rounded-2xl bg-[#F8F7F5] p-7 shadow-[0_24px_80px_rgba(38,27,7,0.18)]"
+            >
+              <div className="flex flex-col gap-3">
+                <h2 className="text-[28px] leading-8 font-[584] tracking-[-0.4px] text-[#261B07]">
+                  What&apos;s the best time for the meeting?
+                </h2>
+              </div>
+
+              <div className="mt-6 min-h-0 flex-1 overflow-y-auto rounded-xl border border-[rgb(227,223,213)]">
+                <Cal
+                  namespace="30min"
+                  calLink={CAL_LINK}
+                  config={{
+                    name: submittedContact?.name!,
+                    email: submittedContact?.email!,
+                  }}
+                  className="h-full w-full"
+                />
+              </div>
+            </motion.div>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
     </div>
   );
 }
@@ -434,16 +309,10 @@ function FormField({
   placeholder?: string;
 }) {
   return (
-    <div className="flex flex-col" style={{ gap: '6px' }}>
+    <div className="flex flex-col gap-1.5">
       <label
         htmlFor={name}
-        style={{
-          fontSize: '14px',
-          fontWeight: 492,
-          color: '#261B07',
-          lineHeight: '17.5px',
-          letterSpacing: '-0.14px',
-        }}
+        className="text-sm leading-[17.5px] font-[492] tracking-[-0.14px] text-[#261B07]"
       >
         {label}*
       </label>
@@ -453,15 +322,7 @@ function FormField({
         type={type}
         required={required}
         placeholder={placeholder}
-        className="w-full outline-none transition-colors"
-        style={{
-          border: '1.5px solid rgb(227,223,213)',
-          borderRadius: '8px',
-          padding: '12px 14px',
-          fontSize: '15px',
-          color: '#261B07',
-          backgroundColor: 'transparent',
-        }}
+        className="w-full rounded-lg border-[1.5px] border-[rgb(227,223,213)] bg-transparent px-3.5 py-3 text-[15px] text-[#261B07] transition-colors outline-none"
       />
     </div>
   );
@@ -481,16 +342,10 @@ function SelectField({
   required?: boolean;
 }) {
   return (
-    <div className="flex flex-col" style={{ gap: '6px' }}>
+    <div className="flex flex-col gap-1.5">
       <label
         htmlFor={name}
-        style={{
-          fontSize: '14px',
-          fontWeight: 492,
-          color: '#261B07',
-          lineHeight: '17.5px',
-          letterSpacing: '-0.14px',
-        }}
+        className="text-sm leading-[17.5px] font-[492] tracking-[-0.14px] text-[#261B07]"
       >
         {label}*
       </label>
@@ -499,19 +354,9 @@ function SelectField({
         name={name}
         required={required}
         defaultValue=""
-        className="w-full outline-none transition-colors"
+        className="w-full appearance-none rounded-lg border-[1.5px] border-[rgb(227,223,213)] bg-transparent bg-[length:12px_12px] bg-[position:right_14px_center] bg-no-repeat py-3 pr-10 pl-3.5 text-[15px] text-[#261B07] transition-colors outline-none"
         style={{
-          border: '1.5px solid rgb(227,223,213)',
-          borderRadius: '8px',
-          padding: '12px 14px',
-          fontSize: '15px',
-          color: '#261B07',
-          backgroundColor: 'transparent',
-          appearance: 'none',
           backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M3 4.5L6 7.5L9 4.5' stroke='%23261B07' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")`,
-          backgroundRepeat: 'no-repeat',
-          backgroundPosition: 'right 14px center',
-          paddingRight: '40px',
         }}
       >
         <option value="" disabled>
