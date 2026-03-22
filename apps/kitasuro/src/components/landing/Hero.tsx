@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { motion } from 'framer-motion';
+import Image from 'next/image';
 
 const fadeUp = {
   initial: { opacity: 0, y: 20 },
@@ -14,23 +15,10 @@ export function Hero() {
   return (
     <>
       {/* Hero Section */}
-      <section
-        className="flex flex-col items-center"
-        style={{
-          paddingTop: '80px',
-          paddingBottom: '48px',
-          paddingInline: '24px',
-          gap: '24px',
-        }}
-      >
+      <section className="flex flex-col items-center gap-6 px-6 pt-20 pb-12">
         <motion.p
           {...fadeUp}
-          style={{
-            fontSize: '16px',
-            lineHeight: '20px',
-            color: '#261B07',
-            fontWeight: 400,
-          }}
+          className="text-base leading-5 text-[#261B07]"
         >
           Built for tour operators and travel agencies
         </motion.p>
@@ -38,15 +26,7 @@ export function Hero() {
         <motion.h1
           {...fadeUp}
           transition={{ ...fadeUp.transition, delay: 0.1 }}
-          className="text-center"
-          style={{
-            fontSize: 'clamp(40px, 5vw, 72px)',
-            letterSpacing: '-2.5px',
-            lineHeight: '1.05',
-            color: '#261B07',
-            fontWeight: 580,
-            maxWidth: '900px',
-          }}
+          className="max-w-[900px] text-center text-[clamp(40px,5vw,72px)] font-[580] leading-[1.05] tracking-[-2.5px] text-[#261B07]"
         >
           Build faster itineraries. Sell more trips.
         </motion.h1>
@@ -54,14 +34,7 @@ export function Hero() {
         <motion.p
           {...fadeUp}
           transition={{ ...fadeUp.transition, delay: 0.15 }}
-          className="text-center"
-          style={{
-            fontSize: '20px',
-            lineHeight: '30px',
-            color: '#261B07',
-            fontWeight: 400,
-            maxWidth: '640px',
-          }}
+          className="max-w-[640px] text-center text-xl leading-[30px] text-[#261B07]"
         >
           Build the itinerary together. Send the proposal with confidence.
         </motion.p>
@@ -73,36 +46,28 @@ export function Hero() {
         >
           <Link
             href="/demo"
-            className="w-full rounded-[10px] px-6 py-3 text-center text-sm transition-opacity hover:opacity-90 sm:w-auto"
-            style={{
-              backgroundColor: '#261B07',
-              color: '#F8F7F5',
-              fontWeight: 580,
-            }}
+            className="w-full rounded-[10px] bg-[#261B07] px-6 py-3 text-center text-sm font-[580] text-[#F8F7F5] transition-opacity hover:opacity-90 sm:w-auto"
           >
             Book a demo
           </Link>
           <Link
             href="/proposal/tjksu"
-            className="w-full rounded-[10px] border px-6 py-3 text-center text-sm transition-opacity hover:opacity-70 sm:w-auto"
-            style={{
-              borderColor: 'rgba(38,27,7,0.2)',
-              color: '#261B07',
-              fontWeight: 580,
-            }}
+            className="w-full rounded-[10px] border border-[rgba(38,27,7,0.2)] px-6 py-3 text-center text-sm font-[580] text-[#261B07] transition-opacity hover:opacity-70 sm:w-auto"
           >
-            See a sample proposal
+            See a sample itinerary
           </Link>
         </motion.div>
       </section>
 
-      {/* Hero Image Placeholder */}
+      {/* Hero Image */}
       <div className="px-6 pb-10 md:pb-16 lg:px-28">
-        <img
+        <Image
           src="https://brand.makisala.com/Screenshot%202026-02-27%20at%2019.58.52.png"
           alt="Kitasuro product screenshot"
-          className="mx-auto w-full rounded-2xl"
-          style={{ maxWidth: '1216px' }}
+          width={2432}
+          height={1520}
+          className="mx-auto w-full max-w-[1216px] rounded-2xl"
+          priority
         />
       </div>
     </>

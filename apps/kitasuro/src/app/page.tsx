@@ -42,7 +42,7 @@ const trustedLogos = [
 
 export default function LandingPage() {
   return (
-    <div style={{ backgroundColor: '#F8F7F5', color: '#261B07' }}>
+    <div className="bg-[#F8F7F5] text-[#261B07]">
       <Navbar />
 
       <main>
@@ -51,39 +51,21 @@ export default function LandingPage() {
         {/* Trusted By */}
         <section
           id="customers"
-          className="flex flex-col items-center overflow-hidden py-12 md:py-16"
-          style={{ gap: '32px' }}
+          className="flex flex-col items-center gap-8 overflow-hidden py-12 md:py-16"
         >
           <motion.h2
             {...fadeUp}
-            className="px-6 text-center lg:px-28"
-            style={{
-              fontSize: 'clamp(32px, 5vw, 56px)',
-              letterSpacing: '-2px',
-              lineHeight: '1.2',
-              color: '#261B07',
-              fontWeight: 580,
-            }}
+            className="px-6 text-center text-[clamp(32px,5vw,56px)] leading-[1.2] font-[580] tracking-[-2px] text-[#261B07] lg:px-28"
           >
             Built for modern travel teams
           </motion.h2>
           {/* Marquee */}
           <div className="relative w-full">
             {/* Fade edges */}
-            <div
-              className="pointer-events-none absolute inset-y-0 left-0 z-10 w-24"
-              style={{
-                background: 'linear-gradient(to right, #F8F7F5, transparent)',
-              }}
-            />
-            <div
-              className="pointer-events-none absolute inset-y-0 right-0 z-10 w-24"
-              style={{
-                background: 'linear-gradient(to left, #F8F7F5, transparent)',
-              }}
-            />
+            <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-24 bg-gradient-to-r from-[#F8F7F5] to-transparent" />
+            <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-24 bg-gradient-to-l from-[#F8F7F5] to-transparent" />
             <motion.div
-              className="flex w-max"
+              className="flex w-max gap-6"
               animate={{ x: ['0%', '-50%'] }}
               transition={{
                 x: {
@@ -93,26 +75,19 @@ export default function LandingPage() {
                   ease: 'linear',
                 },
               }}
-              style={{ gap: '24px' }}
             >
               {[...Array(2)].map((_, setIndex) =>
                 trustedLogos.map((logo) => (
                   <div
                     key={`${setIndex}-${logo.name}`}
-                    className="flex shrink-0 items-center justify-center"
-                    style={{
-                      width: '188px',
-                      height: '48px',
-                    }}
+                    className="flex h-12 w-[188px] shrink-0 items-center justify-center"
                   >
                     <img
                       src={logo.src}
                       alt={logo.name}
+                      className="max-h-[30px] object-contain opacity-[0.72]"
                       style={{
                         width: `${logo.width}px`,
-                        maxHeight: '30px',
-                        objectFit: 'contain',
-                        opacity: 0.72,
                         filter: logo.invertOnLight ? 'brightness(0) saturate(100%)' : 'none',
                       }}
                     />
@@ -126,42 +101,20 @@ export default function LandingPage() {
         <FeaturesSection />
 
         {/* Collaboration section */}
-        <section className="flex flex-col px-6 py-12 md:py-20 lg:px-28" style={{ gap: '32px' }}>
-          <div className="mx-auto" style={{ maxWidth: '1216px', width: '100%' }}>
+        <section className="flex flex-col gap-8 px-6 py-12 md:py-20 lg:px-28">
+          <div className="mx-auto w-full max-w-[1216px]">
             {/* Header */}
-            <motion.div
-              {...fadeUp}
-              className="flex flex-col items-center"
-              style={{ gap: '16px', marginBottom: '32px' }}
-            >
-              <h2
-                className="text-center"
-                style={{
-                  fontSize: 'clamp(32px, 5vw, 56px)',
-                  letterSpacing: '-2px',
-                  lineHeight: '1.2',
-                  color: '#261B07',
-                  fontWeight: 580,
-                }}
-              >
+            <motion.div {...fadeUp} className="mb-8 flex flex-col items-center gap-4">
+              <h2 className="text-center text-[clamp(32px,5vw,56px)] leading-[1.2] font-[580] tracking-[-2px] text-[#261B07]">
                 One team. One itinerary.
               </h2>
-              <p
-                className="text-center"
-                style={{
-                  fontSize: '20px',
-                  lineHeight: '24px',
-                  color: '#261B07',
-                  fontWeight: 400,
-                  maxWidth: '700px',
-                }}
-              >
+              <p className="max-w-[700px] text-center text-xl leading-6 text-[#261B07]">
                 Sales, ops, and managers work in one shared space.
               </p>
             </motion.div>
 
             {/* Cards */}
-            <div className="flex flex-col md:flex-row" style={{ gap: '16px' }}>
+            <div className="flex flex-col gap-4 md:flex-row">
               {[
                 {
                   title: 'Tag the right teammate instantly',
@@ -189,47 +142,17 @@ export default function LandingPage() {
                     delay: i * 0.1,
                     ease: [0.16, 1, 0.3, 1] as const,
                   }}
-                  className="flex flex-1 flex-col rounded-2xl border"
-                  style={{
-                    backgroundColor: '#FFFFFF',
-                    borderColor: 'rgba(38,27,7,0.08)',
-                    padding: '24px',
-                    gap: '12px',
-                  }}
+                  className="flex flex-1 flex-col gap-3 rounded-2xl border border-[rgba(38,27,7,0.08)] bg-white p-6"
                 >
-                  <h3
-                    style={{
-                      fontSize: '20px',
-                      lineHeight: '24px',
-                      color: '#261B07',
-                      fontWeight: 580,
-                    }}
-                  >
-                    {card.title}
-                  </h3>
-                  <p
-                    style={{
-                      fontSize: '16px',
-                      lineHeight: '150%',
-                      color: 'rgba(38,27,7,0.7)',
-                      fontWeight: 400,
-                    }}
-                  >
+                  <h3 className="text-xl leading-6 font-[580] text-[#261B07]">{card.title}</h3>
+                  <p className="text-base leading-[150%] text-[rgba(38,27,7,0.7)]">
                     {card.description}
                   </p>
-                  <div className="flex flex-wrap" style={{ gap: '8px' }}>
+                  <div className="flex flex-wrap gap-2">
                     {card.tags.map((tag) => (
                       <span
                         key={tag}
-                        className="rounded-lg"
-                        style={{
-                          backgroundColor: '#EEECEA',
-                          padding: '8px 12px',
-                          fontSize: '14px',
-                          lineHeight: '18px',
-                          color: '#261B07',
-                          fontWeight: 400,
-                        }}
+                        className="rounded-lg bg-[#EEECEA] px-3 py-2 text-sm leading-[18px] text-[#261B07]"
                       >
                         {tag}
                       </span>
@@ -242,13 +165,7 @@ export default function LandingPage() {
         </section>
 
         {/* Value Props */}
-        <section
-          className="flex flex-col px-6 pb-12 md:flex-row md:pb-20 lg:px-28"
-          style={{
-            paddingTop: '0px',
-            gap: '16px',
-          }}
-        >
+        <section className="flex flex-col gap-4 px-6 pb-12 md:flex-row md:pb-20 lg:px-28">
           {[
             {
               title: 'Win back proposal time',
@@ -273,32 +190,10 @@ export default function LandingPage() {
                 delay: i * 0.1,
                 ease: [0.16, 1, 0.3, 1] as const,
               }}
-              className="flex flex-1 flex-col rounded-2xl border"
-              style={{
-                backgroundColor: '#FFFFFF',
-                borderColor: 'rgba(38,27,7,0.08)',
-                padding: '28px',
-                gap: '12px',
-              }}
+              className="flex flex-1 flex-col gap-3 rounded-2xl border border-[rgba(38,27,7,0.08)] bg-white p-7"
             >
-              <h3
-                style={{
-                  fontSize: '20px',
-                  lineHeight: '24px',
-                  color: '#261B07',
-                  fontWeight: 580,
-                }}
-              >
-                {prop.title}
-              </h3>
-              <p
-                style={{
-                  fontSize: '16px',
-                  lineHeight: '150%',
-                  color: 'rgba(38,27,7,0.7)',
-                  fontWeight: 400,
-                }}
-              >
+              <h3 className="text-xl leading-6 font-[580] text-[#261B07]">{prop.title}</h3>
+              <p className="text-base leading-[150%] text-[rgba(38,27,7,0.7)]">
                 {prop.description}
               </p>
             </motion.div>
@@ -309,44 +204,23 @@ export default function LandingPage() {
 
         {/* Sample Itineraries */}
         <section id="features" className="flex flex-col px-6 py-12 md:py-20 lg:px-28">
-          <div className="mx-auto" style={{ maxWidth: '1216px', width: '100%' }}>
-            <motion.div
-              {...fadeUp}
-              className="flex flex-col items-center"
-              style={{ gap: '16px', marginBottom: '48px' }}
-            >
-              <h2
-                className="text-center"
-                style={{
-                  fontSize: 'clamp(32px, 5vw, 56px)',
-                  letterSpacing: '-2px',
-                  lineHeight: '1.2',
-                  color: '#261B07',
-                  fontWeight: 580,
-                }}
-              >
+          <div className="mx-auto w-full max-w-[1216px]">
+            <motion.div {...fadeUp} className="mb-12 flex flex-col items-center gap-4">
+              <h2 className="text-center text-[clamp(32px,5vw,56px)] leading-[1.2] font-[580] tracking-[-2px] text-[#261B07]">
                 Get a glimpse of what&apos;s <em>possible</em>
               </h2>
-              <p
-                className="text-center"
-                style={{
-                  fontSize: '18px',
-                  lineHeight: '28px',
-                  color: 'rgba(38,27,7,0.7)',
-                  fontWeight: 400,
-                }}
-              >
+              <p className="text-center text-lg leading-7 text-[rgba(38,27,7,0.7)]">
                 Explore some sample itineraries below — all made with Ratiba.
               </p>
             </motion.div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4" style={{ gap: '16px' }}>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
               {[
                 {
                   badge: { label: 'Custom', color: '#FFE0EC' },
                   title: 'Custom Safari',
                   subtitle: 'Custom Gorilla Trekking Safari',
-                  href: 'https://proposals.makisala.com/proposal/fesyck',
+                  href: '/proposal/fesyck',
                   image:
                     'https://assets.makisala.com/cdn-cgi/image/quality=85,format=auto,fit=scale-down,sharpen=1/destinations/rwanda/gorilla.jpg',
                 },
@@ -354,7 +228,7 @@ export default function LandingPage() {
                   badge: { label: 'Lookbook', color: '#E0F0FF' },
                   title: 'Zanzibar Escape',
                   subtitle: 'Zanzibar Lookbook Escape',
-                  href: 'https://proposals.makisala.com/proposal/qgzaka',
+                  href: '/proposal/qgzaka',
                   image:
                     'https://assets.makisala.com/cdn-cgi/image/quality=85,format=auto,fit=scale-down,sharpen=1/organizations/411c36e8-0808-46f4-a3b2-130a3eecc349/images/1772879807340-43ed50b7c65549688f1c879fd60ce826-800.webp',
                 },
@@ -362,7 +236,7 @@ export default function LandingPage() {
                   badge: { label: 'Branded', color: '#FFE0EC' },
                   title: 'Signature Journey',
                   subtitle: 'Northern Circuit Branded Journey',
-                  href: 'https://proposals.makisala.com/proposal/rnxdpk',
+                  href: '/proposal/rnxdpk',
                   image:
                     'https://assets.makisala.com/cdn-cgi/image/quality=85,format=auto,fit=scale-down,sharpen=1/organizations/411c36e8-0808-46f4-a3b2-130a3eecc349/images/1770650569417-pexels-isis-petroni-280715053-13142739.webp',
                 },
@@ -370,7 +244,7 @@ export default function LandingPage() {
                   badge: { label: 'Honeymoon', color: '#E0F0FF' },
                   title: 'Honeymoon Escape',
                   subtitle: 'Romantic Honeymoon Escape',
-                  href: 'https://proposals.makisala.com/proposal/lmxmro',
+                  href: '/proposal/lmxmro',
                   image:
                     'https://assets.makisala.com/cdn-cgi/image/quality=85,format=auto,fit=scale-down,sharpen=1/accommodations/c1a5284f-5401-4b86-b3c0-16c2df4c5fe1/24.jpg',
                 },
@@ -385,32 +259,15 @@ export default function LandingPage() {
                     delay: i * 0.06,
                     ease: [0.16, 1, 0.3, 1] as const,
                   }}
-                  className="flex flex-col rounded-[24px] border transition-transform hover:-translate-y-1"
-                  style={{
-                    borderColor: 'rgba(38,27,7,0.08)',
-                    backgroundColor: '#FFFFFF',
-                    boxShadow: '0 16px 36px rgba(38,27,7,0.06)',
-                  }}
+                  className="flex flex-col rounded-3xl border border-[rgba(38,27,7,0.08)] bg-white shadow-[0_16px_36px_rgba(38,27,7,0.06)] transition-transform hover:-translate-y-1"
                 >
                   <Link
                     href={item.href}
-                    className="flex flex-col p-4 transition-opacity hover:opacity-90"
-                    style={{ gap: '16px' }}
+                    className="flex flex-col gap-4 p-4 transition-opacity hover:opacity-90"
                   >
                     {/* Image preview */}
-                    <div
-                      className="flex items-center justify-center overflow-hidden rounded-[18px] border"
-                      style={{
-                        backgroundColor: '#F6F2EB',
-                        aspectRatio: '16 / 10',
-                        borderColor: 'rgba(38,27,7,0.06)',
-                        padding: '12px',
-                      }}
-                    >
-                      <div
-                        className="flex h-full w-full items-center justify-center overflow-hidden rounded-[14px]"
-                        style={{ backgroundColor: '#EEECEA' }}
-                      >
+                    <div className="flex aspect-[16/10] items-center justify-center overflow-hidden rounded-[18px] border border-[rgba(38,27,7,0.06)] bg-[#F6F2EB] p-3">
+                      <div className="flex h-full w-full items-center justify-center overflow-hidden rounded-[14px] bg-[#EEECEA]">
                         {item.image ? (
                           <img
                             src={item.image}
@@ -418,52 +275,26 @@ export default function LandingPage() {
                             className="h-full w-full object-cover object-top"
                           />
                         ) : (
-                          <span style={{ color: 'rgba(38,27,7,0.3)', fontSize: '14px' }}>
-                            {item.title}
-                          </span>
+                          <span className="text-sm text-[rgba(38,27,7,0.3)]">{item.title}</span>
                         )}
                       </div>
                     </div>
 
-                    <div
-                      className="flex flex-col"
-                      style={{ gap: '10px', paddingInline: '4px', paddingBottom: '6px' }}
-                    >
+                    <div className="flex flex-col gap-2.5 px-1 pb-1.5">
                       <div>
                         <span
-                          className="rounded-full px-2.5 py-1"
-                          style={{
-                            backgroundColor: item.badge.color,
-                            fontSize: '12px',
-                            fontWeight: 500,
-                            lineHeight: '16px',
-                            color: '#261B07',
-                          }}
+                          className="rounded-full px-2.5 py-1 text-xs leading-4 font-medium text-[#261B07]"
+                          style={{ backgroundColor: item.badge.color }}
                         >
                           {item.badge.label}
                         </span>
                       </div>
 
-                      <div className="flex flex-col" style={{ gap: '4px' }}>
-                        <h3
-                          style={{
-                            fontSize: '20px',
-                            lineHeight: '26px',
-                            color: '#261B07',
-                            fontWeight: 580,
-                            letterSpacing: '-0.02em',
-                          }}
-                        >
+                      <div className="flex flex-col gap-1">
+                        <h3 className="text-xl leading-[26px] font-[580] tracking-[-0.02em] text-[#261B07]">
                           {item.title}
                         </h3>
-                        <p
-                          style={{
-                            fontSize: '14px',
-                            lineHeight: '20px',
-                            color: 'rgba(38,27,7,0.55)',
-                            fontWeight: 400,
-                          }}
-                        >
+                        <p className="text-sm leading-5 text-[rgba(38,27,7,0.55)]">
                           {item.subtitle}
                         </p>
                       </div>
@@ -478,63 +309,27 @@ export default function LandingPage() {
         <section className="flex flex-col px-6 py-16 md:py-24 lg:px-28">
           <motion.div
             {...fadeUp}
-            className="mx-auto flex flex-col items-center rounded-[28px] border text-center"
-            style={{
-              maxWidth: '960px',
-              width: '100%',
-              padding: 'clamp(32px, 5vw, 56px) clamp(20px, 4vw, 40px)',
-              gap: '20px',
-              backgroundColor: '#FFFFFF',
-              borderColor: 'rgba(38,27,7,0.08)',
-              boxShadow: '0 18px 40px rgba(38,27,7,0.05)',
-            }}
+            className="mx-auto flex w-full max-w-[960px] flex-col items-center gap-5 rounded-[28px] border border-[rgba(38,27,7,0.08)] bg-white p-[clamp(32px,5vw,56px)_clamp(20px,4vw,40px)] text-center shadow-[0_18px_40px_rgba(38,27,7,0.05)]"
           >
-            <h2
-              style={{
-                fontSize: 'clamp(28px, 4vw, 46px)',
-                letterSpacing: '-2px',
-                lineHeight: '1.15',
-                color: '#261B07',
-                fontWeight: 580,
-                maxWidth: '620px',
-              }}
-            >
+            <h2 className="max-w-[620px] text-[clamp(28px,4vw,46px)] leading-[1.15] font-[580] tracking-[-2px] text-[#261B07]">
               Ready to show clients something better?
             </h2>
-            <p
-              style={{
-                fontSize: '18px',
-                lineHeight: '28px',
-                color: 'rgba(38,27,7,0.7)',
-                fontWeight: 400,
-                maxWidth: '560px',
-              }}
-            >
+            <p className="max-w-[560px] text-lg leading-7 text-[rgba(38,27,7,0.7)]">
               Build the itinerary together, price it clearly, and send a proposal clients can
               comment on in real time.
             </p>
-            <div className="flex flex-wrap items-center justify-center" style={{ gap: '14px' }}>
+            <div className="flex flex-wrap items-center justify-center gap-3.5">
               <Link
                 href="/demo"
-                className="rounded-[12px] px-6 py-3 text-sm transition-opacity hover:opacity-90"
-                style={{
-                  backgroundColor: '#261B07',
-                  color: '#F8F7F5',
-                  fontWeight: 580,
-                }}
+                className="rounded-xl bg-[#261B07] px-6 py-3 text-sm font-[580] text-[#F8F7F5] transition-opacity hover:opacity-90"
               >
                 Book a demo
               </Link>
               <Link
                 href="/proposal/tjksu"
-                className="rounded-[12px] border px-6 py-3 text-sm transition-opacity hover:opacity-70"
-                style={{
-                  borderColor: 'rgba(38,27,7,0.18)',
-                  color: '#261B07',
-                  fontWeight: 580,
-                }}
+                className="rounded-xl border border-[rgba(38,27,7,0.18)] px-6 py-3 text-sm font-[580] text-[#261B07] transition-opacity hover:opacity-70"
               >
-                View sample proposal
+                View sample itinerary
               </Link>
             </div>
           </motion.div>

@@ -30,36 +30,21 @@ export function Reviews() {
 
   return (
     <section id="why-ratiba" className="px-6 py-12 md:py-20 lg:px-28">
-      <div className="mx-auto flex flex-col" style={{ maxWidth: '1216px', gap: '40px' }}>
+      <div className="mx-auto flex max-w-[1216px] flex-col gap-10">
         {/* Label */}
         <motion.p
           {...fadeUp}
-          style={{
-            fontSize: '12px',
-            textTransform: 'uppercase' as const,
-            letterSpacing: '0.05em',
-            color: 'rgba(38,27,7,0.5)',
-            fontWeight: 490,
-            lineHeight: '16px',
-          }}
+          className="text-xs font-[490] uppercase leading-4 tracking-[0.05em] text-[rgba(38,27,7,0.5)]"
         >
           Why teams switch
         </motion.p>
 
         {/* Big quote */}
-        <motion.div {...fadeUp} className="flex flex-col" style={{ gap: '8px' }}>
-          <h2
-            style={{
-              fontSize: 'clamp(40px, 5vw, 72px)',
-              letterSpacing: '-2.5px',
-              lineHeight: '1',
-              color: '#261B07',
-              fontWeight: 580,
-            }}
-          >
+        <motion.div {...fadeUp} className="flex flex-col gap-2">
+          <h2 className="text-[clamp(40px,5vw,72px)] font-[580] leading-none tracking-[-2.5px] text-[#261B07]">
             Stop losing time in
           </h2>
-          <div className="relative overflow-hidden" style={{ height: 'clamp(44px, 5.5vw, 78px)' }}>
+          <div className="relative h-[clamp(44px,5.5vw,78px)] overflow-hidden">
             <AnimatePresence mode="wait">
               <motion.span
                 key={wordIndex}
@@ -67,15 +52,7 @@ export function Reviews() {
                 animate={{ y: '0%', opacity: 1 }}
                 exit={{ y: '-100%', opacity: 0 }}
                 transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-                className="absolute left-0"
-                style={{
-                  fontSize: 'clamp(40px, 5vw, 72px)',
-                  letterSpacing: '-2.5px',
-                  lineHeight: '1.1',
-                  color: '#261B07',
-                  fontWeight: 580,
-                  fontStyle: 'italic',
-                }}
+                className="absolute left-0 text-[clamp(40px,5vw,72px)] font-[580] italic leading-[1.1] tracking-[-2.5px] text-[#261B07]"
               >
                 {rotatingWords[wordIndex]}
               </motion.span>
@@ -84,7 +61,7 @@ export function Reviews() {
         </motion.div>
 
         {/* Review cards */}
-        <div className="flex flex-wrap" style={{ gap: '16px' }}>
+        <div className="flex flex-wrap gap-4">
           {reviews.map((quote, i) => (
             <motion.div
               key={i}
@@ -96,22 +73,9 @@ export function Reviews() {
                 delay: i * 0.1,
                 ease: [0.16, 1, 0.3, 1] as const,
               }}
-              className="flex min-w-[280px] flex-1 flex-col rounded-xl border"
-              style={{
-                backgroundColor: '#FFFFFF',
-                borderColor: 'rgba(38,27,7,0.08)',
-                padding: '24px',
-                gap: '12px',
-              }}
+              className="flex min-w-[280px] flex-1 flex-col gap-3 rounded-xl border border-[rgba(38,27,7,0.08)] bg-white p-6"
             >
-              <p
-                style={{
-                  fontSize: '16px',
-                  lineHeight: '150%',
-                  color: '#261B07',
-                  fontWeight: 400,
-                }}
-              >
+              <p className="text-base leading-[150%] text-[#261B07]">
                 {quote}
               </p>
             </motion.div>

@@ -200,7 +200,7 @@ export default function ConfirmationPage() {
               marginTop: '8px',
             }}
           >
-            See a sample proposal
+            See a sample itinerary
           </Link>
         </div>
       </div>

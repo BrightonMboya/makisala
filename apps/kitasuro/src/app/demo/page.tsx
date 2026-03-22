@@ -155,7 +155,7 @@ export default function DemoPage() {
                   href="/proposal/tjksu"
                   className="text-sm font-[492] tracking-[-0.14px] text-[#261B07] underline transition-opacity hover:opacity-70"
                 >
-                  See a sample proposal
+                  See a sample itinerary
                 </Link>
               </div>
             </div>
