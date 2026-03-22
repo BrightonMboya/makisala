@@ -392,7 +392,7 @@ export async function sendEmailVerificationEmail(
     const result = await resend.emails.send({
       from: fromEmail,
       to: data.recipientEmail,
-      subject: 'Verify your email address - Kitasuro',
+      subject: 'Verify your email address - Ratiba',
       html,
     });
 

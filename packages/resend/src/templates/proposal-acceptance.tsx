@@ -101,7 +101,7 @@ export function renderProposalAcceptanceEmail(props: ProposalAcceptanceEmailProp
     </p>
 
     <p style="margin-top: 30px; font-size: 11px; color: #999999; text-align: center;">
-      Powered by Kitasuro
+      Powered by Ratiba
     </p>
   </div>
 </body>

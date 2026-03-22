@@ -37,7 +37,7 @@ export function renderEmailVerificationEmail(props: EmailVerificationProps): str
     </p>
 
     <p style="font-size: 16px; margin-bottom: 20px;">
-      Thanks for signing up for Kitasuro! Please verify your email address by clicking the button below.
+      Thanks for signing up for Ratiba! Please verify your email address by clicking the button below.
     </p>
 
     <div style="margin: 30px 0; text-align: center;">
@@ -56,7 +56,7 @@ export function renderEmailVerificationEmail(props: EmailVerificationProps): str
     <hr style="border: none; border-top: 1px solid #e0e0e0; margin: 25px 0;" />
 
     <p style="font-size: 12px; color: #999; margin: 0; text-align: center;">
-      If you didn't create an account with Kitasuro, you can safely ignore this email.
+      If you didn't create an account with Ratiba, you can safely ignore this email.
     </p>
   </div>
 </body>

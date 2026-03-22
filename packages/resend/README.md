@@ -4,7 +4,7 @@ Email notification package for the Makisala monorepo using Resend.
 
 ## Overview
 
-This package provides email notification functionality, specifically for sending notifications when clients add comments on proposals in the Kitasuro app.
+This package provides email notification functionality, specifically for sending notifications when clients add comments on proposals in the Ratiba app.
 
 ## Setup
 
@@ -57,7 +57,7 @@ The package includes a responsive HTML email template for comment notifications 
 
 ## Integration
 
-This package is automatically integrated into the Kitasuro app's comment creation flow. When a client adds a comment on a proposal, an email notification is sent to the configured notification email address.
+This package is automatically integrated into the Ratiba app's comment creation flow. When a client adds a comment on a proposal, an email notification is sent to the configured notification email address.
 
 ## Error Handling
 
