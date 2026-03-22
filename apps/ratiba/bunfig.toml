@@ -1,0 +1,2 @@
+[test]
+preload = ["./src/server/trpc/__tests__/helpers/setup.ts"]

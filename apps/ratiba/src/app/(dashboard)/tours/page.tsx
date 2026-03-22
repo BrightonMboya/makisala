@@ -1,0 +1,207 @@
+'use client';
+
+import { Input } from '@repo/ui/input';
+import { Button } from '@repo/ui/button';
+import {
+  Clock,
+  Map,
+  Search,
+  Plus,
+  Copy,
+} from 'lucide-react';
+import { trpc } from '@/lib/trpc';
+import { useQueryClient } from '@tanstack/react-query';
+import { staleTimes } from '@/lib/query-keys';
+import { useToast } from '@repo/ui/use-toast';
+import { useSession } from '@/components/session-context';
+import { useState, useMemo, useDeferredValue } from 'react';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@repo/ui/dialog';
+import TourCard from '../_components/tour-card';
+
+export default function ToursPage() {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const { session } = useSession();
+  const [isTemplateDialogOpen, setIsTemplateDialogOpen] = useState(false);
+  const [cloningId, setCloningId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const deferredSearchQuery = useDeferredValue(searchQuery);
+
+  const { data: tours = [], isLoading } = trpc.tours.list.useQuery(undefined, {
+    staleTime: staleTimes.tours,
+    enabled: !!session?.user?.id,
+  });
+
+  const { data: sharedTemplates } = trpc.tours.getSharedTemplates.useQuery(undefined, {
+    staleTime: 60 * 1000,
+    enabled: isTemplateDialogOpen,
+  });
+
+  // Filter tours based on search query (deferred for performance)
+  const filteredTours = useMemo(() => {
+    if (!deferredSearchQuery.trim()) return tours;
+    const query = deferredSearchQuery.toLowerCase();
+    return tours.filter(
+      (tour) =>
+        tour.name.toLowerCase().includes(query) ||
+        tour.country.toLowerCase().includes(query) ||
+        (tour.tags || []).some((tag) => tag.toLowerCase().includes(query))
+    );
+  }, [tours, deferredSearchQuery]);
+
+  const cloneTemplateMutation = trpc.tours.cloneTemplate.useMutation();
+
+  const handleCloneTemplate = async (templateId: string) => {
+    setCloningId(templateId);
+    try {
+      await cloneTemplateMutation.mutateAsync({ templateId });
+      toast({ title: 'Template added to your tours!' });
+      queryClient.invalidateQueries({ queryKey: [['tours', 'list']] });
+      setIsTemplateDialogOpen(false);
+    } catch (error: any) {
+      toast({ title: error?.message || 'Failed to add template', variant: 'destructive' });
+    } finally {
+      setCloningId(null);
+    }
+  };
+
+  return (
+    <div className="flex flex-col h-full bg-stone-50">
+      <header className="flex items-center justify-between border-b border-stone-200 bg-white px-8 py-4">
+        <h2 className="font-serif text-2xl font-bold text-stone-900">Tours</h2>
+        <div className="flex items-center gap-4">
+          <div className="relative w-64">
+            <Search className="absolute top-2.5 left-2.5 h-4 w-4 text-stone-400" />
+            <Input
+              placeholder="Search by name, country, tags..."
+              className="pl-9"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+          <Dialog open={isTemplateDialogOpen} onOpenChange={setIsTemplateDialogOpen}>
+            <DialogTrigger asChild>
+              <Button className="bg-green-700 hover:bg-green-800 gap-2">
+                <Plus className="h-4 w-4" />
+                Add Template
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle className="font-serif text-xl">Add Tour Template</DialogTitle>
+              </DialogHeader>
+              <p className="text-sm text-stone-600 mb-4">
+                Browse shared templates and add them to your organization's tours.
+              </p>
+              <div className="grid gap-4">
+                {sharedTemplates?.map((template) => (
+                  <div
+                    key={template.id}
+                    className="flex items-start gap-4 rounded-xl border border-stone-200 bg-white p-4 hover:border-green-600/30"
+                  >
+                    {template.imageUrl && (
+                      <img
+                        src={template.imageUrl}
+                        alt={template.name}
+                        className="h-20 w-28 rounded-lg object-cover"
+                      />
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-serif text-lg font-bold text-stone-900">{template.name}</h4>
+                      <div className="flex items-center gap-3 mt-1 text-sm text-stone-500">
+                        <span className="flex items-center gap-1">
+                          <Clock className="h-3.5 w-3.5" />
+                          {template.days} days
+                        </span>
+                        {template.country && (
+                          <span>{template.country}</span>
+                        )}
+                      </div>
+                      {template.overview && (
+                        <p className="text-sm text-stone-600 mt-2 line-clamp-2">{template.overview}</p>
+                      )}
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="shrink-0 gap-2"
+                      onClick={() => handleCloneTemplate(template.id)}
+                      disabled={cloningId === template.id}
+                    >
+                      <Copy className="h-3.5 w-3.5" />
+                      {cloningId === template.id ? 'Adding...' : 'Add'}
+                    </Button>
+                  </div>
+                ))}
+                {sharedTemplates?.length === 0 && (
+                  <div className="py-12 text-center text-stone-500">
+                    No shared templates available
+                  </div>
+                )}
+              </div>
+            </DialogContent>
+          </Dialog>
+        </div>
+      </header>
+
+      <div className="p-8">
+        {isLoading ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="h-8 w-8 animate-spin rounded-full border-4 border-green-600 border-t-transparent"></div>
+          </div>
+        ) : tours.length === 0 ? (
+          <div className="py-24 text-center">
+            <div className="mx-auto h-12 w-12 text-stone-300 mb-4">
+              <Map className="h-full w-full" />
+            </div>
+            <h3 className="text-lg font-medium text-stone-900">No tours yet</h3>
+            <p className="text-stone-500 mt-1 mb-6">
+              Add tour templates to get started with creating proposals.
+            </p>
+            <Button
+              className="bg-green-700 hover:bg-green-800 gap-2"
+              onClick={() => setIsTemplateDialogOpen(true)}
+            >
+              <Plus className="h-4 w-4" />
+              Browse Templates
+            </Button>
+          </div>
+        ) : filteredTours.length === 0 ? (
+          <div className="py-24 text-center">
+            <div className="mx-auto h-12 w-12 text-stone-300 mb-4">
+              <Search className="h-full w-full" />
+            </div>
+            <h3 className="text-lg font-medium text-stone-900">No tours found</h3>
+            <p className="text-stone-500 mt-1">
+              Try adjusting your search query.
+            </p>
+          </div>
+        ) : (
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {filteredTours.map((tour) => (
+              <TourCard
+                key={tour.id}
+                tour={{
+                  id: tour.id,
+                  name: tour.name,
+                  days: tour.days,
+                  imageUrl: tour.imageUrl,
+                  overview: tour.overview,
+                  country: tour.country,
+                  pricing: tour.pricing,
+                  tags: tour.tags,
+                }}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
