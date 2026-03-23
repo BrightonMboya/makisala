@@ -2,7 +2,7 @@ const painPoints = [
   {
     title: 'Proposals take hours to build',
     description:
-      'Sales teams copy-paste between Word docs, spreadsheets, and email — wasting 2–4 hours per proposal.',
+      'Sales teams copy-paste between Word docs, spreadsheets, and email, wasting 2–4 hours per proposal.',
   },
   {
     title: 'Proposals look generic and unprofessional',
@@ -17,7 +17,7 @@ const painPoints = [
   {
     title: 'Feedback loops are slow and fragmented',
     description:
-      'Clients respond via email or WhatsApp — changes get lost, versions multiply, and deals stall.',
+      'Clients respond via email or WhatsApp. Changes get lost, versions multiply, and deals stall.',
   },
 ];
 

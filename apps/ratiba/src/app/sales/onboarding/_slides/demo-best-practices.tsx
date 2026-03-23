@@ -1,15 +1,15 @@
 const dos = [
-  'Build their actual trip live — use a real destination they sell',
-  'Show the client-facing proposal — the "wow" moment',
+  'Build their actual trip live, using a real destination they sell',
+  'Show the client-facing proposal, the "wow" moment',
   'Tie every feature back to a pain point from discovery',
-  'End with the pricing engine — show time saved',
+  'End with the pricing engine and show time saved',
 ];
 
 const donts = [
   'Walk through every feature in the menu bar',
   'Use a generic sample itinerary with placeholder data',
   'Talk for more than 30 minutes without asking a question',
-  "Skip the pricing feature — it's your biggest differentiator",
+  "Skip the pricing feature, it's your biggest differentiator",
 ];
 
 export function DemoBestPractices() {
@@ -24,7 +24,7 @@ export function DemoBestPractices() {
       </h2>
 
       <p className="mt-1 max-w-[480px] text-lg leading-7 text-[#F8F7F5]/55">
-        Show, don&apos;t tell. Build a real itinerary live — it&apos;s the most powerful thing you
+        Show, don&apos;t tell. Build a real itinerary live. It&apos;s the most powerful thing you
         can do.
       </p>
 

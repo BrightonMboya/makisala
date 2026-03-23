@@ -13,11 +13,11 @@ export function TitleSlide() {
       </h1>
 
       <p className="mt-3 max-w-[540px] text-xl leading-[30px] text-[#F8F7F5]/55">
-        Everything you need to know to sell Ratiba — from first call to closed deal.
+        Everything you need to know to sell Ratiba, from first call to closed deal.
       </p>
 
       <div className="absolute bottom-14 left-14 right-14 flex items-center justify-between">
-        <span className="text-sm font-medium text-[#F8F7F5]/35">Ratiba — Internal</span>
+        <span className="text-sm font-medium text-[#F8F7F5]/35">Ratiba | Internal</span>
         <span className="text-sm font-medium text-[#F8F7F5]/35">2026</span>
       </div>
     </div>

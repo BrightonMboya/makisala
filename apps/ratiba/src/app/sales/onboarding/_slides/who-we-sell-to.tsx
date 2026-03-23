@@ -31,7 +31,7 @@ export function WhoWeSellTo() {
       </h2>
 
       <p className="mt-1 max-w-[480px] text-lg leading-7 text-[#261B07]/60">
-        Our ideal customer profile — know who to target and why they need us.
+        Our ideal customer profile. Know who to target and why they need us.
       </p>
 
       <div className="mt-7 flex gap-4">

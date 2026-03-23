@@ -2,7 +2,7 @@ const questions = [
   {
     category: 'Ask about workflow',
     question:
-      '"Walk me through how you build an itinerary today — from first enquiry to sending the proposal."',
+      '"Walk me through how you build an itinerary today, from first enquiry to sending the proposal."',
   },
   {
     category: 'Ask about pain',

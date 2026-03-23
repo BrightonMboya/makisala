@@ -2,7 +2,7 @@ const objections = [
   {
     objection: '"We already use Word/Excel"',
     response:
-      'That\'s exactly why teams switch — Ratiba replaces 3 tools with one. Let me show you the time difference.',
+      'That\'s exactly why teams switch. Ratiba replaces 3 tools with one. Let me show you the time difference.',
   },
   {
     objection: '"It\'s too expensive"',
@@ -12,7 +12,7 @@ const objections = [
   {
     objection: '"Our team won\'t adopt it"',
     response:
-      'We\'ve seen teams go live in under a week. We handle onboarding and training — your team just builds trips.',
+      'We\'ve seen teams go live in under a week. We handle onboarding and training so your team just builds trips.',
   },
   {
     objection: '"We need to think about it"',

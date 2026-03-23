@@ -7,7 +7,7 @@ const techniques = [
   {
     title: 'Create urgency naturally',
     description:
-      '"Your peak booking season is in 8 weeks — teams typically need 1 week to onboard. When would you want to be live?"',
+      '"Your peak booking season is in 8 weeks, and teams typically need 1 week to onboard. When would you want to be live?"',
   },
   {
     title: 'Offer a pilot',

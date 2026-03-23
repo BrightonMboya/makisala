@@ -19,7 +19,7 @@ export function WhatIsRatiba() {
 
       <p className="mt-1 max-w-[560px] text-lg leading-7 text-[#261B07]/65">
         Ratiba is a SaaS platform that helps tour operators and travel agencies create, price, and
-        send beautiful itineraries — faster than ever.
+        send beautiful itineraries, faster than ever.
       </p>
 
       <div className="mt-7 flex max-w-[700px] flex-wrap gap-4">
