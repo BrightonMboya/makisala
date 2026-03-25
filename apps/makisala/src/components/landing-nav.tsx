@@ -1,6 +1,6 @@
 import { Button } from '@repo/ui/button'
 
-export default function LandingNav() {
+export default function LandingNav({ ctaText = 'Check Availability' }: { ctaText?: string }) {
     return (
         <nav className="fixed top-0 z-[60] w-full border-b border-gray-100 bg-white/95 backdrop-blur-sm">
             <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -15,7 +15,7 @@ export default function LandingNav() {
                     </div>
                     <a href="#inquiry-form">
                         <Button className="bg-primary px-6 py-2 text-sm font-medium text-white">
-                            Check Availability
+                            {ctaText}
                         </Button>
                     </a>
                 </div>
