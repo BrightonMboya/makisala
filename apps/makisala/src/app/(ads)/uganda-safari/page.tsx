@@ -126,7 +126,7 @@ const sampleItineraries = [
 
 export async function generateMetadata(): Promise<Metadata> {
     return {
-        title: 'Uganda Safari & Gorilla Trekking | Custom Trips | Makisala Safaris',
+        title: 'Uganda Safari & Gorilla Trekking',
         description:
             'Plan your custom Uganda safari. Gorilla trekking, wildlife game drives, and chimpanzee tracking. All-inclusive packages with local expert guides. Get a free quote.',
         robots: {
@@ -134,7 +134,7 @@ export async function generateMetadata(): Promise<Metadata> {
             follow: false,
         },
         openGraph: {
-            title: 'Uganda Safari & Gorilla Trekking | Custom Trips | Makisala Safaris',
+            title: 'Uganda Safari & Gorilla Trekking',
             description:
                 'Plan your custom Uganda safari. Gorilla trekking, wildlife game drives, and chimpanzee tracking. All-inclusive packages with local expert guides.',
             images: [
