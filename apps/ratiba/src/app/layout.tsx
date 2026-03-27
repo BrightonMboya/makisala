@@ -1,58 +1,58 @@
-import type { Metadata } from "next";
-import { Inter, Cormorant_Garamond, Outfit } from "next/font/google";
-import { AxiomWebVitals } from "next-axiom";
-import "./globals.css";
-import { Providers } from "@/components/providers";
-import { env } from "@/lib/env";
+import type { Metadata } from 'next';
+import { Cormorant_Garamond, Inter, Outfit } from 'next/font/google';
+import { AxiomWebVitals } from 'next-axiom';
+import './globals.css';
+import { Providers } from '@/components/providers';
+import { env } from '@/lib/env';
 
 const inter = Inter({
-  variable: "--font-sans",
-  subsets: ["latin"],
+  variable: '--font-sans',
+  subsets: ['latin'],
 });
 
 const cormorant = Cormorant_Garamond({
-  variable: "--font-serif",
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700"],
+  variable: '--font-serif',
+  subsets: ['latin'],
+  weight: ['300', '400', '500', '600', '700'],
 });
 
 const outfit = Outfit({
-  variable: "--font-heading",
-  subsets: ["latin"],
+  variable: '--font-heading',
+  subsets: ['latin'],
 });
 
 export const metadata: Metadata = {
   metadataBase: new URL(env.NEXT_PUBLIC_APP_URL),
   title: {
-    default: "Ratiba | Itinerary Builder & Proposal Software for Tour Operators",
-    template: "%s | Ratiba",
+    default: 'Ratiba | Itinerary Builder for Tour Operators',
+    template: '%s | Ratiba',
   },
   description:
-    "Ratiba helps tour operators and travel agencies build itineraries faster, collaborate across the team, and send beautiful proposals clients can comment on live.",
+    'Ratiba helps tour operators and travel agencies build itineraries faster, collaborate across the team, and send beautiful proposals clients can comment on live.',
   keywords: [
-    "itinerary builder for tour operators",
-    "travel proposal software",
-    "proposal software for travel agencies",
-    "tour operator software",
-    "safari itinerary builder",
-    "travel agency proposal tool",
+    'itinerary builder for tour operators',
+    'travel proposal software',
+    'proposal software for travel agencies',
+    'tour operator software',
+    'safari itinerary builder',
+    'travel agency proposal tool',
   ],
   alternates: {
-    canonical: "/",
+    canonical: '/',
   },
   openGraph: {
-    title: "Ratiba | Itinerary Builder & Proposal Software for Tour Operators",
+    title: 'Ratiba | Itinerary Builder & Proposal Software for Tour Operators',
     description:
-      "Build itineraries faster, collaborate with your team, and send proposals clients can review and comment on live.",
-    url: "/",
-    siteName: "Ratiba",
-    type: "website",
+      'Build itineraries faster, collaborate with your team, and send proposals clients can review and comment on live.',
+    url: '/',
+    siteName: 'Ratiba',
+    type: 'website',
   },
   twitter: {
-    card: "summary_large_image",
-    title: "Ratiba | Itinerary Builder & Proposal Software for Tour Operators",
+    card: 'summary_large_image',
+    title: 'Ratiba | Itinerary Builder & Proposal Software for Tour Operators',
     description:
-      "Build itineraries faster, collaborate with your team, and send proposals clients can review and comment on live.",
+      'Build itineraries faster, collaborate with your team, and send proposals clients can review and comment on live.',
   },
 };
 

@@ -389,7 +389,9 @@ export async function transformProposalToItineraryData(
 
   const tripOverview: TripOverview = {
     tourType: (proposal as any).tourType || undefined,
-    country: (proposal as any).country || undefined,
+    country: countries.length > 0
+      ? countries.map((c: string) => c.charAt(0).toUpperCase() + c.slice(1).toLowerCase()).join(' & ')
+      : (proposal as any).country || undefined,
     travelerCount: totalTravelers > 0 ? totalTravelers : undefined,
     travelDates:
       firstDayDate && lastDayDate ? { start: firstDayDate, end: lastDayDate } : undefined,

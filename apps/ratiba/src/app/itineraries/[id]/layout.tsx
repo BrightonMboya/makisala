@@ -13,6 +13,14 @@ import { AppSidebar } from '@/components/app-sidebar';
 import { NotesPanel } from '@/components/notes-panel';
 import type { TravelerGroup } from '@/types/itinerary-types';
 import { useMemo, Suspense, useState, useRef, useEffect } from 'react';
+
+/** Convert a Date to a timezone-safe ISO string preserving the local date */
+function toLocalISOString(date: Date): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}T12:00:00.000Z`;
+}
 import { useMutation } from '@tanstack/react-query';
 import { trpc } from '@/lib/trpc';
 import { toast } from '@repo/ui/toast';
@@ -128,7 +136,7 @@ function Header() {
 
       const proposalData = {
         days,
-        startDate,
+        startDate: startDate ? toLocalISOString(startDate) : null,
         travelerGroups,
         tourType,
         pricingRows,
@@ -183,7 +191,7 @@ function Header() {
 
       const proposalData = {
         days,
-        startDate,
+        startDate: startDate ? toLocalISOString(startDate) : null,
         travelerGroups,
         tourType,
         pricingRows,
@@ -529,6 +537,7 @@ function BuilderLayoutInner({ children }: { children: React.ReactNode }) {
         tourType: proposal.tourType || data.tourType,
         clientId: proposal.clientId || data.clientId,
         country: (proposal as any).country || null,
+        countries: proposal.countries || [],
         startDate: proposal.startDate ? new Date(proposal.startDate) : data.startDate,
         startCity: proposal.startCity || '',
         endCity: proposal.endCity || '',

@@ -37,7 +37,8 @@
       "mcp__paper__finish_working_on_nodes",
       "Bash(gws gmail:*)",
       "Bash(gws sheets:*)",
-      "Bash(gws auth:*)"
+      "Bash(gws auth:*)",
+      "mcp__posthog__query-trends"
     ]
   }
 }

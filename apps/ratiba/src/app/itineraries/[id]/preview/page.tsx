@@ -11,6 +11,14 @@ import DiscoveryTheme from '@/components/themes/DiscoveryTheme';
 import { trpc } from '@/lib/trpc';
 import { toast } from '@repo/ui/toast';
 import { useEffect, useMemo, useState } from 'react';
+
+/** Convert a Date to a timezone-safe ISO string preserving the local date */
+function toLocalISOString(date: Date): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}T12:00:00.000Z`;
+}
 import { useParams, useRouter } from 'next/navigation';
 import { transformBuilderToItineraryData } from '@/lib/builder-transform';
 import { useMutation } from '@tanstack/react-query';
@@ -46,6 +54,7 @@ export default function PreviewPage() {
     travelerGroups,
     tourType,
     country,
+    countries,
     pricingRows,
     extras,
     clientId,
@@ -158,7 +167,9 @@ export default function PreviewPage() {
       endCity,
       endCityCoordinates,
       tourType,
-      country: country || undefined,
+      country: countries.length > 0
+        ? countries.map((c: string) => c.charAt(0).toUpperCase() + c.slice(1).toLowerCase()).join(' & ')
+        : country || undefined,
       hidePricing,
       nationalParksMap,
       accommodationsMap,
@@ -205,7 +216,7 @@ export default function PreviewPage() {
 
       const proposalData = {
         days,
-        startDate,
+        startDate: startDate ? toLocalISOString(startDate) : null,
         travelerGroups,
         tourType,
         pricingRows,

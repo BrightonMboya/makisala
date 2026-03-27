@@ -7,7 +7,13 @@ export default function LandingNav({ ctaText = 'Check Availability' }: { ctaText
                 <div className="flex h-16 items-center justify-between">
                     <div className="flex items-center space-x-2 pl-10">
                         <div className="flex h-8 w-8 items-center justify-center gap-3 rounded-sm">
-                            <img src="/makisala_icon.png" className="object-cover" />
+                            <img
+                                src="/makisala_icon.png"
+                                className="object-cover"
+                                alt="logo"
+                                width={60}
+                                height={60}
+                            />
                             <div className="text-sm font-medium tracking-wider">
                                 <div>MAKISALA</div>
                             </div>
