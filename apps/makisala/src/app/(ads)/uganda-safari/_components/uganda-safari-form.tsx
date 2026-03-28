@@ -57,7 +57,7 @@ export default function UgandaSafariForm() {
             })
             sendGTMEvent({
                 event: 'conversion',
-                send_to: 'AW-17982843958/autmCMmsk4EcELbY8f5C',
+                send_to: 'AW-17982843958/CyrHCO_cj5EcELbY8f5C',
             })
             form.reset()
             router.push('/thank-you')

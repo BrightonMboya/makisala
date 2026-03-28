@@ -233,6 +233,8 @@ export default function PreviewPage() {
         transferIncluded,
         inclusions,
         exclusions,
+        hidePricing,
+        countries,
         selectedTheme,
         heroImage,
       };

@@ -114,6 +114,7 @@ function Header() {
     inclusions,
     exclusions,
     hidePricing,
+    countries,
     selectedTheme,
     heroImage,
   } = useBuilder();
@@ -154,6 +155,7 @@ function Header() {
         inclusions,
         exclusions,
         hidePricing,
+        countries,
         selectedTheme,
         heroImage,
       };
@@ -209,6 +211,7 @@ function Header() {
         inclusions,
         exclusions,
         hidePricing,
+        countries,
         selectedTheme,
         heroImage,
       };
