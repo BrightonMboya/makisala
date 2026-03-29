@@ -11,7 +11,7 @@ import {
   MarkerContent,
   MarkerTooltip,
 } from '@repo/ui/map';
-import type { ItineraryData, NationalParkInfo } from '@/types/itinerary-types';
+import type { ItineraryData } from '@/types/itinerary-types';
 import { trpc } from '@/lib/trpc';
 
 function TripMap({ data }: { data: ItineraryData['mapData'] }) {
@@ -345,16 +345,8 @@ export default function MinimalisticTheme({ data, onHeroImageChange, onDayImageC
 
               <div className="space-y-24">
                 {data.itinerary.map((day, dayIndex) => {
-                  // Match by national park ID (from picker)
-                  const parkInfo: NationalParkInfo | null =
-                    data.nationalParks && day.nationalParkId
-                      ? (data.nationalParks[day.nationalParkId] ?? null)
-                      : null;
-
                   // Get accommodation details
                   const accommodation = day.accommodation;
-                  // Find accommodation details from accommodations array by name match or fallback to ID if possible (though we only store name in Day)
-                  // Improved matching: try to find by name since that's what we have in Day
                   const accommodationDetails = data.accommodations.find(
                     (a) => a.name === day.accommodation,
                   );
@@ -365,11 +357,6 @@ export default function MinimalisticTheme({ data, onHeroImageChange, onDayImageC
                   // Hide accommodation if it's the same as previous day AND consecutive
                   const isSameAccommodation = previousDay?.accommodation === day.accommodation;
                   const shouldHideAccommodation = isSameAccommodation && dayIndex > 0;
-
-                  // Only show park info if it's different from the previous day
-                  const previousParkId = previousDay?.nationalParkId;
-                  const shouldShowParkInfo =
-                    parkInfo !== null && day.nationalParkId !== previousParkId;
 
                   return (
                     <div key={day.day} className="group">
@@ -395,64 +382,6 @@ export default function MinimalisticTheme({ data, onHeroImageChange, onDayImageC
                             <p className="text-lg leading-relaxed text-stone-600">
                               {day.description}
                             </p>
-                          )}
-
-                          {/* National Park Information Section - only show if different from previous day */}
-                          {shouldShowParkInfo && parkInfo && (
-                            <div className="space-y-8">
-                              {parkInfo.featured_image_url && (
-                                <div className="relative h-64 w-full overflow-hidden rounded-2xl">
-                                  <Image
-                                    src={parkInfo.featured_image_url}
-                                    alt={parkInfo.name}
-                                    fill
-                                    className="object-cover"
-                                  />
-                                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-                                  <div className="absolute bottom-6 left-6">
-                                    <span className="text-[10px] font-bold tracking-[0.3em] text-white/80 uppercase">
-                                      {parkInfo.name} National Park
-                                    </span>
-                                  </div>
-                                </div>
-                              )}
-
-                              {parkInfo.park_overview &&
-                                Array.isArray(parkInfo.park_overview) &&
-                                parkInfo.park_overview.length > 0 && (
-                                  <div className="rounded-2xl border border-stone-200 bg-stone-50/50 p-8">
-                                    <h4 className="mb-6 text-sm font-medium tracking-[0.2em] text-stone-400 uppercase">
-                                      Park Information
-                                    </h4>
-                                    <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                                      {parkInfo.park_overview.map(
-                                        (
-                                          item: {
-                                            title?: string;
-                                            name?: string;
-                                            description: string;
-                                          },
-                                          idx: number,
-                                        ) => {
-                                          // Handle both 'title' and 'name' fields (schema uses 'name', but data might use 'title')
-                                          const itemTitle =
-                                            item.title || item.name || 'Information';
-                                          return (
-                                            <div key={idx} className="space-y-2">
-                                              <span className="text-xs font-bold tracking-wider text-stone-500 uppercase">
-                                                {itemTitle}
-                                              </span>
-                                              <p className="text-sm leading-relaxed text-stone-700">
-                                                {item.description}
-                                              </p>
-                                            </div>
-                                          );
-                                        },
-                                      )}
-                                    </div>
-                                  </div>
-                                )}
-                            </div>
                           )}
 
                           {/* Accommodation Image Section - Show if different from previous day */}
@@ -939,20 +868,6 @@ export default function MinimalisticTheme({ data, onHeroImageChange, onDayImageC
 
               {/* Extra Info */}
               <div className="space-y-8 px-4">
-                <div>
-                  <h4 className="mb-4 text-xs font-bold tracking-[0.2em] text-stone-800 uppercase">
-                    Important Notes
-                  </h4>
-                  <p className="mb-4 text-sm leading-relaxed text-stone-600 italic">
-                    {data.importantNotes.description}
-                  </p>
-                  <ul className="space-y-3 text-[13px] text-stone-500">
-                    {data.importantNotes.points.map((p, i) => (
-                      <li key={i}>• {p}</li>
-                    ))}
-                  </ul>
-                </div>
-
                 {/* Organization branding */}
                 {data.organization && (
                   <div className="border-t border-stone-100 pt-6">

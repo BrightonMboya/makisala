@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 import Image from 'next/image';
 import { Map, MapMarker, MapRoute, MarkerContent, MarkerTooltip } from '@repo/ui/map';
-import type { ItineraryData, NationalParkInfo } from '@/types/itinerary-types';
+import type { ItineraryData } from '@/types/itinerary-types';
 
 // --- TRIP MAP COMPONENT ---
 function TripMap({ data }: { data: ItineraryData['mapData'] }) {
@@ -257,8 +257,6 @@ export default function KuduTheme({ data, onHeroImageChange, onDayImageChange }:
     includedItems,
     excludedItems,
     accommodations,
-    nationalParks,
-    importantNotes,
     mapData,
     clientName,
     organization,
@@ -345,26 +343,17 @@ export default function KuduTheme({ data, onHeroImageChange, onDayImageChange }:
 
       {/* 3. DAILY ITINERARY LOOP */}
       {itinerary.map((day, index) => {
-        // Get national park info if available
-        const parkInfo: NationalParkInfo | null =
-          nationalParks && day.nationalParkId ? (nationalParks[day.nationalParkId] ?? null) : null;
-
         // Get accommodation details
         const accommodationDetails = accommodations.find((a) => a.name === day.accommodation);
 
         // Check previous day for redundant info
         const previousDay = index > 0 ? itinerary[index - 1] : null;
         const isSameAccommodation = previousDay?.accommodation === day.accommodation;
-        const previousParkId = previousDay?.nationalParkId;
-        const shouldShowParkInfo = parkInfo !== null && day.nationalParkId !== previousParkId;
 
         // Determine the best image for this day section
-        // Priority: Custom preview image > Park image > Accommodation image > Hero fallback
+        // Priority: Custom preview image > Accommodation image > Hero fallback
         const dayImage =
           day.previewImage ||
-          (shouldShowParkInfo && parkInfo?.featured_image_url
-            ? parkInfo.featured_image_url
-            : null) ||
           accommodationDetails?.image ||
           heroImage;
 
@@ -393,16 +382,6 @@ export default function KuduTheme({ data, onHeroImageChange, onDayImageChange }:
             <h2 className="mb-4 font-serif text-4xl font-bold text-slate-900 md:text-5xl">
               {day.title}
             </h2>
-
-            {/* National Park Badge */}
-            {shouldShowParkInfo && parkInfo && (
-              <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-emerald-800/10 px-3 py-1.5 text-emerald-800">
-                <MapPin size={12} />
-                <span className="text-[10px] font-bold tracking-widest uppercase">
-                  {parkInfo.name}
-                </span>
-              </div>
-            )}
 
             {day.description && (
               <p className="mb-6 text-base leading-relaxed text-slate-600">{day.description}</p>
@@ -610,33 +589,6 @@ export default function KuduTheme({ data, onHeroImageChange, onDayImageChange }:
         </div>
       </NarrativeSection>}
 
-      {/* 5. IMPORTANT NOTES SECTION */}
-      {importantNotes &&
-        (importantNotes.description ||
-          (importantNotes.points && importantNotes.points.length > 0)) && (
-          <NarrativeSection imageUrl={heroImage} imageRight={false}>
-            <h2 className="mb-6 font-serif text-4xl font-bold text-slate-900">Important Notes</h2>
-            {importantNotes.description && (
-              <p className="mb-8 font-serif text-lg leading-relaxed text-slate-600 italic">
-                {importantNotes.description}
-              </p>
-            )}
-            {importantNotes.points && importantNotes.points.length > 0 && (
-              <div className="max-h-[50vh] space-y-4 overflow-y-auto pr-2">
-                {importantNotes.points.map((point, i) => (
-                  <div
-                    key={i}
-                    className="flex items-start gap-4 border-b border-black/5 py-3 last:border-0"
-                  >
-                    <span className="text-lg font-bold text-emerald-800">•</span>
-                    <p className="text-sm leading-relaxed text-slate-600">{point}</p>
-                  </div>
-                ))}
-              </div>
-            )}
-          </NarrativeSection>
-        )}
-
       {/* ABOUT & PAYMENT TERMS */}
       {(organization?.aboutDescription || organization?.paymentTerms) && (
         <NarrativeSection imageUrl={heroImage} imageRight={true}>
@@ -667,7 +619,7 @@ export default function KuduTheme({ data, onHeroImageChange, onDayImageChange }:
 
       {/* FLOATING PAGE TRACKER */}
       <div className="fixed top-1/2 right-8 z-50 hidden -translate-y-1/2 flex-col gap-6 lg:flex">
-        {[...Array(itinerary.length + (importantNotes ? 4 : 3))].map((_, i) => (
+        {[...Array(itinerary.length + 3)].map((_, i) => (
           <div key={i} className="h-1.5 w-1.5 rounded-full bg-black/20" />
         ))}
       </div>

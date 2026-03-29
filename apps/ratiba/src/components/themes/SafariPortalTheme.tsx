@@ -10,7 +10,7 @@ import {
   MarkerContent,
   MarkerTooltip,
 } from '@repo/ui/map';
-import type { ItineraryData, NationalParkInfo } from '@/types/itinerary-types';
+import type { ItineraryData } from '@/types/itinerary-types';
 
 function TripMap({ data }: { data: ItineraryData['mapData'] }) {
   const { locations, startLocation, endLocation } = data;
@@ -383,19 +383,8 @@ export default function SafariPortalTheme({ data }: { data: ItineraryData }) {
                 const locationName =
                   accommodation?.location || day.accommodation.split(',')[0] || data.location;
 
-                // Match by national park ID (from picker)
-                const parkInfo: NationalParkInfo | null =
-                  data.nationalParks && day.nationalParkId
-                    ? (data.nationalParks[day.nationalParkId] ?? null)
-                    : null;
-
-                // Only show park info if it's different from the previous day
-                const previousDay = dayIndex > 0 ? data.itinerary[dayIndex - 1] : null;
-                const previousParkId = previousDay?.nationalParkId;
-                const shouldShowParkInfo =
-                  parkInfo !== null && day.nationalParkId !== previousParkId;
-
                 // Hide accommodation if it's the same as previous day
+                const previousDay = dayIndex > 0 ? data.itinerary[dayIndex - 1] : null;
                 const isSameAccommodation = previousDay?.accommodation === day.accommodation;
                 const shouldHideAccommodation = isSameAccommodation && dayIndex > 0;
 
@@ -446,59 +435,6 @@ export default function SafariPortalTheme({ data }: { data: ItineraryData }) {
                           </p>
                         )}
                       </div>
-
-                      {/* National Park Information Section - only show if different from previous day */}
-                      {shouldShowParkInfo && parkInfo && (
-                        <div className="space-y-6 pt-4">
-                          {parkInfo.featured_image_url && (
-                            <div className="relative h-64 w-full overflow-hidden rounded-xl">
-                              <Image
-                                src={parkInfo.featured_image_url}
-                                alt={parkInfo.name}
-                                fill
-                                className="object-cover"
-                              />
-                              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
-                              <div className="absolute bottom-4 left-4">
-                                <span className="text-xs font-bold tracking-[0.2em] text-white uppercase">
-                                  {parkInfo.name} National Park
-                                </span>
-                              </div>
-                            </div>
-                          )}
-
-                          {parkInfo.park_overview &&
-                            Array.isArray(parkInfo.park_overview) &&
-                            parkInfo.park_overview.length > 0 && (
-                              <div className="rounded-xl border border-stone-200 bg-stone-50 p-6">
-                                <h5 className="mb-4 text-sm font-semibold tracking-[0.1em] text-stone-600 uppercase">
-                                  Park Information
-                                </h5>
-                                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                                  {parkInfo.park_overview.map(
-                                    (
-                                      item: { title?: string; name?: string; description: string },
-                                      idx: number,
-                                    ) => {
-                                      // Handle both 'title' and 'name' fields (schema uses 'name', but data might use 'title')
-                                      const itemTitle = item.title || item.name || 'Information';
-                                      return (
-                                        <div key={idx} className="space-y-1">
-                                          <span className="text-xs font-bold tracking-wider text-stone-500 uppercase">
-                                            {itemTitle}
-                                          </span>
-                                          <p className="text-sm leading-relaxed text-stone-700">
-                                            {item.description}
-                                          </p>
-                                        </div>
-                                      );
-                                    },
-                                  )}
-                                </div>
-                              </div>
-                            )}
-                        </div>
-                      )}
 
                       {day.activities.length > 0 && (
                         <div className="space-y-4">

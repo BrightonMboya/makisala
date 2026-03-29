@@ -63,6 +63,7 @@ export function buildGeoValue(lat: number, lng: number, name: string) {
   return `geo:${lat},${lng}::${name}`;
 }
 
+
 export async function searchPlaces(
   query: string,
   countries?: string[],

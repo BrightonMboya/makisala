@@ -110,27 +110,12 @@ export default function PreviewPage() {
   const clientName = clientData?.name || '';
   const clientEmail = clientData?.email || null;
 
-  // Fetch national parks and accommodations for transform
-  const { data: parksData } = trpc.nationalParks.getAll.useQuery(undefined, {
-    staleTime: staleTimes.nationalParks,
-  });
-
+  // Fetch accommodations for transform
   const { data: accommodationsData } = trpc.accommodations.getAll.useQuery(undefined, {
     staleTime: staleTimes.accommodations,
   });
 
   const { data: orgSettings } = trpc.settings.getOrg.useQuery();
-
-  const nationalParksMap = useMemo(() => {
-    const map: Record<
-      string,
-      { id: string; name: string; latitude?: string | null; longitude?: string | null; park_overview?: Array<{ title?: string; name?: string; description: string }> | null }
-    > = {};
-    parksData?.forEach((p: any) => {
-      map[p.id] = { id: p.id, name: p.name, latitude: p.latitude, longitude: p.longitude, park_overview: p.park_overview };
-    });
-    return map;
-  }, [parksData]);
 
   const accommodationsMap = useMemo(() => {
     const map: Record<string, { id: string; name: string; image?: string; images?: string[]; description?: string }> =
@@ -171,7 +156,6 @@ export default function PreviewPage() {
         ? countries.map((c: string) => c.charAt(0).toUpperCase() + c.slice(1).toLowerCase()).join(' & ')
         : country || undefined,
       hidePricing,
-      nationalParksMap,
       accommodationsMap,
       organization: orgSettings ? {
         name: orgSettings.name,
@@ -199,7 +183,6 @@ export default function PreviewPage() {
     tourType,
     country,
     hidePricing,
-    nationalParksMap,
     accommodationsMap,
     orgSettings,
   ]);

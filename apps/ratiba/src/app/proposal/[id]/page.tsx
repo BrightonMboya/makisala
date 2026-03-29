@@ -75,10 +75,8 @@ export default async function ItineraryPage({ params }: Props) {
     }
 
     const orgId = proposal.organizationId;
-    const [transformedData, orgPlan] = await Promise.all([
-      transformProposalToItineraryData(proposal),
-      orgId ? getOrgPlan(orgId) : null,
-    ]);
+    const transformedData = transformProposalToItineraryData(proposal);
+    const orgPlan = orgId ? await getOrgPlan(orgId) : null;
 
     if (!transformedData) {
       notFound();

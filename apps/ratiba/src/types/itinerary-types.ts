@@ -147,8 +147,7 @@ export interface Day {
   date: string;
   title: string;
   description?: string; // Day description
-  destination?: string; // Store the original destination value for matching
-  nationalParkId?: string; // Store the national park ID for direct matching
+  destination?: string; // Destination display name
   activities: DayActivity[];
   accommodation: string;
   meals: string;
@@ -169,13 +168,6 @@ export interface Accommodation {
   // overview?: string; // Short overview text
   description: string; // Full description
   location: string;
-}
-
-export interface NationalParkInfo {
-  id: string;
-  name: string;
-  park_overview: Array<{ title: string; description: string }> | null;
-  featured_image_url: string | null;
 }
 
 export interface OrganizationInfo {
@@ -222,7 +214,6 @@ export interface ItineraryData {
   tripOverview?: TripOverview;
   itinerary: Day[];
   accommodations: Accommodation[];
-  nationalParks?: Record<string, NationalParkInfo>; // Key is destination value (e.g., 'akagera-np')
   transportation?: ThemeTransportation[]; // Major transfers between destinations
   hidePricing?: boolean;
   pricing: {
@@ -232,10 +223,6 @@ export interface ItineraryData {
   };
   includedItems: string[];
   excludedItems: string[];
-  importantNotes: {
-    description: string;
-    points: string[];
-  };
   mapData: {
     locations: Location[];
     startLocation?: Location;

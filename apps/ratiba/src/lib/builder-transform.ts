@@ -7,55 +7,14 @@ import type {
   ExtraOption,
   ItineraryData,
   Location,
-  NationalParkInfo,
   OrganizationInfo,
   PricingRow,
-  ThemeTransportation,
   ThemeType,
-  TransportModeType,
   TravelerGroup,
   TripOverview,
 } from '@/types/itinerary-types';
 import { capitalize } from '@/lib/utils';
-
-// Transport mode labels
-const transportModeLabels: Record<TransportModeType, string> = {
-  road_4x4: '4WD Safari Vehicle',
-  road_shuttle: 'Shuttle/Minibus',
-  road_bus: 'Coach Bus',
-  mini_bus: 'Mini bus',
-  flight_domestic: 'Domestic Flight',
-  flight_bush: 'Bush/Charter Flight',
-};
-
-function formatDuration(minutes: number | null): string | null {
-  if (!minutes) return null;
-  const hours = Math.floor(minutes / 60);
-  const mins = minutes % 60;
-  if (hours === 0) return `${mins} min`;
-  if (mins === 0) return `${hours}h`;
-  return `${hours}h ${mins}min`;
-}
-
-// Calculate pricing
-function calculatePricing(
-  pricingRows: PricingRow[],
-  extras: ExtraOption[],
-  travelerGroups: TravelerGroup[],
-): ItineraryData['pricing'] {
-  const totalPrice =
-    pricingRows.reduce((acc, row) => acc + row.unitPrice * row.count, 0) +
-    extras.filter((e) => e.selected).reduce((acc, e) => acc + e.price, 0);
-
-  const totalTravelers = travelerGroups.reduce((acc, g) => acc + g.count, 0);
-  const perPerson = totalTravelers > 0 ? totalPrice / totalTravelers : 0;
-
-  return {
-    total: `$${Math.round(totalPrice).toLocaleString()}`,
-    perPerson: `$${Math.round(perPerson).toLocaleString()}`,
-    currency: 'USD',
-  };
-}
+import { calculatePricing, formatDuration, transportModeLabels } from '@/lib/transform-utils';
 
 // Transform builder context data to ItineraryData format (for preview page)
 // This is a client-safe function that doesn't use database imports
@@ -77,16 +36,6 @@ export function transformBuilderToItineraryData(params: {
   endCityCoordinates?: [number, number] | null;
   tourType?: string;
   country?: string;
-  nationalParksMap: Record<
-    string,
-    {
-      id: string;
-      name: string;
-      latitude?: string | null;
-      longitude?: string | null;
-      park_overview?: Array<{ title?: string; name?: string; description: string }> | null;
-    }
-  >;
   accommodationsMap: Record<
     string,
     {
@@ -118,7 +67,6 @@ export function transformBuilderToItineraryData(params: {
     endCityCoordinates,
     tourType,
     country: countryParam,
-    nationalParksMap,
     accommodationsMap,
     hidePricing,
     organization,
@@ -129,33 +77,22 @@ export function transformBuilderToItineraryData(params: {
     const currentDate = startDate ? addDays(startDate, index) : new Date();
     const dateStr = format(currentDate, 'MMMM d, yyyy');
 
-    // Convert activities - use moment directly (Morning, Afternoon, etc.) instead of clock time
-    const activities: DayActivity[] = day.activities.map((act) => {
-      return {
-        time: act.moment, // Keep as "Morning", "Afternoon", "Full Day", etc.
-        activity: capitalize(act.name),
-        description: act.description || '',
-        location: act.location || undefined,
-      };
-    });
+    const activities: DayActivity[] = day.activities.map((act) => ({
+      time: act.moment,
+      activity: capitalize(act.name),
+      description: act.description || '',
+      location: act.location || undefined,
+    }));
 
-    // Get destination name from national park or stored name (for Nominatim results)
-    const destinationData = day.destination ? nationalParksMap[day.destination] : null;
-    const destinationName = destinationData?.name
-      ? capitalize(destinationData.name)
-      : day.destinationName
-        ? capitalize(day.destinationName)
-        : '';
+    const destinationName = day.destinationName ? capitalize(day.destinationName) : '';
 
-    // Use user-set title if defined, otherwise generate from destination/activity
-    let title =
+    const title =
       day.title !== undefined
         ? day.title
         : (destinationName ? `Explore ${destinationName}` : '') ||
           capitalize(day.activities[0]?.name || '') ||
           `Day ${day.dayNumber}`;
 
-    // Get accommodation name from map
     const accommodationData = day.accommodation ? accommodationsMap[day.accommodation] : null;
     const isLastDay = index === days.length - 1;
     const accommodationName =
@@ -163,7 +100,6 @@ export function transformBuilderToItineraryData(params: {
       day.accommodation ||
       (isLastDay ? 'Last day, no accommodation' : 'To be confirmed');
 
-    // Get meals string
     const mealsStr =
       [
         day.meals.breakfast ? 'Breakfast' : null,
@@ -173,8 +109,7 @@ export function transformBuilderToItineraryData(params: {
         .filter(Boolean)
         .join(', ') || 'None';
 
-    // Build per-day transportation
-    const dayTransport = day.transfer
+    const transportation = day.transfer
       ? {
           id: `transfer-day-${day.dayNumber}`,
           originName: day.transfer.originName,
@@ -193,26 +128,19 @@ export function transformBuilderToItineraryData(params: {
       title,
       description: day.description || undefined,
       destination: destinationName || undefined,
-      nationalParkId: day.destination || undefined,
       activities,
       accommodation: accommodationName,
       meals: mealsStr,
       previewImage: day.previewImage || undefined,
-      transportation: dayTransport,
+      transportation,
     };
   });
 
-  // Determine country/location from param or first day's national park
-  const firstDay = days[0];
-  const firstParkId = firstDay?.destination;
-  const firstDestination = firstParkId ? nationalParksMap[firstParkId]?.name : null;
-
-  const country =
-    countryParam || (firstDestination ? firstDestination.toLowerCase() : tourTitle.toLowerCase());
+  const country = countryParam || tourTitle.toLowerCase();
   const countryDisplayName = country.charAt(0).toUpperCase() + country.slice(1).toLowerCase();
   const location = countryDisplayName;
 
-  // Extract accommodations
+  // Extract unique accommodations
   const accommodationsList: Accommodation[] = [];
   const seenAccommodations = new Set<string>();
 
@@ -221,39 +149,30 @@ export function transformBuilderToItineraryData(params: {
       seenAccommodations.add(day.accommodation);
       const accData = accommodationsMap[day.accommodation];
       if (accData) {
-        const defaultImage =
-          'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?q=80&w=2670&auto=format&fit=crop';
         accommodationsList.push({
           id: accData.id,
           name: accData.name,
-          image: accData.image || defaultImage,
+          image:
+            accData.image ||
+            'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?q=80&w=2670&auto=format&fit=crop',
           images: accData.images && accData.images.length > 0 ? accData.images : undefined,
           description: accData.description || 'Luxury accommodation',
-          location: nationalParksMap[day.destination || '']?.name || countryDisplayName,
+          location: day.destinationName ? capitalize(day.destinationName) : countryDisplayName,
         });
       }
     }
   });
 
-  // Calculate pricing
   const pricing = calculatePricing(pricingRows, extras, travelerGroups);
 
-  // Generate map data (simplified for preview)
+  // Generate map data
   const mapLocations: Location[] = [];
   const seenDestinations = new Set<string>();
 
   days.forEach((day) => {
     if (day.destination && !seenDestinations.has(day.destination)) {
       seenDestinations.add(day.destination);
-      const parkData = nationalParksMap[day.destination];
-      if (parkData?.longitude && parkData?.latitude) {
-        // National park with coordinates from DB
-        mapLocations.push({
-          name: parkData.name,
-          coordinates: [parseFloat(parkData.longitude), parseFloat(parkData.latitude)],
-        });
-      } else if (day.destinationLat != null && day.destinationLng != null) {
-        // Non-park destination with stored coordinates (from Nominatim)
+      if (day.destinationLat != null && day.destinationLng != null) {
         mapLocations.push({
           name: day.destinationName || day.destination,
           coordinates: [day.destinationLng, day.destinationLat],
@@ -264,7 +183,6 @@ export function transformBuilderToItineraryData(params: {
 
   const duration = `${days.length} Days`;
 
-  // Get start/end city locations from stored coordinates
   const startLocation: Location | undefined = startCityCoordinates
     ? { name: startCity || 'Start', coordinates: startCityCoordinates }
     : undefined;
@@ -272,17 +190,14 @@ export function transformBuilderToItineraryData(params: {
     ? { name: endCity || 'End', coordinates: endCityCoordinates }
     : undefined;
 
-  // Build trip overview for theme display
   const totalTravelers = travelerGroups.reduce((acc, g) => acc + g.count, 0);
 
-  // Get all unique destination names in order
+  // Unique destination names in order
   const destinationNames: string[] = [];
   const seenDestNames = new Set<string>();
   days.forEach((day) => {
-    if (day.destination) {
-      const parkData = nationalParksMap[day.destination];
-      const rawName = parkData?.name || day.destinationName || day.destination;
-      const name = capitalize(rawName);
+    if (day.destinationName) {
+      const name = capitalize(day.destinationName);
       if (!seenDestNames.has(name)) {
         seenDestNames.add(name);
         destinationNames.push(name);
@@ -290,7 +205,6 @@ export function transformBuilderToItineraryData(params: {
     }
   });
 
-  // Get travel date range from itinerary
   const firstDayDate = itinerary[0]?.date;
   const lastDayDate = itinerary[itinerary.length - 1]?.date;
 
@@ -305,31 +219,7 @@ export function transformBuilderToItineraryData(params: {
     destinations: destinationNames,
   };
 
-  // Build national parks map for theme rendering (park info blocks)
-  const themeNationalParks: Record<string, NationalParkInfo> = {};
-  days.forEach((day) => {
-    if (day.destination) {
-      const parkData = nationalParksMap[day.destination];
-      if (parkData && !themeNationalParks[parkData.id]) {
-        const parkInfo: NationalParkInfo = {
-          id: parkData.id,
-          name: parkData.name,
-          park_overview: (parkData.park_overview as any) || null,
-          featured_image_url: null,
-        };
-        // Store by ID and name variations for matching
-        themeNationalParks[parkData.id] = parkInfo;
-        const parkNameLower = parkData.name.toLowerCase();
-        const parkNameShort = parkNameLower.replace(/\s+national\s+park/i, '').trim();
-        themeNationalParks[parkNameLower] = parkInfo;
-        themeNationalParks[parkNameShort] = parkInfo;
-        themeNationalParks[parkNameShort + '-np'] = parkInfo;
-      }
-    }
-  });
-
-  // Derive transportation from per-day transfers
-  const transportation: ThemeTransportation[] = days
+  const transportation = days
     .filter((d) => d.transfer)
     .map((d) => {
       const t = d.transfer!;
@@ -349,7 +239,7 @@ export function transformBuilderToItineraryData(params: {
     id: 'preview',
     title: tourTitle || 'Safari Adventure',
     subtitle: `${duration} Safari Adventure`,
-    clientName, // Pass client name
+    clientName,
     duration,
     location,
     heroImage,
@@ -358,20 +248,11 @@ export function transformBuilderToItineraryData(params: {
     tripOverview,
     itinerary,
     accommodations: accommodationsList,
-    nationalParks: Object.keys(themeNationalParks).length > 0 ? themeNationalParks : undefined,
     transportation: transportation.length > 0 ? transportation : undefined,
     hidePricing,
     pricing,
     includedItems: inclusions,
     excludedItems: exclusions,
-    importantNotes: {
-      description: 'This itinerary has been carefully curated to offer you the best experience.',
-      points: [
-        'Prices are subject to availability',
-        'Booking confirmation required',
-        'Travel insurance recommended',
-      ],
-    },
     mapData: {
       locations: mapLocations,
       startLocation,

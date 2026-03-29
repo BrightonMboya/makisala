@@ -715,19 +715,16 @@ const DaySection = ({
   hoveredDayImage: number | null;
   setHoveredDayImage: (day: number | null) => void;
 }) => {
-  const parkInfo =
-    data.nationalParks && day.nationalParkId ? data.nationalParks[day.nationalParkId] : null;
   const accommodationDetails = data.accommodations.find((a) => a.name === day.accommodation);
 
-  // Derive location from activity locations, falling back to day.destination (national park)
+  // Derive location from activity locations, falling back to day.destination
   const activityLocations = [...new Set(day.activities.map((a) => a.location).filter(Boolean))];
   const dayLocation =
     activityLocations.length > 0 ? joinList(activityLocations as string[]) : day.destination;
 
-  // Destination image - previewImage first, then park's featured image, then fallback
+  // Destination image - previewImage first, then fallback
   const destinationImage =
     day.previewImage ||
-    parkInfo?.featured_image_url ||
     'https://images.unsplash.com/photo-1516426122078-c23e76319801?q=80&w=2000&auto=format&fit=crop';
 
   // Accommodation images - all images from the accommodation

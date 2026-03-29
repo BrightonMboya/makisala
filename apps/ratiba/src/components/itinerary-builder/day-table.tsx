@@ -400,7 +400,7 @@ function SortableDayRow({
                   destinationLng: geo.lng,
                 });
               } else {
-                // National park UUID or custom text — clear geo coords
+                // Custom text — clear geo coords
                 onUpdateMultiple(day.id, {
                   destination: val,
                   destinationName: null,
