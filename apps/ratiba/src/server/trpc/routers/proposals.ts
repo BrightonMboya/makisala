@@ -8,14 +8,15 @@ import {
   proposalMeals,
   proposalTransportation,
   member,
+  clients,
 } from '@repo/db/schema';
-import { and, desc, eq, inArray, sql } from 'drizzle-orm';
+import { and, desc, eq, inArray, or, sql, count } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
 import {
   sendProposalShareEmail,
   sendProposalAcceptanceEmail,
 } from '@repo/resend';
-import { router, protectedProcedure, adminProcedure, publicProcedure } from '../init';
+import { router, protectedProcedure, adminProcedure, publicProcedure, escapeLikeQuery } from '../init';
 import { checkFeatureAccess, getOrgPlan, ALLOWED_THEMES_BY_TIER } from '@/lib/plans';
 import { env } from '@/lib/env';
 
@@ -82,9 +83,19 @@ interface BuilderDay {
 
 export const proposalsRouter = router({
   listForDashboard: protectedProcedure
-    .input(z.object({ filter: z.enum(['mine', 'all']).default('mine') }))
+    .input(
+      z.object({
+        filter: z.enum(['mine', 'all']).default('mine'),
+        page: z.number().int().min(1).default(1),
+        pageSize: z.number().int().min(1).max(100).default(20),
+        status: z
+          .enum(['draft', 'shared', 'awaiting_payment', 'paid', 'booked', 'cancelled'])
+          .optional(),
+        search: z.string().optional(),
+      }),
+    )
     .query(async ({ ctx, input }) => {
-      let whereClause = eq(proposals.organizationId, ctx.orgId);
+      const conditions = [eq(proposals.organizationId, ctx.orgId)];
 
       if (input.filter === 'mine') {
         const assignedRows = await ctx.db
@@ -93,37 +104,71 @@ export const proposalsRouter = router({
           .where(eq(proposalAssignments.userId, ctx.user.id));
 
         const assignedIds = assignedRows.map((r) => r.proposalId);
-        if (assignedIds.length === 0) return [];
+        if (assignedIds.length === 0) {
+          return { items: [], totalCount: 0, page: input.page, pageSize: input.pageSize, totalPages: 0 };
+        }
 
-        whereClause = and(
-          eq(proposals.organizationId, ctx.orgId),
-          inArray(proposals.id, assignedIds),
-        )!;
+        conditions.push(inArray(proposals.id, assignedIds));
       }
 
-      return await ctx.db.query.proposals.findMany({
-        where: whereClause,
-        orderBy: desc(proposals.updatedAt),
-        with: {
-          client: true,
-          assignments: {
-            with: {
-              user: {
-                columns: { id: true, name: true, image: true },
+      if (input.status) {
+        conditions.push(eq(proposals.status, input.status));
+      }
+
+      if (input.search?.trim()) {
+        const pattern = `%${escapeLikeQuery(input.search.trim())}%`;
+        conditions.push(
+          or(
+            sql`${proposals.name} ilike ${pattern} escape '\\'`,
+            sql`${proposals.tourTitle} ilike ${pattern} escape '\\'`,
+            sql`exists (
+              select 1
+              from ${clients}
+              where ${clients.id} = ${proposals.clientId}
+                and ${clients.name} ilike ${pattern} escape '\\'
+            )`,
+          )!,
+        );
+      }
+
+      const whereClause = and(...conditions)!;
+
+      const [countResult, items] = await Promise.all([
+        ctx.db
+          .select({ value: count() })
+          .from(proposals)
+          .where(whereClause),
+        ctx.db.query.proposals.findMany({
+          where: whereClause,
+          orderBy: desc(proposals.createdAt),
+          offset: (input.page - 1) * input.pageSize,
+          limit: input.pageSize,
+          with: {
+            client: true,
+            assignments: {
+              with: {
+                user: {
+                  columns: { id: true, name: true, image: true },
+                },
               },
             },
           },
-        },
-        columns: {
-          id: true,
-          name: true,
-          status: true,
-          createdAt: true,
-          updatedAt: true,
-          tourTitle: true,
-          startDate: true,
-        },
-      });
+          columns: {
+            id: true,
+            name: true,
+            status: true,
+            createdAt: true,
+            updatedAt: true,
+            tourTitle: true,
+            startDate: true,
+          },
+        }),
+      ]);
+
+      const totalCount = countResult[0]?.value ?? 0;
+      const totalPages = Math.ceil(totalCount / input.pageSize);
+
+      return { items, totalCount, page: input.page, pageSize: input.pageSize, totalPages };
     }),
 
   getById: publicProcedure
@@ -255,7 +300,7 @@ export const proposalsRouter = router({
         id: z.string(),
         name: z.string(),
         data: z.record(z.string(), z.unknown()),
-        status: z.enum(['draft', 'shared']).optional(),
+        status: z.enum(['draft', 'shared', 'awaiting_payment', 'paid', 'booked', 'cancelled']).optional(),
         tourId: z.string(),
       }),
     )
@@ -577,6 +622,12 @@ export const proposalsRouter = router({
         throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: result.error });
       }
 
+      // Auto-transition status to shared
+      await ctx.db
+        .update(proposals)
+        .set({ status: 'shared', updatedAt: new Date().toISOString() })
+        .where(eq(proposals.id, input.proposalId));
+
       return { success: true };
     }),
 
@@ -639,6 +690,167 @@ export const proposalsRouter = router({
         throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: result.error });
       }
 
+      // Auto-transition status to awaiting_payment
+      await ctx.db
+        .update(proposals)
+        .set({ status: 'awaiting_payment', updatedAt: new Date().toISOString() })
+        .where(eq(proposals.id, input.proposalId));
+
       return { success: true };
+    }),
+
+  updateStatus: protectedProcedure
+    .input(
+      z.object({
+        proposalId: z.string(),
+        status: z.enum(['draft', 'shared', 'awaiting_payment', 'paid', 'booked', 'cancelled']),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const proposal = await ctx.db.query.proposals.findFirst({
+        where: and(eq(proposals.id, input.proposalId), eq(proposals.organizationId, ctx.orgId)),
+        columns: { id: true },
+      });
+
+      if (!proposal) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Proposal not found' });
+      }
+
+      await ctx.db
+        .update(proposals)
+        .set({ status: input.status })
+        .where(eq(proposals.id, input.proposalId));
+
+      return { success: true };
+    }),
+
+  duplicate: protectedProcedure
+    .input(z.object({ proposalId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const original = await ctx.db.query.proposals.findFirst({
+        where: and(eq(proposals.id, input.proposalId), eq(proposals.organizationId, ctx.orgId)),
+        with: {
+          days: {
+            with: {
+              accommodations: true,
+              activities: true,
+              meals: true,
+              transportation: true,
+            },
+            orderBy: (days, { asc }) => [asc(days.dayNumber)],
+          },
+        },
+      });
+
+      if (!original) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Proposal not found' });
+      }
+
+      const access = await checkFeatureAccess(ctx.orgId, 'activeProposals');
+      if (!access.allowed) {
+        throw new TRPCError({ code: 'FORBIDDEN', message: access.reason });
+      }
+
+      const newId = crypto.randomUUID();
+
+      await ctx.db.transaction(async (tx) => {
+        await tx.insert(proposals).values({
+          id: newId,
+          name: `${original.name} (copy)`,
+          tourId: original.tourId,
+          organizationId: ctx.orgId,
+          clientId: null,
+          tourTitle: original.tourTitle,
+          tourType: original.tourType,
+          theme: original.theme,
+          heroImage: original.heroImage,
+          startDate: original.startDate,
+          startCity: original.startCity,
+          startCityLat: original.startCityLat,
+          startCityLng: original.startCityLng,
+          endCity: original.endCity,
+          endCityLat: original.endCityLat,
+          endCityLng: original.endCityLng,
+          pickupPoint: original.pickupPoint,
+          transferIncluded: original.transferIncluded,
+          travelerGroups: original.travelerGroups,
+          pricingRows: original.pricingRows,
+          extras: original.extras,
+          countries: original.countries,
+          inclusions: original.inclusions,
+          exclusions: original.exclusions,
+          hidePricing: original.hidePricing,
+          status: 'draft',
+        });
+
+        for (const day of original.days) {
+          const [newDay] = await tx
+            .insert(proposalDays)
+            .values({
+              proposalId: newId,
+              dayNumber: day.dayNumber,
+              title: day.title,
+              description: day.description,
+              previewImage: day.previewImage,
+              nationalParkId: day.nationalParkId,
+              destinationName: day.destinationName,
+              destinationLat: day.destinationLat,
+              destinationLng: day.destinationLng,
+            })
+            .returning();
+
+          if (!newDay) continue;
+
+          for (const acc of day.accommodations) {
+            await tx.insert(proposalAccommodations).values({
+              proposalDayId: newDay.id,
+              accommodationId: acc.accommodationId,
+            });
+          }
+
+          for (const activity of day.activities) {
+            await tx.insert(proposalActivities).values({
+              proposalDayId: newDay.id,
+              name: activity.name,
+              description: activity.description,
+              location: activity.location,
+              moment: activity.moment,
+              isOptional: activity.isOptional,
+              imageUrl: activity.imageUrl,
+            });
+          }
+
+          if (day.meals) {
+            await tx.insert(proposalMeals).values({
+              proposalDayId: newDay.id,
+              breakfast: day.meals.breakfast,
+              lunch: day.meals.lunch,
+              dinner: day.meals.dinner,
+            });
+          }
+
+          for (const transport of day.transportation) {
+            await tx.insert(proposalTransportation).values({
+              proposalDayId: newDay.id,
+              originName: transport.originName,
+              originId: transport.originId,
+              destinationName: transport.destinationName,
+              destinationId: transport.destinationId,
+              mode: transport.mode,
+              durationMinutes: transport.durationMinutes,
+              distanceKm: transport.distanceKm,
+              notes: transport.notes,
+            });
+          }
+        }
+
+        // Assign the current user
+        await tx
+          .insert(proposalAssignments)
+          .values({ proposalId: newId, userId: ctx.user.id })
+          .onConflictDoNothing();
+      });
+
+      return { success: true, newProposalId: newId };
     }),
 });

@@ -246,6 +246,13 @@
       "when": 1772734690663,
       "tag": "0034_outgoing_mephisto",
       "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "7",
+      "when": 1773244483086,
+      "tag": "0035_soft_cammi",
+      "breakpoints": true
     }
   ]
 }

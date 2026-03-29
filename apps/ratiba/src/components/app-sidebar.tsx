@@ -3,7 +3,16 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { FileText, LayoutDashboard, LogOut, Map, Plus, Settings, Users, Library } from 'lucide-react';
+import {
+  FileText,
+  LayoutDashboard,
+  Library,
+  LogOut,
+  Map,
+  Plus,
+  Settings,
+  Users,
+} from 'lucide-react';
 import {
   Sidebar,
   SidebarContent,
@@ -41,7 +50,7 @@ export function AppSidebar({ serverData }: { serverData?: SidebarServerData | nu
   const { data: userProfile } = trpc.settings.getCurrentUser.useQuery();
 
   // Prefer fresh client data when available, fall back to server-rendered data
-  const orgName = orgSettings?.name || serverData?.orgName || 'Dashboard';
+  const orgName = orgSettings?.name || serverData?.orgName || '';
   const orgLogo = orgSettings?.logoUrl || serverData?.orgLogo;
   const orgInitial = orgName[0]?.toUpperCase();
   const userName = userProfile?.name || serverData?.userName || '';
@@ -111,7 +120,11 @@ export function AppSidebar({ serverData }: { serverData?: SidebarServerData | nu
             >
               <Link href="/dashboard">
                 {orgLogo ? (
-                  <img src={orgLogo} alt={orgName} className="h-10 w-10 rounded-full border-2 border-stone-200 object-cover" />
+                  <img
+                    src={orgLogo}
+                    alt={orgName}
+                    className="h-10 w-10 rounded-full border-2 border-stone-200 object-cover"
+                  />
                 ) : (
                   <div className="flex h-10 w-10 items-center justify-center rounded-full bg-green-100 font-serif text-lg font-bold text-green-800">
                     {orgInitial}
