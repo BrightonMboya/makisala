@@ -9,7 +9,15 @@ import {
   SheetTitle,
   SheetTrigger,
 } from '@repo/ui/sheet';
-import { ChevronDown, ChevronUp, Loader2, MessageSquareText, Plus, Reply, Trash2 } from 'lucide-react';
+import {
+  ChevronDown,
+  ChevronUp,
+  Loader2,
+  MessageSquareText,
+  Plus,
+  Reply,
+  Trash2,
+} from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { staleTimes } from '@/lib/query-keys';
@@ -17,7 +25,7 @@ import { trpc } from '@/lib/trpc';
 import { getQueryKey } from '@trpc/react-query';
 import { toast } from '@repo/ui/toast';
 import { formatDistanceToNow } from 'date-fns';
-import { MentionTextarea, type TeamMember } from './mention-textarea';
+import { MentionTextarea } from './mention-textarea';
 import { HighlightedText } from './highlighted-text';
 import { useSession } from './session-context';
 import { cn } from '@/lib/utils';
@@ -81,10 +89,11 @@ export function NotesPanel({ proposalId, compact = false }: NotesPanelProps) {
   const notes = notesData?.pages.flatMap((page) => page.notes) ?? [];
 
   // Fetch team members for @mention
-  const { data: teamMembers = [], isLoading: isLoadingMembers } = trpc.notes.getTeamMembers.useQuery(
-    undefined,
-    { staleTime: staleTimes.teamMembers, enabled: isOpen },
-  );
+  const { data: teamMembers = [], isLoading: isLoadingMembers } =
+    trpc.notes.getTeamMembers.useQuery(undefined, {
+      staleTime: staleTimes.teamMembers,
+      enabled: isOpen,
+    });
 
   // Intersection observer for infinite scroll
   useEffect(() => {
@@ -96,7 +105,7 @@ export function NotesPanel({ proposalId, compact = false }: NotesPanelProps) {
           fetchNextPage();
         }
       },
-      { threshold: 0.1 }
+      { threshold: 0.1 },
     );
 
     observer.observe(loadMoreRef.current);
@@ -116,6 +125,13 @@ export function NotesPanel({ proposalId, compact = false }: NotesPanelProps) {
       await queryClient.cancelQueries({ queryKey: notesQueryKey });
 
       const previousData = queryClient.getQueryData(notesQueryKey);
+
+      // Save input values so we can restore on error
+      const savedContent = newData.parentId ? replyContent : newNote;
+      const savedMentionedUserIds = newData.parentId
+        ? [...replyMentionedUserIds]
+        : [...mentionedUserIds];
+      const savedReplyingTo = replyingTo;
 
       const optimisticNote: Note = {
         id: `temp-${Date.now()}`,
@@ -140,7 +156,7 @@ export function NotesPanel({ proposalId, compact = false }: NotesPanelProps) {
             pages: old.pages.map((page: any) => ({
               ...page,
               notes: page.notes.map((note: Note) =>
-                addReplyToNote(note, newData.parentId!, optimisticNote)
+                addReplyToNote(note, newData.parentId!, optimisticNote),
               ),
             })),
           };
@@ -149,9 +165,7 @@ export function NotesPanel({ proposalId, compact = false }: NotesPanelProps) {
           return {
             ...old,
             pages: old.pages.map((page: any, index: number) =>
-              index === 0
-                ? { ...page, notes: [optimisticNote, ...page.notes] }
-                : page
+              index === 0 ? { ...page, notes: [optimisticNote, ...page.notes] } : page,
             ),
           };
         }
@@ -167,7 +181,7 @@ export function NotesPanel({ proposalId, compact = false }: NotesPanelProps) {
         setMentionedUserIds([]);
       }
 
-      return { previousData, optimisticNote };
+      return { previousData, optimisticNote, savedContent, savedMentionedUserIds, savedReplyingTo };
     },
     onSuccess: (result, variables, context) => {
       if (result.note) {
@@ -179,7 +193,7 @@ export function NotesPanel({ proposalId, compact = false }: NotesPanelProps) {
             pages: old.pages.map((page: any) => ({
               ...page,
               notes: page.notes.map((note: Note) =>
-                replaceOptimisticNote(note, context?.optimisticNote.id, result.note!)
+                replaceOptimisticNote(note, context?.optimisticNote.id, result.note!),
               ),
             })),
           };
@@ -187,11 +201,20 @@ export function NotesPanel({ proposalId, compact = false }: NotesPanelProps) {
         toast({ title: variables.parentId ? 'Reply added' : 'Note added' });
       }
     },
-    onError: (_err, _variables, context) => {
+    onError: (err, _variables, context) => {
       queryClient.setQueryData(notesQueryKey, context?.previousData);
+      // Restore the user's input so their note isn't lost
+      if (context?.savedReplyingTo) {
+        setReplyingTo(context.savedReplyingTo);
+        setReplyContent(context.savedContent ?? '');
+        setReplyMentionedUserIds(context.savedMentionedUserIds ?? []);
+      } else {
+        setNewNote(context?.savedContent ?? '');
+        setMentionedUserIds(context?.savedMentionedUserIds ?? []);
+      }
       toast({
         title: 'Failed to add note',
-        description: 'An unexpected error occurred.',
+        description: err.message || 'An unexpected error occurred.',
         variant: 'destructive',
       });
     },
@@ -211,9 +234,7 @@ export function NotesPanel({ proposalId, compact = false }: NotesPanelProps) {
           ...old,
           pages: old.pages.map((page: any) => ({
             ...page,
-            notes: page.notes
-              .map((note: Note) => removeNoteFromTree(note, noteId))
-              .filter(Boolean),
+            notes: page.notes.map((note: Note) => removeNoteFromTree(note, noteId)).filter(Boolean),
           })),
         };
       });
@@ -292,10 +313,7 @@ export function NotesPanel({ proposalId, compact = false }: NotesPanelProps) {
     return (
       <div
         key={note.id}
-        className={cn(
-          'group',
-          depth > 0 && 'ml-4 border-l-2 border-stone-200 pl-3'
-        )}
+        className={cn('group', depth > 0 && 'ml-4 border-l-2 border-stone-200 pl-3')}
       >
         <div className="rounded-lg border border-stone-200 bg-stone-50 p-3">
           <div className="mb-2 flex items-start justify-between gap-2">
@@ -336,7 +354,7 @@ export function NotesPanel({ proposalId, compact = false }: NotesPanelProps) {
           <HighlightedText
             content={note.content}
             teamMembers={teamMembers}
-            className="whitespace-pre-wrap text-sm text-stone-600"
+            className="text-sm whitespace-pre-wrap text-stone-600"
           />
           <div className="mt-2 flex items-center justify-between">
             <p className="text-xs text-stone-400">
@@ -383,11 +401,7 @@ export function NotesPanel({ proposalId, compact = false }: NotesPanelProps) {
                 className="bg-green-700 hover:bg-green-800"
                 onClick={() => handleAddReply(note.id)}
               >
-                {createMutation.isPending ? (
-                  <Loader2 className="h-3 w-3 animate-spin" />
-                ) : (
-                  'Reply'
-                )}
+                {createMutation.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Reply'}
               </Button>
               <Button
                 size="sm"
@@ -457,10 +471,7 @@ export function NotesPanel({ proposalId, compact = false }: NotesPanelProps) {
           </div>
 
           {/* Notes list with infinite scroll */}
-          <div
-            ref={scrollContainerRef}
-            className="flex-1 space-y-3 overflow-y-auto"
-          >
+          <div ref={scrollContainerRef} className="flex-1 space-y-3 overflow-y-auto">
             {isLoading ? (
               <div className="flex items-center justify-center py-8">
                 <Loader2 className="h-6 w-6 animate-spin text-stone-400" />
@@ -482,9 +493,7 @@ export function NotesPanel({ proposalId, compact = false }: NotesPanelProps) {
                   </div>
                 )}
                 {!hasNextPage && notes.length >= 20 && (
-                  <p className="py-4 text-center text-xs text-stone-400">
-                    No more notes
-                  </p>
+                  <p className="py-4 text-center text-xs text-stone-400">No more notes</p>
                 )}
               </>
             )}

@@ -87,6 +87,19 @@ export const notesRouter = router({
       }),
     )
     .mutation(async ({ ctx, input }) => {
+      // Verify the proposal exists before inserting
+      const proposalExists = await ctx.db.query.proposals.findFirst({
+        where: eq(proposals.id, input.proposalId),
+        columns: { id: true },
+      });
+
+      if (!proposalExists) {
+        throw new TRPCError({
+          code: 'NOT_FOUND',
+          message: 'This proposal no longer exists. It may have been deleted.',
+        });
+      }
+
       const [note] = await ctx.db
         .insert(proposalNotes)
         .values({

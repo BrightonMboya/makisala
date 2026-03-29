@@ -283,7 +283,7 @@ export function MentionTextarea({
             style={{
               // Use a trick: text is transparent, but caret is visible
               color: 'transparent',
-              caretColor: 'inherit',
+              caretColor: '#1c1917',
             }}
           />
         </div>
