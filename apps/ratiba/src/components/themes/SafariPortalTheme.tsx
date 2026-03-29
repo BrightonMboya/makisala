@@ -1,0 +1,655 @@
+'use client';
+
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import Image from 'next/image';
+import { AnimatePresence, motion } from 'framer-motion';
+import {
+  Map as MapComponent,
+  MapMarker,
+  MapRoute,
+  MarkerContent,
+  MarkerTooltip,
+} from '@repo/ui/map';
+import type { ItineraryData } from '@/types/itinerary-types';
+
+function TripMap({ data }: { data: ItineraryData['mapData'] }) {
+  const { locations, startLocation, endLocation } = data;
+
+  // Handle empty locations array
+  if (!locations || locations.length === 0) {
+    return (
+      <div className="flex h-full min-h-[400px] w-full items-center justify-center overflow-hidden rounded-xl border border-stone-200 bg-stone-100/50">
+        <p className="text-sm text-stone-400">Map data not available</p>
+      </div>
+    );
+  }
+
+  // Calculate center based on all locations
+  const center = useMemo((): [number, number] => {
+    const allLocs = [...locations];
+    if (startLocation) allLocs.push(startLocation);
+    if (endLocation) allLocs.push(endLocation);
+    const lngs = allLocs.map((l) => l.coordinates[0]);
+    const lats = allLocs.map((l) => l.coordinates[1]);
+    return [
+      (Math.min(...lngs) + Math.max(...lngs)) / 2,
+      (Math.min(...lats) + Math.max(...lats)) / 2,
+    ];
+  }, [locations, startLocation, endLocation]);
+
+  // Build route coordinates
+  const routeCoordinates = useMemo(() => {
+    const coords: [number, number][] = [];
+    if (startLocation) coords.push(startLocation.coordinates);
+    locations.forEach((loc) => coords.push(loc.coordinates));
+    if (endLocation) coords.push(endLocation.coordinates);
+    return coords;
+  }, [locations, startLocation, endLocation]);
+
+  return (
+    <div className="h-full min-h-[400px] w-full overflow-hidden rounded-xl border border-stone-200 bg-stone-100/50">
+      <MapComponent center={center} zoom={7} minZoom={5} maxZoom={12}>
+        {/* Route Line */}
+        {routeCoordinates.length > 1 && (
+          <MapRoute
+            coordinates={routeCoordinates}
+            color="#A8A29E"
+            width={2}
+            opacity={0.8}
+            dashArray={[4, 4]}
+          />
+        )}
+
+        {/* Start Location Marker */}
+        {startLocation && (
+          <MapMarker
+            longitude={startLocation.coordinates[0]}
+            latitude={startLocation.coordinates[1]}
+          >
+            <MarkerContent>
+              <div className="flex h-5 w-5 items-center justify-center rounded-full border-2 border-white bg-stone-600 shadow-md">
+                <div className="h-1.5 w-1.5 rounded-full bg-white" />
+              </div>
+            </MarkerContent>
+            <MarkerTooltip>
+              <span className="text-xs font-medium">Start: {startLocation.name}</span>
+            </MarkerTooltip>
+          </MapMarker>
+        )}
+
+        {/* Destination Markers */}
+        {locations.map((loc, idx) => (
+          <MapMarker key={loc.name} longitude={loc.coordinates[0]} latitude={loc.coordinates[1]}>
+            <MarkerContent>
+              <div className="flex h-6 w-6 items-center justify-center rounded-full border-2 border-white bg-stone-800 text-[10px] font-bold text-white shadow-md">
+                {idx + 1}
+              </div>
+            </MarkerContent>
+            <MarkerTooltip>
+              <span className="text-xs font-medium">{loc.name}</span>
+            </MarkerTooltip>
+          </MapMarker>
+        ))}
+
+        {/* End Location Marker */}
+        {endLocation && (
+          <MapMarker longitude={endLocation.coordinates[0]} latitude={endLocation.coordinates[1]}>
+            <MarkerContent>
+              <div className="flex h-5 w-5 items-center justify-center rounded-full border-2 border-white bg-stone-600 shadow-md">
+                <div className="h-1.5 w-1.5 rounded-full bg-white" />
+              </div>
+            </MarkerContent>
+            <MarkerTooltip>
+              <span className="text-xs font-medium">End: {endLocation.name}</span>
+            </MarkerTooltip>
+          </MapMarker>
+        )}
+      </MapComponent>
+    </div>
+  );
+}
+
+export default function SafariPortalTheme({ data }: { data: ItineraryData }) {
+  const [isScrolled, setIsScrolled] = useState(false);
+  const [scrollProgress, setScrollProgress] = useState(0);
+  const [activeSection, setActiveSection] = useState<'overview' | number>('overview');
+  const rightContentRef = useRef<HTMLDivElement>(null);
+  const sectionRefs = useRef(new Map<string, HTMLElement>());
+
+  useEffect(() => {
+    const handleScroll = () => {
+      if (rightContentRef.current) {
+        const container = rightContentRef.current;
+        const scrollTop = container.scrollTop;
+        const scrollHeight = container.scrollHeight - container.clientHeight;
+        const progress = scrollHeight > 0 ? scrollTop / scrollHeight : 0;
+        setScrollProgress(progress);
+        setIsScrolled(scrollTop > 100);
+
+        // Determine which section is in view
+        const viewportTop = scrollTop + 200; // Offset for better detection
+        let currentSection: 'overview' | number = 'overview';
+
+        // Check overview first
+        const overviewEl = sectionRefs.current.get('overview');
+        if (overviewEl) {
+          const overviewTop = overviewEl.offsetTop;
+          const overviewBottom = overviewTop + overviewEl.offsetHeight;
+          if (viewportTop >= overviewTop && viewportTop < overviewBottom) {
+            currentSection = 'overview';
+          }
+        }
+
+        // Check each day section
+        data.itinerary.forEach((day) => {
+          const dayEl = sectionRefs.current.get(`day-${day.day}`);
+          if (dayEl) {
+            const dayTop = dayEl.offsetTop;
+            const dayBottom = dayTop + dayEl.offsetHeight;
+            if (viewportTop >= dayTop && viewportTop < dayBottom) {
+              currentSection = day.day;
+            }
+          }
+        });
+
+        setActiveSection(currentSection);
+      }
+    };
+    const container = rightContentRef.current;
+    if (container) {
+      container.addEventListener('scroll', handleScroll);
+      handleScroll(); // Initial call
+      return () => container.removeEventListener('scroll', handleScroll);
+    }
+  }, [data.itinerary]);
+
+  return (
+    <div className="flex h-screen overflow-hidden bg-white font-sans text-stone-900 selection:bg-stone-100">
+      {/* Fixed Left Side with Parallax Image */}
+      <div className="fixed top-0 left-0 h-full w-[45%] overflow-hidden">
+        <AnimatePresence mode="wait">
+          {activeSection === 'overview' ? (
+            <motion.div
+              key="overview"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.5 }}
+              style={{
+                y: `${scrollProgress * 30}%`,
+              }}
+              className="relative h-[120%] w-full"
+            >
+              <Image
+                src={data.heroImage}
+                alt={data.title}
+                fill
+                className="object-cover"
+                priority
+                sizes="45vw"
+              />
+              <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-black/50" />
+
+              {/* Overlay Content on Left */}
+              <div className="absolute inset-0 flex flex-col justify-between p-12 text-white">
+                <div className="space-y-4">
+                  <div className="text-xs font-medium tracking-[0.3em] text-white/80 uppercase">
+                    Prepared for
+                  </div>
+                  <h1 className="text-5xl leading-tight font-bold md:text-7xl">
+                    {data.title.toUpperCase()}
+                  </h1>
+                  <div className="text-sm font-light text-white/90">{data.duration}</div>
+                </div>
+              </div>
+            </motion.div>
+          ) : (
+            (() => {
+              const day = data.itinerary.find((d) => d.day === activeSection);
+              if (!day) return null;
+              const accommodation = data.accommodations.find(
+                (acc) =>
+                  day.accommodation.toLowerCase().includes(acc.name.toLowerCase()) ||
+                  acc.name.toLowerCase().includes(day.accommodation.toLowerCase()),
+              );
+              const imageSrc = day.previewImage || accommodation?.image || data.heroImage;
+              const locationName =
+                accommodation?.location || day.accommodation.split(',')[0] || data.location;
+
+              return (
+                <motion.div
+                  key={`day-${day.day}`}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.5 }}
+                  style={{
+                    y: `${scrollProgress * 30}%`,
+                  }}
+                  className="relative h-[120%] w-full"
+                >
+                  <Image
+                    src={imageSrc}
+                    alt={day.title}
+                    fill
+                    className="object-cover"
+                    sizes="45vw"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-black/50" />
+
+                  {/* Overlay Content on Left */}
+                  <div className="absolute inset-0 flex flex-col justify-between p-12 text-white">
+                    <div className="space-y-3">
+                      <div className="font-serif text-base text-white/90 italic">
+                        - {day.date.split(',')[0]}
+                      </div>
+                      <h1 className="text-5xl leading-tight font-bold tracking-tight md:text-7xl">
+                        {locationName.toUpperCase().split(' ').slice(0, 2).join(' ')}
+                      </h1>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-white/90">
+                      <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+                        <path
+                          fillRule="evenodd"
+                          d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                      <span>{locationName}</span>
+                    </div>
+                  </div>
+                </motion.div>
+              );
+            })()
+          )}
+        </AnimatePresence>
+      </div>
+
+      {/* Scrollable Right Side */}
+      <div ref={rightContentRef} className="ml-[45%] h-full w-[55%] overflow-y-auto">
+        {/* Top Nav */}
+        <nav className="sticky top-0 z-50 border-b border-stone-100 bg-white">
+          <div className="flex items-center justify-between px-8 py-4">
+            <button className="rounded p-2 hover:bg-stone-100">
+              <svg
+                className="h-6 w-6 text-stone-800"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4 6h16M4 12h16M4 18h16"
+                />
+              </svg>
+            </button>
+            {data.organization?.logoUrl ? (
+              <Image
+                src={data.organization.logoUrl}
+                alt={data.organization.name}
+                width={120}
+                height={40}
+                className="object-contain"
+              />
+            ) : (
+              <div className="font-serif text-lg tracking-tight text-stone-800">
+                {data.organization?.name || 'Your Logo Here'}
+              </div>
+            )}
+            <div className="flex gap-4">
+              <button className="rounded p-2 hover:bg-stone-100">
+                <svg
+                  className="h-5 w-5 text-stone-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"
+                  />
+                </svg>
+              </button>
+              <button className="rounded p-2 hover:bg-stone-100">
+                <svg
+                  className="h-5 w-5 text-stone-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                  />
+                </svg>
+              </button>
+              <button className="rounded p-2 hover:bg-stone-100">
+                <svg
+                  className="h-5 w-5 text-stone-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
+                  />
+                </svg>
+              </button>
+            </div>
+          </div>
+        </nav>
+
+        {/* Content Sections */}
+        <div className="space-y-24 px-8 py-12">
+          {/* Overview/Quote Section */}
+          <section
+            id="overview"
+            ref={(el) => {
+              if (el) sectionRefs.current.set('overview', el);
+            }}
+            className="flex min-h-[80vh] items-center justify-center py-24"
+          >
+            <div className="max-w-3xl space-y-12 px-8">
+              <blockquote className="text-center text-4xl leading-tight font-bold text-stone-800 md:text-5xl">
+                "{data.subtitle || 'An extraordinary journey awaits'}"
+              </blockquote>
+              <div className="text-center text-lg text-stone-500 italic">- {data.title}</div>
+            </div>
+          </section>
+
+          {/* Itinerary */}
+          <section id="itinerary" className="space-y-12">
+            <div className="space-y-2">
+              <h2 className="font-serif text-2xl text-stone-800">Itinerary details</h2>
+              <p className="text-sm text-stone-500 italic">Travel Brief</p>
+            </div>
+
+            <div className="space-y-20">
+              {data.itinerary.map((day, dayIndex) => {
+                const accommodation = data.accommodations.find(
+                  (acc) =>
+                    day.accommodation.toLowerCase().includes(acc.name.toLowerCase()) ||
+                    acc.name.toLowerCase().includes(day.accommodation.toLowerCase()),
+                );
+                const locationName =
+                  accommodation?.location || day.accommodation.split(',')[0] || data.location;
+
+                // Hide accommodation if it's the same as previous day
+                const previousDay = dayIndex > 0 ? data.itinerary[dayIndex - 1] : null;
+                const isSameAccommodation = previousDay?.accommodation === day.accommodation;
+                const shouldHideAccommodation = isSameAccommodation && dayIndex > 0;
+
+                return (
+                  <div
+                    key={day.day}
+                    id={`day-${day.day}`}
+                    ref={(el) => {
+                      if (el) sectionRefs.current.set(`day-${day.day}`, el);
+                    }}
+                    className="space-y-8"
+                  >
+                    <div className="flex items-start gap-6">
+                      <div className="relative flex-shrink-0">
+                        <Image
+                          src={day.previewImage || accommodation?.image || data.heroImage}
+                          alt={day.title}
+                          width={100}
+                          height={100}
+                          className="rounded-lg object-cover"
+                        />
+                      </div>
+                      <div className="flex-1 space-y-2">
+                        <div className="text-sm text-stone-400">{day.date}</div>
+                        <h3 className="font-serif text-2xl text-stone-800">{locationName}</h3>
+                        <div className="flex items-center gap-2 text-sm text-stone-500">
+                          <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+                            <path
+                              fillRule="evenodd"
+                              d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z"
+                              clipRule="evenodd"
+                            />
+                          </svg>
+                          <span>{locationName}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="space-y-6">
+                      <div>
+                        <h4 className="mb-3 text-lg font-semibold text-stone-800">{day.title}</h4>
+                        {day.description && (
+                          <p className="leading-relaxed text-stone-600">{day.description}</p>
+                        )}
+                        {!day.description && day.activities[0]?.description && (
+                          <p className="leading-relaxed text-stone-600">
+                            {day.activities[0].description}
+                          </p>
+                        )}
+                      </div>
+
+                      {day.activities.length > 0 && (
+                        <div className="space-y-4">
+                          {day.activities.map((act, i) => (
+                            <div key={i} className="space-y-2">
+                              <div className="flex items-center gap-3">
+                                <span className="rounded bg-stone-100 px-2 py-1 text-xs font-semibold text-stone-600">
+                                  {act.time}
+                                </span>
+                                <h5 className="font-semibold text-stone-700">{act.activity}</h5>
+                              </div>
+                              {act.description && i > 0 && (
+                                <p className="ml-20 text-sm leading-relaxed text-stone-500">
+                                  {act.description}
+                                </p>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Accommodation Image Section - Show if different from previous day */}
+                      {!shouldHideAccommodation &&
+                        day.accommodation &&
+                        day.accommodation !== 'N/A' &&
+                        accommodation && (
+                          <div className="mt-6">
+                            <div className="relative h-48 w-full overflow-hidden rounded-xl">
+                              <Image
+                                src={day.previewImage || accommodation.image}
+                                alt={accommodation.name}
+                                fill
+                                className="object-cover"
+                              />
+                              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                              <div className="absolute bottom-4 left-4">
+                                <span className="text-[10px] font-bold tracking-[0.2em] text-white/80 uppercase">
+                                  Your Stay
+                                </span>
+                                <h4 className="mt-1 font-serif text-lg text-white">
+                                  {accommodation.name}
+                                </h4>
+                              </div>
+                            </div>
+                            {accommodation.description && (
+                              <p className="mt-3 text-sm leading-relaxed text-stone-500">
+                                {accommodation.description}
+                              </p>
+                            )}
+                          </div>
+                        )}
+
+                      {day.accommodation && day.accommodation !== 'N/A' && (
+                        <div className="border-t border-stone-100 pt-4">
+                          <div
+                            className={`text-sm text-stone-500 italic ${shouldHideAccommodation ? 'opacity-50' : ''}`}
+                          >
+                            Overnight {day.accommodation}
+                            {shouldHideAccommodation && (
+                              <span className="ml-2 text-xs text-stone-400 not-italic">
+                                (Cont.)
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+
+          {/* Stays */}
+          <section id="stays" className="space-y-8">
+            <div>
+              <h2 className="mb-2 font-serif text-3xl text-stone-800">Signature Stays</h2>
+              <p className="text-sm text-stone-500">
+                Handpicked sanctuaries chosen for their exclusivity, sustainability, and sense of
+                place.
+              </p>
+            </div>
+            <div className="space-y-12">
+              {data.accommodations.map((lodge) => (
+                <div key={lodge.id} className="group cursor-pointer">
+                  <div className="relative mb-4 aspect-[16/10] overflow-hidden rounded-2xl">
+                    <Image
+                      src={lodge.image}
+                      alt={lodge.name}
+                      fill
+                      className="object-cover transition-transform duration-1000 group-hover:scale-105"
+                    />
+                    <div className="absolute top-4 left-4 rounded-full bg-white/90 px-3 py-1.5 text-[9px] font-bold tracking-[0.2em] text-stone-800 uppercase backdrop-blur">
+                      {lodge.location}
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <h3 className="font-serif text-xl text-stone-800 transition-colors group-hover:text-stone-500">
+                      {lodge.name}
+                    </h3>
+                    <p className="text-sm leading-relaxed text-stone-500">{lodge.description}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          {/* Map */}
+          <section id="map" className="space-y-8">
+            <div>
+              <h2 className="mb-2 font-serif text-3xl text-stone-800">The Route Map</h2>
+              <p className="text-sm text-stone-500">
+                Navigate through the detailed trail of your upcoming adventure.
+              </p>
+            </div>
+            <div className="space-y-6">
+              {data.mapData.locations.map((loc, i) => (
+                <div key={i} className="flex items-center gap-4">
+                  <span className="font-serif text-2xl text-stone-300 italic">0{i + 1}</span>
+                  <div className="h-px flex-1 bg-stone-200" />
+                  <span className="text-sm font-bold tracking-[0.2em] text-stone-600 uppercase">
+                    {loc.name}
+                  </span>
+                </div>
+              ))}
+            </div>
+            <div className="h-[400px] overflow-hidden rounded-xl">
+              <TripMap data={data.mapData} />
+            </div>
+          </section>
+
+          {/* Details (Pricing, etc) */}
+          {!data.hidePricing && (
+          <section id="details" className="space-y-8 pb-24">
+            <div className="rounded-3xl bg-stone-900 p-12 text-white">
+              <div className="space-y-8">
+                <div>
+                  <span className="mb-4 block text-[10px] font-bold tracking-[0.4em] text-stone-400 uppercase">
+                    Final Confirmation
+                  </span>
+                  <h2 className="font-serif text-4xl leading-tight">{data.title}</h2>
+                </div>
+
+                <div className="border-y border-white/10 py-8">
+                  <div className="space-y-1">
+                    <span className="text-[10px] tracking-widest text-stone-500 uppercase">
+                      Total Investment
+                    </span>
+                    <p className="font-serif text-3xl">{data.pricing.total}</p>
+                    {data.pricing.perPerson && (
+                      <p className="text-sm text-stone-400">{data.pricing.perPerson} per person</p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <h4 className="text-[10px] font-bold tracking-[0.3em] text-stone-400 uppercase">
+                    What's Included
+                  </h4>
+                  <div className="grid grid-cols-1 gap-3">
+                    {data.includedItems.map((item, i) => (
+                      <div key={i} className="flex items-center gap-3 text-sm text-stone-300">
+                        <div className="h-1.5 w-1.5 rounded-full bg-stone-500" />
+                        {item}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <button className="w-full rounded-full bg-white px-8 py-4 text-sm font-bold tracking-[0.2em] text-stone-900 uppercase transition-all hover:bg-stone-100">
+                  Accept & Secure Dates
+                </button>
+              </div>
+            </div>
+
+            {/* About & Payment Terms */}
+            {(data.organization?.aboutDescription || data.organization?.paymentTerms) && (
+              <div className="space-y-10 border-t border-stone-200 pt-12">
+                {data.organization.aboutDescription && (
+                  <div>
+                    <h3 className="mb-4 text-[10px] font-bold tracking-[0.3em] text-stone-400 uppercase">
+                      About {data.organization.name}
+                    </h3>
+                    <p className="text-sm leading-relaxed text-stone-400 whitespace-pre-line">
+                      {data.organization.aboutDescription}
+                    </p>
+                  </div>
+                )}
+                {data.organization.paymentTerms && (
+                  <div>
+                    <h3 className="mb-4 text-[10px] font-bold tracking-[0.3em] text-stone-400 uppercase">
+                      Payment Terms & Conditions
+                    </h3>
+                    <p className="text-sm leading-relaxed text-stone-400 whitespace-pre-line">
+                      {data.organization.paymentTerms}
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {data.organization?.name && (
+              <footer className="space-y-6 border-t border-stone-200 pt-12 text-center">
+                <div className="font-serif text-2xl text-stone-300 italic">
+                  {data.organization.name}
+                </div>
+                <div className="text-[9px] tracking-widest text-stone-300 uppercase">
+                  © {new Date().getFullYear()} {data.organization.name} • Private & Confidential
+                </div>
+              </footer>
+            )}
+          </section>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}

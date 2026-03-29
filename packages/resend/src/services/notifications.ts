@@ -7,6 +7,7 @@ import { renderTeamInvitationEmail } from '../templates/team-invitation';
 import { renderEmailVerificationEmail } from '../templates/email-verification';
 import { renderNoteMentionEmail } from '../templates/note-mention';
 import { renderInquiryNotificationEmail } from '../templates/inquiry-notification';
+import { renderDemoRequestNotificationEmail } from '../templates/demo-request-notification';
 
 export interface CommentNotificationData {
   proposalId: string;
@@ -391,7 +392,7 @@ export async function sendEmailVerificationEmail(
     const result = await resend.emails.send({
       from: fromEmail,
       to: data.recipientEmail,
-      subject: 'Verify your email address - Kitasuro',
+      subject: 'Verify your email address - Ratiba',
       html,
     });
 
@@ -519,6 +520,53 @@ export async function sendInquiryNotificationEmail(
       from: fromEmail,
       to: 'info@makisala.com',
       subject: `New Inquiry from ${data.fullName} — ${data.countryOfResidence}`,
+      html,
+      replyTo: data.email,
+    });
+
+    if (result.error) {
+      return {
+        success: false,
+        error: result.error.message || 'Failed to send email',
+      };
+    }
+
+    return { success: true };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error occurred',
+    };
+  }
+}
+
+export interface DemoRequestData {
+  fullName: string;
+  email: string;
+  company: string;
+  role: string;
+}
+
+/**
+ * Sends an email notification when someone requests a demo from the Ratiba website.
+ */
+export async function sendDemoRequestEmail(
+  data: DemoRequestData,
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const html = renderDemoRequestNotificationEmail({
+      fullName: data.fullName,
+      email: data.email,
+      company: data.company,
+      role: data.role,
+    });
+
+    const fromEmail = env.RESEND_FROM_EMAIL || 'notifications@makisala.com';
+
+    const result = await resend.emails.send({
+      from: fromEmail,
+      to: 'info@makisala.com',
+      subject: `New Demo Request from ${data.fullName} — ${data.company}`,
       html,
       replyTo: data.email,
     });

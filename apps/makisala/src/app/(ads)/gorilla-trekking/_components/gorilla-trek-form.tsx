@@ -36,6 +36,7 @@ const formSchema = z.object({
     email: z.email('Valid email is required'),
     travelMonth: z.string().min(1, 'Please select a travel month'),
     numberOfTravellers: z.number().min(1, 'At least 1 traveler'),
+    whatsapp: z.string().optional(),
     comments: z.string().optional(),
 })
 
@@ -55,6 +56,7 @@ export default function GorillaTrekForm() {
             email: '',
             travelMonth: '',
             numberOfTravellers: 2,
+            whatsapp: '',
             comments: '',
         },
     })
@@ -68,7 +70,7 @@ export default function GorillaTrekForm() {
                 countryOfResidence: '',
                 numberOfTravellers: data.numberOfTravellers,
                 startDate: new Date(),
-                comments: `Travel month: ${data.travelMonth}. ${data.comments || ''}`.trim(),
+                comments: `Travel month: ${data.travelMonth}.${data.whatsapp ? ` WhatsApp: ${data.whatsapp}.` : ''} ${data.comments || ''}`.trim(),
                 url: `${BASE_URL}${pathname}`,
             })
             sendGTMEvent({
@@ -174,6 +176,25 @@ export default function GorillaTrekForm() {
 
                 <FormField
                     control={form.control}
+                    name="whatsapp"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>
+                                WhatsApp Number{' '}
+                                <span className="text-muted-foreground font-normal">
+                                    (for faster response)
+                                </span>
+                            </FormLabel>
+                            <FormControl>
+                                <Input placeholder="+1 234 567 8900" type="tel" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+
+                <FormField
+                    control={form.control}
                     name="comments"
                     render={({ field }) => (
                         <FormItem>
@@ -185,7 +206,7 @@ export default function GorillaTrekForm() {
                             </FormLabel>
                             <FormControl>
                                 <Textarea
-                                    placeholder="Preferred dates, group size, questions..."
+                                    placeholder="Preferred dates, questions..."
                                     className="min-h-[70px]"
                                     {...field}
                                 />
@@ -201,10 +222,10 @@ export default function GorillaTrekForm() {
                     size="lg"
                     disabled={isPending}
                 >
-                    {isPending ? 'Sending...' : 'Plan My Gorilla Trek'}
+                    {isPending ? 'Checking...' : 'Check Availability'}
                 </Button>
                 <p className="text-muted-foreground text-center text-xs">
-                    No obligation. We respond within 24 hours.
+                    No payment required. We respond within 24 hours.
                 </p>
             </form>
         </Form>
