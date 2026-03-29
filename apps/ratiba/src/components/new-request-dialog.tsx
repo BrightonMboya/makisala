@@ -7,6 +7,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@repo/ui/dialog';
 import { Button } from '@repo/ui/button';
 import { Input } from '@repo/ui/input';
+import { Loader2 } from 'lucide-react';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@repo/ui/form';
 import { staleTimes } from '@/lib/query-keys';
 import { Combobox } from '@repo/ui/combobox';
@@ -101,7 +102,7 @@ export function NewRequestDialog({ open, onOpenChange }: NewRequestDialogProps) 
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
+      <DialogContent className="max-h-[90vh] max-w-3xl overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="font-serif text-xl">Add New Request</DialogTitle>
         </DialogHeader>
@@ -295,7 +296,12 @@ export function NewRequestDialog({ open, onOpenChange }: NewRequestDialogProps) 
               <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
                 Cancel
               </Button>
-              <Button type="submit" className="bg-green-700 hover:bg-green-800">
+              <Button
+                type="submit"
+                className="gap-2 bg-green-700 hover:bg-green-800"
+                disabled={form.formState.isSubmitting}
+              >
+                {form.formState.isSubmitting && <Loader2 className="h-4 w-4 animate-spin" />}
                 Create & Start Building
               </Button>
             </div>
