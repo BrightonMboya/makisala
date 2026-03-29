@@ -220,6 +220,12 @@ export interface ItineraryData {
     total: string;
     perPerson: string;
     currency: string;
+    breakdown?: {
+      label: string;
+      quantity: number;
+      unitPrice: number;
+      lineTotal: number;
+    }[];
   };
   includedItems: string[];
   excludedItems: string[];

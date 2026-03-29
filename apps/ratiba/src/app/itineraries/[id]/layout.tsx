@@ -7,7 +7,9 @@ import { useParams, usePathname, useRouter, useSearchParams } from 'next/navigat
 import { Popover, PopoverContent, PopoverTrigger } from '@repo/ui/popover';
 import { Input } from '@repo/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@repo/ui/select';
+import { Combobox } from '@repo/ui/combobox';
 import { BuilderProvider, useBuilder } from '@/components/itinerary-builder/builder-context';
+import { staleTimes } from '@/lib/query-keys';
 import { SidebarInset, SidebarProvider, SidebarTrigger } from '@repo/ui/sidebar';
 import { AppSidebar } from '@/components/app-sidebar';
 import { NotesPanel } from '@/components/notes-panel';
@@ -98,6 +100,7 @@ function Header() {
     travelerGroups,
     setTravelerGroups,
     clientId,
+    setClientId,
     tourTitle,
     setTourTitle,
     days,
@@ -124,6 +127,11 @@ function Header() {
   // Fetch client name using React Query (cached)
   const { data: clientData } = useClientData(clientId);
   const clientName = clientData?.name || '';
+  const [clientPopoverOpen, setClientPopoverOpen] = useState(false);
+  const { data: clientsData } = trpc.clients.list.useQuery(
+    { limit: 100 },
+    { staleTime: staleTimes.clients, enabled: clientPopoverOpen },
+  );
 
   const router = useRouter();
   const saveProposalMutation = trpc.proposals.save.useMutation();
@@ -297,7 +305,28 @@ function Header() {
           <div className="h-6 w-px bg-stone-200" />
           <div className="flex flex-col">
             <div className="flex items-center gap-2 font-serif font-bold text-stone-900">
-              <span className="text-lg">{clientName || 'New Client'}</span>
+              <Popover open={clientPopoverOpen} onOpenChange={setClientPopoverOpen}>
+                <PopoverTrigger asChild>
+                  <button
+                    type="button"
+                    className="cursor-pointer rounded px-2 py-0.5 text-lg hover:bg-stone-100"
+                    title="Click to change client"
+                  >
+                    {clientName || 'Select Client'}
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent className="w-64 p-3" align="start">
+                  <Combobox
+                    items={(clientsData?.clients ?? []).map((c) => ({ value: c.id, label: c.name }))}
+                    value={clientId}
+                    onChange={(value) => {
+                      setClientId(value);
+                      setClientPopoverOpen(false);
+                    }}
+                    placeholder="clients..."
+                  />
+                </PopoverContent>
+              </Popover>
               <span className="text-stone-300">/</span>
               <InlineEditableTitle value={tourTitle} onChange={setTourTitle} />
             </div>

@@ -221,8 +221,8 @@ function JourneyMap({ data, className }: { data: ItineraryData['mapData']; class
                 </div>
               </div>
             </MarkerContent>
-            <MarkerTooltip>
-              <span className="text-sm font-medium text-stone-800">{loc.name}</span>
+            <MarkerTooltip className="bg-white text-stone-900 shadow-lg">
+              <span className="text-sm font-medium">{loc.name}</span>
             </MarkerTooltip>
           </MapMarker>
         ))}
@@ -627,6 +627,20 @@ const PricingSection = ({ data, onConfirm }: { data: ItineraryData; onConfirm: (
           <div className="mb-8">
             <span className="font-serif text-6xl text-white lg:text-7xl">{data.pricing.total}</span>
           </div>
+          {data.pricing.breakdown && data.pricing.breakdown.length > 0 && (
+            <div className="mb-8 max-w-md space-y-2 border-t border-stone-700 pt-4">
+              {data.pricing.breakdown.map((item, i) => (
+                <div key={i} className="flex items-center justify-between text-sm font-light text-stone-400">
+                  <span>
+                    {item.quantity > 1
+                      ? `${item.quantity}x ${item.label} @ $${item.unitPrice.toLocaleString()}`
+                      : item.label}
+                  </span>
+                  <span>${item.lineTotal.toLocaleString()}</span>
+                </div>
+              ))}
+            </div>
+          )}
           <p className="max-w-md text-base leading-relaxed font-light text-stone-400">
             A comprehensive journey including accommodations, expert guides, and unforgettable
             experiences.

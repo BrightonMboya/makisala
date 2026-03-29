@@ -36,9 +36,27 @@ export function calculatePricing(
   const totalTravelers = travelerGroups.reduce((acc, g) => acc + g.count, 0);
   const perPerson = totalTravelers > 0 ? totalPrice / totalTravelers : 0;
 
+  const breakdown = [
+    ...pricingRows.map((row) => ({
+      label: row.type,
+      quantity: row.count,
+      unitPrice: row.unitPrice,
+      lineTotal: row.unitPrice * row.count,
+    })),
+    ...extras
+      .filter((e) => e.selected)
+      .map((e) => ({
+        label: e.name,
+        quantity: 1,
+        unitPrice: e.price,
+        lineTotal: e.price,
+      })),
+  ];
+
   return {
     total: `$${Math.round(totalPrice).toLocaleString()}`,
     perPerson: `$${Math.round(perPerson).toLocaleString()}`,
     currency: 'USD',
+    breakdown: breakdown.length > 0 ? breakdown : undefined,
   };
 }

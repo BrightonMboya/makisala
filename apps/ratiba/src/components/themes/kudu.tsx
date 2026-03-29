@@ -84,7 +84,7 @@ function TripMap({ data }: { data: ItineraryData['mapData'] }) {
               GO
             </div>
           </MarkerContent>
-          <MarkerTooltip>
+          <MarkerTooltip className="bg-white text-stone-900 shadow-lg">
             <span className="text-xs font-medium">Start: {startLocation.name}</span>
           </MarkerTooltip>
         </MapMarker>
@@ -108,7 +108,7 @@ function TripMap({ data }: { data: ItineraryData['mapData'] }) {
               {idx + 1}
             </motion.div>
           </MarkerContent>
-          <MarkerTooltip>
+          <MarkerTooltip className="bg-white text-stone-900 shadow-lg">
             <span className="text-xs font-medium">{loc.name}</span>
           </MarkerTooltip>
         </MapMarker>
@@ -122,7 +122,7 @@ function TripMap({ data }: { data: ItineraryData['mapData'] }) {
               END
             </div>
           </MarkerContent>
-          <MarkerTooltip>
+          <MarkerTooltip className="bg-white text-stone-900 shadow-lg">
             <span className="text-xs font-medium">End: {endLocation.name}</span>
           </MarkerTooltip>
         </MapMarker>
@@ -550,15 +550,26 @@ export default function KuduTheme({ data, onHeroImageChange, onDayImageChange }:
             <p className="mb-8 text-[10px] font-bold tracking-[0.4em] text-emerald-500 uppercase">
               Confidential Proposal
             </p>
-            <div className="mb-6 flex items-end justify-between border-b border-white/20 pb-6">
-              <div>
-                <p className="font-serif text-4xl font-bold md:text-5xl">{pricing.total}</p>
-                {pricing.perPerson && (
-                  <p className="mt-1 text-[10px] tracking-widest uppercase opacity-60">
-                    {pricing.perPerson} per person
-                  </p>
-                )}
+            <div className="mb-6 border-b border-white/20 pb-6">
+              <div className="flex items-end justify-between">
+                <div>
+                  <p className="font-serif text-4xl font-bold md:text-5xl">{pricing.total}</p>
+                </div>
               </div>
+              {pricing.breakdown && pricing.breakdown.length > 0 && (
+                <div className="mt-4 space-y-2">
+                  {pricing.breakdown.map((item, i) => (
+                    <div key={i} className="flex items-center justify-between text-xs text-white/60">
+                      <span className="tracking-wider uppercase">
+                        {item.quantity > 1
+                          ? `${item.quantity}x ${item.label} @ $${item.unitPrice.toLocaleString()}`
+                          : item.label}
+                      </span>
+                      <span>${item.lineTotal.toLocaleString()}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Map Preview */}
