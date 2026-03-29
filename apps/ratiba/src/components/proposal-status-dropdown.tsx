@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -7,7 +8,10 @@ import {
   DropdownMenuTrigger,
 } from '@repo/ui/dropdown-menu';
 import { Check, ChevronDown } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
+import { getQueryKey } from '@trpc/react-query';
 import { trpc } from '@/lib/trpc';
+import { toast } from '@repo/ui/toast';
 import { PROPOSAL_STATUSES, getStatusConfig } from '@/lib/proposal-status';
 import type { RequestItem } from '@/types/dashboard';
 
@@ -23,16 +27,58 @@ export function ProposalStatusDropdown({
   activeFilter,
 }: ProposalStatusDropdownProps) {
   const utils = trpc.useUtils();
+  const queryClient = useQueryClient();
+  const [open, setOpen] = useState(false);
   const cfg = getStatusConfig(status);
 
+  // Key without input params — matches all cached listForDashboard queries
+  const dashboardQueryKey = getQueryKey(trpc.proposals.listForDashboard);
+
   const { mutate: updateStatus } = trpc.proposals.updateStatus.useMutation({
+    onMutate: async ({ status: newStatus }) => {
+      setOpen(false);
+
+      await queryClient.cancelQueries({ queryKey: dashboardQueryKey });
+
+      // Snapshot all cached queries for rollback
+      const previousQueries = queryClient.getQueriesData({ queryKey: dashboardQueryKey });
+
+      // Optimistically update every cached listForDashboard query
+      queryClient.setQueriesData({ queryKey: dashboardQueryKey }, (old: any) => {
+        if (!old?.items) return old;
+        return {
+          ...old,
+          items: old.items.map((item: any) =>
+            item.id === proposalId ? { ...item, status: newStatus } : item,
+          ),
+        };
+      });
+
+      return { previousQueries };
+    },
+    onSuccess: (_data, { status: newStatus }) => {
+      const newCfg = getStatusConfig(newStatus);
+      toast({ title: `Status updated to ${newCfg.label}` });
+    },
+    onError: (_err, _variables, context) => {
+      // Rollback all queries to their previous data
+      if (context?.previousQueries) {
+        for (const [key, data] of context.previousQueries) {
+          queryClient.setQueryData(key, data);
+        }
+      }
+      toast({
+        title: 'Failed to update status',
+        variant: 'destructive',
+      });
+    },
     onSettled: () => {
       utils.proposals.listForDashboard.invalidate();
     },
   });
 
   return (
-    <DropdownMenu>
+    <DropdownMenu open={open} onOpenChange={setOpen}>
       <DropdownMenuTrigger asChild>
         <button
           className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium ${cfg.bg} ${cfg.text} cursor-pointer hover:opacity-80 transition-opacity`}

@@ -1,18 +1,25 @@
 'use client';
 
 import { Button } from '@repo/ui/button';
-import { ChevronRight, Plus, Users, Info, Check, X, Loader2 } from 'lucide-react';
+import { Check, ChevronRight, Info, Loader2, Plus, Users, X } from 'lucide-react';
 import Link from 'next/link';
-import { usePathname, useRouter, useSearchParams, useParams } from 'next/navigation';
+import { useParams, usePathname, useSearchParams } from 'next/navigation';
 import { Popover, PopoverContent, PopoverTrigger } from '@repo/ui/popover';
 import { Input } from '@repo/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@repo/ui/select';
 import { BuilderProvider, useBuilder } from '@/components/itinerary-builder/builder-context';
-import { SidebarProvider, SidebarInset, SidebarTrigger } from '@repo/ui/sidebar';
+import { SidebarInset, SidebarProvider, SidebarTrigger } from '@repo/ui/sidebar';
 import { AppSidebar } from '@/components/app-sidebar';
 import { NotesPanel } from '@/components/notes-panel';
 import type { TravelerGroup } from '@/types/itinerary-types';
-import { useMemo, Suspense, useState, useRef, useEffect } from 'react';
+import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
+import { useMutation } from '@tanstack/react-query';
+import { trpc } from '@/lib/trpc';
+import { toast } from '@repo/ui/toast';
+import { useClientData, useProposalData } from '@/lib/hooks/use-proposal-data';
+import { SessionProvider } from '@/components/session-context';
+import { buildGeoValue } from '@/lib/geocoding';
+import { PlanProvider } from '@/components/plan-context';
 
 /** Convert a Date to a timezone-safe ISO string preserving the local date */
 function toLocalISOString(date: Date): string {
@@ -21,13 +28,6 @@ function toLocalISOString(date: Date): string {
   const d = String(date.getDate()).padStart(2, '0');
   return `${y}-${m}-${d}T12:00:00.000Z`;
 }
-import { useMutation } from '@tanstack/react-query';
-import { trpc } from '@/lib/trpc';
-import { toast } from '@repo/ui/toast';
-import { useProposalData, useClientData } from '@/lib/hooks/use-proposal-data';
-import { SessionProvider } from '@/components/session-context';
-import { buildGeoValue } from '@/lib/geocoding';
-import { PlanProvider } from '@/components/plan-context';
 
 function InlineEditableTitle({
   value,
@@ -91,7 +91,6 @@ function InlineEditableTitle({
 
 function Header() {
   const pathname = usePathname();
-  const router = useRouter();
   const {
     tourId,
     tourType,
@@ -132,7 +131,9 @@ function Header() {
   const saveDraftMutation = useMutation({
     mutationFn: async () => {
       if (!tourId) {
-        throw new Error('Tour ID is required to save. Please go back to dashboard and create a new proposal.');
+        throw new Error(
+          'Tour ID is required to save. Please go back to dashboard and create a new proposal.',
+        );
       }
 
       const proposalData = {
@@ -188,7 +189,9 @@ function Header() {
   const publishMutation = useMutation({
     mutationFn: async () => {
       if (!tourId) {
-        throw new Error('Tour ID is required to publish. Please go back to dashboard and create a new proposal.');
+        throw new Error(
+          'Tour ID is required to publish. Please go back to dashboard and create a new proposal.',
+        );
       }
 
       const proposalData = {
@@ -559,9 +562,14 @@ function BuilderLayoutInner({ children }: { children: React.ReactNode }) {
           dayNumber: day.dayNumber,
           title: day.title || undefined,
           date: undefined,
-          destination: day.nationalParkId
-            || (day.destinationLat && day.destinationLng
-              ? buildGeoValue(parseFloat(day.destinationLat), parseFloat(day.destinationLng), day.destinationName || 'Destination')
+          destination:
+            day.nationalParkId ||
+            (day.destinationLat && day.destinationLng
+              ? buildGeoValue(
+                  parseFloat(day.destinationLat),
+                  parseFloat(day.destinationLng),
+                  day.destinationName || 'Destination',
+                )
               : null),
           destinationName: day.destinationName || null,
           destinationLat: day.destinationLat ? parseFloat(day.destinationLat) : null,
@@ -611,7 +619,16 @@ function BuilderLayoutInner({ children }: { children: React.ReactNode }) {
     }
 
     return data;
-  }, [proposal, tourTemplate, tourId, startDateParam, clientIdParam, tourTitleParam, tourTypeParam, travelersParam]);
+  }, [
+    proposal,
+    tourTemplate,
+    tourId,
+    startDateParam,
+    clientIdParam,
+    tourTitleParam,
+    tourTypeParam,
+    travelersParam,
+  ]);
 
   // Show loading state
   if (isLoading) {

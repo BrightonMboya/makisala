@@ -1,7 +1,13 @@
 'use client';
 
 import { Input } from '@repo/ui/input';
-import { ChevronLeft, ChevronRight, Clock, FileText, Search } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@repo/ui/dropdown-menu';
+import { Check, ChevronLeft, ChevronRight, Clock, FileText, Filter, Search } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -9,7 +15,7 @@ import { useDebounce } from '@repo/ui/use-debounce';
 import { trpc } from '@/lib/trpc';
 import { staleTimes } from '@/lib/query-keys';
 import type { AssignedUser, RequestItem } from '@/types/dashboard';
-import { PROPOSAL_STATUSES, getStatusConfig } from '@/lib/proposal-status';
+import { getStatusConfig, PROPOSAL_STATUSES } from '@/lib/proposal-status';
 import { ProposalStatusDropdown } from '@/components/proposal-status-dropdown';
 import { NotesPanel } from '@/components/notes-panel';
 import { ProposalAssignPopover } from '@/components/proposal-assign-popover';
@@ -25,10 +31,7 @@ interface DashboardViewProps {
 
 const PAGE_SIZE = 20;
 
-export function DashboardView({
-  initialProposals,
-  initialIsAdmin,
-}: DashboardViewProps) {
+export function DashboardView({ initialProposals, initialIsAdmin }: DashboardViewProps) {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
   const debouncedQuery = useDebounce(searchQuery, 300);
@@ -63,8 +66,7 @@ export function DashboardView({
     search: debouncedQuery || undefined,
   };
 
-  const isDefaultQuery =
-    activeFilter === 'mine' && page === 1 && !statusFilter && !debouncedQuery;
+  const isDefaultQuery = activeFilter === 'mine' && page === 1 && !statusFilter && !debouncedQuery;
 
   const { data, isLoading: proposalsLoading } = trpc.proposals.listForDashboard.useQuery(
     queryInput,
@@ -79,22 +81,26 @@ export function DashboardView({
   const totalPages = data?.totalPages ?? 0;
   const totalCount = data?.totalCount ?? 0;
 
-  const requests: RequestItem[] = proposals.map((p: any): RequestItem => ({
-    id: p.id,
-    client: p.client?.name || 'Unknown',
-    travelers: 0,
-    country: 'Unknown',
-    title: p.tourTitle || p.name,
-    startDate: p.startDate ? new Date(p.startDate).toLocaleDateString() : 'TBD',
-    received: new Date(p.createdAt).toLocaleDateString(),
-    source: 'Manual',
-    status: p.status || 'draft',
-    assignees: (p.assignments || []).map((a: any): AssignedUser => ({
-      id: a.user.id,
-      name: a.user.name,
-      image: a.user.image,
-    })),
-  }));
+  const requests: RequestItem[] = proposals.map(
+    (p: any): RequestItem => ({
+      id: p.id,
+      client: p.client?.name || 'Unknown',
+      travelers: 0,
+      country: 'Unknown',
+      title: p.tourTitle || p.name,
+      startDate: p.startDate ? new Date(p.startDate).toLocaleDateString() : 'TBD',
+      received: new Date(p.createdAt).toLocaleDateString(),
+      source: 'Manual',
+      status: p.status || 'draft',
+      assignees: (p.assignments || []).map(
+        (a: any): AssignedUser => ({
+          id: a.user.id,
+          name: a.user.name,
+          image: a.user.image,
+        }),
+      ),
+    }),
+  );
 
   if (proposalsLoading && !data) {
     return (
@@ -108,8 +114,7 @@ export function DashboardView({
     <div className="flex h-full flex-col bg-stone-50">
       <header className="border-b border-stone-200 bg-white px-8 py-4">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <h2 className="font-serif text-2xl font-bold text-stone-900">Dashboard</h2>
+          <div className="">
             <div className="flex rounded-lg border border-stone-200 bg-stone-50 p-0.5">
               <button
                 className={`rounded-md px-3 py-1 text-sm font-medium transition-colors ${
@@ -133,7 +138,7 @@ export function DashboardView({
               </button>
             </div>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
             <div className="relative w-64">
               <Search className="absolute top-2.5 left-2.5 h-4 w-4 text-stone-400" />
               <Input
@@ -143,34 +148,45 @@ export function DashboardView({
                 onChange={(e) => handleSearchChange(e.target.value)}
               />
             </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  className={`inline-flex items-center gap-1.5 rounded-md border px-3 py-2 text-sm font-medium transition-colors ${
+                    statusFilter
+                      ? `${getStatusConfig(statusFilter).bg} ${getStatusConfig(statusFilter).text} border-current/20`
+                      : 'border-stone-200 text-stone-600 hover:bg-stone-50'
+                  }`}
+                >
+                  <Filter className="h-3.5 w-3.5" />
+                  {statusFilter ? getStatusConfig(statusFilter).label : 'All'}
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem
+                  onClick={() => handleStatusFilter(undefined)}
+                  className="flex items-center gap-2"
+                >
+                  <span className="inline-block h-2 w-2 rounded-full bg-stone-400" />
+                  <span className="flex-1">All</span>
+                  {!statusFilter && <Check className="h-3.5 w-3.5 text-stone-500" />}
+                </DropdownMenuItem>
+                {PROPOSAL_STATUSES.map((s) => {
+                  const cfg = getStatusConfig(s);
+                  return (
+                    <DropdownMenuItem
+                      key={s}
+                      onClick={() => handleStatusFilter(s)}
+                      className="flex items-center gap-2"
+                    >
+                      <span className={`inline-block h-2 w-2 rounded-full ${cfg.dot}`} />
+                      <span className="flex-1">{cfg.label}</span>
+                      {statusFilter === s && <Check className="h-3.5 w-3.5 text-stone-500" />}
+                    </DropdownMenuItem>
+                  );
+                })}
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
-        </div>
-        <div className="mt-3 flex flex-wrap gap-1.5">
-          <button
-            className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
-              !statusFilter
-                ? 'bg-stone-900 text-white'
-                : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
-            }`}
-            onClick={() => handleStatusFilter(undefined)}
-          >
-            All
-          </button>
-          {PROPOSAL_STATUSES.map((s) => {
-            const cfg = getStatusConfig(s);
-            const isActive = statusFilter === s;
-            return (
-              <button
-                key={s}
-                className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
-                  isActive ? `${cfg.bg} ${cfg.text} ring-1 ring-current` : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
-                }`}
-                onClick={() => handleStatusFilter(isActive ? undefined : s)}
-              >
-                {cfg.label}
-              </button>
-            );
-          })}
         </div>
       </header>
 
@@ -220,7 +236,7 @@ export function DashboardView({
                   <div className="flex items-start gap-3">
                     {req.assignees.length > 0 && (
                       <div className="flex -space-x-1.5">
-                        {req.assignees.slice(0, 3).map((assignee) => (
+                        {req.assignees.slice(0, 3).map((assignee) =>
                           assignee.image ? (
                             <img
                               key={assignee.id}
@@ -237,8 +253,8 @@ export function DashboardView({
                             >
                               {assignee.name?.charAt(0)?.toUpperCase() || '?'}
                             </span>
-                          )
-                        ))}
+                          ),
+                        )}
                         {req.assignees.length > 3 && (
                           <span className="flex h-6 w-6 items-center justify-center rounded-full border-2 border-white bg-stone-100 text-[10px] font-medium text-stone-500">
                             +{req.assignees.length - 3}
