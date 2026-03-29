@@ -68,6 +68,7 @@ describe('notes router', () => {
       const { ctx, db } = createProtectedContext();
       const caller = createCaller(ctx);
 
+      db._results.set('query.proposals.findFirst', { id: 'prop-1' });
       db._results.set('insert', [
         {
           id: 'new-note',
@@ -104,6 +105,7 @@ describe('notes router', () => {
       const { ctx, db } = createProtectedContext();
       const caller = createCaller(ctx);
 
+      db._results.set('query.proposals.findFirst', { id: 'prop-1' });
       db._results.set('insert', [
         {
           id: 'note-mention',
@@ -133,6 +135,7 @@ describe('notes router', () => {
       const { ctx, db } = createProtectedContext();
       const caller = createCaller(ctx);
 
+      db._results.set('query.proposals.findFirst', { id: 'prop-1' });
       db._results.set('insert', [
         {
           id: 'note-self',
