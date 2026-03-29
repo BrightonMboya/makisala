@@ -7,12 +7,14 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@repo/ui/dropdown-menu';
-import { Check, ChevronLeft, ChevronRight, Clock, FileText, Filter, Search } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@repo/ui/tooltip';
+import { Check, ChevronLeft, ChevronRight, Clock, Copy, FileText, Filter, Loader2, Pencil, Search } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { useDebounce } from '@repo/ui/use-debounce';
 import { trpc } from '@/lib/trpc';
+import { toast } from '@repo/ui/toast';
 import { staleTimes } from '@/lib/query-keys';
 import type { AssignedUser, RequestItem } from '@/types/dashboard';
 import { getStatusConfig, PROPOSAL_STATUSES } from '@/lib/proposal-status';
@@ -56,6 +58,19 @@ export function DashboardView({ initialProposals, initialIsAdmin }: DashboardVie
   const { data: isAdmin = false } = trpc.settings.checkAdmin.useQuery(undefined, {
     staleTime: staleTimes.dashboardData,
     initialData: initialIsAdmin,
+  });
+
+  const [duplicatingId, setDuplicatingId] = useState<string | null>(null);
+  const duplicateMutation = trpc.proposals.duplicate.useMutation({
+    onMutate: ({ proposalId }) => setDuplicatingId(proposalId),
+    onSuccess: (data) => {
+      toast({ title: 'Proposal duplicated' });
+      router.push(`/itineraries/${data.newProposalId}/day-by-day`);
+    },
+    onError: (err) => {
+      toast({ title: err.message || 'Failed to duplicate', variant: 'destructive' });
+    },
+    onSettled: () => setDuplicatingId(null),
   });
 
   const queryInput = {
@@ -271,25 +286,64 @@ export function DashboardView({ initialProposals, initialIsAdmin }: DashboardVie
                     </div>
                   </div>
                 </div>
-                <div className="mt-4 flex items-center justify-end gap-3 border-t border-stone-100 pt-3">
-                  <NotesPanel proposalId={req.id} compact />
+                <div className="mt-3 flex items-center justify-end gap-1">
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}>
+                        <NotesPanel proposalId={req.id} compact />
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent>Notes</TooltipContent>
+                  </Tooltip>
                   {isAdmin && (
-                    <ProposalAssignPopover
-                      proposalId={req.id}
-                      activeFilter={activeFilter}
-                      currentAssigneeIds={req.assignees.map((a) => a.id)}
-                    />
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}>
+                          <ProposalAssignPopover
+                            proposalId={req.id}
+                            activeFilter={activeFilter}
+                            currentAssigneeIds={req.assignees.map((a) => a.id)}
+                          />
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent>Assign</TooltipContent>
+                    </Tooltip>
                   )}
-                  <button
-                    className="text-xs font-medium text-green-700 hover:text-green-800 hover:underline"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      router.push(`/itineraries/${req.id}/day-by-day`);
-                    }}
-                  >
-                    Edit Proposal
-                  </button>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        className="cursor-pointer rounded-md p-1 text-stone-500 hover:bg-stone-100 hover:text-stone-600 disabled:opacity-50"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          duplicateMutation.mutate({ proposalId: req.id });
+                        }}
+                        disabled={duplicatingId === req.id}
+                      >
+                        {duplicatingId === req.id ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Copy className="h-4 w-4" />
+                        )}
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent>Duplicate</TooltipContent>
+                  </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        className="cursor-pointer rounded-md p-1 text-stone-500 hover:bg-stone-100 hover:text-stone-600"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          router.push(`/itineraries/${req.id}/day-by-day`);
+                        }}
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent>Edit</TooltipContent>
+                  </Tooltip>
                 </div>
               </Link>
             ))}

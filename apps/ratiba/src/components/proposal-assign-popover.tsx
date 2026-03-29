@@ -96,7 +96,7 @@ export function ProposalAssignPopover({
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverAnchor asChild>
         <button
-          className="rounded-md p-1 text-stone-400 hover:bg-stone-100 hover:text-stone-600"
+          className="cursor-pointer rounded-md p-1 text-stone-500 hover:bg-stone-100 hover:text-stone-600"
           onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();

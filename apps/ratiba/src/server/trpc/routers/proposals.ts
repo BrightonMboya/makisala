@@ -723,4 +723,134 @@ export const proposalsRouter = router({
 
       return { success: true };
     }),
+
+  duplicate: protectedProcedure
+    .input(z.object({ proposalId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const original = await ctx.db.query.proposals.findFirst({
+        where: and(eq(proposals.id, input.proposalId), eq(proposals.organizationId, ctx.orgId)),
+        with: {
+          days: {
+            with: {
+              accommodations: true,
+              activities: true,
+              meals: true,
+              transportation: true,
+            },
+            orderBy: (days, { asc }) => [asc(days.dayNumber)],
+          },
+        },
+      });
+
+      if (!original) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Proposal not found' });
+      }
+
+      const access = await checkFeatureAccess(ctx.orgId, 'activeProposals');
+      if (!access.allowed) {
+        throw new TRPCError({ code: 'FORBIDDEN', message: access.reason });
+      }
+
+      const newId = Math.random().toString(36).substring(2, 9);
+
+      await ctx.db.transaction(async (tx) => {
+        await tx.insert(proposals).values({
+          id: newId,
+          name: `${original.name} (copy)`,
+          tourId: original.tourId,
+          organizationId: ctx.orgId,
+          clientId: null,
+          tourTitle: original.tourTitle,
+          tourType: original.tourType,
+          theme: original.theme,
+          heroImage: original.heroImage,
+          startDate: original.startDate,
+          startCity: original.startCity,
+          startCityLat: original.startCityLat,
+          startCityLng: original.startCityLng,
+          endCity: original.endCity,
+          endCityLat: original.endCityLat,
+          endCityLng: original.endCityLng,
+          pickupPoint: original.pickupPoint,
+          transferIncluded: original.transferIncluded,
+          travelerGroups: original.travelerGroups,
+          pricingRows: original.pricingRows,
+          extras: original.extras,
+          countries: original.countries,
+          inclusions: original.inclusions,
+          exclusions: original.exclusions,
+          hidePricing: original.hidePricing,
+          status: 'draft',
+        });
+
+        for (const day of original.days) {
+          const [newDay] = await tx
+            .insert(proposalDays)
+            .values({
+              proposalId: newId,
+              dayNumber: day.dayNumber,
+              title: day.title,
+              description: day.description,
+              previewImage: day.previewImage,
+              nationalParkId: day.nationalParkId,
+              destinationName: day.destinationName,
+              destinationLat: day.destinationLat,
+              destinationLng: day.destinationLng,
+            })
+            .returning();
+
+          if (!newDay) continue;
+
+          for (const acc of day.accommodations) {
+            await tx.insert(proposalAccommodations).values({
+              proposalDayId: newDay.id,
+              accommodationId: acc.accommodationId,
+            });
+          }
+
+          for (const activity of day.activities) {
+            await tx.insert(proposalActivities).values({
+              proposalDayId: newDay.id,
+              name: activity.name,
+              description: activity.description,
+              location: activity.location,
+              moment: activity.moment,
+              isOptional: activity.isOptional,
+              imageUrl: activity.imageUrl,
+            });
+          }
+
+          if (day.meals) {
+            await tx.insert(proposalMeals).values({
+              proposalDayId: newDay.id,
+              breakfast: day.meals.breakfast,
+              lunch: day.meals.lunch,
+              dinner: day.meals.dinner,
+            });
+          }
+
+          for (const transport of day.transportation) {
+            await tx.insert(proposalTransportation).values({
+              proposalDayId: newDay.id,
+              originName: transport.originName,
+              originId: transport.originId,
+              destinationName: transport.destinationName,
+              destinationId: transport.destinationId,
+              mode: transport.mode,
+              durationMinutes: transport.durationMinutes,
+              distanceKm: transport.distanceKm,
+              notes: transport.notes,
+            });
+          }
+        }
+
+        // Assign the current user
+        await tx
+          .insert(proposalAssignments)
+          .values({ proposalId: newId, userId: ctx.user.id })
+          .onConflictDoNothing();
+      });
+
+      return { success: true, newProposalId: newId };
+    }),
 });
