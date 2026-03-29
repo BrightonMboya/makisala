@@ -18,13 +18,11 @@ import type { RequestItem } from '@/types/dashboard';
 interface ProposalStatusDropdownProps {
   proposalId: string;
   status: RequestItem['status'];
-  activeFilter: 'mine' | 'all';
 }
 
 export function ProposalStatusDropdown({
   proposalId,
   status,
-  activeFilter,
 }: ProposalStatusDropdownProps) {
   const utils = trpc.useUtils();
   const queryClient = useQueryClient();

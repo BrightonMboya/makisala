@@ -243,7 +243,6 @@ export function DashboardView({ initialProposals, initialIsAdmin }: DashboardVie
                       <ProposalStatusDropdown
                         proposalId={req.id}
                         status={req.status}
-                        activeFilter={activeFilter}
                       />
                     </div>
                     <p className="mt-1 text-sm text-stone-600">{req.title}</p>

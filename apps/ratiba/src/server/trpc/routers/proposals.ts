@@ -751,7 +751,7 @@ export const proposalsRouter = router({
         throw new TRPCError({ code: 'FORBIDDEN', message: access.reason });
       }
 
-      const newId = Math.random().toString(36).substring(2, 9);
+      const newId = crypto.randomUUID();
 
       await ctx.db.transaction(async (tx) => {
         await tx.insert(proposals).values({

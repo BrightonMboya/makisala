@@ -90,7 +90,9 @@ export default function ItinerariesPage() {
           </div>
         ) : (
           <div className="space-y-4">
-            {requests.map((req) => (
+            {requests.map((req) => {
+              const cfg = getStatusConfig(req.status);
+              return (
               <Link
                 key={req.id}
                 href={`/proposal/${req.id}`}
@@ -100,14 +102,9 @@ export default function ItinerariesPage() {
                   <div>
                     <div className="flex items-center gap-3">
                       <h3 className="font-serif text-lg font-bold text-stone-900 group-hover:text-green-800">{req.client}</h3>
-                      {(() => {
-                        const cfg = getStatusConfig(req.status);
-                        return (
-                          <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${cfg.bg} ${cfg.text}`}>
-                            {cfg.label}
-                          </span>
-                        );
-                      })()}
+                      <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${cfg.bg} ${cfg.text}`}>
+                        {cfg.label}
+                      </span>
                     </div>
                     <p className="mt-1 text-sm text-stone-600">{req.title}</p>
                   </div>
@@ -132,7 +129,8 @@ export default function ItinerariesPage() {
                   </button>
                 </div>
               </Link>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
