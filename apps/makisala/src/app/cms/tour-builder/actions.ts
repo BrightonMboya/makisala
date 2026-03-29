@@ -11,7 +11,7 @@ import {
 } from '@repo/db'
 import { revalidatePath } from 'next/cache'
 import cloudinary, { uploadAccommodationImages } from '@/lib/cloudinary'
-import { and, desc, eq, gte, ilike, lte, sql } from 'drizzle-orm'
+import { and, desc, eq, gte, ilike, isNull, lte, sql } from 'drizzle-orm'
 
 export async function getNationalParks() {
     return await db.select().from(nationalParks)
@@ -189,7 +189,7 @@ export async function getAllTours(options?: {
         const limit = options?.limit || 15
         const offset = (page - 1) * limit
 
-        const conditions = []
+        const conditions = [isNull(tours.organizationId)]
 
         if (options?.query) {
             conditions.push(ilike(tours.tourName, `%${options.query}%`))

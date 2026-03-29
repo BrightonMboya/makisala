@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from 'next/server'
 import { db } from '@repo/db'
 import { itineraryDays, nationalParks, tours } from '@repo/db/schema'
-import { and, exists, gte, ilike, inArray, isNull, lte, or, sql } from 'drizzle-orm'
+import { and, eq, exists, gte, ilike, inArray, isNull, lte, or, sql } from 'drizzle-orm'
 
 export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)

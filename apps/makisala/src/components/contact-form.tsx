@@ -33,8 +33,8 @@ export default function ContactForm({
     const formSchema = z.object({
         fullName: z.string().min(1, 'Full Name is required'),
         email: z.string().email('Valid email is required'),
-        countryOfResidence: z.string().min(1, 'Country of residence is required'),
-        phoneNumber: z.string().min(1, 'Phone number is required'),
+        countryOfResidence: z.string().optional(),
+        phoneNumber: z.string().optional(),
         numberOfTravellers: z.number().min(1, 'Number of travellers is required'),
         startDate: z.date().min(1, 'Start date is required'),
         comments: z.string().optional(),
@@ -115,7 +115,7 @@ export default function ContactForm({
                             name="countryOfResidence"
                             render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel>Country of Residence*</FormLabel>
+                                    <FormLabel>Country of Residence</FormLabel>
                                     <CountryDropdown
                                         placeholder="Select countries"
                                         onChange={country => field.onChange(country.name)}
@@ -131,7 +131,7 @@ export default function ContactForm({
                             name="phoneNumber"
                             render={({ field }) => (
                                 <FormItem>
-                                    <FormLabel>Phone Number*</FormLabel>
+                                    <FormLabel>Phone Number</FormLabel>
                                     <FormControl>
                                         <Input placeholder="Phone number" {...field} />
                                     </FormControl>

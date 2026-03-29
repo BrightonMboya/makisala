@@ -32,10 +32,10 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
     }
 
     return {
-        title: tour.tourName,
+        title: `${tour.tourName} | Makisala Safaris`,
         description: tour.overview,
         openGraph: {
-            title: tour.tourName,
+            title: `${tour.tourName} | Makisala Safaris`,
             description: tour.overview,
             images: [
                 {

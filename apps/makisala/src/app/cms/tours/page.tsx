@@ -9,13 +9,14 @@ import TourFilters from './_components/TourFilters'
 export default async function ToursPage({
     searchParams,
 }: {
-    searchParams: { [key: string]: string | string[] | undefined }
+    searchParams: Promise<{ [key: string]: string | string[] | undefined }>
 }) {
-    const page = Number(searchParams.page) || 1
-    const query = searchParams.query as string
-    const country = searchParams.country as string
-    const minDays = searchParams.minDays ? Number(searchParams.minDays) : undefined
-    const maxDays = searchParams.maxDays ? Number(searchParams.maxDays) : undefined
+    const params = await searchParams
+    const page = Number(params.page) || 1
+    const query = params.query as string
+    const country = params.country as string
+    const minDays = params.minDays ? Number(params.minDays) : undefined
+    const maxDays = params.maxDays ? Number(params.maxDays) : undefined
 
     const { tours, pagination } = await getAllTours({
         page,

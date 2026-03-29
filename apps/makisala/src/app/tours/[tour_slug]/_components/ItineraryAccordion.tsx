@@ -4,6 +4,8 @@ import React from 'react'
 import Image from 'next/image'
 import {
     ChevronDown,
+    ChevronLeft,
+    ChevronRight,
     Home,
     Shirt,
     Sparkles,
@@ -13,6 +15,7 @@ import {
     Waves,
     Wifi,
 } from 'lucide-react'
+import { cn } from '@/lib/utils'
 
 interface Accommodation {
     id: string
@@ -52,9 +55,101 @@ const amenityIconMap: Record<string, React.ReactNode> = {
 
 import AccommodationImageCarousel from './AccommodationImageCarousel'
 
-// ... existing imports
+function CinematicGallery({
+    images,
+    alt,
+    onImageClick,
+}: {
+    images: { imageUrl: string; alt?: string }[]
+    alt: string
+    onImageClick: (index: number) => void
+}) {
+    const [currentIndex, setCurrentIndex] = React.useState(0)
+    const [isHovered, setIsHovered] = React.useState(false)
 
-// ... existing interfaces
+    React.useEffect(() => {
+        if (images.length <= 1 || isHovered) return
+        const timer = setInterval(() => {
+            setCurrentIndex((prev) => (prev + 1) % images.length)
+        }, 5000)
+        return () => clearInterval(timer)
+    }, [images.length, isHovered])
+
+    if (images.length === 0) return null
+
+    const currentImage = images[currentIndex]?.imageUrl || '/placeholder.svg'
+
+    return (
+        <div
+            className="group relative aspect-[16/9] w-full cursor-pointer overflow-hidden rounded-xl bg-stone-900"
+            onMouseEnter={() => setIsHovered(true)}
+            onMouseLeave={() => setIsHovered(false)}
+            onClick={(e) => {
+                e.stopPropagation()
+                onImageClick(currentIndex)
+            }}
+        >
+            <Image
+                key={currentIndex}
+                src={currentImage}
+                alt={images[currentIndex]?.alt ?? alt}
+                fill
+                className="object-cover transition-opacity duration-500"
+                sizes="(max-width: 768px) 100vw, 700px"
+            />
+
+            {images.length > 1 && (
+                <>
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation()
+                            setCurrentIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1))
+                        }}
+                        className="absolute top-1/2 left-3 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/10 opacity-0 backdrop-blur-md transition-all group-hover:opacity-100 hover:bg-white/20"
+                    >
+                        <ChevronLeft className="h-5 w-5 text-white" />
+                    </button>
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation()
+                            setCurrentIndex((prev) => (prev + 1) % images.length)
+                        }}
+                        className="absolute top-1/2 right-3 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/10 opacity-0 backdrop-blur-md transition-all group-hover:opacity-100 hover:bg-white/20"
+                    >
+                        <ChevronRight className="h-5 w-5 text-white" />
+                    </button>
+
+                    <div className="absolute right-0 bottom-0 left-0 z-10 p-4">
+                        <div className="flex items-center gap-3">
+                            <div className="flex gap-1.5">
+                                {images.map((_, idx) => (
+                                    <button
+                                        key={idx}
+                                        onClick={(e) => {
+                                            e.stopPropagation()
+                                            setCurrentIndex(idx)
+                                        }}
+                                        className={cn(
+                                            'h-0.5 rounded-full transition-all duration-500',
+                                            idx === currentIndex
+                                                ? 'w-10 bg-white'
+                                                : 'w-5 bg-white/40 hover:bg-white/60',
+                                        )}
+                                    />
+                                ))}
+                            </div>
+                            <span className="text-xs tracking-wider text-white/60">
+                                {String(currentIndex + 1).padStart(2, '0')} / {String(images.length).padStart(2, '0')}
+                            </span>
+                        </div>
+                    </div>
+                </>
+            )}
+
+            <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-black/10" />
+        </div>
+    )
+}
 
 const ItineraryAccordion: React.FunctionComponent<Props> = ({
     dayNumber,
@@ -162,38 +257,14 @@ const ItineraryAccordion: React.FunctionComponent<Props> = ({
 
                             {accommodationData?.images &&
                                 accommodationData.images.length > 0 && (
-                                    <div className="grid grid-cols-2 gap-3">
-                                        {accommodationData.images
-                                            // .slice(0, 6)
-                                            .map((img, idx) => (
-                                                <div
-                                                    key={idx}
-                                                    className="relative h-40 w-full cursor-pointer overflow-hidden rounded-xl transition-opacity hover:opacity-90 md:h-48"
-                                                    onClick={(e) => {
-                                                        e.stopPropagation()
-                                                        setSelectedImageIndex(
-                                                            idx
-                                                        )
-                                                        setCarouselOpen(true)
-                                                    }}
-                                                >
-                                                    <Image
-                                                        src={
-                                                            img.imageUrl ||
-                                                            '/placeholder.svg'
-                                                        }
-                                                        alt={
-                                                            img.alt ??
-                                                            accommodationData.name ??
-                                                            `Gallery ${idx + 1}`
-                                                        }
-                                                        fill
-                                                        className="object-cover transition-transform duration-300 hover:scale-105"
-                                                        sizes="(max-width: 768px) 100vw, 600px"
-                                                    />
-                                                </div>
-                                            ))}
-                                    </div>
+                                    <CinematicGallery
+                                        images={accommodationData.images}
+                                        alt={accommodationData.name}
+                                        onImageClick={(idx) => {
+                                            setSelectedImageIndex(idx)
+                                            setCarouselOpen(true)
+                                        }}
+                                    />
                                 )}
 
                             {/* Meal Plan */}

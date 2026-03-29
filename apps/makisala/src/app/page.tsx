@@ -1,5 +1,3 @@
-'use client'
-
 import Image from 'next/image'
 import { Star } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -7,59 +5,71 @@ import Link from 'next/link'
 import { featured_national_parks, safaris, why_travel_with_us } from '@/lib/constants'
 import ContactForm from '../components/contact-form'
 import { fetchAllNps, getWeekendDeals } from '@/lib/cms-service'
-import { useQuery } from '@tanstack/react-query'
 import Hero from '@/components/hero'
 
-export default function Page() {
-    const { data: parks = [] } = useQuery({
-        queryKey: ['national-parks'],
-        queryFn: fetchAllNps,
-    })
+const fallbackReviews = [
+    {
+        author_name: 'Sarah Johnson',
+        relative_time_description: '2 weeks ago',
+        text: 'An absolutely incredible experience. The attention to detail and personalized service exceeded all expectations. Our guide was phenomenal!',
+        rating: 5,
+        profile_photo_url: null,
+    },
+    {
+        author_name: 'Michael Chen',
+        relative_time_description: '1 month ago',
+        text: 'We had the most amazing honeymoon safari. Everything was perfectly planned, from the lodges to the game drives. Highly recommend Makisala!',
+        rating: 5,
+        profile_photo_url: null,
+    },
+    {
+        author_name: 'Emma Davis',
+        relative_time_description: '2 months ago',
+        text: 'A trip of a lifetime! Seeing the Great Migration was magical. The team took care of everything so we could just enjoy the adventure.',
+        rating: 5,
+        profile_photo_url: null,
+    },
+]
 
-    const { data: deals = [] } = useQuery({
-        queryKey: ['weekend-deals'],
-        queryFn: getWeekendDeals,
-    })
+async function fetchReviews() {
+    try {
+        const placeId = process.env.GOOGLE_PLACE_ID
+        const apiKey = process.env.GOOGLE_PLACES_API_KEY
+        if (!placeId || !apiKey) return null
 
-    // Fetch Google Reviews
-    const { data: reviewsData } = useQuery({
-        queryKey: ['googleReviews'],
-        queryFn: async () => {
-            const res = await fetch('/api/reviews')
-            if (!res.ok) throw new Error('Failed to fetch reviews')
-            return res.json()
-        },
-        // Fallback data in case of error or missing credentials
-        initialData: {
-            rating: 4.9,
-            total_reviews: 200,
-            reviews: [
-                {
-                    author_name: 'Sarah Johnson',
-                    relative_time_description: '2 weeks ago',
-                    text: 'An absolutely incredible experience. The attention to detail and personalized service exceeded all expectations. Our guide was phenomenal!',
-                    rating: 5,
-                    profile_photo_url: null,
-                },
-                {
-                    author_name: 'Michael Chen',
-                    relative_time_description: '1 month ago',
-                    text: 'We had the most amazing honeymoon safari. Everything was perfectly planned, from the lodges to the game drives. Highly recommend Makisala!',
-                    rating: 5,
-                    profile_photo_url: null,
-                },
-                {
-                    author_name: 'Emma Davis',
-                    relative_time_description: '2 months ago',
-                    text: 'A trip of a lifetime! Seeing the Great Migration was magical. The team took care of everything so we could just enjoy the adventure.',
-                    rating: 5,
-                    profile_photo_url: null,
-                },
-            ],
-        },
-    })
+        const res = await fetch(
+            `https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&fields=rating,user_ratings_total,reviews&key=${apiKey}`,
+            { next: { revalidate: 86400 } }
+        )
+        if (!res.ok) return null
+        const data = await res.json()
+        const result = data.result
+        if (!result) return null
 
-    const reviews = reviewsData?.reviews || []
+        return {
+            rating: result.rating ?? 4.9,
+            total_reviews: result.user_ratings_total ?? 200,
+            reviews: (result.reviews ?? []).slice(0, 3).map((r: any) => ({
+                author_name: r.author_name,
+                relative_time_description: r.relative_time_description,
+                text: r.text,
+                rating: r.rating,
+                profile_photo_url: r.profile_photo_url || null,
+            })),
+        }
+    } catch {
+        return null
+    }
+}
+
+export default async function Page() {
+    const [parks, deals, reviewsData] = await Promise.all([
+        fetchAllNps(),
+        getWeekendDeals(),
+        fetchReviews(),
+    ])
+
+    const reviews = reviewsData?.reviews || fallbackReviews
     const rating = reviewsData?.rating || 4.9
     const totalReviews = reviewsData?.total_reviews || 200
 
@@ -72,7 +82,7 @@ export default function Page() {
             <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
                 <h2 className="mb-4 text-5xl font-bold text-gray-900">Popular experiences</h2>
                 <p className="mb-8 text-gray-600">
-                    Tap into the kind of safari you’ve dreamed about.
+                    Tap into the kind of safari you've dreamed about.
                 </p>
 
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-4">

@@ -251,8 +251,10 @@ export async function getTours(country: string, modifier: string) {
 export const getToursByCountry = async (country: string) => {
     return db.select().from(tours).where(eq(tours.country, country)).orderBy(desc(tours.pricing))
 }
+const R2_PUBLIC_URL = 'https://assets.makisala.com'
+
 export const getProgramaticTourBySlug = async (slug: string) => {
-    return db.query.tours.findFirst({
+    const tour = await db.query.tours.findFirst({
         where: eq(tours.slug, slug),
         with: {
             days: {
@@ -271,6 +273,25 @@ export const getProgramaticTourBySlug = async (slug: string) => {
             },
         },
     })
+
+    if (!tour) return null
+
+    return {
+        ...tour,
+        days: tour.days.map(day => ({
+            ...day,
+            itineraryAccommodations: day.itineraryAccommodations.map(ia => ({
+                ...ia,
+                accommodation: {
+                    ...ia.accommodation,
+                    images: ia.accommodation.images.map(img => ({
+                        ...img,
+                        imageUrl: `${R2_PUBLIC_URL}/${img.key}`,
+                    })),
+                },
+            })),
+        })),
+    }
 }
 
 export const getBestTimeToVisit = async (destination: string) => {

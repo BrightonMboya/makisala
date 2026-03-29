@@ -2,7 +2,7 @@ export const BASE_URL = 'https://makisala.com'
 export const safaris = [
     {
         title: 'GORILLA TREKKING',
-        page_url: '/location/rwanda',
+        page_url: '/tours/3-day-gorilla-trekking-and-cultrual-experience',
         image: 'https://images.unsplash.com/photo-1676102818778-7dedb5cdad46?w=900&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8Z29yaWxsYSUyMHRyZWtraW5nfGVufDB8fDB8fHww',
     },
     {
@@ -23,7 +23,7 @@ export const safaris = [
 
     {
         title: 'THE GREAT MIGRATION',
-        page_url: '/to_book/migration-tracker-safari-tz-ke',
+        page_url: '/tours/5-day-explore-great-migration-northern-serengeti',
         image: 'https://images.unsplash.com/photo-1612433085547-c2d550c90210?w=900&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTF8fGdyZWF0JTIwbWlncmF0aW9ufGVufDB8fDB8fHww',
     },
     // {

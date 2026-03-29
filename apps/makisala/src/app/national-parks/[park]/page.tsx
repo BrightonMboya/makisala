@@ -37,7 +37,9 @@ export async function generateMetadata({ params }: IParams): Promise<Metadata> {
         openGraph: {
             title: page.title,
             description: page.meta_description!,
-            images: page.featured_image_url!,
+            images: page.featured_image_url
+                ? [{ url: page.featured_image_url, alt: page.title }]
+                : [],
         },
     }
 }

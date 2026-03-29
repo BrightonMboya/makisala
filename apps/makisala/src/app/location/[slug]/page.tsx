@@ -36,7 +36,9 @@ export async function generateMetadata({
             openGraph: {
                 title: page.meta_title || page.title,
                 description: page.meta_description! || page.excerpt!,
-                images: page.featured_image_url ? [page.featured_image_url] : [],
+                images: page.featured_image_url
+                    ? [{ url: page.featured_image_url, alt: page.title }]
+                    : [],
             },
         }
     } catch {

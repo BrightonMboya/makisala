@@ -17,13 +17,23 @@ interface Params {
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
     const { country, modifier } = await params
     const title = `${capitalize(modifier.replace('-', ' '))} ${capitalize(country)} safaris | Makisala Safaris`
-    const description = `Discover the best ${modifier.replace('-', ' ')} safari tours in ${country}. Tailored itineraries, expert guides, and unforgettable adventures.`
+    const descriptionKey = `${country}-${modifier}`
+    const description =
+        safariDescriptions[descriptionKey] ||
+        `Discover the best ${modifier.replace('-', ' ')} safari tours in ${country}. Tailored itineraries, expert guides, and unforgettable adventures.`
+    const ogImages: Record<string, string> = {
+        tanzania: 'https://res.cloudinary.com/dr2tdyz2w/image/upload/v1763039383/Serengeti-Wildebeest-Migration-Safari-10-Days-750x450_lflnpq.jpg',
+        rwanda: 'https://res.cloudinary.com/dr2tdyz2w/image/upload/v1763798673/volcanoes-national-park-750x450_wfupyl.jpg',
+    }
     return {
         title,
         description,
         openGraph: {
             title,
             description,
+            images: ogImages[country]
+                ? [{ url: ogImages[country], width: 1200, height: 630, alt: title }]
+                : [],
         },
     }
 }
@@ -39,9 +49,10 @@ export default async function SafariPage({ params }: Params) {
     }
     const [tours] = await Promise.all([
         getTours(country, modifier),
-        // fetchAllNps(),
     ])
-    // const countryParks = allParks.filter(p => p.country === country)
+
+    const descriptionKey = `${country}-${modifier}`
+    const description = safariDescriptions[descriptionKey]
 
     return (
         <>
@@ -71,36 +82,32 @@ export default async function SafariPage({ params }: Params) {
                     <div className="from-safari-gold/10 to-safari-bronze/10 border-border border-b bg-gradient-to-r">
                         <div className="container mx-auto px-4 py-8">
                             <h1 className="text-safari-earth mb-2 text-4xl font-bold">{`${capitalize(modifier.replace('-', ' '))} ${capitalize(country)}  Safaris`}</h1>
-                            <p className="text-muted-foreground">
-                                {safariDescriptions[`${country}-${modifier}`]}
-                            </p>
+                            {description && (
+                                <p className="text-muted-foreground max-w-3xl text-lg leading-relaxed">
+                                    {description}
+                                </p>
+                            )}
                         </div>
                     </div>
 
-                    {/*{countryParks.length > 0 && (*/}
-                    {/*    <div className="container mx-auto px-4 py-6">*/}
-                    {/*        <h2 className="mb-3 text-lg font-semibold">{`Explore ${capitalize(country)} National Parks`}</h2>*/}
-                    {/*        <div className="flex flex-wrap gap-2">*/}
-                    {/*            {countryParks.map(p => (*/}
-                    {/*                <Link*/}
-                    {/*                    key={p.name}*/}
-                    {/*                    href={`/national-parks/${p.name}`}*/}
-                    {/*                    className="bg-card hover:bg-primary/10 border-border rounded-full border px-4 py-1.5 text-sm font-medium transition-colors"*/}
-                    {/*                >*/}
-                    {/*                    {capitalize(p.name)}*/}
-                    {/*                </Link>*/}
-                    {/*            ))}*/}
-                    {/*        </div>*/}
-                    {/*    </div>*/}
-                    {/*)}*/}
-
                     {/* Tours Grid */}
                     <div className="container mx-auto px-4 py-8">
-                        <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-                            {tours.map(tour => (
-                                <TourCard key={tour.id} tour={tour} />
-                            ))}
-                        </div>
+                        {tours.length > 0 ? (
+                            <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+                                {tours.map(tour => (
+                                    <TourCard key={tour.id} tour={tour} />
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="py-16 text-center">
+                                <p className="text-lg text-gray-600">
+                                    No {modifier.replace('-', ' ')} safaris in {capitalize(country)} available right now.
+                                </p>
+                                <p className="mt-2 text-gray-500">
+                                    Contact us for a custom itinerary tailored to your needs.
+                                </p>
+                            </div>
+                        )}
                     </div>
                 </div>
             </main>

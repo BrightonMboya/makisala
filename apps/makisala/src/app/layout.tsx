@@ -23,16 +23,20 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-    title: 'Safaris in Africa: Book with experts | Makisala Safaris ',
+    metadataBase: new URL('https://www.makisala.com'),
+    title: 'Safaris in Africa: Book with experts | Makisala Safaris',
     description:
-        'Explore Africa with Makisala - go on a walking safari - canoe safari - 4x4 safari ► Book an unforgettable Africa trip now! ',
+        'Explore Africa with Makisala - go on a walking safari - canoe safari - 4x4 safari. Book an unforgettable Africa trip now!',
     openGraph: {
-        title: 'Safaris in Africa: Book with experts | Makisala Safaris ',
+        title: 'Safaris in Africa: Book with experts | Makisala Safaris',
         description:
-            'Explore Africa with Makisala - go on a walking safari - canoe safari - 4x4 safari ► Book an unforgettable Africa trip now! ',
+            'Explore Africa with Makisala - go on a walking safari - canoe safari - 4x4 safari. Book an unforgettable Africa trip now!',
         images: [
             {
                 url: 'https://res.cloudinary.com/dr2tdyz2w/image/upload/v1753373584/family-safari.jpg_vu3zur.jpg',
+                width: 1200,
+                height: 630,
+                alt: 'Makisala Safaris - African Safari Adventures',
             },
         ],
     },
