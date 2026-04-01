@@ -6,6 +6,26 @@ import { featured_national_parks, safaris, why_travel_with_us } from '@/lib/cons
 import ContactForm from '../components/contact-form'
 import { fetchAllNps, getWeekendDeals } from '@/lib/cms-service'
 import Hero from '@/components/hero'
+import type { Metadata } from 'next'
+
+export const metadata: Metadata = {
+    title: 'Safaris in Tanzania, Rwanda & Uganda | Makisala Safaris',
+    description:
+        'Book expertly guided safaris across East Africa. Serengeti migrations, gorilla trekking, Kilimanjaro climbs, and more. Locally operated, all-inclusive, tailored to you.',
+    openGraph: {
+        title: 'Safaris in Tanzania, Rwanda & Uganda | Makisala Safaris',
+        description:
+            'Book expertly guided safaris across East Africa. Serengeti migrations, gorilla trekking, Kilimanjaro climbs, and more.',
+        images: [
+            {
+                url: 'https://res.cloudinary.com/dr2tdyz2w/image/upload/v1753373584/family-safari.jpg_vu3zur.jpg',
+                width: 1200,
+                height: 630,
+                alt: 'Makisala Safaris - East Africa Safari Adventures',
+            },
+        ],
+    },
+}
 
 const fallbackReviews = [
     {

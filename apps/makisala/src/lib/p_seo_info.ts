@@ -1,5 +1,5 @@
 // these are used for programatic seo in the safaris/country/modifer route
-export const countries = ['tanzania', 'rwanda']
+export const countries = ['tanzania', 'rwanda', 'uganda']
 export const tour_tags = [
     'private',
     'group',
@@ -12,7 +12,7 @@ export const tour_tags = [
     'honeymoon',
     'gorilla_tracking',
     // "photographic",
-    // "climbing",
+    "climbing",
     // "walking",
     // "selfdrive",
     // "guided_selfdrive",
@@ -97,6 +97,32 @@ export const safariDescriptions: Record<string, string> = {
         'Discover Tanzania on horseback for a unique safari experience. Ride through scenic landscapes, encounter wildlife, and enjoy the tranquility of nature. Ideal for travelers seeking adventure, connection with nature, and a different perspective on the savannah.',
     'tanzania-birding':
         'Embark on a birding safari in Tanzania, a paradise for bird lovers. Spot rare and colorful species, guided by experts who help you identify and photograph them. Perfect for travelers passionate about ornithology and nature observation.',
+    'uganda-1-day':
+        'Experience Uganda wildlife on a focused 1-day safari. Perfect for travellers passing through Entebbe or Kampala, this day trip offers game drives, boat safaris, or primate encounters close to the capital.',
+    'uganda-2-day':
+        'A 2-day Uganda safari combines chimpanzee trekking in Kibale Forest or a quick safari in Lake Mburo with overnight stays at comfortable lodges. Ideal for short stopovers or add-ons to longer East Africa itineraries.',
+    'uganda-3-day':
+        'Embark on a 3-day Uganda safari featuring gorilla trekking in Bwindi, chimpanzee tracking in Kibale, or a Big Five safari at Queen Elizabeth National Park. Three days is the sweet spot for a single-park immersion.',
+    'uganda-4-day':
+        'A 4-day Uganda safari opens up multi-park itineraries — combine Bwindi gorilla trekking with Queen Elizabeth game drives, or pair Murchison Falls with chimpanzee tracking. Four days lets you experience two of Uganda best destinations.',
+    'uganda-5-day':
+        'Explore Uganda over 5 days with a safari that combines gorilla trekking, chimpanzee encounters, and savannah game drives. Visit two or three parks, stay in quality lodges, and experience the full diversity of the Pearl of Africa.',
+    'uganda-7-day':
+        'A week-long Uganda safari is the ultimate East Africa primate and wildlife experience. Trek with mountain gorillas in Bwindi, track chimpanzees in Kibale, cruise the Kazinga Channel, and witness Murchison Falls on the Nile.',
+    'uganda-10-day':
+        'Discover the full breadth of Uganda on a comprehensive 10-day safari. From the remote wilderness of Kidepo Valley to gorilla trekking in Bwindi, chimpanzees in Kibale, and the thundering Murchison Falls, this itinerary covers every highlight.',
+    'uganda-private':
+        'A private Uganda safari tailored to your interests, fitness level, and pace. Exclusive vehicles, personal guides, and flexible itineraries let you explore gorilla treks, chimpanzee encounters, and savannah safaris on your own terms.',
+    'uganda-group':
+        'Join a small-group Uganda safari and share unforgettable experiences with like-minded travellers. Expert guides, comfortable lodges, and well-planned itineraries make this an enriching and social way to explore Uganda wildlife.',
+    'uganda-budget':
+        'Experience Uganda incredible wildlife on a budget-friendly safari. Gorilla permits in Uganda cost $700 — half the price of Rwanda — making this the most affordable way to trek with mountain gorillas in Africa.',
+    'uganda-family':
+        'Plan a family safari in Uganda with activities for all ages. Boat safaris, nature walks, cultural village visits, and age-appropriate wildlife encounters make Uganda one of the best family safari destinations in Africa.',
+    'uganda-gorilla_tracking':
+        'Trek with mountain gorillas in Uganda Bwindi Impenetrable National Park — home to half the world remaining gorilla population. Permits are $700 per person, and treks range from 2-6 hours through misty volcanic forest. The moment you sit three metres from a silverback is life-changing.',
+    'uganda-climbing':
+        'Combine trekking and wildlife on a Uganda climbing safari. Scale the Rwenzori Mountains — the legendary Mountains of the Moon — or trek to the summit of Mount Elgon, an ancient volcanic caldera straddling the Kenya border.',
 }
 export const countryDescriptions: Record<string, string> = {
     tanzania: `
@@ -110,4 +136,7 @@ Rwanda, the “Land of a Thousand Hills,” offers a unique safari experience wi
 
     zanzibar: `
 Zanzibar, an island paradise off the coast of Tanzania, combines pristine beaches, turquoise waters, and rich cultural history. Relax on white sandy shores, snorkel among vibrant coral reefs, and wander the winding streets of Stone Town with its Swahili architecture and spice markets. Zanzibar offers a perfect blend of relaxation, adventure, and cultural discovery, ideal for honeymooners, families, and travelers looking to complement a safari with a tropical getaway.`,
+
+    uganda: `
+Uganda is the Pearl of Africa — a country where mountain gorillas live in misty volcanic forests, chimpanzees swing through ancient rainforest canopy, and the Nile crashes through the world's most powerful waterfall. From Bwindi's gorilla treks to Queen Elizabeth's tree-climbing lions and Murchison Falls' dramatic Nile safaris, Uganda offers raw, uncrowded wildlife experiences at a fraction of the cost of its neighbours. With 13 primate species, the Big Five, and some of the friendliest people on the continent, Uganda is East Africa's best-kept secret.`,
 }

@@ -17,7 +17,7 @@ export const safaris = [
     },
     {
         title: 'TREKKING SAFARIS',
-        page_url: '/location/kilimanjaro',
+        page_url: '/national-parks/kilimanjaro',
         image: 'https://images.unsplash.com/photo-1551632811-561732d1e306?w=900&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8dHJla2tpbmd8ZW58MHx8MHx8fDA%3D',
     },
 
@@ -120,7 +120,7 @@ export const destinations = {
         {
             name: 'Kilimanjaro',
             description: "Africa's highest peak",
-            page_url: '/safaris/kilimanjaro',
+            page_url: '/national-parks/kilimanjaro',
         },
         {
             name: 'Zanzibar',
@@ -134,7 +134,7 @@ export const destinations = {
             description: 'Gorilla trekking adventures',
             page_url: '/safaris/rwanda',
         },
-        // { name: "Uganda", description: "Gorilla trekking adventures", page_url: "/location/uganda" },
+        { name: 'Uganda', description: 'Gorilla trekking adventures', page_url: '/safaris/uganda' },
         // { name: "Zambia", description: "Walking safaris in pristine parks", page_url: "/location/zambia" },
     ],
 }

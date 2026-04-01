@@ -29,6 +29,39 @@ export interface JsonOverview {
   description: string;
 }
 
+export interface DestinationHighlight {
+  title: string;
+  body: string;
+}
+
+export interface TripInspiration {
+  name: string;
+  description: string;
+  day_snapshot: string;
+  duration: string;
+  best_time: string;
+  activities: string;
+  dont_miss: string;
+  image_url: string;
+}
+
+export interface FeaturedStay {
+  name: string;
+  location: string;
+  image_url: string;
+}
+
+export interface Testimonial {
+  quote: string;
+  body: string;
+  attribution: string;
+}
+
+export interface GoodToKnow {
+  title: string;
+  body: string;
+}
+
 export const PageType = pgEnum('pageType', ['page', 'blog']);
 
 export const PageStatus = pgEnum('pageStatus', ['published', 'draft']);
@@ -532,6 +565,13 @@ export const nationalParks = pgTable('national_parks', {
   how_to_get_there_page_id: text().references(() => pages.id),
   wildlife_highlights: json('wildlife_highlights').$type<WildlifeHighlights[]>(),
   park_overview: json('park_overview').$type<JsonOverview[]>(),
+  hero_tagline: text('hero_tagline'),
+  intro_text: text('intro_text'),
+  highlights: json('highlights').$type<DestinationHighlight[]>(),
+  trip_inspiration: json('trip_inspiration').$type<TripInspiration[]>(),
+  featured_stays: json('featured_stays').$type<FeaturedStay[]>(),
+  testimonials: json('testimonials').$type<Testimonial[]>(),
+  good_to_know: json('good_to_know').$type<GoodToKnow[]>(),
   createdAt: timestamp({ precision: 3, mode: 'string' })
     .default(sql`CURRENT_TIMESTAMP`)
     .notNull(),

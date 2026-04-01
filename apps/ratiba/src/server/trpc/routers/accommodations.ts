@@ -142,37 +142,39 @@ export const accommodationsRouter = router({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const [newAcc] = await ctx.db
-        .insert(accommodations)
-        .values({
-          name: input.name,
-          url: input.url || undefined,
-          overview: input.overview,
-          description: input.description,
-          enhancedDescription: input.enhancedDescription,
-          latitude: input.latitude,
-          longitude: input.longitude,
-        })
-        .returning();
+      return await ctx.db.transaction(async (tx) => {
+        const [newAcc] = await tx
+          .insert(accommodations)
+          .values({
+            name: input.name,
+            url: input.url || undefined,
+            overview: input.overview,
+            description: input.description,
+            enhancedDescription: input.enhancedDescription,
+            latitude: input.latitude,
+            longitude: input.longitude,
+          })
+          .returning();
 
-      if (!newAcc) {
-        throw new TRPCError({
-          code: 'INTERNAL_SERVER_ERROR',
-          message: 'Failed to create accommodation',
-        });
-      }
-
-      if (input.images && input.images.length > 0) {
-        for (const img of input.images) {
-          await ctx.db.insert(accommodationImages).values({
-            accommodationId: newAcc.id,
-            bucket: img.bucket,
-            key: img.key,
+        if (!newAcc) {
+          throw new TRPCError({
+            code: 'INTERNAL_SERVER_ERROR',
+            message: 'Failed to create accommodation',
           });
         }
-      }
 
-      return { id: newAcc.id };
+        if (input.images && input.images.length > 0) {
+          for (const img of input.images) {
+            await tx.insert(accommodationImages).values({
+              accommodationId: newAcc.id,
+              bucket: img.bucket,
+              key: img.key,
+            });
+          }
+        }
+
+        return { id: newAcc.id };
+      });
     }),
 
   update: protectedProcedure

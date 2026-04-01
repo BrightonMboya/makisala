@@ -1,16 +1,15 @@
 'use client'
 
 import { useState } from 'react'
-import { Button } from '@repo/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@repo/ui/card'
-import { ChevronDown, ChevronUp, Menu } from 'lucide-react'
+import { ChevronDown, Menu } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { usePathname } from 'next/navigation'
+import { InquiryDialog } from '@/components/enquire-dialog-button'
 
 export function NavigationSidebar({ park_name }: { park_name: string }) {
     const pathname = usePathname()
-
     const [isOpen, setIsOpen] = useState(false)
+
     const items = [
         {
             name: 'Park Overview',
@@ -20,7 +19,7 @@ export function NavigationSidebar({ park_name }: { park_name: string }) {
         {
             name: 'Best time to visit',
             href: `/national-parks/${park_name}/best-time-to-visit`,
-            active: pathname.endsWith(`best-time-to-visit`),
+            active: pathname.endsWith('best-time-to-visit'),
         },
         {
             name: 'Wildlife',
@@ -45,49 +44,60 @@ export function NavigationSidebar({ park_name }: { park_name: string }) {
     ]
 
     return (
-        <aside className="lg:sticky lg:top-10 lg:h-fit lg:w-80 lg:flex-shrink-0 lg:self-start">
-            {/* Mobile navigation toggle */}
-            <div className="mb-6 lg:hidden">
-                <Button
-                    variant="outline"
+        <aside className="lg:sticky lg:top-[100px] lg:h-[calc(100vh-120px)] lg:w-64 lg:flex-shrink-0 lg:self-start">
+            {/* Mobile toggle */}
+            <div className="lg:hidden">
+                <button
                     onClick={() => setIsOpen(!isOpen)}
-                    className="w-full justify-between"
+                    className="flex w-full items-center justify-between rounded-lg border border-stone-200 bg-[#F9F7F4] px-4 py-3 text-sm font-medium text-stone-700"
                 >
                     <span className="flex items-center gap-2">
                         <Menu className="h-4 w-4" />
+                        Navigate
                     </span>
-                    {isOpen ? (
-                        <ChevronUp className="h-4 w-4" />
-                    ) : (
-                        <ChevronDown className="h-4 w-4" />
-                    )}
-                </Button>
+                    <ChevronDown className={cn('h-4 w-4 transition-transform', isOpen && 'rotate-180')} />
+                </button>
             </div>
 
-            {/* Navigation content */}
-            <div className={cn('lg:block', isOpen ? 'block' : 'hidden')}>
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="text-lg">On this page</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-2">
+            {/* Sidebar content */}
+            <div className={cn(
+                'mt-3 overflow-hidden rounded-xl bg-[#F9F7F4] lg:mt-0 lg:block lg:rounded-none lg:bg-transparent',
+                isOpen ? 'block' : 'hidden'
+            )}>
+                <nav className="px-2 py-4 lg:px-0 lg:py-0">
+                    <ul className="space-y-1">
                         {items.map((item, index) => (
-                            <a
-                                key={index}
-                                href={item.href}
-                                className={cn(
-                                    'hover:bg-accent hover:text-accent-foreground block rounded-md px-3 py-2 text-sm transition-colors',
-                                    item.active
-                                        ? 'bg-primary text-primary-foreground font-medium'
-                                        : 'text-muted-foreground'
-                                )}
-                                onClick={() => setIsOpen(false)}
-                            >
-                                {item.name}
-                            </a>
+                            <li key={index}>
+                                <a
+                                    href={item.href}
+                                    onClick={() => setIsOpen(false)}
+                                    className={cn(
+                                        'group relative block px-4 py-2.5 text-sm transition-colors',
+                                        item.active
+                                            ? 'font-medium text-stone-900'
+                                            : 'text-stone-500 hover:text-stone-900'
+                                    )}
+                                >
+                                    {item.name}
+                                    {/* Underline animation */}
+                                    <span className={cn(
+                                        'absolute bottom-1.5 left-4 right-4 h-px bg-stone-900 transition-transform duration-300 origin-left',
+                                        item.active ? 'scale-x-100' : 'scale-x-0 group-hover:scale-x-100'
+                                    )} />
+                                </a>
+                            </li>
                         ))}
-                    </CardContent>
-                </Card>
+                    </ul>
+                </nav>
+
+                {/* CTA */}
+                <div className="border-t border-stone-200 p-4 lg:mt-6 lg:border-t-0 lg:p-0">
+                    <InquiryDialog>
+                        <button className="w-full rounded-none border border-stone-900 bg-stone-900 px-6 py-3 text-sm font-medium tracking-wide text-white transition-all hover:bg-stone-800">
+                            Start Planning
+                        </button>
+                    </InquiryDialog>
+                </div>
             </div>
         </aside>
     )

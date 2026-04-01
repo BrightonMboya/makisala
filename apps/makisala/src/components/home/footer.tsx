@@ -205,7 +205,7 @@ export default function Footer() {
                         <ul className="space-y-2 text-sm text-gray-600">
                             <li>
                                 <Link
-                                    href="/location/kilimanjaro"
+                                    href="/national-parks/kilimanjaro"
                                     className="hover:text-gray-900"
                                 >
                                     Trekking Safaris
@@ -226,6 +226,14 @@ export default function Footer() {
                                     className="hover:text-gray-900"
                                 >
                                     Gorilla Trekking
+                                </Link>
+                            </li>
+                            <li>
+                                <Link
+                                    href="/safaris/uganda"
+                                    className="hover:text-gray-900"
+                                >
+                                    Uganda Safaris
                                 </Link>
                             </li>
                             <li>

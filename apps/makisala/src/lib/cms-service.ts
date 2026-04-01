@@ -10,7 +10,16 @@ import {
     wildlife,
     wildlifeParkOverrides,
 } from '@repo/db'
-import { type JsonOverview, pages, type WildlifeHighlights } from '@repo/db/schema'
+import {
+    type DestinationHighlight,
+    type FeaturedStay,
+    type GoodToKnow,
+    type JsonOverview,
+    pages,
+    type Testimonial,
+    type TripInspiration,
+    type WildlifeHighlights,
+} from '@repo/db/schema'
 import {
     and,
     desc,
@@ -387,6 +396,13 @@ export async function getNPInfo(name: string, pageColumn: keyof typeof nationalP
                 country: nationalParks.country,
                 wildlife_highlights: nationalParks.wildlife_highlights,
                 park_overview: nationalParks.park_overview,
+                hero_tagline: nationalParks.hero_tagline,
+                intro_text: nationalParks.intro_text,
+                highlights: nationalParks.highlights,
+                trip_inspiration: nationalParks.trip_inspiration,
+                featured_stays: nationalParks.featured_stays,
+                testimonials: nationalParks.testimonials,
+                good_to_know: nationalParks.good_to_know,
             },
             page: pageAlias,
             tours: sql<TourCard[]>`
@@ -423,6 +439,13 @@ export async function getNPInfo(name: string, pageColumn: keyof typeof nationalP
                 country: string
                 wildlife_highlights: WildlifeHighlights[] | null
                 park_overview: JsonOverview[] | null
+                hero_tagline: string | null
+                intro_text: string | null
+                highlights: DestinationHighlight[] | null
+                trip_inspiration: TripInspiration[] | null
+                featured_stays: FeaturedStay[] | null
+                testimonials: Testimonial[] | null
+                good_to_know: GoodToKnow[] | null
             }
             page: Page | null
             tours: TourCard[] | null
