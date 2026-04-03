@@ -16,6 +16,15 @@ import { getPublicUrl } from '@/lib/storage';
 import { capitalize } from '@/lib/utils';
 import { calculatePricing, formatDuration, transportModeLabels } from '@/lib/transform-utils';
 
+/** Convert "08:00" or "14:30" to "8:00 AM" / "2:30 PM" */
+function formatTime(time: string): string {
+  const [h, m] = time.split(':').map(Number);
+  if (h == null || m == null || isNaN(h) || isNaN(m)) return time;
+  const period = h >= 12 ? 'PM' : 'AM';
+  const hour12 = h % 12 || 12;
+  return `${hour12}:${m.toString().padStart(2, '0')} ${period}`;
+}
+
 type ProposalDay = {
   dayNumber: number;
   title: string | null;
@@ -44,6 +53,7 @@ type ProposalDay = {
     description: string | null;
     location: string | null;
     moment: string;
+    startTime?: string | null;
     imageUrl: string | null;
   }>;
   meals?: {
@@ -106,7 +116,7 @@ export function transformProposalToItineraryData(proposal: ProposalInput): Itine
     const dateStr = format(currentDate, 'MMMM d, yyyy');
 
     const activities: DayActivity[] = (day.activities || []).map((act) => ({
-      time: act.moment,
+      time: act.startTime ? formatTime(act.startTime) : '',
       activity: capitalize(act.name),
       description: act.description || '',
       location: act.location || undefined,

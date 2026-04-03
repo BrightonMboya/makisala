@@ -6,6 +6,7 @@ export type BuilderActivity = {
   name: string;
   location: string;
   moment: 'Morning' | 'Afternoon' | 'Evening' | 'Half Day' | 'Full Day' | 'Night';
+  startTime?: string | null; // Optional exact time e.g. "08:00", "14:30"
   isOptional: boolean;
   description?: string;
   imageUrl?: string;

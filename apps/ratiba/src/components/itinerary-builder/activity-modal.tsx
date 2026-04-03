@@ -145,7 +145,8 @@ export function ActivityModal({
             <div className="col-span-1 text-center">Order</div>
             <div className="col-span-3">Activity Type</div>
             <div className="col-span-3">Location</div>
-            <div className="col-span-3">Moment</div>
+            <div className="col-span-2">Moment</div>
+            <div className="col-span-1">Time</div>
             <div className="col-span-2 text-center">Actions</div>
           </div>
 
@@ -267,7 +268,7 @@ function SortableActivityRow({
             className="h-9 border-stone-200"
           />
         </div>
-        <div className="col-span-3">
+        <div className="col-span-2">
           <Select
             value={activity.moment}
             onValueChange={(val) => onUpdate(activity.id, 'moment', val)}
@@ -283,6 +284,15 @@ function SortableActivityRow({
               ))}
             </SelectContent>
           </Select>
+        </div>
+        <div className="col-span-1">
+          <Input
+            type="time"
+            value={activity.startTime || ''}
+            onChange={(e) => onUpdate(activity.id, 'startTime', e.target.value || null)}
+            className="h-9 border-stone-200 text-xs"
+            placeholder="--:--"
+          />
         </div>
         <div className="col-span-2 flex items-center justify-end gap-2">
           <div className="mr-2 flex items-center gap-1.5" title="Is Optional?">

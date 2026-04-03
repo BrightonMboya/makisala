@@ -146,6 +146,46 @@ function CinematicGallery({ images, alt }: { images: string[]; alt: string }) {
 // ============================================================================
 function JourneyMap({ data, className }: { data: ItineraryData['mapData']; className?: string }) {
   const { locations, startLocation, endLocation } = data;
+  const mapRef = useRef<any>(null);
+  const wrapperRef = useRef<HTMLDivElement>(null);
+  const [showHint, setShowHint] = useState(false);
+  const hintTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isMac = useMemo(
+    () => typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.userAgent),
+    [],
+  );
+
+  // Disable scroll zoom by default, enable only when Cmd/Ctrl is held
+  useEffect(() => {
+    const wrapper = wrapperRef.current;
+    if (!wrapper) return;
+
+    const handleWheel = (e: WheelEvent) => {
+      const modifierHeld = isMac ? e.metaKey : e.ctrlKey;
+      const map = mapRef.current;
+
+      if (!modifierHeld) {
+        // Show the hint overlay
+        setShowHint(true);
+        if (hintTimeout.current) clearTimeout(hintTimeout.current);
+        hintTimeout.current = setTimeout(() => setShowHint(false), 1500);
+
+        // Disable scroll zoom so the page scrolls normally
+        if (map) map.scrollZoom?.disable();
+      } else {
+        // Modifier held — allow map zoom, prevent page scroll
+        e.preventDefault();
+        if (map) map.scrollZoom?.enable();
+      }
+    };
+
+    wrapper.addEventListener('wheel', handleWheel, { passive: false });
+    return () => {
+      wrapper.removeEventListener('wheel', handleWheel);
+      if (hintTimeout.current) clearTimeout(hintTimeout.current);
+    };
+  }, [isMac]);
+
   if (!locations || locations.length === 0) return null;
 
   const allLocations = useMemo(() => {
@@ -170,12 +210,14 @@ function JourneyMap({ data, className }: { data: ItineraryData['mapData']; class
   );
 
   return (
-    <div className={cn('relative h-full w-full', className)}>
+    <div ref={wrapperRef} className={cn('relative h-full w-full', className)}>
       <Map
+        ref={mapRef}
         center={center}
         zoom={6}
         minZoom={4}
         maxZoom={12}
+        scrollZoom={false}
         styles={{
           light: 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json',
           dark: 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json',
@@ -234,6 +276,18 @@ function JourneyMap({ data, className }: { data: ItineraryData['mapData']; class
           </MapMarker>
         )}
       </Map>
+
+      {/* Cooperative gesture hint overlay */}
+      <div
+        className={cn(
+          'pointer-events-none absolute inset-0 z-[10] flex items-center justify-center bg-black/40 transition-opacity duration-300',
+          showHint ? 'opacity-100' : 'opacity-0',
+        )}
+      >
+        <p className="rounded-lg bg-white/90 px-5 py-3 text-sm font-medium text-stone-800 shadow-lg backdrop-blur-sm">
+          Use {isMac ? '⌘' : 'Ctrl'} + scroll to zoom the map
+        </p>
+      </div>
     </div>
   );
 }
@@ -526,13 +580,146 @@ const IntroductionSection = ({ data }: { data: ItineraryData }) => {
 };
 
 // ============================================================================
-// JOURNEY OVERVIEW - Map and Timeline
+// JOURNEY OVERVIEW - Full Trip Summary + Map
 // ============================================================================
-const JourneyOverview = ({ data }: { data: ItineraryData }) => (
-  <section className="bg-white">
-    <div className="grid grid-cols-1 lg:grid-cols-2">
+
+/** Derive meal basis code from meals string */
+function getMealBasis(meals: string): string {
+  if (!meals || meals === 'None') return '';
+  if (meals.includes('Breakfast') && meals.includes('Lunch') && meals.includes('Dinner'))
+    return 'FB';
+  if (meals.includes('Breakfast') && meals.includes('Dinner')) return 'HB';
+  if (meals.includes('Breakfast') && meals.includes('Lunch')) return 'BB+L';
+  if (meals.includes('Breakfast')) return 'BB';
+  return '';
+}
+
+const JourneyOverview = ({ data }: { data: ItineraryData }) => {
+  return (
+    <section className="bg-[#faf9f7]">
+      <div className="mx-auto max-w-7xl px-6 pt-20 pb-16 lg:px-12">
+        <h2 className="mb-10 font-serif text-3xl text-stone-800 lg:text-4xl">Trip Summary</h2>
+
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[900px]">
+            <thead>
+              <tr className="border-b border-stone-200 text-left text-[11px] font-medium tracking-[0.15em] text-stone-400 uppercase">
+                <th className="w-[70px] pb-3 pr-3 font-medium">Day</th>
+                <th className="pb-3 pr-4 font-medium">Date</th>
+                <th className="pb-3 pr-4 font-medium">Destination</th>
+                <th className="pb-3 pr-4 font-medium">Activities</th>
+                <th className="pb-3 pr-4 font-medium">Accommodation</th>
+                <th className="w-[50px] pb-3 font-medium">Meals</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.itinerary.map((day, idx) => {
+                const destination = day.destination || '';
+                const mealBasis = getMealBasis(day.meals);
+                const isLastDay =
+                  day.accommodation === 'Last day, no accommodation';
+
+                return (
+                  <motion.tr
+                    key={idx}
+                    initial={{ opacity: 0, y: 8 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: idx * 0.04 }}
+                    className="border-b border-stone-100 align-top last:border-0"
+                  >
+                    {/* Day */}
+                    <td className="py-4 pr-3">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-stone-800 text-xs font-medium text-white">
+                        {day.day}
+                      </div>
+                    </td>
+
+                    {/* Date */}
+                    <td className="py-4 pr-4">
+                      <span className="text-sm text-stone-500 whitespace-nowrap">
+                        {day.date}
+                      </span>
+                    </td>
+
+                    {/* Destination */}
+                    <td className="py-4 pr-4">
+                      {destination && (
+                        <div className="flex items-center gap-1.5 text-sm font-medium text-stone-700">
+                          <MapPin className="h-3.5 w-3.5 shrink-0 text-stone-400" />
+                          {destination}
+                        </div>
+                      )}
+                    </td>
+
+                    {/* Activities */}
+                    <td className="py-4 pr-4">
+                      {day.activities.length > 0 ? (
+                        <div className="space-y-1">
+                          {day.activities.map((act, actIdx) => (
+                            <div
+                              key={actIdx}
+                              className="flex items-baseline gap-2 text-sm text-stone-600"
+                            >
+                              <span className="h-1 w-1 mt-1.5 shrink-0 rounded-full bg-stone-300" />
+                              <span>{act.activity}</span>
+                              {act.time && (
+                                <span className="shrink-0 text-xs text-stone-400">
+                                  {act.time}
+                                </span>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <span className="text-sm text-stone-400">{day.title}</span>
+                      )}
+                    </td>
+
+                    {/* Accommodation */}
+                    <td className="py-4 pr-4">
+                      {!isLastDay && day.accommodation ? (
+                        <span className="text-sm text-stone-600">
+                          {day.accommodation}
+                        </span>
+                      ) : (
+                        <span className="text-sm text-stone-300">—</span>
+                      )}
+                    </td>
+
+                    {/* Meals */}
+                    <td className="py-4">
+                      {mealBasis ? (
+                        <span className="rounded bg-stone-800 px-2 py-0.5 text-[11px] font-semibold text-white">
+                          {mealBasis}
+                        </span>
+                      ) : (
+                        <span className="text-sm text-stone-300">—</span>
+                      )}
+                    </td>
+                  </motion.tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Key */}
+        <div className="mt-6 flex gap-6 text-xs text-stone-400">
+          <p>
+            <span className="font-semibold text-stone-500">BB</span> Bed & Breakfast
+          </p>
+          <p>
+            <span className="font-semibold text-stone-500">HB</span> Half Board
+          </p>
+          <p>
+            <span className="font-semibold text-stone-500">FB</span> Full Board
+          </p>
+        </div>
+      </div>
+
       {/* Map */}
-      <div className="relative h-[50vh] lg:h-auto lg:min-h-[700px]">
+      <div className="relative h-[50vh] lg:h-[600px]">
         <JourneyMap data={data.mapData} />
         <div className="absolute top-8 left-8 max-w-xs rounded-2xl bg-white/95 p-6 shadow-xl backdrop-blur-sm">
           <p className="mb-2 text-xs font-light tracking-[0.2em] text-stone-400 uppercase">
@@ -543,70 +730,9 @@ const JourneyOverview = ({ data }: { data: ItineraryData }) => (
           </p>
         </div>
       </div>
-
-      {/* Timeline */}
-      <div className="bg-stone-50 p-10 lg:p-16 xl:p-20">
-        <div className="max-w-md">
-          <p className="mb-8 text-xs font-light tracking-[0.3em] text-stone-400 uppercase">
-            Day by Day
-          </p>
-
-          <div className="space-y-0">
-            {data.itinerary.map((day, idx) => (
-              <motion.div
-                key={idx}
-                initial={{ opacity: 0, x: -20 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: idx * 0.08 }}
-                className="relative"
-              >
-                {/* Timeline line */}
-                {idx < data.itinerary.length - 1 && (
-                  <div className="absolute top-12 bottom-0 left-[19px] w-px bg-stone-200" />
-                )}
-
-                <div className="flex gap-6 pb-8">
-                  {/* Day number */}
-                  <div className="relative">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-stone-800 text-sm font-medium text-white">
-                      {day.day}
-                    </div>
-                  </div>
-
-                  {/* Content */}
-                  <div className="flex-1 pt-1.5">
-                    <p className="mb-1 text-xs tracking-wider text-stone-400 uppercase">
-                      {day.date}
-                    </p>
-                    <h4 className="mb-1 font-serif text-lg text-stone-800">
-                      {day.activities.length > 0
-                        ? joinList(day.activities.map((a) => a.activity))
-                        : day.title}
-                    </h4>
-                    {(() => {
-                      const activityLocs = [
-                        ...new Set(day.activities.map((a) => a.location).filter(Boolean)),
-                      ];
-                      const displayLocation =
-                        activityLocs.length > 0 ? joinList(activityLocs as string[]) : day.destination;
-                      return displayLocation ? (
-                        <p className="flex items-center gap-1.5 text-sm text-stone-500">
-                          <MapPin className="h-3.5 w-3.5" />
-                          {displayLocation}
-                        </p>
-                      ) : null;
-                    })()}
-                  </div>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-);
+    </section>
+  );
+};
 
 // ============================================================================
 // PRICING SECTION - Elegant and clear
@@ -885,7 +1011,6 @@ const DaySection = ({
               <div className="space-y-10">
                 {day.activities.map((activity, idx) => {
                   const Icon = getActivityIcon(activity.activity);
-                  const timeOfDay = getTimeOfDay(activity.time);
 
                   return (
                     <motion.div
@@ -907,10 +1032,12 @@ const DaySection = ({
                       <div className="min-w-0 flex-1 border-l-2 border-transparent pb-2 pl-0 transition-colors group-hover:border-stone-300">
                         {/* Time label */}
                         <div className="mb-2 flex items-center gap-3">
-                          <span className="inline-flex items-center gap-1.5 text-xs font-medium tracking-[0.15em] text-stone-400 uppercase">
-                            <TimeIcon time={activity.time} className="h-3.5 w-3.5" />
-                            {timeOfDay}
-                          </span>
+                          {activity.time && (
+                            <span className="inline-flex items-center gap-1.5 text-xs font-medium tracking-[0.15em] text-stone-400 uppercase">
+                              <TimeIcon time={activity.time} className="h-3.5 w-3.5" />
+                              {activity.time}
+                            </span>
+                          )}
                           {activity.location && (
                             <>
                               <span className="h-0.5 w-0.5 rounded-full bg-stone-300" />
@@ -1238,8 +1365,8 @@ export default function DiscoveryTheme({
         data={data}
         onImageChange={onHeroImageChange ? handleHeroImageChange : undefined}
       />
-      <IntroductionSection data={data} />
       <JourneyOverview data={data} />
+      <IntroductionSection data={data} />
       {!data.hidePricing && <PricingSection data={data} onConfirm={openConfirmModal} />}
 
       {data.itinerary.map((day, index) => (
