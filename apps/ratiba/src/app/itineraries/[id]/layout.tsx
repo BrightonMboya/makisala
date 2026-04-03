@@ -645,9 +645,9 @@ function BuilderLayoutInner({ children }: { children: React.ReactNode }) {
             description: act.description,
             location: act.location,
             moment: act.moment,
+            startTime: act.time || null,
             isOptional: act.isOptional,
             imageUrl: act.imageUrl,
-            time: act.time,
           })),
           transfer: day.transportation?.[0]
             ? {

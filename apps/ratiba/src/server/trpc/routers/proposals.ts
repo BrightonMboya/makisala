@@ -51,6 +51,8 @@ interface BuilderActivity {
   description?: string | null;
   location?: string | null;
   moment?: string | null;
+  startTime?: string | null;
+  time?: string | null;
   isOptional?: boolean;
   imageUrl?: string | null;
 }
@@ -198,7 +200,7 @@ export const proposalsRouter = router({
                 },
               },
               activities: {
-                columns: { name: true, description: true, location: true, moment: true, isOptional: true, imageUrl: true },
+                columns: { name: true, description: true, location: true, moment: true, time: true, isOptional: true, imageUrl: true },
               },
               meals: true,
               transportation: {
@@ -265,7 +267,7 @@ export const proposalsRouter = router({
                 },
               },
               meals: { columns: { breakfast: true, lunch: true, dinner: true } },
-              activities: { columns: { id: true, name: true, description: true, location: true, moment: true, isOptional: true, imageUrl: true } },
+              activities: { columns: { id: true, name: true, description: true, location: true, moment: true, time: true, isOptional: true, imageUrl: true } },
               transportation: {
                 columns: {
                   id: true,
@@ -474,6 +476,7 @@ export const proposalsRouter = router({
                 description: activity.description || null,
                 location: activity.location || null,
                 moment: activity.moment || 'Full Day',
+                time: activity.startTime || null,
                 isOptional: activity.isOptional || false,
                 imageUrl: activity.imageUrl || null,
               });
@@ -815,6 +818,7 @@ export const proposalsRouter = router({
               description: activity.description,
               location: activity.location,
               moment: activity.moment,
+              time: activity.time || null,
               isOptional: activity.isOptional,
               imageUrl: activity.imageUrl,
             });

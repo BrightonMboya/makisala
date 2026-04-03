@@ -53,7 +53,7 @@ type ProposalDay = {
     description: string | null;
     location: string | null;
     moment: string;
-    startTime?: string | null;
+    time?: string | null;
     imageUrl: string | null;
   }>;
   meals?: {
@@ -116,7 +116,7 @@ export function transformProposalToItineraryData(proposal: ProposalInput): Itine
     const dateStr = format(currentDate, 'MMMM d, yyyy');
 
     const activities: DayActivity[] = (day.activities || []).map((act) => ({
-      time: act.startTime ? formatTime(act.startTime) : '',
+      time: act.time ? formatTime(act.time) : '',
       activity: capitalize(act.name),
       description: act.description || '',
       location: act.location || undefined,

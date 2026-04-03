@@ -90,6 +90,7 @@ export const pages = pgTable('pages', {
   faqs: json('faqs').$type<FAQItem[]>(),
   page_type: PageType().default('page'),
   status: PageStatus().default('published'),
+  app: text().default('makisala'),
   createdAt: timestamp({ precision: 3, mode: 'string' })
     .default(sql`CURRENT_TIMESTAMP`)
     .notNull(),
@@ -718,7 +719,7 @@ export const proposalActivities = pgTable('proposal_activities', {
   description: text('description'),
   location: text('location'),
   moment: text('moment').notNull(), // 'Morning', 'Afternoon', 'Evening', 'Half Day', 'Full Day', 'Night'
-  time: text('time'), // Legacy time field - stored in moment now
+  time: text('time'), // Exact start time e.g. "08:00", "14:30"
   isOptional: boolean('is_optional').default(false).notNull(),
   imageUrl: text('image_url'),
   createdAt: timestamp('created_at', { precision: 3, mode: 'string' })
