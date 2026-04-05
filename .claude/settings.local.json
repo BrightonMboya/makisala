@@ -1,43 +1,29 @@
 {
+  "attribution": {
+    "commit": "",
+    "pr": ""
+  },
   "permissions": {
+    "ask": [
+      "Bash(git push *)"
+    ],
     "allow": [
-      "Bash(npx tsc:*)",
       "Bash(ls:*)",
-      "WebFetch(domain:raw.githubusercontent.com)",
-      "Bash(gh pr view:*)",
-      "Bash(gh api:*)",
-      "Bash(git add:*)",
-      "WebFetch(domain:www.better-auth.com)",
+      "Bash(gh *)",
+      "Bash(git *)",
       "Bash(grep:*)",
       "Bash(bun *)",
-      "Bash(bunx tsc:*)",
-      "WebSearch",
+      "Bash(bunx *)",
+      "WebSearch(*)",
       "Bash(cat:*)",
       "Bash(npx next lint:*)",
       "Bash(git checkout:*)",
-      "Bash(gh pr list:*)",
-      "Bash(bunx --bun tsc:*)",
-      "WebFetch(domain:github.com)",
-      "WebFetch(domain:content.wetu.com)",
-      "WebFetch(domain:wetu.com)",
       "Bash(curl:*)",
       "Bash(python3:*)",
-      "Bash(git rebase:*)",
-      "Bash(git stash:*)",
-      "WebFetch(domain:api.github.com)",
       "Bash(find:*)",
-      "mcp__paper__write_html",
-      "mcp__paper__get_screenshot",
-      "mcp__paper__update_styles",
       "Bash(cd:*)",
       "Bash(npx tsx:*)",
-      "mcp__paper__get_basic_info",
-      "mcp__paper__get_font_family_info",
-      "mcp__paper__create_artboard",
-      "mcp__paper__finish_working_on_nodes",
-      "Bash(gws gmail:*)",
-      "Bash(gws sheets:*)",
-      "Bash(gws auth:*)",
+      "Bash(gws *)",
       "mcp__posthog__query-trends"
     ]
   }

@@ -170,3 +170,64 @@ Write 1 blog post per week targeting a specific long-tail keyword. Each post sho
 | Tier 1 keywords on page 1 | 3-5 | 10-15 | 20+ |
 | Monthly organic leads | 0-1 | 3-5 | 10-20 |
 | Blog posts published | 4 | 12 | 24+ |
+
+---
+
+## LLM / AI Search Optimization (LLMO)
+
+When travellers ask ChatGPT, Claude, or Perplexity "best gorilla trekking operator" or "where to go on safari in Tanzania", we want Makisala in the answer.
+
+### How LLMs Recommend Safari Operators
+1. **Entity recognition** - Is "Makisala Safaris" mentioned on credible third-party sites?
+2. **Structured data** - Does the site have clear schema markup (TouristTrip, TouristDestination, FAQ)?
+3. **Answer-first content** - Do pages directly answer common questions?
+4. **Specificity** - Niche-specific operators get recommended for niche queries
+5. **Reviews & trust signals** - Google reviews, TripAdvisor ratings, press mentions
+
+### What We Already Have (strong foundation)
+- [x] TouristDestinationSchema on all 16 park pages
+- [x] TouristAttractionSchema on all park pages
+- [x] FAQSchema with 3-8 FAQs per park (LLMs extract these directly)
+- [x] BreadcrumbSchema across all pages
+- [x] ProductSchema on tour pages
+- [x] Server-rendered content (LLMs can crawl without JS)
+- [x] 406 indexable pages with unique content
+
+### Action Items
+
+**On-site (do now):**
+- [ ] Add TourOperator / TravelAgency schema to homepage (LocalBusiness type)
+- [ ] Ensure every FAQ answer starts with a direct answer, then elaborates
+- [ ] Add "About Makisala Safaris" section on homepage with founding story, location, team size
+- [ ] Include specific numbers in content: "16 national parks", "3 countries", "97 tour packages"
+- [ ] Add real guide names in testimonials (LLMs cite specific examples)
+- [ ] Update content quarterly to maintain freshness signals
+
+**Off-site (ongoing):**
+- [ ] Get reviewed on TripAdvisor, Google Business, SafariBookings
+- [ ] Get listed on "best safari operators" listicle articles
+- [ ] Answer questions on Reddit r/safari, r/travel, TripAdvisor forums
+- [ ] Get mentioned in Lonely Planet, Rough Guides, or travel blogs
+- [ ] Maintain accurate Google Business Profile with photos, posts, responses
+
+**Content format for LLM pickup:**
+- Start park pages with a clear definition: "Serengeti National Park is a 14,750 sq km wildlife reserve in northern Tanzania, home to the Great Migration..."
+- Use comparison content: "Uganda vs Rwanda Gorilla Trekking" - LLMs love recommending comparison articles
+- Include structured tables with specific data (costs, durations, success rates)
+- Write in a factual, authoritative tone (not salesy)
+
+### Track LLM Visibility
+- Monthly: Ask ChatGPT, Claude, Perplexity:
+  - "best safari operator in Tanzania"
+  - "gorilla trekking Uganda recommendations"
+  - "best time to climb Kilimanjaro"
+  - "Serengeti safari itinerary"
+- Track if Makisala appears in answers or citations
+- Goal: appear in 20%+ of relevant queries within 12 months
+
+### LLM Goals
+| Metric | Month 3 | Month 6 | Month 12 |
+|--------|---------|---------|----------|
+| LLM mention rate (relevant queries) | 0-5% | 10-15% | 20-30% |
+| Third-party review sites listed on | 2 | 5 | 8+ |
+| Press/blog mentions | 1-2 | 5 | 10+ |

@@ -260,6 +260,13 @@
       "when": 1774888584035,
       "tag": "0036_useful_marten_broadcloak",
       "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1775062235379,
+      "tag": "0037_wooden_omega_flight",
+      "breakpoints": true
     }
   ]
 }
