@@ -94,6 +94,7 @@ function CinematicGallery({
                 src={currentImage}
                 alt={images[currentIndex]?.alt ?? alt}
                 fill
+                unoptimized={currentImage.endsWith('.avif')}
                 className="object-cover transition-opacity duration-500"
                 sizes="(max-width: 768px) 100vw, 700px"
             />

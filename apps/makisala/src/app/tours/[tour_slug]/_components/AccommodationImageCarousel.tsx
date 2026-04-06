@@ -82,6 +82,7 @@ export default function AccommodationImageCarousel({
                                 `${accommodationName} - Image ${currentIndex + 1}`
                             }
                             fill
+                            unoptimized={images[currentIndex]?.imageUrl?.endsWith('.avif')}
                             className="object-contain"
                             priority
                             sizes="(max-width: 768px) 100vw, 1200px"
