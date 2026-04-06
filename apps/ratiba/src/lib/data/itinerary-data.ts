@@ -1,16 +1,3 @@
-export const commonActivities = [
-  { value: 'game-drive', label: 'Game Drive' },
-  { value: 'gorilla-trekking', label: 'Gorilla Trekking' },
-  { value: 'golden-monkey-trekking', label: 'Golden Monkey Trekking' },
-  { value: 'boat-cruise', label: 'Boat Cruise' },
-  { value: 'nature-walk', label: 'Nature Walk' },
-  { value: 'cultural-tour', label: 'Cultural Tour' },
-  { value: 'bird-watching', label: 'Bird Watching' },
-  { value: 'chimpanzee-trekking', label: 'Chimpanzee Trekking' },
-  { value: 'city-tour', label: 'City Tour' },
-  { value: 'canopy-walk', label: 'Canopy Walk' },
-];
-
 export const airports = [
   { value: 'kgl', label: 'Kigali International Airport (KGL)' },
   { value: 'jro', label: 'Kilimanjaro International Airport (JRO)' },

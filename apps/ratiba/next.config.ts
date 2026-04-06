@@ -7,6 +7,15 @@ const nextConfig: NextConfig = {
       bodySizeLimit: '100mb',
     },
   },
+  async rewrites() {
+    return [
+      // Serve markdown variants of compare pages for LLM crawlers
+      {
+        source: '/compare/:slug.md',
+        destination: '/compare/:slug/md',
+      },
+    ];
+  },
   images: {
     unoptimized: true,
     remotePatterns: [
