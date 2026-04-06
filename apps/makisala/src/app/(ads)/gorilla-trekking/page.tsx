@@ -152,8 +152,7 @@ export default function GorillaTrekkingPage() {
                 }}
             />
 
-            <style>{`html > footer { display: none !important; } .woot-widget-bubble, .woot-widget-holder, .woot--bubble-holder { display: none !important; }`}</style>
-            <LandingNav />
+<LandingNav />
             <StickyMobileCTA />
 
             <div className="bg-background min-h-screen">

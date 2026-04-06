@@ -17,13 +17,15 @@ import { useLogger } from 'next-axiom'
 import { Check } from 'lucide-react'
 
 const formSchema = z.object({
+    fullName: z.string().min(1, 'Full name is required'),
     email: z.email('Valid email is required'),
     message: z.string().optional(),
+    whatsapp: z.string().optional(),
 })
 
 type FormData = z.infer<typeof formSchema>
 
-export default function UgandaGorillaSafariForm() {
+export default function KilimanjaroForm() {
     const { toast } = useToast()
     const log = useLogger()
     const pathname = usePathname()
@@ -33,8 +35,10 @@ export default function UgandaGorillaSafariForm() {
     const form = useForm<FormData>({
         resolver: zodResolver(formSchema),
         defaultValues: {
+            fullName: '',
             email: '',
             message: '',
+            whatsapp: '',
         },
     })
 
@@ -42,28 +46,29 @@ export default function UgandaGorillaSafariForm() {
         setIsPending(true)
         try {
             await createInquiry({
-                fullName: '',
+                fullName: data.fullName,
                 email: data.email,
                 countryOfResidence: '',
                 numberOfTravellers: 2,
                 startDate: new Date(),
-                comments: data.message || '',
+                comments:
+                    `${data.message || ''}${data.whatsapp ? ` WhatsApp: ${data.whatsapp}.` : ''}`.trim(),
                 url: `${BASE_URL}${pathname}`,
             })
             sendGTMEvent({
                 event: 'conversion',
-                send_to: 'AW-17982843958/autmCMmsk4EcELbY8f5C',
+                send_to: 'AW-17982843958/CyrHCO_cj5EcELbY8f5C',
             })
             form.reset()
             router.push('/thank-you')
         } catch (error) {
-            log.error('Uganda gorilla safari form submission failed', {
+            log.error('Kilimanjaro form submission failed', {
                 error: error instanceof Error ? error.message : String(error),
                 email: data.email,
                 pathname,
             })
             toast('Error', {
-                description: 'Failed to submit. Please try again.',
+                description: 'Failed to submit inquiry. Please try again.',
             })
         } finally {
             setIsPending(false)
@@ -74,9 +79,23 @@ export default function UgandaGorillaSafariForm() {
         <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                 <div className="flex items-center gap-2 rounded-lg bg-green-50 px-3 py-2 text-sm">
-                    <Check className="h-4 w-4 shrink-0 text-green-600" />
-                    <span className="text-gray-700">Free quote, no obligation. We reply within 24 hours.</span>
+                    <Check className="h-4 w-4 text-green-600 shrink-0" />
+                    <span className="text-gray-700">100% free quote, no obligation to book</span>
                 </div>
+
+                <FormField
+                    control={form.control}
+                    name="fullName"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Full Name</FormLabel>
+                            <FormControl>
+                                <Input placeholder="Your full name" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
 
                 <FormField
                     control={form.control}
@@ -98,17 +117,36 @@ export default function UgandaGorillaSafariForm() {
                     render={({ field }) => (
                         <FormItem>
                             <FormLabel>
-                                What are you looking for?{' '}
+                                Message{' '}
                                 <span className="text-muted-foreground font-normal">
                                     (optional)
                                 </span>
                             </FormLabel>
                             <FormControl>
                                 <Textarea
-                                    placeholder="E.g. gorilla trekking for 2 people in July, mid-range lodges..."
+                                    placeholder="Preferred route, dates, group size, fitness level..."
                                     className="min-h-[70px]"
                                     {...field}
                                 />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )}
+                />
+
+                <FormField
+                    control={form.control}
+                    name="whatsapp"
+                    render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>
+                                WhatsApp{' '}
+                                <span className="text-muted-foreground font-normal">
+                                    (for faster response)
+                                </span>
+                            </FormLabel>
+                            <FormControl>
+                                <Input placeholder="+1 234 567 8900" type="tel" {...field} />
                             </FormControl>
                             <FormMessage />
                         </FormItem>
@@ -121,7 +159,7 @@ export default function UgandaGorillaSafariForm() {
                     size="lg"
                     disabled={isPending}
                 >
-                    {isPending ? 'Sending...' : 'Get My Free Quote'}
+                    {isPending ? 'Sending...' : 'Get a Free Quote'}
                 </Button>
                 <p className="text-muted-foreground text-center text-xs">
                     No payment required. We respond within 24 hours.

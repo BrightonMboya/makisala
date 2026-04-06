@@ -1,5 +1,4 @@
 import {
-    Binoculars,
     Check,
     Clock,
     Heart,
@@ -8,13 +7,14 @@ import {
     Mountain,
     Shield,
     Star,
-    TreePine,
+    Sunrise,
+    TrendingUp,
     Users,
 } from 'lucide-react'
 import type { Metadata } from 'next'
 import LandingNav from '@/components/landing-nav'
-import UgandaSafariForm from '@/app/(ads)/uganda-safari/_components/uganda-safari-form'
-import StickyMobileCTA from '@/app/(ads)/uganda-safari/_components/sticky-mobile-cta'
+import KilimanjaroForm from '@/app/(ads)/kilimanjaro/_components/kilimanjaro-form'
+import StickyMobileCTA from '@/app/(ads)/kilimanjaro/_components/sticky-mobile-cta'
 import { BreadcrumbSchema, FAQSchema, TouristTripSchema } from '@/components/schema'
 import { FAQ } from '@/components/faq'
 import { BASE_URL } from '@/lib/constants'
@@ -22,48 +22,48 @@ import Image from 'next/image'
 
 const faqs = [
     {
-        question: 'How much does a Uganda safari cost?',
-        answer: 'Uganda safari packages typically range from $2,000-$5,000 per person depending on duration, accommodations, and activities. Gorilla trekking permits are $800 per person. We build custom itineraries for every budget. Tell us what you want and we will quote you a transparent, all-inclusive price.',
+        question: 'How much does it cost to climb Kilimanjaro?',
+        answer: 'Our all-inclusive packages start from $2,300 per person for 6 days. Price varies by route, group size, and trip length. This includes park fees ($70/day), guides, porters, meals, camping gear, and transfers. We quote transparently — no hidden costs.',
     },
     {
-        question: 'Is Uganda safe for tourists?',
-        answer: 'Yes. Uganda is one of the safest countries in East Africa for tourism. National parks are well-managed with professional rangers and guides. Tourist areas have excellent infrastructure. We handle all logistics and are on the ground with you throughout.',
+        question: 'Which route should I choose?',
+        answer: 'Machame (6-7 days) is the most popular — great scenery and good acclimatization. Lemosho (7-8 days) is less crowded with the highest success rates. Marangu (5-6 days) is the only route with hut accommodation. We recommend the best route based on your fitness, schedule, and preferences.',
     },
     {
-        question: 'When is the best time to visit Uganda?',
-        answer: 'Uganda is a year-round destination. The dry seasons (June-September and December-February) offer the best trekking conditions and wildlife viewing. The wet seasons have fewer tourists and lush green landscapes, great for photography and lower rates.',
+        question: 'How fit do I need to be?',
+        answer: "You don't need to be an athlete, but you should be able to walk 4-7 hours a day on uneven terrain. The main challenge is altitude, not technical difficulty. We recommend cardio training 2-3 months before your climb. Our guides manage pace and acclimatization carefully.",
     },
     {
-        question: 'How physically demanding is gorilla trekking in Uganda?',
-        answer: 'Gorilla trekking in Bwindi involves hiking through dense forest at altitude. Treks can range from 1 to 6 hours depending on gorilla family locations. Porters are available to assist you. A reasonable level of fitness is recommended but no prior trekking experience is needed.',
+        question: 'What is the success rate?',
+        answer: 'The overall summit success rate on Kilimanjaro is around 65%. With our longer routes (7-8 days) and experienced guides who manage acclimatization properly, our clients achieve significantly higher success rates. Route choice and pace are the biggest factors.',
     },
     {
-        question: 'What makes Uganda unique for gorilla trekking?',
-        answer: "Uganda is home to over half the world's remaining mountain gorillas, primarily in Bwindi Impenetrable Forest, one of the oldest rainforests on Earth. Beyond gorillas, Uganda lets you combine trekking with wildlife safaris, chimpanzee tracking, and boat cruises in a single trip.",
+        question: 'When is the best time to climb?',
+        answer: 'The best months are January-March and June-October (dry seasons). July-August and December-January are peak seasons with more climbers. We operate year-round — the wet season (April-May, November) has fewer crowds and lower rates.',
     },
     {
-        question: 'How far in advance should I book?',
-        answer: 'We recommend booking 3-6 months in advance, especially for peak season (June-September, December-February). Gorilla permits are limited and sell out. We can sometimes secure last-minute permits but early booking guarantees your dates.',
+        question: 'What is included in the package?',
+        answer: 'Everything: park entry fees, professional guides, porters, a cook, all meals on the mountain, camping equipment (tents, sleeping mats), airport transfers, and a pre-climb hotel night. You only need personal gear and flights.',
     },
 ]
 
-const fallbackReviews = [
+const reviews = [
     {
         author_name: 'Tatu Msuya',
-        text: 'Makisala organized my gorilla trekking trip and it was extraordinary from start to finish. The logistics were seamless, permits ready, early pickup, a skilled driver, and a guide who genuinely cared about everyone\'s comfort. The actual trek was breathtaking, and Makisala made it feel safe, well-planned, and deeply meaningful.',
+        text: "Makisala organized my gorilla trekking trip and it was extraordinary from start to finish. The logistics were seamless, permits ready, early pickup, a skilled driver, and a guide who genuinely cared about everyone's comfort.",
         rating: 5,
         profile_photo_url:
             'https://lh3.googleusercontent.com/a-/ALV-UjWeEeflHottpvGo6wG1MsBa9JievmHTqZl14xVry4dDr88R_GAY=w144-h144-p-rp-mo-br100',
     },
     {
         author_name: 'Lightness Benedict',
-        text: 'I travelled with Makisala on a two day Gorilla trekking in Rwanda, and was pleased with how they handled everything. The vehicle was comfortable, accommodation matched what I was told, and the guide offered helpful local insights. They also took care to respect safety and gave clear instructions all along. If you want a trustworthy tour operator in Rwanda, Makisala is a good pick.',
+        text: 'I travelled with Makisala on a two day Gorilla trekking in Rwanda, and was pleased with how they handled everything. The vehicle was comfortable, accommodation matched what I was told, and the guide offered helpful local insights.',
         rating: 5,
         profile_photo_url: null,
     },
     {
         author_name: 'Tony Rite',
-        text: 'Makisala delivered an incredible Big Five safari. Our guide was skilled at spotting wildlife and gave us so much insight about the animals and the parks. The accommodations and vehicle were very comfortable, and every day felt like a new adventure. Would definitely travel with them again.',
+        text: 'Makisala delivered an incredible Big Five safari. Our guide was skilled at spotting wildlife and gave us so much insight about the animals and the parks. The accommodations and vehicle were very comfortable, and every day felt like a new adventure.',
         rating: 5,
         profile_photo_url:
             'https://lh3.googleusercontent.com/a-/ALV-UjUzYuj_-z7ic5_yYApqM7EdC-EiuxVmlTe5sdSQLXCK-hneYNx2yw=w144-h144-p-rp-mo-ba2-br100',
@@ -72,51 +72,77 @@ const fallbackReviews = [
 
 const sampleItineraries = [
     {
-        title: '3-Day Gorilla Trek',
+        title: '6-Day Machame Route',
         days: [
             {
-                name: 'Arrive in Entebbe',
+                name: 'Machame Gate to Machame Camp',
                 description:
-                    'Airport pickup. Fly or drive to Bwindi Impenetrable Forest. Evening briefing at your lodge.',
+                    'Drive from Moshi to Machame Gate (1,800m). Trek through rainforest to Machame Camp (3,000m). 5-6 hours.',
             },
             {
-                name: 'Gorilla Trekking',
+                name: 'Machame Camp to Shira Camp',
                 description:
-                    'Early morning briefing at park HQ. Trek into the forest to spend one hour with a habituated gorilla family. Afternoon at leisure.',
+                    'Climb through moorland with views of Kibo peak. Reach Shira Plateau (3,840m). 4-5 hours.',
             },
             {
-                name: 'Departure',
+                name: 'Shira Camp to Barranco Camp',
                 description:
-                    'Morning community walk or Batwa cultural experience. Transfer back to Entebbe for your flight.',
+                    'Acclimatization day — climb high to Lava Tower (4,630m), then descend to Barranco Camp (3,960m). 6-7 hours.',
+            },
+            {
+                name: 'Barranco to Karanga Camp',
+                description:
+                    'Scramble up the Barranco Wall (no ropes needed). Trek to Karanga Camp (4,035m). 4-5 hours.',
+            },
+            {
+                name: 'Karanga to Barafu Camp',
+                description:
+                    'Short trek to Barafu Base Camp (4,640m). Rest and prepare for summit night. 3-4 hours.',
+            },
+            {
+                name: 'Summit & Descent',
+                description:
+                    'Midnight start. Reach Uhuru Peak (5,895m) at sunrise. Descend to Mweka Gate. 12-15 hours total.',
             },
         ],
     },
     {
-        title: '5-Day Gorilla + Safari',
+        title: '7-Day Lemosho Route',
         days: [
             {
-                name: 'Arrive in Entebbe',
-                description: 'Airport pickup and overnight in Entebbe or Kampala.',
+                name: 'Londorossi Gate to Big Tree Camp',
+                description:
+                    'Drive to Londorossi Gate. Trek through lush rainforest to Big Tree Camp (2,780m). 3-4 hours.',
             },
             {
-                name: 'Transfer to Bwindi',
+                name: 'Big Tree Camp to Shira 2',
                 description:
-                    'Scenic drive or domestic flight to Bwindi Impenetrable Forest. Afternoon nature walk.',
+                    'Cross the Shira Plateau with panoramic views. Camp at Shira 2 (3,900m). 5-6 hours.',
             },
             {
-                name: 'Gorilla Trekking',
+                name: 'Shira 2 to Barranco Camp',
                 description:
-                    'Full-day gorilla trekking experience. One hour with a gorilla family in their natural habitat.',
+                    'Acclimatize via Lava Tower (4,630m), descend to Barranco Camp (3,960m). 6-7 hours.',
             },
             {
-                name: 'Queen Elizabeth National Park',
+                name: 'Barranco to Karanga Camp',
                 description:
-                    'Drive to Queen Elizabeth NP. Afternoon boat cruise on the Kazinga Channel with hippos, elephants, and birdlife.',
+                    'Scale the Barranco Wall. Trek through the Karanga Valley to camp (4,035m). 4-5 hours.',
             },
             {
-                name: 'Game Drive & Departure',
+                name: 'Karanga to Barafu Camp',
                 description:
-                    'Early morning game drive in Ishasha sector, famous for tree-climbing lions. Transfer to Entebbe.',
+                    'Ascend to Barafu Base Camp (4,640m). Rest and prepare for summit night. 3-4 hours.',
+            },
+            {
+                name: 'Summit Night',
+                description:
+                    'Midnight start. Push to Stella Point, then Uhuru Peak (5,895m) at sunrise. Descend to Millennium Camp. 12-14 hours.',
+            },
+            {
+                name: 'Descent to Mweka Gate',
+                description:
+                    'Final descent through rainforest to Mweka Gate. Transfer to hotel in Moshi. 3-4 hours.',
             },
         ],
     },
@@ -124,36 +150,32 @@ const sampleItineraries = [
 
 export async function generateMetadata(): Promise<Metadata> {
     return {
-        title: 'Uganda Safari & Gorilla Trekking',
+        title: 'Climb Kilimanjaro | From $2,300 All-Inclusive | Makisala',
         description:
-            'Plan your custom Uganda safari. Gorilla trekking, wildlife game drives, and chimpanzee tracking. All-inclusive packages with local expert guides. Get a free quote.',
+            'Climb Mount Kilimanjaro with experienced local guides. All-inclusive packages from $2,300 — park fees, guides, porters, meals, and gear included. Get a free quote.',
         robots: {
             index: false,
             follow: false,
         },
         openGraph: {
-            title: 'Uganda Safari & Gorilla Trekking',
+            title: 'Climb Kilimanjaro | From $2,300 All-Inclusive | Makisala',
             description:
-                'Plan your custom Uganda safari. Gorilla trekking, wildlife game drives, and chimpanzee tracking. All-inclusive packages with local expert guides.',
+                'Climb Mount Kilimanjaro with experienced local guides. All-inclusive packages from $2,300 — park fees, guides, porters, meals, and gear included.',
             images: [
                 {
                     url: 'https://res.cloudinary.com/dr2tdyz2w/image/upload/w_1200,h_630,c_fill,q_80/v1753389413/Gorilla-Chimpanzee-Safari-_ls4ffr.jpg',
                     width: 1200,
                     height: 630,
-                    alt: 'Mountain gorilla in Uganda',
+                    alt: 'Mount Kilimanjaro summit',
                 },
             ],
         },
     }
 }
 
-export default function UgandaSafariPage() {
-    const reviews = fallbackReviews
-    const rating = 5.0
-    const totalReviews = 3
-
+export default function KilimanjaroPage() {
     const heroImage =
-        'https://assets.makisala.com/organizations/411c36e8-0808-46f4-a3b2-130a3eecc349/images/1773308528666-pexels-magda-ehlers-pexels-789628.webp'
+        'https://res.cloudinary.com/dr2tdyz2w/image/upload/q_auto/f_auto/v1775043946/page-image_mediaUrl_0cfe10af-6630-4e3e-8cbb-a177b1ae9627_1727884116783_saxeks.avif'
 
     return (
         <main>
@@ -165,36 +187,36 @@ export default function UgandaSafariPage() {
                             breadcrumbs: [
                                 { name: 'Home', url: BASE_URL },
                                 {
-                                    name: 'Uganda Safari',
-                                    url: `${BASE_URL}/uganda-safari`,
+                                    name: 'Climb Kilimanjaro',
+                                    url: `${BASE_URL}/kilimanjaro`,
                                 },
                             ],
                         }),
                         FAQSchema({ faqs }),
                         TouristTripSchema({
-                            name: 'Uganda Safari & Gorilla Trekking',
+                            name: 'Climb Mount Kilimanjaro',
                             description:
-                                'Custom Uganda safari packages including gorilla trekking, wildlife game drives, and chimpanzee tracking with local expert guides.',
-                            url: `${BASE_URL}/uganda-safari`,
-                            pricingStartsFrom: '2000',
-                            itineraryItems: sampleItineraries[1]!.days,
+                                'All-inclusive Kilimanjaro climbing packages with experienced local guides, porters, meals, and gear.',
+                            url: `${BASE_URL}/kilimanjaro`,
+                            pricingStartsFrom: '2300',
+                            itineraryItems: sampleItineraries[0]!.days,
                         }),
                     ]),
                 }}
             />
 
-<LandingNav ctaText="Get a Free Quote" />
+            <LandingNav ctaText="Get a Free Quote" />
             <StickyMobileCTA />
 
             <div className="bg-background min-h-screen">
                 {/* ============================================================
-                    SECTION 1 — HERO WITH INLINE FORM (ABOVE THE FOLD)
+                    SECTION 1 — HERO WITH INLINE FORM
                     ============================================================ */}
                 <section id="inquiry-form" className="relative min-h-[90vh] lg:min-h-screen">
                     <div className="absolute inset-0">
                         <Image
                             src={heroImage}
-                            alt="Mountain gorilla in Uganda's Bwindi Impenetrable Forest"
+                            alt="Mount Kilimanjaro summit at sunrise"
                             fill
                             className="object-cover"
                             priority
@@ -203,9 +225,7 @@ export default function UgandaSafariPage() {
                     </div>
 
                     <div className="relative z-10 mx-auto flex max-w-7xl flex-col gap-8 px-5 pt-24 pb-12 sm:px-8 lg:flex-row lg:items-center lg:gap-12 lg:pt-28 lg:pb-16">
-                        {/* Left: Copy */}
                         <div className="flex-1 lg:pr-4">
-                            {/* Trust signals ABOVE the headline */}
                             <div className="mb-4 flex items-center gap-3">
                                 <div className="flex items-center gap-1">
                                     {[...Array(5)].map((_, i) => (
@@ -216,29 +236,30 @@ export default function UgandaSafariPage() {
                                     ))}
                                 </div>
                                 <span className="text-sm text-white/80">
-                                    Rated 5/5 by past travelers
+                                    Rated 5/5 by past climbers
                                 </span>
                             </div>
 
                             <h1 className="mb-5 text-3xl leading-tight font-bold tracking-tight text-white sm:text-4xl md:text-5xl lg:text-[3.25rem]">
-                                Plan Your Uganda Safari: Gorillas, Wildlife & More
+                                Climb Kilimanjaro — All-Inclusive from $2,300
                             </h1>
 
                             <p className="mb-6 max-w-xl text-lg leading-relaxed text-white/90 md:text-xl">
-                                Custom all-inclusive safari packages from{' '}
-                                <span className="font-semibold text-white">$2,500 per person</span>.
-                                Gorilla trekking, wildlife game drives, chimpanzee tracking. We
-                                build your perfect Uganda trip from scratch.
+                                Summit Africa's highest peak with experienced local guides. Park
+                                fees, porters, meals, camping gear, and transfers —{' '}
+                                <span className="font-semibold text-white">
+                                    everything included in one price.
+                                </span>
                             </p>
 
                             <div className="mb-6 flex flex-col gap-3 text-sm text-white/80 sm:flex-row sm:gap-6">
                                 <span className="flex items-center gap-2">
                                     <MapPin className="h-4 w-4 text-white/60" />
-                                    East Africa-based operator
+                                    Tanzania-based operator
                                 </span>
                                 <span className="flex items-center gap-2">
                                     <Users className="h-4 w-4 text-white/60" />
-                                    100% custom itineraries
+                                    Experienced summit guides
                                 </span>
                                 <span className="flex items-center gap-2">
                                     <Clock className="h-4 w-4 text-white/60" />
@@ -246,14 +267,13 @@ export default function UgandaSafariPage() {
                                 </span>
                             </div>
 
-                            {/* Price anchoring */}
                             <div className="mb-6 grid grid-cols-3 gap-3">
                                 <div className="rounded-lg bg-white/10 px-4 py-3 text-center backdrop-blur-sm">
-                                    <p className="text-lg font-bold text-white">4+ experiences</p>
-                                    <p className="text-xs text-white/70">In one trip</p>
+                                    <p className="text-lg font-bold text-white">5,895m</p>
+                                    <p className="text-xs text-white/70">Summit elevation</p>
                                 </div>
                                 <div className="rounded-lg bg-white/10 px-4 py-3 text-center backdrop-blur-sm">
-                                    <p className="text-lg font-bold text-white">3-10 days</p>
+                                    <p className="text-lg font-bold text-white">6-8 days</p>
                                     <p className="text-xs text-white/70">Trip length</p>
                                 </div>
                                 <div className="rounded-lg bg-white/10 px-4 py-3 text-center backdrop-blur-sm">
@@ -262,9 +282,8 @@ export default function UgandaSafariPage() {
                                 </div>
                             </div>
 
-                            {/* Single WhatsApp CTA on left */}
                             <a
-                                href="https://wa.me/255788323254?text=Hi%2C%20I%27m%20interested%20in%20a%20Uganda%20safari.%20Can%20you%20help%20me%20plan%20a%20trip%3F"
+                                href="https://wa.me/255788323254?text=Hi%2C%20I%27m%20interested%20in%20climbing%20Kilimanjaro.%20Can%20you%20help%20me%20plan%20my%20climb%3F"
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="inline-flex items-center justify-center gap-2 rounded-full bg-green-600 px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-green-700"
@@ -274,17 +293,16 @@ export default function UgandaSafariPage() {
                             </a>
                         </div>
 
-                        {/* Right: Form */}
                         <div className="w-full shrink-0 lg:w-[420px]">
                             <div className="rounded-2xl border border-white/10 bg-white p-6 shadow-2xl md:p-8">
                                 <h2 className="mb-1 text-xl font-bold text-gray-900">
                                     Get a Free Quote
                                 </h2>
                                 <p className="text-muted-foreground mb-5 text-sm">
-                                    Tell us what you're looking for. We'll build a personalized
-                                    itinerary and quote within 24 hours.
+                                    Tell us your dates and preferred route. We'll send a
+                                    personalized quote within 24 hours.
                                 </p>
-                                <UgandaSafariForm />
+                                <KilimanjaroForm />
                             </div>
                         </div>
                     </div>
@@ -295,7 +313,6 @@ export default function UgandaSafariPage() {
                     ============================================================ */}
                 <section className="border-b bg-white py-6">
                     <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-center gap-x-8 gap-y-3 px-6">
-                        {/* Google Reviews badge */}
                         <div className="flex items-center gap-2">
                             <Image
                                 src="https://upload.wikimedia.org/wikipedia/commons/2/2f/Google_2015_logo.svg"
@@ -312,9 +329,7 @@ export default function UgandaSafariPage() {
                                     />
                                 ))}
                             </div>
-                            <span className="text-xs text-gray-500">
-                                5.0/5 on Google
-                            </span>
+                            <span className="text-xs text-gray-500">5.0/5 on Google</span>
                         </div>
 
                         <div className="hidden h-4 w-px bg-gray-200 sm:block" />
@@ -322,15 +337,15 @@ export default function UgandaSafariPage() {
                         {[
                             {
                                 icon: <MapPin className="text-primary h-4 w-4" />,
-                                text: 'East Africa-based',
+                                text: 'Based in Tanzania',
                             },
                             {
                                 icon: <Shield className="text-primary h-4 w-4" />,
-                                text: 'Permits secured',
+                                text: 'Licensed operator',
                             },
                             {
                                 icon: <Heart className="text-primary h-4 w-4" />,
-                                text: '100% custom trips',
+                                text: 'Custom routes',
                             },
                         ].map((item, i) => (
                             <div
@@ -351,16 +366,16 @@ export default function UgandaSafariPage() {
                     <div className="mx-auto max-w-4xl px-6">
                         <div className="mb-10 text-center">
                             <h2 className="mb-3 text-3xl font-bold md:text-3xl">
-                                Planning a Uganda Safari Is Overwhelming
+                                Planning a Kilimanjaro Climb Is Stressful
                             </h2>
                             <p className="text-muted-foreground mx-auto max-w-2xl text-base leading-relaxed">
-                                Gorilla permits sell out months ahead. Lodges are hard to vet from
-                                abroad. Routes between parks are confusing. And one wrong booking
-                                can waste days of your trip.
+                                Which route? How many days? Are the guides legit? Will the gear be
+                                good enough? One bad operator can ruin the experience — or worse,
+                                put your safety at risk.
                             </p>
                             <p className="mt-10 text-base font-semibold">
-                                We're based in East Africa. We deal with this every day. Here's how
-                                we make it simple:
+                                We're based at the foot of Kilimanjaro. We send teams up every week.
+                                Here's how we make it simple:
                             </p>
                         </div>
 
@@ -368,23 +383,23 @@ export default function UgandaSafariPage() {
                             {[
                                 {
                                     step: '1',
-                                    title: 'Share Your Dates & Budget',
-                                    desc: 'WhatsApp us or fill out the form — takes 2 minutes.',
+                                    title: 'Tell Us Your Dates',
+                                    desc: "WhatsApp us or fill out the form — we'll recommend the best route for you.",
                                 },
                                 {
                                     step: '2',
-                                    title: 'We Build Your Itinerary',
-                                    desc: 'A personalized trip plan with transparent pricing, sent within 24 hours.',
+                                    title: 'Get a Custom Quote',
+                                    desc: 'Transparent pricing with everything listed. No surprises at the gate.',
                                 },
                                 {
                                     step: '3',
-                                    title: 'We Lock In Permits & Lodges',
-                                    desc: 'Gorilla permits, vetted lodges, transport — all secured before you pay.',
+                                    title: 'We Handle Everything',
+                                    desc: 'Park fees, guides, porters, meals, gear, hotel — all booked and confirmed.',
                                 },
                                 {
                                     step: '4',
-                                    title: 'Land & We Handle the Rest',
-                                    desc: 'Airport pickup, every transfer, every meal. You just enjoy the trip.',
+                                    title: 'Fly In & Climb',
+                                    desc: 'We pick you up at Kilimanjaro Airport. Your team is ready. You just climb.',
                                 },
                             ].map((item, i) => (
                                 <div key={i} className="text-center">
@@ -402,36 +417,36 @@ export default function UgandaSafariPage() {
                 </section>
 
                 {/* ============================================================
-                    SECTION 3B — WHAT YOU'LL EXPERIENCE (bullet points)
+                    SECTION 3B — WHY KILIMANJARO (bullet points)
                     ============================================================ */}
                 <section className="border-y bg-gray-50 py-16 lg:py-20">
                     <div className="mx-auto max-w-6xl px-6">
                         <div className="grid items-center gap-10 lg:grid-cols-2">
                             <div>
                                 <h2 className="mb-5 text-3xl font-bold md:text-4xl">
-                                    4+ Experiences in One Trip
+                                    What Makes This Climb Special
                                 </h2>
                                 <div className="space-y-5">
                                     {[
                                         {
                                             icon: <Mountain className="text-primary h-6 w-6" />,
-                                            title: 'Mountain Gorilla Trekking',
-                                            desc: "One hour with a gorilla family in Bwindi — home to half the world's remaining mountain gorillas.",
+                                            title: 'Roof of Africa',
+                                            desc: 'Stand on the highest point in Africa at 5,895m — no technical climbing skills required.',
                                         },
                                         {
-                                            icon: <TreePine className="text-primary h-6 w-6" />,
-                                            title: 'Chimpanzee Tracking',
-                                            desc: 'Follow chimps through Kibale Forest, the primate capital of the world.',
+                                            icon: <Sunrise className="text-primary h-6 w-6" />,
+                                            title: 'Sunrise Above the Clouds',
+                                            desc: 'Summit at dawn and watch the sun rise over the African continent from Uhuru Peak.',
                                         },
                                         {
-                                            icon: <Binoculars className="text-primary h-6 w-6" />,
-                                            title: 'Tree-Climbing Lions',
-                                            desc: 'Game drive in Queen Elizabeth to see the famous Ishasha tree-climbing lions.',
+                                            icon: <TrendingUp className="text-primary h-6 w-6" />,
+                                            title: '5 Climate Zones',
+                                            desc: 'Trek from tropical rainforest through moorland, alpine desert, and glaciers in a single climb.',
                                         },
                                         {
                                             icon: <Heart className="text-primary h-6 w-6" />,
-                                            title: 'Kazinga Channel Cruise',
-                                            desc: 'Boat cruise past hippos, elephants, and hundreds of bird species.',
+                                            title: 'Life-Changing Experience',
+                                            desc: 'Join the 35,000 climbers per year who push their limits on this iconic mountain.',
                                         },
                                     ].map((item, i) => (
                                         <div key={i} className="flex gap-4">
@@ -446,47 +461,36 @@ export default function UgandaSafariPage() {
                                     ))}
                                 </div>
                             </div>
-                            <div className="grid grid-cols-2 gap-3">
-                                <div className="relative aspect-[3/4] overflow-hidden rounded-xl">
-                                    <Image
-                                        src="https://res.cloudinary.com/dr2tdyz2w/image/upload/v1753389413/Gorilla-Chimpanzee-Safari-_ls4ffr.jpg"
-                                        alt="Mountain gorilla in Bwindi Impenetrable Forest"
-                                        fill
-                                        className="object-cover"
-                                        sizes="(max-width: 1024px) 50vw, 25vw"
-                                    />
-                                </div>
-                                <div className="relative aspect-[3/4] overflow-hidden rounded-xl">
-                                    <Image
-                                        src="https://res.cloudinary.com/dr2tdyz2w/image/upload/q_auto/f_auto/v1775048951/Juvenile-Chimp-in-Kibale-National-Park-Uganda-800x800.jpg_d1y5qz.webp"
-                                        alt="Chimpanzee in Kibale Forest"
-                                        fill
-                                        className="object-cover"
-                                        sizes="(max-width: 1024px) 50vw, 25vw"
-                                    />
-                                </div>
+                            <div className="relative aspect-[4/3] overflow-hidden rounded-xl">
+                                <Image
+                                    src="https://res.cloudinary.com/dr2tdyz2w/image/upload/q_auto/f_auto/v1775044303/kilimanjaro_400975-320_kvdv7c.jpg"
+                                    alt="Climbers on Mount Kilimanjaro"
+                                    fill
+                                    className="object-cover"
+                                    sizes="(max-width: 1024px) 100vw, 50vw"
+                                />
                             </div>
                         </div>
                     </div>
                 </section>
 
                 {/* ============================================================
-                    SECTION 4 — WHAT'S INCLUDED (compact) + SAMPLE ITINERARIES
+                    SECTION 4 — SAMPLE ITINERARIES
                     ============================================================ */}
                 <section className="py-16 lg:py-20">
                     <div className="mx-auto max-w-5xl px-6">
-                        <h2 className="mb-3 text-3xl font-bold md:text-4xl">Sample Itineraries</h2>
+                        <h2 className="mb-3 text-3xl font-bold md:text-4xl">Sample Routes</h2>
                         <p className="text-muted-foreground mb-6 text-lg">
-                            Every trip is fully customized. Here are two popular starting points.
+                            We'll recommend the best route based on your fitness, schedule, and
+                            goals.
                         </p>
                         <div className="text-muted-foreground mb-10 flex flex-wrap gap-x-5 gap-y-2 text-sm">
                             {[
-                                'Gorilla permit ($800)',
-                                'Accommodation',
-                                'All meals',
-                                'Expert guides',
-                                'Transport & transfers',
                                 'Park fees',
+                                'Professional guides',
+                                'Porters & cooks',
+                                'All meals',
+                                'Airport transfers',
                             ].map((item, i) => (
                                 <span key={i} className="flex items-center gap-1.5">
                                     <Check className="text-primary h-4 w-4" />
@@ -534,11 +538,11 @@ export default function UgandaSafariPage() {
                     <div className="mx-auto flex max-w-3xl flex-col items-center gap-5 px-6 text-center sm:flex-row sm:text-left">
                         <div className="flex-1">
                             <h3 className="text-xl font-bold text-white sm:text-2xl">
-                                Like what you see? Let's plan your trip.
+                                Ready to climb? It starts with a message.
                             </h3>
                             <p className="mt-1 text-sm text-white/80">
-                                Tell us your dates and we'll send you a personalized itinerary
-                                within 24 hours.
+                                Tell us your dates and we'll send you a route recommendation and
+                                quote within 24 hours.
                             </p>
                         </div>
                         <a
@@ -551,7 +555,7 @@ export default function UgandaSafariPage() {
                 </section>
 
                 {/* ============================================================
-                    SECTION 6 — TESTIMONIALS
+                    SECTION 5 — TESTIMONIALS
                     ============================================================ */}
                 <section className="py-16 lg:py-20">
                     <div className="mx-auto max-w-5xl px-6">
@@ -571,13 +575,11 @@ export default function UgandaSafariPage() {
                                     {[...Array(5)].map((_, i) => (
                                         <Star
                                             key={i}
-                                            className={`h-4 w-4 ${i < Math.round(rating) ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}`}
+                                            className="h-4 w-4 fill-yellow-400 text-yellow-400"
                                         />
                                     ))}
                                 </div>
-                                <span className="text-sm text-gray-500">
-                                    {rating}/5 from {totalReviews}+ reviews
-                                </span>
+                                <span className="text-sm text-gray-500">5.0/5 on Google</span>
                             </div>
                         </div>
                         <div className="grid gap-6 md:grid-cols-3">
@@ -622,25 +624,24 @@ export default function UgandaSafariPage() {
                 </section>
 
                 {/* ============================================================
-                    SECTION 8 — BOTTOM FORM + CONTACT
+                    SECTION 6 — BOTTOM FORM + CONTACT
                     ============================================================ */}
                 <section id="bottom-form" className="bg-gray-900 py-16 lg:py-20">
                     <div className="mx-auto max-w-xl px-6">
                         <div className="mb-8 text-center">
                             <h2 className="mb-3 text-3xl font-bold text-white md:text-4xl">
-                                Ready to Start Planning?
+                                Ready to Climb?
                             </h2>
                             <p className="text-lg text-gray-300">
-                                Tell us what you're dreaming of and we'll send you a free,
-                                personalized itinerary within 24 hours. No commitment.
+                                Tell us your dates and preferred route. We'll send you a
+                                personalized quote within 24 hours. No commitment.
                             </p>
                             <p className="mt-3 text-sm text-gray-400">
-                                Gorilla permits are limited — only a set number issued per day. Book
-                                early to secure your dates.
+                                Peak season spots fill up fast — book early to secure your dates.
                             </p>
                         </div>
                         <div className="rounded-2xl border border-gray-700 bg-white p-6 shadow-xl md:p-8">
-                            <UgandaSafariForm />
+                            <KilimanjaroForm />
                         </div>
                         <div className="mt-6 flex items-center justify-center gap-6 text-xs text-gray-400">
                             <span className="flex items-center gap-1.5">
@@ -658,7 +659,7 @@ export default function UgandaSafariPage() {
                             </p>
                             <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
                                 <a
-                                    href="https://wa.me/255788323254?text=Hi%2C%20I%27m%20interested%20in%20a%20Uganda%20safari.%20Can%20you%20help%20me%20plan%20a%20trip%3F"
+                                    href="https://wa.me/255788323254?text=Hi%2C%20I%27m%20interested%20in%20climbing%20Kilimanjaro.%20Can%20you%20help%20me%20plan%20my%20climb%3F"
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="inline-flex items-center gap-2 rounded-full bg-green-600 px-6 py-3 text-sm font-medium text-white transition-colors hover:bg-green-700"
