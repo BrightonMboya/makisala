@@ -4,14 +4,15 @@ const columns = [
   {
     title: 'Product',
     links: [
+      { label: 'Features', href: '/features' },
+      { label: 'Pricing', href: '/pricing' },
       { label: 'Book a demo', href: '/demo' },
-      { label: 'See sample itinerary', href: '/proposal/5a428b26-dde0-4ae8-a3a8-93c8f3938527' },
     ],
   },
   {
     title: 'Company',
     links: [
-      { label: 'For tour operators', href: '/for-tour-operators' },
+      { label: 'About', href: '/about' },
       { label: 'Login', href: '/login' },
       { label: 'Sign up', href: '/sign-up' },
     ],
@@ -41,25 +42,25 @@ export function Footer() {
           </div>
 
           {/* Link columns */}
-          {/*{columns.map((col) => (*/}
-          {/*  <div key={col.title} className="flex-1">*/}
-          {/*    <h3 className="mb-4 text-sm leading-[18px] font-[490] text-[rgba(38,27,7,0.5)]">*/}
-          {/*      {col.title}*/}
-          {/*    </h3>*/}
-          {/*    <ul className="flex flex-col gap-3">*/}
-          {/*      {col.links.map((link) => (*/}
-          {/*        <li key={link.label}>*/}
-          {/*          <Link*/}
-          {/*            href={link.href}*/}
-          {/*            className="text-base leading-5 text-[#261B07] transition-opacity hover:opacity-60"*/}
-          {/*          >*/}
-          {/*            {link.label}*/}
-          {/*          </Link>*/}
-          {/*        </li>*/}
-          {/*      ))}*/}
-          {/*    </ul>*/}
-          {/*  </div>*/}
-          {/*))}*/}
+          {columns.map((col) => (
+            <div key={col.title} className="flex-1">
+              <h3 className="mb-4 text-sm leading-[18px] font-[490] text-[rgba(38,27,7,0.5)]">
+                {col.title}
+              </h3>
+              <ul className="flex flex-col gap-3">
+                {col.links.map((link) => (
+                  <li key={link.label}>
+                    <Link
+                      href={link.href}
+                      className="text-base leading-5 text-[#261B07] transition-opacity hover:opacity-60"
+                    >
+                      {link.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
         </div>
 
         {/* Bottom bar */}

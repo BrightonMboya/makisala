@@ -1,13 +1,14 @@
 # Ratiba SEO & LLM Visibility Plan
 
-Last updated: 2026-03-31
+Last updated: 2026-04-07
 
 ## Current State
 
-- **Google indexation**: Near zero. Sitemap only lists 2 pages (/ and /pricing)
+- **Google indexation**: Sitemap now lists 13+ pages (/, /features, /pricing, /demo, /about + 8 compare pages)
 - **Competitors ranking**: SafariPortal, Tourwriter, Travefy, Tourplan, SafariOffice, TourConnect AI
-- **Our angle**: Only itinerary builder built specifically for East Africa safari operators. Competitors are all generic global tools.
+- **Our angle**: Only itinerary builder built specifically for safari operators. Competitors are all generic global tools.
 - **Cold email performance**: 0.3% reply rate (1/300+). SEO would bring warmer inbound leads.
+- **Positioning update**: Removed "East Africa only" framing — Ratiba is for safari operators and tour companies worldwide
 
 ## Strategy
 
@@ -31,26 +32,28 @@ Scale to hundreds of pages targeting "[tool] for [location/niche]" patterns.
 
 | Page | URL | Target Keyword | Priority |
 |------|-----|---------------|----------|
-| Homepage (improve) | / | itinerary builder for tour operators | P0 |
-| Pricing | /pricing | tour operator software pricing | P0 |
-| Features | /features | safari itinerary builder features | P1 |
-| Book a Demo | /demo | (conversion page) | P0 |
-| About / Our Story | /about | (trust signal) | P2 |
-| Blog index | /blog | (content hub) | P1 |
-| Sample itinerary showcase | /examples | safari itinerary examples | P1 |
-| FAQ page | /faq | tour operator software FAQ | P2 |
+| Homepage (improve) | / | itinerary builder for tour operators | P0 | DONE |
+| Pricing | /pricing | tour operator software pricing | P0 | DONE |
+| Features | /features | safari itinerary builder features | P1 | DONE (2026-04-06) |
+| Book a Demo | /demo | (conversion page) | P0 | DONE |
+| About / Our Story | /about | (trust signal) | P2 | DONE (2026-04-07) |
+| Blog index | /blog | (content hub) | P1 | ROUTE READY, no posts |
+| Sample itinerary showcase | /examples | safari itinerary examples | P1 | |
+| FAQ page | /faq | tour operator software FAQ | P2 | |
 
 ### Technical SEO Fixes
 
-- [ ] Expand sitemap.ts to include all marketing pages
+- [x] Expand sitemap.ts to include all marketing pages (2026-04-07)
 - [ ] Add blog sitemap (dynamic from CMS or markdown files)
-- [ ] Ensure all pages have generateMetadata with unique title/description
-- [ ] Add JSON-LD schema: Organization, WebApplication, FAQPage, Product
+- [x] Ensure all pages have generateMetadata with unique title/description (features, about done)
+- [x] Add JSON-LD schema: FAQPage on /features and /compare pages
+- [ ] Add JSON-LD schema: Organization, WebApplication, Product on homepage
 - [ ] Add metadataBase to layout.tsx
 - [ ] Make sample itineraries (/proposal/[id]) indexable for showcase ones
 - [ ] Submit sitemap to Google Search Console
-- [ ] Set up Google Business Profile for "Ratiba" in Arusha/Dar es Salaam
+- [ ] Set up Google Business Profile
 - [ ] Verify www vs non-www canonical is correct
+- [x] Internal linking: Navbar links to /features, Footer links to /features, /pricing, /about, /demo (2026-04-07)
 
 ---
 
@@ -62,16 +65,16 @@ These are the highest-converting SEO pages for B2B SaaS. People searching "X vs 
 
 | Page | URL | Target Keyword |
 |------|-----|---------------|
-| Ratiba vs Tourwriter | /compare/tourwriter | tourwriter alternative |
-| Ratiba vs Travefy | /compare/travefy | travefy alternative |
-| Ratiba vs SafariPortal | /compare/safari-portal | safari portal alternative |
-| Ratiba vs Tourplan | /compare/tourplan | tourplan alternative |
-| Ratiba vs SafariOffice | /compare/safari-office | safarioffice alternative |
-| Ratiba vs TourConnect AI | /compare/tourconnect | tourconnect alternative |
-| Ratiba vs Wetu | /compare/wetu | wetu itinerary builder |
-| Ratiba vs Excel/Word | /compare/spreadsheets | itinerary builder vs excel |
-| Best Tour Operator Software 2026 | /blog/best-tour-operator-software | best tour operator software |
-| Best Safari Itinerary Software | /blog/best-safari-itinerary-software | safari itinerary software |
+| Ratiba vs Tourwriter | /compare/tourwriter | tourwriter alternative | DONE |
+| Ratiba vs Travefy | /compare/travefy | travefy alternative | DONE |
+| Ratiba vs SafariPortal | /compare/safari-portal | safari portal alternative | DONE (2026-04-07) |
+| Ratiba vs Tourplan | /compare/tourplan | tourplan alternative | DONE |
+| Ratiba vs SafariOffice | /compare/safari-office | safarioffice alternative | DONE (2026-04-07) |
+| Ratiba vs TourConnect AI | /compare/tourconnect | tourconnect alternative | DONE |
+| Ratiba vs Wetu | /compare/wetu | wetu itinerary builder | DONE |
+| Ratiba vs Excel/Word | /compare/spreadsheets | itinerary builder vs excel | DONE |
+| Best Tour Operator Software 2026 | /blog/best-tour-operator-software | best tour operator software | |
+| Best Safari Itinerary Software | /blog/best-safari-itinerary-software | safari itinerary software | |
 
 ### Page Template for Comparisons
 

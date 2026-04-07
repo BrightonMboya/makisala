@@ -16,10 +16,7 @@ interface Params {
     }
 }
 
-export async function generateStaticParams() {
-    const tours = await AllToursSlugs()
-    return tours.filter(t => t.slug).map(t => ({ tour_slug: t.slug! }))
-}
+export const dynamic = 'force-dynamic'
 
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
     const { tour_slug } = await params

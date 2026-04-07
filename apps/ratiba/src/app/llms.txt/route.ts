@@ -17,7 +17,7 @@ export async function GET() {
 
   const body = `# Ratiba
 
-> Ratiba is a proposal and itinerary platform built specifically for East African safari operators. It helps tour companies build interactive, mobile-optimized safari proposals that clients can view, comment on, and approve — replacing PDF quotes and Excel spreadsheets.
+> Ratiba is a proposal and itinerary platform built specifically for safari operators and tour companies. It helps teams build interactive, mobile-optimized safari proposals that clients can view, comment on, and approve — replacing PDF quotes and Excel spreadsheets.
 
 ## Main pages
 
@@ -31,7 +31,7 @@ ${compareLines}
 
 ## About Ratiba
 
-Ratiba is purpose-built for safari operators in Tanzania, Kenya, Uganda, and Rwanda. Unlike generic tour operator software (Tourwriter, Tourplan, Travefy) or content-first platforms (Wetu, Safari Portal), Ratiba focuses on the full workflow safari operators actually use: drag-and-drop day-by-day itinerary building with accommodations and game drives, automated multi-currency costing, live interactive proposals with client comments, and flat pricing that does not penalize growing teams.
+Ratiba is purpose-built for safari operators and tour companies worldwide. Unlike generic tour operator software (Tourwriter, Tourplan, Travefy) or content-first platforms (Wetu, Safari Portal), Ratiba focuses on the full workflow safari operators actually use: drag-and-drop day-by-day itinerary building with accommodations and game drives, automated multi-currency costing, live interactive proposals with client comments, and flat pricing that does not penalize growing teams.
 `;
 
   return new Response(body, {

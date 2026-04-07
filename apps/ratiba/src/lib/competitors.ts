@@ -355,30 +355,30 @@ export const COMPETITORS: Record<string, CompetitorData> = {
     name: 'Safari Portal',
     slug: 'safari-portal',
     tagline:
-      'Safari Portal is a capable itinerary builder for travel advisors. Ratiba is built specifically for East African safari operators — with deeper safari features and simpler pricing.',
+      'Safari Portal is a capable itinerary builder for travel advisors and DMCs globally. Ratiba is simpler, faster, and more affordable — with live interactive proposals instead of static PDFs.',
     excerpt:
-      'Compare Ratiba vs Safari Portal for safari operators. Feature comparison, pricing, and more.',
+      'Compare Ratiba vs Safari Portal for safari operators. See features, pricing, and why operators choose Ratiba for modern proposals.',
     reasons: [
       {
         number: '01',
-        title: 'Purpose-built for East Africa',
+        title: 'Simpler and faster to use',
         description:
-          'Safari Portal serves travel advisors and DMCs globally. Ratiba is laser-focused on East African safari operators — our templates, content, and workflows are designed around how safaris actually work in Tanzania, Kenya, Uganda, and Rwanda.',
+          'Safari Portal is enterprise-focused software with a complex feature set that takes weeks to learn. Ratiba is designed for speed — most operators send their first proposal within a day. A modern, intuitive interface means less training and faster adoption across your team.',
         image: RATIBA_IMAGES.ai,
       },
       {
         number: '02',
-        title: 'More affordable at every tier',
+        title: 'Live proposals, not static PDFs',
         description:
-          'Safari Portal starts at $199/mo for a single user. Ratiba starts at $49/mo and includes more features out of the box. Even Ratiba\'s Business plan at $249/mo gives you unlimited team members — Safari Portal charges extra per seat.',
-        image: RATIBA_IMAGES.team,
+          'Safari Portal produces polished PDF lookbooks, but they are static files. Ratiba creates live, interactive proposals your clients can view on any device, comment on, and approve — all in real time. No downloads, no email attachments, no outdated versions floating around.',
+        image: RATIBA_IMAGES.proposals,
       },
       {
         number: '03',
-        title: 'Interactive proposals, not just PDFs',
+        title: 'Flat pricing vs enterprise fees',
         description:
-          'Safari Portal creates great PDF proposals and lookbooks. Ratiba goes further with live, interactive proposals — clients can comment, ask questions, and approve directly, reducing your email back-and-forth.',
-        image: RATIBA_IMAGES.comments,
+          'Safari Portal charges $219/user/mo on their standard plan. A 5-person team costs over $1,000/mo. Ratiba offers flat plans starting at $49/mo — the Business plan at $249/mo includes unlimited team members, saving you hundreds every month.',
+        image: RATIBA_IMAGES.team,
       },
     ],
     features: [
@@ -400,33 +400,33 @@ export const COMPETITORS: Record<string, CompetitorData> = {
     ],
     pricing: [
       {
-        plan: 'Starter',
+        plan: 'Starter / Solo',
         ratibaPrice: '$49/mo',
-        competitorPrice: '$199/mo (1 user)',
+        competitorPrice: '$219/user/mo',
         highlights: [
           'Ratiba: proposals, itinerary builder, PDF export',
           'Safari Portal: similar features but 4x the price',
-          'Ratiba saves you $150/mo from day one',
+          'Ratiba saves you $170/mo from day one',
         ],
       },
       {
-        plan: 'Pro / Standard',
+        plan: 'Pro / Team',
         ratibaPrice: '$99/mo (3 members)',
-        competitorPrice: '$299/mo',
+        competitorPrice: '$219/user/mo (3 users = $657/mo)',
         highlights: [
-          'Ratiba: 3 team members, unlimited proposals',
-          'Safari Portal Standard: still limited features',
-          'Ratiba saves you $200/mo with more included',
+          'Ratiba: 3 team members, unlimited proposals, all themes',
+          'Safari Portal: 3 users = $657/mo',
+          'Ratiba saves you $558/mo at 3 seats',
         ],
       },
       {
-        plan: 'Business / Deluxe',
+        plan: 'Business / Enterprise',
         ratibaPrice: '$249/mo (unlimited members)',
-        competitorPrice: '$399/mo (3 users) + per-seat add-ons',
+        competitorPrice: '$349/user/mo (Enterprise)',
         highlights: [
-          'Ratiba: unlimited team, custom domains',
-          'Safari Portal: additional users cost extra',
-          'Ratiba saves $150+/mo with unlimited seats',
+          'Ratiba: unlimited team members, custom domains',
+          'Safari Portal Enterprise: 5 users = $1,745/mo',
+          'Ratiba saves you $1,496/mo at 5 seats',
         ],
       },
     ],
@@ -434,27 +434,32 @@ export const COMPETITORS: Record<string, CompetitorData> = {
       {
         question: 'Is Safari Portal good for safari operators?',
         answer:
-          'Safari Portal is a capable itinerary builder with strong PDF/lookbook output, CRM, and a branded mobile app. It serves travel advisors and DMCs globally. For East African safari operators specifically, Ratiba offers deeper safari-specific features at a lower price point.',
+          'Safari Portal is a capable itinerary builder with strong PDF/lookbook output, CRM, and a branded mobile app. It serves travel advisors and DMCs globally. However, its enterprise complexity and pricing can be overkill for many safari operators. Ratiba offers a simpler, more modern experience at a fraction of the cost.',
       },
       {
-        question: 'How much does Safari Portal cost vs Ratiba?',
+        question: 'How much does Safari Portal cost compared to Ratiba?',
         answer:
-          'Safari Portal starts at $199/mo for 1 user, $299/mo (Standard), and $399/mo (Deluxe, 3 users). Additional users cost extra. Ratiba starts at $49/mo, with the Business plan at $249/mo including unlimited team members.',
+          'Safari Portal charges per user: $219/mo (Standard) and $349/mo (Enterprise). A 5-person team on their Enterprise plan costs $1,745/mo. Ratiba offers flat pricing starting at $49/mo, with the Business plan at $249/mo for unlimited team members.',
       },
       {
         question: 'Does Safari Portal have a mobile app?',
         answer:
-          'Yes, Safari Portal offers a branded mobile app (Deluxe plan and above) where clients can view their trip. Ratiba takes a different approach with mobile-optimized live proposal links that work on any device without requiring an app download.',
+          'Yes, Safari Portal offers a branded mobile app where clients can view their trip details. Ratiba takes a different approach with mobile-optimized live proposal links that work on any device without requiring an app download — meaning no friction for your clients.',
       },
       {
         question: 'Can I switch from Safari Portal to Ratiba?',
         answer:
-          'Yes. Ratiba offers free onboarding and migration assistance to help you transition your supplier data, templates, and team from Safari Portal.',
+          'Yes. Ratiba offers free onboarding and migration assistance to help you transition your supplier data, templates, and team from Safari Portal. Most operators complete the switch within a week.',
       },
       {
         question: 'Which tool has better proposals?',
         answer:
-          'Safari Portal creates beautiful PDF proposals and lookbooks. Ratiba proposals are interactive and live — clients can comment, approve, and engage directly on the proposal without downloading anything. Both produce professional output.',
+          'Safari Portal creates polished PDF proposals and lookbooks. Ratiba proposals are interactive and live — clients can comment, approve, and engage directly on the proposal without downloading anything. If you want modern, collaborative proposals that reduce back-and-forth, Ratiba is the better choice.',
+      },
+      {
+        question: 'Is Safari Portal too complex for a small team?',
+        answer:
+          'Safari Portal is designed for larger travel companies and DMCs with dedicated operations staff. Its feature depth comes with a learning curve and enterprise pricing. For small to mid-sized safari operators, Ratiba offers the right balance of power and simplicity at a price that makes sense.',
       },
     ],
   },
@@ -463,29 +468,29 @@ export const COMPETITORS: Record<string, CompetitorData> = {
     name: 'SafariOffice',
     slug: 'safari-office',
     tagline:
-      'SafariOffice is a lightweight quoting tool for safari companies. Ratiba is a complete platform — from itinerary building to live proposals to team management.',
+      'SafariOffice is a safari-specific back-office tool. Ratiba is a modern collaboration platform with live client proposals, beautiful branded themes, and flat pricing.',
     excerpt:
-      'Compare Ratiba vs SafariOffice for safari operators. See why operators upgrade to Ratiba.',
+      'Compare Ratiba vs SafariOffice for safari operators. See why operators upgrade from dated tools to Ratiba.',
     reasons: [
       {
         number: '01',
-        title: 'Beyond PDF quotes',
+        title: 'Live proposals, not static quotes',
         description:
-          'SafariOffice generates PDF quotes and sends them by email. Ratiba creates interactive, mobile-optimized proposals that clients can view, comment on, and approve — all without downloading a file.',
+          'SafariOffice generates PDF quotes and sends them by email. Ratiba creates live, interactive proposals your clients can view on any device, comment on, and approve — all without downloading a file. Modern clients expect modern experiences.',
         image: RATIBA_IMAGES.proposals,
       },
       {
         number: '02',
-        title: 'A complete operations platform',
+        title: 'Modern collaboration built in',
         description:
-          'SafariOffice focuses on quote generation and a media library. Ratiba adds itinerary building, team collaboration, CRM, costing tools, and client proposal workflows — everything you need in one place.',
+          'SafariOffice has limited collaboration features — it was built as a single-user quoting tool. Ratiba is designed for teams from the ground up, with real-time collaboration, shared content libraries, branded themes, and role-based access across your entire operation.',
         image: RATIBA_IMAGES.ai,
       },
       {
         number: '03',
-        title: 'Modern interface, faster workflows',
+        title: 'A modern interface you enjoy using',
         description:
-          'Ratiba is built with a modern, intuitive interface designed around how safari operators actually work. Drag-and-drop itinerary building, real-time collaboration, and AI assistance help you move faster.',
+          'SafariOffice has a dated UI that slows you down. Ratiba is built with a clean, modern interface — drag-and-drop itinerary building, beautiful branded themes, and workflows designed to feel fast and intuitive. Your team will actually want to use it.',
         image: RATIBA_IMAGES.team,
       },
     ],
@@ -495,16 +500,16 @@ export const COMPETITORS: Record<string, CompetitorData> = {
       { name: 'PDF quote generation', ratiba: true, competitor: true },
       { name: 'Safari image library', ratiba: true, competitor: true },
       { name: 'Multi-currency support', ratiba: true, competitor: false },
-      { name: 'Branded proposals', ratiba: true, competitor: true },
+      { name: 'Branded proposal themes', ratiba: true, competitor: false },
       { name: 'Client comments on proposals', ratiba: true, competitor: false },
       { name: 'CRM & lead management', ratiba: true, competitor: true },
-      { name: 'Team collaboration', ratiba: true, competitor: true },
+      { name: 'Real-time team collaboration', ratiba: true, competitor: false },
       { name: 'SafariBookings integration', ratiba: false, competitor: true },
       { name: 'AI assistant', ratiba: true, competitor: true },
       { name: 'WhatsApp integration', ratiba: true, competitor: false },
       { name: 'API access', ratiba: true, competitor: false },
-      { name: 'Content library', ratiba: true, competitor: true },
       { name: 'Automated costing & margins', ratiba: true, competitor: false },
+      { name: 'Free onboarding & migration', ratiba: true, competitor: false },
     ],
     pricing: [
       {
@@ -512,9 +517,9 @@ export const COMPETITORS: Record<string, CompetitorData> = {
         ratibaPrice: '$49/mo',
         competitorPrice: 'Free (2 users)',
         highlights: [
-          'SafariOffice: free for 2 users with basic features',
+          'SafariOffice: free for 2 users with basic quoting',
           'Ratiba Starter: proposals, PDF export, content library',
-          'Ratiba adds interactive proposals SafariOffice lacks',
+          'Ratiba adds live proposals and itinerary building',
         ],
       },
       {
@@ -524,7 +529,7 @@ export const COMPETITORS: Record<string, CompetitorData> = {
         highlights: [
           'SafariOffice Pro: better styling, video headers, AI',
           'Ratiba Pro: full itinerary builder + costing + themes',
-          'Ratiba includes operational tools SafariOffice doesn\'t',
+          'Ratiba includes collaboration tools SafariOffice lacks',
         ],
       },
       {
@@ -533,8 +538,8 @@ export const COMPETITORS: Record<string, CompetitorData> = {
         competitorPrice: '~$95/mo (Pro + 8 users + add-ons)',
         highlights: [
           'Ratiba: unlimited team, custom domains, full ops',
-          'SafariOffice: quote tool + media library at scale',
-          'Ratiba is a complete platform, not just a quoting tool',
+          'SafariOffice: still a quoting tool at scale',
+          'Ratiba is a complete platform with flat pricing',
         ],
       },
     ],
@@ -542,27 +547,32 @@ export const COMPETITORS: Record<string, CompetitorData> = {
       {
         question: 'Is SafariOffice good for safari companies?',
         answer:
-          'SafariOffice is a solid, affordable quoting tool specifically for safari companies. It\'s great for generating PDF quotes with beautiful imagery. However, it lacks itinerary building, interactive proposals, costing tools, and team collaboration features that growing operators need.',
+          'SafariOffice is a solid, affordable quoting tool built specifically for safari companies. It\'s useful for generating PDF quotes with imagery. However, it has a dated interface, limited collaboration features, and no client-facing interactive proposals — areas where growing operators need more.',
       },
       {
         question: 'Is SafariOffice really free?',
         answer:
-          'SafariOffice offers a free plan for up to 2 users with basic features. Their Pro plan costs approximately €49.50/mo with additional users at €11.99 each. While cheaper than Ratiba, it offers significantly fewer features.',
+          'SafariOffice offers a free plan for up to 2 users with basic features. Their Pro plan costs approximately \u20AC49.50/mo with additional users at \u20AC11.99 each. While cheaper than Ratiba, it offers significantly fewer features and no interactive proposals.',
       },
       {
         question: 'Should I upgrade from SafariOffice to Ratiba?',
         answer:
-          'If you\'ve outgrown PDF quotes and need interactive proposals, itinerary building, team collaboration, and costing tools, Ratiba is the natural upgrade. Many operators start with SafariOffice and move to Ratiba as they grow.',
+          'If you\'ve outgrown static PDF quotes and need interactive client proposals, drag-and-drop itinerary building, team collaboration, and beautiful branded themes, Ratiba is the natural next step. Many operators start with SafariOffice and move to Ratiba as they grow.',
       },
       {
         question: 'Does SafariOffice have an itinerary builder?',
         answer:
-          'SafariOffice focuses on quote generation — creating PDF documents with images and pricing. It does not have a drag-and-drop itinerary builder like Ratiba, which lets you visually plan day-by-day safari itineraries.',
+          'SafariOffice focuses on quote generation — creating PDF documents with images and pricing. It does not have a drag-and-drop itinerary builder like Ratiba, which lets you visually plan day-by-day safari itineraries with accommodations, activities, and transfers.',
+      },
+      {
+        question: 'Does SafariOffice support team collaboration?',
+        answer:
+          'SafariOffice has limited collaboration features — it was originally designed as a single-user tool. Ratiba is built for teams from the ground up, with real-time collaboration, shared content libraries, role-based access, and activity tracking across your whole operation.',
       },
       {
         question: 'Can I migrate from SafariOffice to Ratiba?',
         answer:
-          'Yes. Ratiba offers free onboarding and migration assistance to help you transition from SafariOffice, including moving your client data and setting up your templates.',
+          'Yes. Ratiba offers free onboarding and migration assistance to help you transition from SafariOffice, including moving your client data, imagery, and setting up your branded proposal themes.',
       },
     ],
   },

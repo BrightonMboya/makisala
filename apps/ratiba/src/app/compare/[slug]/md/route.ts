@@ -76,6 +76,6 @@ ${faqSection}
 
 ---
 
-Ratiba is a proposal and itinerary platform built for East African safari operators. Start free at https://ratiba.app
+Ratiba is a proposal and itinerary platform built for safari operators and tour companies. Start free at https://ratiba.app
 `;
 }
