@@ -9,10 +9,11 @@ const nextConfig: NextConfig = {
   },
   async rewrites() {
     return [
-      // Serve markdown variants of compare pages for LLM crawlers
+      // Serve markdown variants of any page for LLM crawlers.
+      // Any route with a sibling `/md/route.ts` is automatically reachable at `.md`.
       {
-        source: '/compare/:slug.md',
-        destination: '/compare/:slug/md',
+        source: '/:path*.md',
+        destination: '/:path*/md',
       },
     ];
   },
