@@ -1,4 +1,6 @@
 import { COMPETITORS, getAllCompetitorSlugs } from '@/lib/competitors';
+import { USE_CASES, getAllUseCaseSlugs } from '@/lib/use-cases';
+import { getAllGlossaryTerms } from '@/lib/glossary';
 import { env } from '@/lib/env';
 
 export const dynamic = 'force-static';
@@ -15,6 +17,20 @@ export async function GET() {
     .filter(Boolean)
     .join('\n');
 
+  const useCaseLines = getAllUseCaseSlugs()
+    .map((slug) => {
+      const uc = USE_CASES[slug];
+      if (!uc) return null;
+      return `- [${uc.headline}](${baseUrl}/for/${slug}.md): ${uc.excerpt}`;
+    })
+    .filter(Boolean)
+    .join('\n');
+
+  const glossaryTerms = getAllGlossaryTerms();
+  const glossaryLines = glossaryTerms
+    .map((t) => `- [${t.fullName} (${t.term})](${baseUrl}/glossary/${t.slug}.md)`)
+    .join('\n');
+
   const body = `# Ratiba
 
 > Ratiba is a proposal and itinerary platform built specifically for safari operators and tour companies. It helps teams build interactive, mobile-optimized safari proposals that clients can view, comment on, and approve — replacing PDF quotes and Excel spreadsheets.
@@ -28,6 +44,19 @@ export async function GET() {
 ## Ratiba vs competitor comparisons
 
 ${compareLines}
+
+## Features
+
+- [Ratiba features](${baseUrl}/features.md): AI itinerary builder, live proposals, team collaboration, pricing engine, content library, and branded themes
+
+## Use-case pages
+
+${useCaseLines}
+
+## Glossary
+
+- [Safari industry glossary](${baseUrl}/glossary): Definitions of key safari and tour operator terms
+${glossaryLines}
 
 ## About Ratiba
 

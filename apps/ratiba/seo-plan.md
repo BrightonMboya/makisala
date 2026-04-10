@@ -137,30 +137,60 @@ Each comparison page should have:
 
 ## Phase 4: Programmatic SEO
 
-### Template Pages at Scale
+### Competitive Gap Analysis (2026-04-07)
 
-**Pattern 1: "[Software Type] for [Location]"**
-- URL: /solutions/[location]
-- Example: /solutions/arusha, /solutions/nairobi, /solutions/cape-town, /solutions/dar-es-salaam
-- Target: "[city] tour operator software"
-- Content: city-specific intro + how Ratiba helps operators in that city + local testimonial if available
+Based on sitemap analysis of all competitors:
 
-**Pattern 2: "[Use Case] Template"**
-- URL: /templates/[template-type]
-- Example: /templates/7-day-serengeti-safari, /templates/gorilla-trekking-itinerary, /templates/kilimanjaro-climb
+| Gap | Who does it well | Est. pages | Impact |
+|-----|-----------------|-----------|--------|
+| Knowledge base / guides (`/guides/`) | Travefy (30 pages) | 20-30 | HIGH — ranks for "how to" queries |
+| Glossary (`/glossary/`) | Tourwriter (small) | 50-100 | HIGH — massive page count, long-tail |
+| Integration pages (`/integrations/`) | TourConnect (8 pages) | 5-10 | MEDIUM — captures "[tool] integration" |
+| Customer stories | Tourwriter (25+) | 5-10 | HIGH — trust + "[customer] reviews" |
+| Itinerary templates (`/templates/`) | Nobody! | 10-20 | HIGH — uncontested opportunity |
+| Blog volume | Tourwriter (200+), Travefy (35+) | Ongoing | HIGH — topical authority |
+| Partner/network pages | Travefy (4) | 3-5 | LOW — only if we have partnerships |
+| Gated reports/ebooks | Tourwriter (10+) | 3-5 | MEDIUM — email list building |
+| ROI calculator | TourConnect (1) | 1 | LOW — nice-to-have |
+
+**Key insight:** Tourwriter has 237+ pages, Travefy has 110+, we have ~13. The #1 priority is raw page count targeting long-tail keywords.
+
+**Uncontested opportunity:** Nobody has safari itinerary templates. We can own "/templates/7-day-serengeti-safari" etc.
+
+### pSEO Template Patterns
+
+**Pattern 1: `/for/[audience]` — Use-case pages (code-driven, like /compare/)**
+- Already have route. Convert from DB-driven to static data file.
+- 9 audience pages: safari-operators, dmcs, travel-agents, tour-companies, luxury-travel, group-tours, honeymoon-planners, adventure-travel, trekking-operators
+- Target: "[audience] itinerary software"
+
+**Pattern 2: `/glossary/[term]` — Industry glossary (50-100 pages)**
+- Template: definition + related terms + how Ratiba helps + CTA
+- Target: "what is a [term]", "[term] meaning"
+- Terms: DMC, inbound tour operator, FIT travel, game drive, full board, half board, fly-in safari, walking safari, etc.
+- Each page ~300-500 words, auto-interlinked
+
+**Pattern 3: `/templates/[type]` — Itinerary templates (10-20 pages)**
+- Template: trip overview + sample day-by-day + link to live Ratiba proposal + CTA
 - Target: "[trip type] itinerary template"
-- Content: a real sample itinerary built in Ratiba, showcasing the product while targeting search intent
+- Examples: 7-day-serengeti-safari, gorilla-trekking-uganda, kilimanjaro-climb, zanzibar-beach-escape
+- Link to actual sample proposals built in Ratiba
 
-**Pattern 3: "How to [task]"**
-- URL: /guides/[task]
-- Example: /guides/build-safari-itinerary, /guides/price-multi-day-tour, /guides/create-branded-proposal
-- Target: "how to build a safari itinerary"
-- Content: step-by-step guide using Ratiba, with screenshots
+**Pattern 4: `/guides/[topic]` — Knowledge base (20-30 pages)**
+- Template: step-by-step guide + screenshots + related features + CTA
+- Target: "how to [task]" queries
+- Examples: build-safari-itinerary, price-multi-day-tour, create-branded-proposal, manage-accommodations
+
+**Pattern 5: `/integrations/[tool]` — Integration landing pages (5-10 pages)**
+- Template: what it does + how it connects + benefits + CTA
+- Target: "[tool] tour operator integration"
+- Examples: xero, quickbooks, stripe, whatsapp, google-calendar
 
 ### Data Sources for pSEO
-- List of 50+ East Africa cities/towns with tour operators
+- List of 50+ cities/towns with tour operators
 - List of 30+ itinerary types (safari, trek, beach, honeymoon, gorilla, etc.)
 - List of 20+ workflow tasks (build itinerary, share proposal, manage accommodations, etc.)
+- List of 80+ safari/travel industry terms for glossary
 
 ---
 
@@ -291,15 +321,22 @@ LLMs (ChatGPT, Claude, Perplexity, Gemini) are increasingly used by tour operato
 
 ---
 
-## Priority Order (What to Do First)
+## Priority Order (Updated 2026-04-07)
 
-1. **Week 1**: Fix technical foundation (sitemap, schema, metadataBase)
-2. **Week 2**: Create /features page, /about page, improve homepage copy
-3. **Week 3**: Create first 3 comparison pages (vs Tourwriter, vs Travefy, vs SafariPortal)
-4. **Week 4**: Create first 3 use-case pages (/for/safari-operators, /for/dmc, /for/travel-agents)
+### Done
+- [x] Technical foundation: sitemap expanded, FAQPage schema, metadata on key pages, internal linking
+- [x] /features page with metadata + FAQ schema
+- [x] /about page with metadata
+- [x] 8 comparison pages (tourwriter, travefy, safari-portal, tourplan, safari-office, tourconnect, wetu, spreadsheets)
+
+### Next up
+1. **Now**: Build `/for/[audience]` use-case pages (9 pages, code-driven like /compare/)
+2. **Now**: Build `/glossary/[term]` pSEO template + first 30 terms
+3. **Next**: Build `/templates/[type]` pages linking to sample itineraries
+4. **Next**: "Best Tour Operator Software 2026" listicle blog post
 5. **Week 5-8**: Publish weekly blog posts (product-led content)
-6. **Week 9-12**: Create remaining comparison + use-case pages
-7. **Week 13+**: Start programmatic SEO (templates, city pages)
+6. **Week 9-12**: Build `/guides/[topic]` knowledge base (20-30 pages)
+7. **Week 13+**: Integration pages, city pages, remaining pSEO
 
 ---
 
@@ -307,11 +344,13 @@ LLMs (ChatGPT, Claude, Perplexity, Gemini) are increasingly used by tour operato
 
 | Competitor | Strength | Weakness | Our Angle |
 |-----------|----------|----------|-----------|
-| Tourwriter | Established, good SEO content | Expensive ($149/user/mo), generic | We're built for safari, they're built for everyone |
-| Travefy | Beautiful proposals, affordable ($49/mo) | No safari focus, limited operational features | We understand East Africa accommodations + parks |
+| Tourwriter | Established, good SEO (237 pages), 25+ case studies, gated ebooks | Expensive ($149/user/mo), generic | We're built for safari, they're built for everyone |
+| Travefy | 110 pages, 30 guide/knowledge-base pages, audience segmentation | No safari focus, limited operational features | We understand safari accommodations + parks |
 | SafariPortal | Safari-specific, Tourplan integration | Enterprise-focused, complex | We're simpler, faster, modern UX |
-| SafariOffice | Safari-specific | Dated UI, limited collaboration | Modern collaboration, client portal |
-| Tourplan | 40 years in business, comprehensive | Very expensive, steep learning curve | We're the anti-Tourplan - simple, fast, affordable |
+| SafariOffice | Safari-specific | 13 pages total, dated UI, zero SEO | Modern collaboration, client portal |
+| Tourplan | 40 years in business, multilingual (EN/ES/JA), 260 pages | Very expensive, steep learning curve, bloated news section | We're the anti-Tourplan - simple, fast, affordable |
+| TourConnect AI | AI-focused, 8 integration pages, ROI calculator | New, 65 pages | We have real operator workflows + AI |
+| SafariBookings | 10,000+ pages, massive pSEO (every country x park x tour type) | Marketplace, not SaaS | Different model but dominates safari search terms |
 | Wetu | Strong in Southern Africa, great itineraries | Expensive, Southern Africa bias | We're East Africa first, more affordable |
 | TourConnect AI | AI-powered | New, unproven | We have real operator workflows + AI |
 | Excel/Word | Free, familiar | No collaboration, ugly proposals, no branding | Everything Excel can't do |
