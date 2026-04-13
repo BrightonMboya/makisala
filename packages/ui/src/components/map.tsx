@@ -51,7 +51,32 @@ type MapProps = {
     light?: MapStyleOption;
     dark?: MapStyleOption;
   };
+  /** Rendered when the browser cannot initialize WebGL (e.g. in-app webviews with GPU disabled). */
+  fallback?: ReactNode;
 } & Omit<MapLibreGL.MapOptions, "container" | "style">;
+
+function isWebGLAvailable() {
+  if (typeof window === "undefined") return true;
+  try {
+    const canvas = document.createElement("canvas");
+    const gl =
+      canvas.getContext("webgl2") ||
+      canvas.getContext("webgl") ||
+      canvas.getContext("experimental-webgl");
+    return Boolean(gl);
+  } catch {
+    return false;
+  }
+}
+
+const DefaultMapFallback = () => (
+  <div className="absolute inset-0 flex items-center justify-center p-6 text-center">
+    <p className="text-sm text-muted-foreground max-w-xs">
+      Map preview isn't supported in this browser. Open this page in Chrome or
+      Safari to view the full route.
+    </p>
+  </div>
+);
 
 type MapRef = MapLibreGL.Map;
 
@@ -66,13 +91,14 @@ const DefaultLoader = () => (
 );
 
 const Map = forwardRef<MapRef, MapProps>(function Map(
-  { children, styles, ...props },
+  { children, styles, fallback, ...props },
   ref
 ) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [mapInstance, setMapInstance] = useState<MapLibreGL.Map | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
   const [isStyleLoaded, setIsStyleLoaded] = useState(false);
+  const [webglFailed, setWebglFailed] = useState(() => !isWebGLAvailable());
   const { resolvedTheme } = useTheme();
   const currentStyleRef = useRef<MapStyleOption | null>(null);
 
@@ -87,39 +113,52 @@ const Map = forwardRef<MapRef, MapProps>(function Map(
   useImperativeHandle(ref, () => mapInstance as MapLibreGL.Map, [mapInstance]);
 
   useEffect(() => {
-    if (!containerRef.current) return;
+    if (!containerRef.current || webglFailed) return;
 
     const initialStyle =
       resolvedTheme === "dark" ? mapStyles.dark : mapStyles.light;
     currentStyleRef.current = initialStyle;
 
-    const map = new MapLibreGL.Map({
-      container: containerRef.current,
-      style: initialStyle,
-      renderWorldCopies: false,
-      attributionControl: {
-        compact: true,
-      },
-      ...props,
-    });
+    let map: MapLibreGL.Map;
+    try {
+      map = new MapLibreGL.Map({
+        container: containerRef.current,
+        style: initialStyle,
+        renderWorldCopies: false,
+        attributionControl: {
+          compact: true,
+        },
+        ...props,
+      });
+    } catch {
+      setWebglFailed(true);
+      return;
+    }
 
     const styleDataHandler = () => setIsStyleLoaded(true);
     const loadHandler = () => setIsLoaded(true);
+    const errorHandler = (e: { error?: Error }) => {
+      if (e?.error?.name === "webglcontextcreationerror") {
+        setWebglFailed(true);
+      }
+    };
 
     map.on("load", loadHandler);
     map.on("styledata", styleDataHandler);
+    map.on("error", errorHandler);
     setMapInstance(map);
 
     return () => {
       map.off("load", loadHandler);
       map.off("styledata", styleDataHandler);
+      map.off("error", errorHandler);
       map.remove();
       setIsLoaded(false);
       setIsStyleLoaded(false);
       setMapInstance(null);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [webglFailed]);
 
   useEffect(() => {
     if (!mapInstance || !resolvedTheme) return;
@@ -148,6 +187,14 @@ const Map = forwardRef<MapRef, MapProps>(function Map(
     }),
     [mapInstance, isLoaded, isStyleLoaded]
   );
+
+  if (webglFailed) {
+    return (
+      <div className="relative w-full h-full">
+        {fallback ?? <DefaultMapFallback />}
+      </div>
+    );
+  }
 
   return (
     <MapContext.Provider value={contextValue}>
