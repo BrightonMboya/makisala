@@ -1,6 +1,24 @@
 # Ratiba SEO & LLM Visibility Plan
 
-Last updated: 2026-04-07
+Last updated: 2026-04-13
+
+## Strategic Reality (2026-04-13)
+
+Ratiba is a new domain with low DR. Based on operator experience doing SEO for Makisala, high-competition destination queries ("7-day Serengeti safari itinerary", "best safari itinerary", "Tanzania tour operator") are owned by incumbents (SafariBookings DR 70+, TripAdvisor, Tourwriter, operators with a decade of backlinks). We cannot rank these without a serious DR/backlink investment, and chasing them is wasted effort right now.
+
+**What we bet on instead:**
+
+1. **Brand + competitor queries** — `/compare/*` and "[competitor] alternative". Low competition, high buying intent, DR-insensitive. DONE (10 comparison pages).
+2. **B2B software queries** — "itinerary builder for tour operators", "tour operator software", "safari proposal software". Medium competition, fewer players defending them than destination queries.
+3. **LLMO (ChatGPT, Claude, Perplexity, Gemini)** — purely about content specificity + structured data + entity mentions, not backlinks. Highest-leverage near-term channel. IN PROGRESS.
+4. **Review site and directory presence** — G2, Capterra, GetApp, AlternativeTo, Product Hunt. B2B buyers search these directly; these domains rank where we cannot.
+5. **Linkable assets** — a free tool or calculator other sites actually link to. One well-distributed asset beats fifty SEO pages for DR growth.
+
+**Explicitly off the table for now (revisit when DR is stronger):**
+
+- `/templates/[trip type]` pages targeting "[N] day [destination] safari itinerary" (deleted 2026-04-13 after a first pass, revisit later as product content rather than an SEO bet)
+- `/guides/[destination]` destination-intent blog content
+- Blog posts targeting traveler-intent keywords (we sell to operators, not travelers)
 
 ## Current State
 
@@ -282,9 +300,10 @@ LLMs (ChatGPT, Claude, Perplexity, Gemini) are increasingly used by tour operato
 ## Technical Checklist
 
 ### Immediate (before any content)
-- [ ] Expand sitemap.ts to include all public pages
-- [ ] Add metadataBase to layout.tsx
-- [ ] Add WebApplication JSON-LD schema to homepage
+- [x] Expand sitemap.ts to include all public pages
+- [x] Add metadataBase to layout.tsx
+- [x] Add Organization, WebSite, SoftwareApplication, FAQPage JSON-LD schemas to homepage (2026-04-13)
+- [x] Visible "What is Ratiba" Q&A block on homepage for LLM extraction (2026-04-13)
 - [ ] Submit updated sitemap to Google Search Console
 - [ ] Set up Google Business Profile
 - [ ] Add proper og:image to all pages
@@ -321,22 +340,38 @@ LLMs (ChatGPT, Claude, Perplexity, Gemini) are increasingly used by tour operato
 
 ---
 
-## Priority Order (Updated 2026-04-07)
+## Priority Order (Updated 2026-04-13)
 
 ### Done
 - [x] Technical foundation: sitemap expanded, FAQPage schema, metadata on key pages, internal linking
 - [x] /features page with metadata + FAQ schema
 - [x] /about page with metadata
-- [x] 8 comparison pages (tourwriter, travefy, safari-portal, tourplan, safari-office, tourconnect, wetu, spreadsheets)
+- [x] 10 comparison pages (tourwriter, travefy, safari-portal, tourplan, safari-office, tourconnect, wetu, spreadsheets + 2 more)
+- [x] 11 /for/[audience] use-case pages
+- [x] 32 /glossary/[term] pSEO pages
+- [x] llms.txt with full page index
+- [x] Homepage LLMO hardening: Organization + WebSite + SoftwareApplication + FAQPage JSON-LD, visible "What is Ratiba" Q&A (2026-04-13)
 
-### Next up
-1. **Now**: Build `/for/[audience]` use-case pages (9 pages, code-driven like /compare/)
-2. **Now**: Build `/glossary/[term]` pSEO template + first 30 terms
-3. **Next**: Build `/templates/[type]` pages linking to sample itineraries
-4. **Next**: "Best Tour Operator Software 2026" listicle blog post
-5. **Week 5-8**: Publish weekly blog posts (product-led content)
-6. **Week 9-12**: Build `/guides/[topic]` knowledge base (20-30 pages)
-7. **Week 13+**: Integration pages, city pages, remaining pSEO
+### Dropped / Paused
+- ~~`/templates/[trip type]`~~ — built a sample then removed 2026-04-13. Destination-intent SEO is unwinnable at current DR. Revisit later as product content (onboarding, sales enablement) rather than SEO bet.
+
+### Next up (LLMO + B2B discovery focus)
+1. **Now**: Off-site LLMO distribution — list on Product Hunt, AlternativeTo.net, SaaSworthy, G2, Capterra, GetApp. Aim for 5-10 operator reviews.
+2. **Next**: Add SoftwareApplication / Product JSON-LD on /pricing and /features (mirror homepage pattern for more Q&A coverage).
+3. **Next**: Pitch Ratiba into "best tour operator software" listicles (outreach to tech/travel bloggers, SafariBookings blog, Travel Weekly).
+4. **Month 2**: Build one linkable asset (tour operator ROI calculator or safari pricing benchmark) to attract backlinks.
+5. **Month 2+**: Reddit / Quora / TripAdvisor forum presence answering operator software questions.
+6. **Month 3+**: "Best Tour Operator Software 2026" listicle blog post (our version).
+7. **Month 3+**: Product-led blog posts targeting B2B long-tail (how to price a multi-day tour, operator workflow posts).
+
+### Monthly LLM visibility check
+Ask ChatGPT, Claude, Perplexity, Gemini:
+- "What is the best itinerary builder for safari operators?"
+- "What software do tour operators use to send proposals?"
+- "Alternatives to Tourwriter for safari companies?"
+- "Tour operator software for small DMCs?"
+
+Track whether Ratiba appears. Target: 15% mention rate by Month 6, 30%+ by Month 12.
 
 ---
 

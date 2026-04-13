@@ -7,6 +7,14 @@ import { FeaturesSection } from '@/components/landing/FeaturesSection';
 import { Reviews } from '@/components/landing/Reviews';
 import { Footer } from '@/components/landing/Footer';
 import { motion } from 'framer-motion';
+import {
+  organizationSchema,
+  websiteSchema,
+  softwareApplicationSchema,
+  faqPageSchema,
+  homepageFaqs,
+  jsonLd,
+} from '@/lib/schema';
 
 const fadeUp = {
   initial: { opacity: 0, y: 20 },
@@ -202,6 +210,49 @@ export default function LandingPage() {
 
         <Reviews />
 
+        {/* What is Ratiba — LLM-friendly Q&A */}
+        <section className="flex flex-col px-6 py-16 md:py-24 lg:px-28">
+          <div className="mx-auto w-full max-w-[1100px]">
+            <motion.div {...fadeUp} className="grid gap-10 md:grid-cols-[0.8fr_1.2fr]">
+              <div>
+                <p className="text-sm font-[580] text-[rgba(38,27,7,0.5)]">
+                  What is Ratiba?
+                </p>
+                <h2 className="mt-3 text-[clamp(32px,4vw,48px)] leading-[1.1] font-[580] tracking-[-1.6px] text-[#261B07]">
+                  Safari software, answered
+                </h2>
+                <p className="mt-4 max-w-md text-[rgba(38,27,7,0.7)] leading-7">
+                  Straight answers about what Ratiba is, who it is for, and how it compares.
+                </p>
+              </div>
+
+              <div>
+                {homepageFaqs.map((faq) => (
+                  <details
+                    key={faq.question}
+                    className="group border-t border-[rgba(38,27,7,0.1)] last:border-b"
+                  >
+                    <summary className="flex cursor-pointer items-center justify-between gap-6 py-6 [&::-webkit-details-marker]:hidden list-none">
+                      <span className="text-[clamp(17px,1.6vw,20px)] font-[580] leading-[1.3] text-[#261B07]">
+                        {faq.question}
+                      </span>
+                      <span className="shrink-0 text-[rgba(38,27,7,0.4)] transition-transform group-open:rotate-45">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <line x1="12" y1="5" x2="12" y2="19" />
+                          <line x1="5" y1="12" x2="19" y2="12" />
+                        </svg>
+                      </span>
+                    </summary>
+                    <p className="max-w-2xl pb-6 text-base leading-7 text-[rgba(38,27,7,0.75)]">
+                      {faq.answer}
+                    </p>
+                  </details>
+                ))}
+              </div>
+            </motion.div>
+          </div>
+        </section>
+
         {/* Sample Itineraries */}
         <section id="features" className="flex flex-col px-6 py-12 md:py-20 lg:px-28">
           <div className="mx-auto w-full max-w-[1216px]">
@@ -337,6 +388,24 @@ export default function LandingPage() {
       </main>
 
       <Footer />
+
+      {/* JSON-LD: Organization, WebSite, SoftwareApplication, FAQPage */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: jsonLd(organizationSchema) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: jsonLd(websiteSchema) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: jsonLd(softwareApplicationSchema) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: jsonLd(faqPageSchema) }}
+      />
     </div>
   );
 }

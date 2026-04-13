@@ -17,7 +17,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: route === '/' ? 1 : 0.8,
   }));
 
-  // Compare pages (Ratiba vs competitor)
   const compareEntries: MetadataRoute.Sitemap = getAllCompetitorSlugs().map((slug) => ({
     url: `${baseUrl}/compare/${slug}`,
     lastModified,
@@ -25,7 +24,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.8,
   }));
 
-  // Glossary term pages
   const glossaryEntries: MetadataRoute.Sitemap = getAllGlossaryTermSlugs().map((slug) => ({
     url: `${baseUrl}/glossary/${slug}`,
     lastModified,
@@ -33,7 +31,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.6,
   }));
 
-  // Use-case pages (/for/[slug])
   const useCaseEntries: MetadataRoute.Sitemap = getAllUseCaseSlugs().map((slug) => ({
     url: `${baseUrl}/for/${slug}`,
     lastModified,
