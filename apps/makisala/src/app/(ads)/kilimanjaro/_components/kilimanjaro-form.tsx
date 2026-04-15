@@ -56,11 +56,8 @@ export default function KilimanjaroForm() {
                 url: `${BASE_URL}${pathname}`,
             })
             sendGTMEvent({
-                event: 'generate_lead',
-                lead_source: 'kilimanjaro_ad',
-                content_name: 'Kilimanjaro Ad Form',
-                currency: 'USD',
-                value: 0,
+                event: 'conversion',
+                send_to: 'AW-17982843958/Yck8CP3NwZwcELbY8f5C',
             })
             form.reset()
             router.push('/thank-you')
