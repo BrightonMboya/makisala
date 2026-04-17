@@ -10,6 +10,14 @@ const withMDX = createMDX({})
 
 const nextConfig = {
     staticPageGenerationTimeout: 180,
+    async rewrites() {
+        return [
+            {
+                source: '/tours/:slug.md',
+                destination: '/api/tours/:slug/markdown',
+            },
+        ]
+    },
     pageExtensions: ['js', 'jsx', 'md', 'mdx', 'ts', 'tsx'],
     images: {
         remotePatterns: [

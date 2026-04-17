@@ -1,5 +1,6 @@
 import {
   boolean,
+  index,
   integer,
   json,
   numeric,
@@ -7,7 +8,6 @@ import {
   pgTable,
   text,
   timestamp,
-  index,
   uniqueIndex,
   uuid,
   varchar,
@@ -152,24 +152,28 @@ export const itinerariesRelations = relations(itineraries, ({ one }) => ({
 // ---------- ORGANIZATIONS ----------
 export const PlanTier = pgEnum('plan_tier', ['free', 'starter', 'pro', 'business']);
 
-export const organizations = pgTable('organizations', {
-  id: uuid('id').defaultRandom().primaryKey(),
-  name: text('name').notNull(),
-  slug: text('slug').notNull().unique(),
-  logoUrl: text('logo_url'),
-  aboutDescription: text('about_description'),
-  paymentTerms: text('payment_terms'),
-  notificationEmail: text('notification_email'),
-  planTier: PlanTier('plan_tier').default('free').notNull(),
-  trialEndsAt: timestamp('trial_ends_at'),
-  polarSubscriptionId: text('polar_subscription_id'),
-  onboardingCompletedAt: timestamp('onboarding_completed_at'), // Set when org completes onboarding
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-  updatedAt: timestamp('updated_at').defaultNow().notNull(),
-}, (table) => [
-  index('idx_organizations_polar_subscription_id').on(table.polarSubscriptionId),
-  index('idx_organizations_trial_ends_at').on(table.trialEndsAt),
-]);
+export const organizations = pgTable(
+  'organizations',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    name: text('name').notNull(),
+    slug: text('slug').notNull().unique(),
+    logoUrl: text('logo_url'),
+    aboutDescription: text('about_description'),
+    paymentTerms: text('payment_terms'),
+    notificationEmail: text('notification_email'),
+    planTier: PlanTier('plan_tier').default('free').notNull(),
+    trialEndsAt: timestamp('trial_ends_at'),
+    polarSubscriptionId: text('polar_subscription_id'),
+    onboardingCompletedAt: timestamp('onboarding_completed_at'), // Set when org completes onboarding
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  },
+  (table) => [
+    index('idx_organizations_polar_subscription_id').on(table.polarSubscriptionId),
+    index('idx_organizations_trial_ends_at').on(table.trialEndsAt),
+  ],
+);
 
 export const organizationsRelations = relations(organizations, ({ many }) => ({
   users: many(user),
@@ -450,10 +454,11 @@ export const itineraryDays = pgTable('itinerary_days', {
   tourId: uuid('tour_id')
     .notNull()
     .references(() => tours.id, { onDelete: 'cascade' }),
-  dayNumber: integer('day_number').notNull(), // day.day_number
-  dayTitle: text('itinerary_day_title'), // day.itinerary_day_title
+  dayNumber: integer('day_number').notNull(),
+  dayTitle: text('itinerary_day_title'),
   overview: text('overview'), // day.overview
   national_park_id: uuid('national_park_id').references(() => nationalParks.id),
+  meals: text('meals').default('BLD').notNull(), // B=Breakfast, L=Lunch, D=Dinner
 });
 
 export const itineraryDaysRelations = relations(itineraryDays, ({ one, many }) => ({
@@ -760,7 +765,9 @@ export const proposalTransportation = pgTable('proposal_transportation', {
   originName: text('origin_name').notNull(),
   originId: uuid('origin_id').references(() => nationalParks.id, { onDelete: 'set null' }),
   destinationName: text('destination_name').notNull(),
-  destinationId: uuid('destination_id').references(() => nationalParks.id, { onDelete: 'set null' }),
+  destinationId: uuid('destination_id').references(() => nationalParks.id, {
+    onDelete: 'set null',
+  }),
   mode: TransportMode('mode').notNull(),
   durationMinutes: integer('duration_minutes'),
   distanceKm: integer('distance_km'),
@@ -771,23 +778,27 @@ export const proposalTransportation = pgTable('proposal_transportation', {
 });
 
 // ---------- PROPOSAL ASSIGNMENTS (many-to-many: proposals ↔ users) ----------
-export const proposalAssignments = pgTable('proposal_assignments', {
-  id: uuid('id').defaultRandom().primaryKey(),
-  proposalId: text('proposal_id')
-    .notNull()
-    .references(() => proposals.id, { onDelete: 'cascade' }),
-  userId: text('user_id')
-    .notNull()
-    .references(() => user.id, { onDelete: 'cascade' }),
-  assignedBy: text('assigned_by').references(() => user.id, { onDelete: 'set null' }),
-  createdAt: timestamp('created_at', { precision: 3, mode: 'string' })
-    .default(sql`CURRENT_TIMESTAMP`)
-    .notNull(),
-}, (table) => [
-  uniqueIndex('proposal_assignments_proposal_user_idx').on(table.proposalId, table.userId),
-  index('proposal_assignments_proposal_idx').on(table.proposalId),
-  index('proposal_assignments_user_idx').on(table.userId),
-]);
+export const proposalAssignments = pgTable(
+  'proposal_assignments',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    proposalId: text('proposal_id')
+      .notNull()
+      .references(() => proposals.id, { onDelete: 'cascade' }),
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    assignedBy: text('assigned_by').references(() => user.id, { onDelete: 'set null' }),
+    createdAt: timestamp('created_at', { precision: 3, mode: 'string' })
+      .default(sql`CURRENT_TIMESTAMP`)
+      .notNull(),
+  },
+  (table) => [
+    uniqueIndex('proposal_assignments_proposal_user_idx').on(table.proposalId, table.userId),
+    index('proposal_assignments_proposal_idx').on(table.proposalId),
+    index('proposal_assignments_user_idx').on(table.userId),
+  ],
+);
 
 export const proposalAssignmentsRelations = relations(proposalAssignments, ({ one }) => ({
   proposal: one(proposals, {
@@ -935,21 +946,23 @@ export const commentRepliesRelations = relations(commentReplies, ({ one }) => ({
 }));
 
 // ---------- PROPOSAL NOTES (Internal Team Notes) ----------
-export const proposalNotes = pgTable('proposal_notes', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  proposalId: text('proposal_id')
-    .notNull()
-    .references(() => proposals.id, { onDelete: 'cascade' }),
+export const proposalNotes = pgTable(
+  'proposal_notes',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    proposalId: text('proposal_id')
+      .notNull()
+      .references(() => proposals.id, { onDelete: 'cascade' }),
 
-  parentId: uuid('parent_id').references((): any => proposalNotes.id, { onDelete: 'cascade' }),
-  userId: text('user_id').references(() => user.id),
-  userName: text('user_name'),
-  content: text('content').notNull(),
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-  updatedAt: timestamp('updated_at').defaultNow().notNull(),
-}, (table) => [
-  index('idx_proposal_notes_parent_id').on(table.parentId),
-]);
+    parentId: uuid('parent_id').references((): any => proposalNotes.id, { onDelete: 'cascade' }),
+    userId: text('user_id').references(() => user.id),
+    userName: text('user_name'),
+    content: text('content').notNull(),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  },
+  (table) => [index('idx_proposal_notes_parent_id').on(table.parentId)],
+);
 
 export const proposalNotesRelations = relations(proposalNotes, ({ one, many }) => ({
   proposal: one(proposals, {
@@ -1020,7 +1033,9 @@ export const activityLibrary = pgTable('activity_library', {
   name: text('name').notNull(),
   description: text('description'),
   imageUrl: text('image_url'),
-  organizationId: uuid('organization_id').references(() => organizations.id, { onDelete: 'cascade' }),
+  organizationId: uuid('organization_id').references(() => organizations.id, {
+    onDelete: 'cascade',
+  }),
   isGlobal: boolean('is_global').default(false).notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });

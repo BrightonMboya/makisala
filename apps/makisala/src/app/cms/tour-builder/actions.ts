@@ -124,6 +124,7 @@ export type CreateTourData = {
         overview?: string
         national_park_id?: string
         accommodation_id?: string
+        meals?: string
     }[]
 }
 
@@ -157,6 +158,7 @@ export async function createTour(data: CreateTourData) {
                     dayTitle: day.title,
                     overview: day.overview,
                     national_park_id: day.national_park_id,
+                    meals: day.meals || 'BLD',
                 })
                 .returning()
 
@@ -325,6 +327,7 @@ export async function updateTour(id: string, data: CreateTourData) {
                     dayTitle: day.title,
                     overview: day.overview,
                     national_park_id: day.national_park_id,
+                    meals: day.meals || 'BLD',
                 })
                 .returning()
 

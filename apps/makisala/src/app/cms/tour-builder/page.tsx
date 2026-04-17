@@ -22,6 +22,7 @@ const itinerarySchema = z.object({
     overview: z.string().optional(),
     national_park_id: z.string().optional(),
     accommodation_id: z.string().optional(),
+    meals: z.string().default('BLD'),
 })
 
 const activitySchema = z.object({
@@ -92,6 +93,7 @@ export default function TourPackageBuilder() {
                     overview: '',
                     national_park_id: '',
                     accommodation_id: '',
+                    meals: 'BLD',
                 },
             ],
         },
@@ -163,6 +165,7 @@ export default function TourPackageBuilder() {
                         overview: day.overview || '',
                         national_park_id: day.national_park_id || '',
                         accommodation_id: day.itineraryAccommodations?.[0]?.accommodationId || '',
+                        meals: day.meals || 'BLD',
                     })),
                 })
             }
@@ -473,6 +476,7 @@ export default function TourPackageBuilder() {
                                             overview: '',
                                             national_park_id: '',
                                             accommodation_id: '',
+                                            meals: 'BLD',
                                         })
                                     }
                                 >
@@ -543,6 +547,40 @@ export default function TourPackageBuilder() {
                                                                 field={field}
                                                                 onCreated={fetchData}
                                                             />
+                                                        </FormControl>
+                                                        <FormMessage />
+                                                    </FormItem>
+                                                )}
+                                            />
+                                            <FormField
+                                                control={form.control}
+                                                name={`itineraries.${index}.meals`}
+                                                render={({ field }) => (
+                                                    <FormItem>
+                                                        <FormLabel>Meal Plan</FormLabel>
+                                                        <FormControl>
+                                                            <div className="flex items-center gap-1">
+                                                                {(['B', 'L', 'D'] as const).map(meal => (
+                                                                    <button
+                                                                        key={meal}
+                                                                        type="button"
+                                                                        onClick={() => {
+                                                                            const current = field.value || ''
+                                                                            const next = current.includes(meal)
+                                                                                ? current.replace(meal, '')
+                                                                                : (['B', 'L', 'D'].filter(m => current.includes(m) || m === meal).join(''))
+                                                                            field.onChange(next)
+                                                                        }}
+                                                                        className={`flex h-8 w-8 items-center justify-center rounded border text-sm font-medium transition-colors ${
+                                                                            (field.value || '').includes(meal)
+                                                                                ? 'border-green-600 bg-green-50 text-green-700'
+                                                                                : 'border-stone-300 text-stone-300 hover:border-stone-400 hover:text-stone-400'
+                                                                        }`}
+                                                                    >
+                                                                        {meal}
+                                                                    </button>
+                                                                ))}
+                                                            </div>
                                                         </FormControl>
                                                         <FormMessage />
                                                     </FormItem>

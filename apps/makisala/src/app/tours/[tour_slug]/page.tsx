@@ -134,9 +134,9 @@ export default async function Page({ params }: Params) {
                                                 })
                                             )}
                                             mealPlan={
-                                                day.dayNumber === 1
-                                                    ? ['Breakfast', 'Lunch', 'Dinner']
-                                                    : undefined
+                                                (day.meals || 'BLD').split('').map(m =>
+                                                    m === 'B' ? 'Breakfast' : m === 'L' ? 'Lunch' : 'Dinner'
+                                                ).filter(Boolean)
                                             }
                                         />
                                     ))}
