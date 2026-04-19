@@ -315,43 +315,6 @@ export const toursRouter = router({
       return { success: true, tourId: result.tourId };
     }),
 
-  getRandomDayTemplate: publicProcedure
-    .input(
-      z.object({
-        nationalParkId: z.string(),
-        dayType: z.enum(['arrival', 'full_day', 'half_day', 'departure']).optional(),
-        excludeDescriptions: z.array(z.string()).max(100).optional(),
-      }),
-    )
-    .query(async ({ ctx, input }) => {
-      const { dayContentTemplates } = await import('@repo/db/schema');
-
-      const templates = await ctx.db
-        .select({
-          id: dayContentTemplates.id,
-          dayType: dayContentTemplates.dayType,
-          description: dayContentTemplates.description,
-        })
-        .from(dayContentTemplates)
-        .where(eq(dayContentTemplates.nationalParkId, input.nationalParkId));
-
-      if (templates.length === 0) return null;
-
-      let candidates = templates;
-      if (input.dayType) {
-        const typeMatches = candidates.filter((t) => t.dayType === input.dayType);
-        if (typeMatches.length > 0) candidates = typeMatches;
-      }
-
-      if (input.excludeDescriptions && input.excludeDescriptions.length > 0) {
-        const filtered = candidates.filter((t) => !input.excludeDescriptions!.includes(t.description));
-        if (filtered.length > 0) candidates = filtered;
-      }
-
-      const randomIndex = Math.floor(Math.random() * candidates.length);
-      return candidates[randomIndex] ?? null;
-    }),
-
   getPageImages: publicProcedure
     .input(z.object({ pageIds: z.array(z.string()).max(100) }))
     .query(async ({ ctx, input }) => {

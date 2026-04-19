@@ -6,6 +6,7 @@ import { router, protectedProcedure, publicProcedure } from '../init';
 import {
   translateProposalContent,
   extractTranslatableContent,
+  generateDayCopy,
 } from '@/lib/translation';
 
 export const translationsRouter = router({
@@ -103,6 +104,25 @@ export const translationsRouter = router({
           ),
         );
       return { success: true };
+    }),
+
+  /** Generate day overview copy using AI */
+  suggestDayCopy: protectedProcedure
+    .input(
+      z.object({
+        destinationName: z.string(),
+        dayNumber: z.number(),
+        activities: z.array(z.object({
+          name: z.string(),
+          location: z.string().optional(),
+        })),
+        accommodationName: z.string().nullable().optional(),
+        tourType: z.string().optional(),
+      }),
+    )
+    .mutation(async ({ input }) => {
+      const description = await generateDayCopy(input);
+      return { description };
     }),
 
   /** Get translation for a proposal (public, used by client view) */

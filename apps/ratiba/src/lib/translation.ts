@@ -199,3 +199,62 @@ export function extractTranslatableContent(proposal: {
     accommodations: Array.from(accommodationMap.values()),
   };
 }
+
+/** Generate a short travel copy description for a day in the itinerary */
+export async function generateDayCopy(context: {
+  destinationName: string;
+  dayNumber: number;
+  activities: Array<{ name: string; location?: string }>;
+  accommodationName?: string | null;
+  tourType?: string;
+}): Promise<string> {
+  const activityList = context.activities.map((a) => a.name).join(', ');
+
+  const prompt = `You are a travel copywriter for safari and adventure tour proposals. Write exactly 3 sentences describing Day ${context.dayNumber} of a trip.
+
+Context:
+- Destination: ${context.destinationName}
+- Activities: ${activityList || 'general exploration'}
+${context.accommodationName ? `- Accommodation: ${context.accommodationName}` : ''}
+${context.tourType ? `- Tour type: ${context.tourType}` : ''}
+
+Rules:
+- Write warm, vivid travel copy that makes the reader excited about this day
+- Exactly 3 sentences, no more
+- Never use em-dashes. Use periods, commas, or colons instead
+- Do not use generic filler phrases like "unforgettable experience" or "memories that last a lifetime"
+- Be specific to the destination and activities
+- Return only the 3 sentences, no headings, no formatting, no quotes`;
+
+  const response = await fetch(GROQ_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${env.GROQ_API_KEY}`,
+    },
+    body: JSON.stringify({
+      model: MODEL,
+      messages: [{ role: 'user', content: prompt }],
+      temperature: 0.7,
+      max_tokens: 512,
+    }),
+  });
+
+  if (!response.ok) {
+    const error = await response.text();
+    log.error('Groq day copy generation failed', { status: response.status, error });
+    throw new Error(`Day copy generation failed: ${response.status}`);
+  }
+
+  const data = await response.json();
+  const text = data.choices?.[0]?.message?.content;
+
+  if (!text) {
+    throw new Error('Empty response from day copy generation');
+  }
+
+  // Strip thinking tags and clean up
+  const cleaned = text.replace(/<think>[\s\S]*?<\/think>/g, '').trim();
+  // Remove any em-dashes that slipped through
+  return cleaned.replace(/—/g, ',');
+}

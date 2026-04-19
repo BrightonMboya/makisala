@@ -324,23 +324,36 @@ function SortableDayRow({
   const [isTransferExpanded, setIsTransferExpanded] = useState(!!day.transfer);
   const [isSuggesting, setIsSuggesting] = useState(false);
 
+  const suggestMutation = trpc.translations.suggestDayCopy.useMutation();
+
   const handleSuggestContent = useCallback(async () => {
-    if (!day.destination) return;
+    let destName = day.destinationName || '';
+    if (!destName && day.destination) {
+      // Resolve name from geo value or park ID
+      const geo = parseGeoValue(day.destination);
+      destName = geo?.name || day.destination;
+    }
+    if (!destName) return;
 
     setIsSuggesting(true);
     try {
-      const template = await utils.tours.getRandomDayTemplate.fetch({
-        nationalParkId: day.destination,
-        excludeDescriptions: day.description ? [day.description] : undefined,
+      const result = await suggestMutation.mutateAsync({
+        destinationName: destName,
+        dayNumber: day.dayNumber,
+        activities: day.activities.map((a) => ({
+          name: a.name,
+          location: a.location || undefined,
+        })),
+        accommodationName: day.accommodationName || null,
       });
-      if (template?.description) {
-        onUpdate(day.id, 'description', template.description);
+      if (result.description) {
+        onUpdate(day.id, 'description', result.description);
         setIsExpanded(true);
       }
     } finally {
       setIsSuggesting(false);
     }
-  }, [day.destination, day.description, day.id, onUpdate]);
+  }, [day.destination, day.destinationName, day.dayNumber, day.activities, day.accommodationName, day.id, onUpdate]);
 
   const style = {
     transform: CSS.Transform.toString(transform),
