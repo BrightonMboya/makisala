@@ -11,6 +11,7 @@ import { contentLibraryRouter } from './routers/contentLibrary';
 import { settingsRouter } from './routers/settings';
 import { toursRouter } from './routers/tours';
 import { proposalsRouter } from './routers/proposals';
+import { translationsRouter } from './routers/translations';
 export const appRouter = router({
   clients: clientsRouter,
   nationalParks: nationalParksRouter,
@@ -24,6 +25,7 @@ export const appRouter = router({
   settings: settingsRouter,
   tours: toursRouter,
   proposals: proposalsRouter,
+  translations: translationsRouter,
 });
 
 export type AppRouter = typeof appRouter;

@@ -13,7 +13,9 @@ import {
   ExternalLink,
   Eye,
   Pencil,
+  Globe,
 } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@repo/ui/select';
 import { useBuilder } from '@/components/itinerary-builder/builder-context';
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
@@ -22,6 +24,26 @@ import { useMutation } from '@tanstack/react-query';
 import { trpc } from '@/lib/trpc';
 import { staleTimes } from '@/lib/query-keys';
 import Link from 'next/link';
+
+const LANGUAGES = [
+  { code: 'en', label: 'English (default)' },
+  { code: 'fr', label: 'French' },
+  { code: 'de', label: 'German' },
+  { code: 'es', label: 'Spanish' },
+  { code: 'it', label: 'Italian' },
+  { code: 'pt', label: 'Portuguese' },
+  { code: 'nl', label: 'Dutch' },
+  { code: 'zh', label: 'Chinese (Mandarin)' },
+  { code: 'ja', label: 'Japanese' },
+  { code: 'ko', label: 'Korean' },
+  { code: 'ar', label: 'Arabic' },
+  { code: 'ru', label: 'Russian' },
+  { code: 'hi', label: 'Hindi' },
+  { code: 'sw', label: 'Swahili' },
+  { code: 'pl', label: 'Polish' },
+  { code: 'tr', label: 'Turkish' },
+  { code: 'he', label: 'Hebrew' },
+] as const;
 
 const DEFAULT_MESSAGE = `Thank you for choosing us to plan your unforgettable journey! We've carefully crafted this personalized travel proposal based on your preferences and dreams.
 
@@ -64,8 +86,24 @@ export default function SharePage() {
   const [testEmail, setTestEmail] = useState('');
   const [isProposalSaved, setIsProposalSaved] = useState(false);
   const [proposalLink, setProposalLink] = useState('');
+  const [selectedLanguage, setSelectedLanguage] = useState('en');
 
   const saveProposalMutation = trpc.proposals.save.useMutation();
+  const translateMutation = trpc.translations.translate.useMutation();
+  const resetLanguageMutation = trpc.translations.resetLanguage.useMutation();
+
+  // Fetch proposal language setting
+  const { data: proposalData } = trpc.proposals.getForBuilder.useQuery(
+    { id: proposalId },
+    { staleTime: staleTimes.clients },
+  );
+
+  // Sync language from proposal data
+  useEffect(() => {
+    if (proposalData?.language && proposalData.language !== 'en') {
+      setSelectedLanguage(proposalData.language);
+    }
+  }, [proposalData?.language]);
 
   // Fetch client info
   const { data: clientData } = trpc.clients.getById.useQuery(
@@ -206,6 +244,34 @@ export default function SharePage() {
     });
   };
 
+  const handleLanguageChange = (language: string) => {
+    setSelectedLanguage(language);
+    if (language === 'en') {
+      resetLanguageMutation.mutate({ proposalId });
+      return;
+    }
+    translateMutation.mutate(
+      { proposalId, language },
+      {
+        onSuccess: () => {
+          const langLabel = LANGUAGES.find((l) => l.code === language)?.label || language;
+          toast({
+            title: 'Proposal Translated',
+            description: `Your proposal will be displayed in ${langLabel} when the client views it.`,
+          });
+        },
+        onError: (error) => {
+          setSelectedLanguage('en');
+          toast({
+            title: 'Translation Failed',
+            description: error.message,
+            variant: 'destructive',
+          });
+        },
+      },
+    );
+  };
+
   const duration = days.length > 0 ? `${days.length} days` : '';
   const formattedStartDate = startDate
     ? new Date(startDate).toLocaleDateString('en-US', {
@@ -264,6 +330,43 @@ export default function SharePage() {
                   Open
                 </Button>
               </a>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Client Language */}
+      <div className="rounded-xl border border-stone-200 bg-white p-6 shadow-sm">
+        <h3 className="mb-3 flex items-center gap-2 text-lg font-semibold text-stone-900">
+          <Globe className="h-5 w-5 text-green-600" />
+          Client Language
+        </h3>
+        <p className="mb-4 text-sm text-stone-500">
+          Choose the language your client will see when viewing this proposal. The proposal will be automatically translated.
+        </p>
+        <div className="flex items-center gap-3">
+          <Select value={selectedLanguage} onValueChange={handleLanguageChange}>
+            <SelectTrigger className="w-64 border-stone-200">
+              <SelectValue placeholder="Select language" />
+            </SelectTrigger>
+            <SelectContent>
+              {LANGUAGES.map((lang) => (
+                <SelectItem key={lang.code} value={lang.code}>
+                  {lang.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {translateMutation.isPending && (
+            <div className="flex items-center gap-2 text-sm text-stone-500">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Translating...
+            </div>
+          )}
+          {translateMutation.isSuccess && selectedLanguage !== 'en' && (
+            <div className="flex items-center gap-2 text-sm text-green-600">
+              <CheckCircle className="h-4 w-4" />
+              Translated
             </div>
           )}
         </div>

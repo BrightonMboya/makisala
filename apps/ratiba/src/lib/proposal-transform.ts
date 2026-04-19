@@ -90,15 +90,18 @@ function getDayDestinationName(day: ProposalDay): string {
   return '';
 }
 
-export function transformProposalToItineraryData(proposal: ProposalInput): ItineraryData {
+export function transformProposalToItineraryData(
+  proposal: ProposalInput,
+  translation?: Record<string, any> | null,
+): ItineraryData {
   const proposalDays = proposal.days || [];
   const startDate = proposal.startDate ? new Date(proposal.startDate) : undefined;
   const travelerGroups: TravelerGroup[] = (proposal.travelerGroups as any) || [];
   const pricingRows: PricingRow[] = (proposal.pricingRows as any) || [];
   const extras: ExtraOption[] = (proposal.extras as any) || [];
-  const inclusions: string[] = proposal.inclusions || [];
-  const exclusions: string[] = proposal.exclusions || [];
-  const tourTitle = proposal.tourTitle || proposal.name || 'Safari Adventure';
+  const inclusions: string[] = translation?.inclusions || proposal.inclusions || [];
+  const exclusions: string[] = translation?.exclusions || proposal.exclusions || [];
+  const tourTitle = translation?.tourTitle || proposal.tourTitle || proposal.name || 'Safari Adventure';
   const clientName = proposal.client?.name || '';
 
   // Determine location from countries array or fallback
@@ -115,16 +118,24 @@ export function transformProposalToItineraryData(proposal: ProposalInput): Itine
     const currentDate = startDate ? addDays(startDate, index) : new Date();
     const dateStr = format(currentDate, 'MMMM d, yyyy');
 
-    const activities: DayActivity[] = (day.activities || []).map((act) => ({
-      time: act.time ? formatTime(act.time) : '',
-      activity: capitalize(act.name),
-      description: act.description || '',
-      location: act.location || undefined,
-    }));
+    // Find translated day content if available
+    const translatedDay = translation?.days?.find(
+      (td: any) => td.dayNumber === day.dayNumber,
+    );
+
+    const activities: DayActivity[] = (day.activities || []).map((act, actIdx) => {
+      const translatedAct = translatedDay?.activities?.[actIdx];
+      return {
+        time: act.time ? formatTime(act.time) : '',
+        activity: capitalize(translatedAct?.name || act.name),
+        description: translatedAct?.description || act.description || '',
+        location: translatedAct?.location || act.location || undefined,
+      };
+    });
 
     const destinationName = getDayDestinationName(day);
 
-    let title = day.title || '';
+    let title = translatedDay?.title || day.title || '';
     if (!title || title === `Day ${day.dayNumber}`) {
       title = destinationName
         ? `Explore ${destinationName}`
@@ -135,8 +146,11 @@ export function transformProposalToItineraryData(proposal: ProposalInput): Itine
 
     const accommodation = day.accommodations?.[0]?.accommodation;
     const isLastDay = index === proposalDays.length - 1;
+    const translatedAccom = accommodation
+      ? translation?.accommodations?.find((a: any) => a.id === accommodation.id)
+      : null;
     const accommodationName =
-      accommodation?.name || (isLastDay ? 'Last day, no accommodation' : 'To be confirmed');
+      translatedAccom?.name || accommodation?.name || (isLastDay ? 'Last day, no accommodation' : 'To be confirmed');
 
     const meals = day.meals;
     const mealsStr = meals
@@ -150,6 +164,9 @@ export function transformProposalToItineraryData(proposal: ProposalInput): Itine
       : 'None';
 
     const dayTransport = day.transportation?.[0];
+    const translatedTransport = dayTransport
+      ? translatedDay?.transportation?.find((t: any) => t.id === dayTransport.id)
+      : null;
     const transportation = dayTransport
       ? {
           id: dayTransport.id,
@@ -159,7 +176,7 @@ export function transformProposalToItineraryData(proposal: ProposalInput): Itine
           modeLabel: transportModeLabels[dayTransport.mode] || dayTransport.mode,
           durationFormatted: formatDuration(dayTransport.durationMinutes),
           distanceKm: dayTransport.distanceKm,
-          notes: dayTransport.notes,
+          notes: translatedTransport?.notes || dayTransport.notes,
         }
       : undefined;
 
@@ -167,7 +184,7 @@ export function transformProposalToItineraryData(proposal: ProposalInput): Itine
       day: day.dayNumber,
       date: dateStr,
       title,
-      description: day.description || undefined,
+      description: translatedDay?.description || day.description || undefined,
       destination: destinationName || undefined,
       activities,
       accommodation: accommodationName,
@@ -185,15 +202,18 @@ export function transformProposalToItineraryData(proposal: ProposalInput): Itine
       if (!accommodationMap.has(accommodation.id)) {
         const allImages =
           accommodation.images?.map((img) => getPublicUrl(img.bucket, img.key)) || [];
+        const translatedAccom = translation?.accommodations?.find(
+          (a: any) => a.id === accommodation.id,
+        );
 
         accommodationMap.set(accommodation.id, {
           id: accommodation.id,
-          name: accommodation.name,
+          name: translatedAccom?.name || accommodation.name,
           image:
             allImages[0] ||
             'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?q=80&w=2670&auto=format&fit=crop',
           images: allImages.length > 0 ? allImages : undefined,
-          description: accommodation.overview || `Luxury accommodation in ${destName}`,
+          description: translatedAccom?.overview || accommodation.overview || `Luxury accommodation in ${destName}`,
           location: destName,
         });
       }
@@ -267,7 +287,7 @@ export function transformProposalToItineraryData(proposal: ProposalInput): Itine
       : undefined;
 
   const tripOverview: TripOverview = {
-    tourType: proposal.tourType || undefined,
+    tourType: translation?.tourType || proposal.tourType || undefined,
     country:
       countries.length > 0
         ? countries
@@ -286,6 +306,12 @@ export function transformProposalToItineraryData(proposal: ProposalInput): Itine
     .filter((day) => day.transportation && day.transportation.length > 0)
     .map((day) => {
       const t = day.transportation![0]!;
+      const translatedDay = translation?.days?.find(
+        (td: any) => td.dayNumber === day.dayNumber,
+      );
+      const translatedTransport = translatedDay?.transportation?.find(
+        (tt: any) => tt.id === t.id,
+      );
       return {
         id: t.id,
         originName: t.originName,
@@ -294,7 +320,7 @@ export function transformProposalToItineraryData(proposal: ProposalInput): Itine
         modeLabel: transportModeLabels[t.mode] || t.mode,
         durationFormatted: formatDuration(t.durationMinutes),
         distanceKm: t.distanceKm,
-        notes: t.notes,
+        notes: translatedTransport?.notes || t.notes,
       };
     });
 

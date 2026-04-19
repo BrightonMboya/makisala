@@ -244,6 +244,7 @@ export const proposalsRouter = router({
           hidePricing: true,
           theme: true,
           heroImage: true,
+          language: true,
         },
         with: {
           tour: { columns: { country: true } },

@@ -274,6 +274,13 @@
       "when": 1776427502466,
       "tag": "0038_complex_aqueduct",
       "breakpoints": true
+    },
+    {
+      "idx": 39,
+      "version": "7",
+      "when": 1776600402953,
+      "tag": "0039_majestic_winter_soldier",
+      "breakpoints": true
     }
   ]
 }

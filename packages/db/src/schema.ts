@@ -669,6 +669,7 @@ export const proposals = pgTable('proposals', {
   inclusions: text('inclusions').array(),
   exclusions: text('exclusions').array(),
   hidePricing: boolean('hide_pricing').default(false),
+  language: text('language').default('en'),
   organizationId: uuid('organization_id').references(() => organizations.id),
   status: ProposalStatus('status').default('draft').notNull(),
   createdAt: timestamp('created_at', { precision: 3, mode: 'string' })
@@ -816,6 +817,35 @@ export const proposalAssignmentsRelations = relations(proposalAssignments, ({ on
   }),
 }));
 
+// ---------- PROPOSAL TRANSLATIONS ----------
+export const proposalTranslations = pgTable(
+  'proposal_translations',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    proposalId: text('proposal_id')
+      .notNull()
+      .references(() => proposals.id, { onDelete: 'cascade' }),
+    language: text('language').notNull(),
+    content: json('content').$type<Record<string, unknown>>().notNull(),
+    createdAt: timestamp('created_at', { precision: 3, mode: 'string' })
+      .default(sql`CURRENT_TIMESTAMP`)
+      .notNull(),
+    updatedAt: timestamp('updated_at', { precision: 3, mode: 'string' })
+      .default(sql`CURRENT_TIMESTAMP`)
+      .notNull(),
+  },
+  (table) => [
+    uniqueIndex('proposal_translations_proposal_lang_idx').on(table.proposalId, table.language),
+  ],
+);
+
+export const proposalTranslationsRelations = relations(proposalTranslations, ({ one }) => ({
+  proposal: one(proposals, {
+    fields: [proposalTranslations.proposalId],
+    references: [proposals.id],
+  }),
+}));
+
 // Relations
 export const proposalsRelations = relations(proposals, ({ one, many }) => ({
   tour: one(tours, {
@@ -834,6 +864,7 @@ export const proposalsRelations = relations(proposals, ({ one, many }) => ({
   comments: many(comments),
   notes: many(proposalNotes),
   assignments: many(proposalAssignments),
+  translations: many(proposalTranslations),
 }));
 
 export const proposalDaysRelations = relations(proposalDays, ({ one, many }) => ({

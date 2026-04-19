@@ -26,11 +26,13 @@ const loggerMiddleware = t.middleware(async ({ path, type, next, ctx }) => {
   const result = await next();
 
   if (!result.ok) {
+    const session = await ctx.getSession();
     log.error('tRPC error', {
       path,
       type,
       durationMs: Date.now() - start,
-      userId: ctx.getSession().then((session) => session?.user?.id),
+      userId: session?.user?.id ?? null,
+      organizationId: (session?.session as any)?.activeOrganizationId ?? null,
       error: {
         code: result.error.code,
         message: result.error.message,
