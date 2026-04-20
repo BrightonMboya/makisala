@@ -17,6 +17,22 @@ const nextConfig: NextConfig = {
       },
     ];
   },
+  async headers() {
+    const linkHeader = [
+      '</sitemap.xml>; rel="sitemap"; type="application/xml"',
+      '</robots.txt>; rel="describedby"; type="text/plain"',
+      '</features.md>; rel="describedby"; type="text/markdown"; title="Product features (markdown)"',
+    ].join(', ');
+    return [
+      {
+        source: '/',
+        headers: [
+          { key: 'Link', value: linkHeader },
+          { key: 'Vary', value: 'Accept' },
+        ],
+      },
+    ];
+  },
   images: {
     unoptimized: true,
     remotePatterns: [
