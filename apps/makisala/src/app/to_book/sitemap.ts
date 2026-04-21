@@ -2,6 +2,9 @@ import type { MetadataRoute } from 'next'
 import { db, tourPackages } from '@repo/db'
 import { BASE_URL } from '@/lib/constants'
 
+export const revalidate = 3600
+export const dynamic = 'force-static'
+
 export default async function generateSitemaps(): Promise<MetadataRoute.Sitemap> {
     // Google's limit is 50,000 URLs per sitemap
     const tours_slugs = await db

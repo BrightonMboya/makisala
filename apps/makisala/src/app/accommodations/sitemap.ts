@@ -3,6 +3,9 @@ import type { MetadataRoute } from 'next'
 import { getAccommodationSlugs } from '@/lib/cms-service'
 import { BASE_URL } from '@/lib/constants'
 
+export const revalidate = 3600
+export const dynamic = 'force-static'
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const rows = await getAccommodationSlugs()
 
