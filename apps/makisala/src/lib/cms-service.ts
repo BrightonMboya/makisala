@@ -1,8 +1,11 @@
 'use server'
 import {
+    accommodations,
     db,
     destinations,
     inquiries,
+    itineraryAccommodations,
+    itineraryDays,
     nationalParks,
     type NewInquiries,
     tourPackages,
@@ -22,9 +25,11 @@ import {
 } from '@repo/db/schema'
 import {
     and,
+    asc,
     desc,
     eq,
     ilike,
+    isNotNull,
     type InferInsertModel,
     type InferSelectModel,
     or,
@@ -581,4 +586,72 @@ export async function getWeekendDeals() {
         rating: getStableRandom(row.id as string, 4.5, 5.0, 1),
         reviews: getStableRandom(row.id as string, 12, 150, 0),
     })) as TourCard[]
+}
+
+/* ------------------------------------------------------------------ */
+/*  ACCOMMODATIONS                                                    */
+/* ------------------------------------------------------------------ */
+
+const toImageUrl = (key: string) => `${R2_PUBLIC_URL}/${key}`
+
+export async function getAccommodationSlugs() {
+    return db
+        .select({ slug: accommodations.slug })
+        .from(accommodations)
+        .where(isNotNull(accommodations.slug))
+}
+
+export async function getAccommodationBySlug(slug: string) {
+    const row = await db.query.accommodations.findFirst({
+        where: eq(accommodations.slug, slug),
+        with: { images: true },
+    })
+    if (!row) return null
+    return {
+        ...row,
+        images: row.images.map(img => ({ ...img, imageUrl: toImageUrl(img.key) })),
+    }
+}
+
+export async function getToursFeaturingAccommodation(accommodationId: string) {
+    const rows = await db
+        .selectDistinct({
+            id: tours.id,
+            slug: tours.slug,
+            tourName: tours.tourName,
+            overview: tours.overview,
+            country: tours.country,
+            img_url: tours.img_url,
+            pricing: tours.pricing,
+            number_of_days: tours.number_of_days,
+        })
+        .from(itineraryAccommodations)
+        .innerJoin(itineraryDays, eq(itineraryDays.id, itineraryAccommodations.itineraryDayId))
+        .innerJoin(tours, eq(tours.id, itineraryDays.tourId))
+        .where(eq(itineraryAccommodations.accommodationId, accommodationId))
+        .limit(6)
+    return rows
+}
+
+export async function listAccommodationsForIndex() {
+    const rows = await db.query.accommodations.findMany({
+        where: isNotNull(accommodations.slug),
+        orderBy: [asc(accommodations.name)],
+        columns: {
+            id: true,
+            name: true,
+            slug: true,
+            country: true,
+            overview: true,
+            enhancedDescription: true,
+        },
+        with: {
+            images: { columns: { key: true }, limit: 1 },
+        },
+    })
+
+    return rows.map(r => ({
+        ...r,
+        imageUrl: r.images[0] ? toImageUrl(r.images[0].key) : null,
+    }))
 }

@@ -297,6 +297,54 @@ export const TouristAttractionSchema = ({
     }
 }
 
+export const LodgingBusinessSchema = ({
+    name,
+    description,
+    image,
+    url,
+    country,
+    latitude,
+    longitude,
+    amenityFeatures,
+}: {
+    name: string
+    description: string
+    image: string[]
+    url: string
+    country?: string
+    latitude?: string
+    longitude?: string
+    amenityFeatures?: string[]
+}) => {
+    return {
+        '@context': 'https://schema.org',
+        '@type': 'LodgingBusiness',
+        name,
+        description,
+        image,
+        url,
+        address: country
+            ? {
+                  '@type': 'PostalAddress',
+                  addressCountry: country,
+              }
+            : undefined,
+        geo:
+            latitude && longitude
+                ? {
+                      '@type': 'GeoCoordinates',
+                      latitude,
+                      longitude,
+                  }
+                : undefined,
+        amenityFeature: amenityFeatures?.map(a => ({
+            '@type': 'LocationFeatureSpecification',
+            name: a,
+            value: true,
+        })),
+    }
+}
+
 export const ParkSchema = ({
     name,
     description,

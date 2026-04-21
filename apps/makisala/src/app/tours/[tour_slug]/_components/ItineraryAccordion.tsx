@@ -2,6 +2,7 @@
 
 import React from 'react'
 import Image from 'next/image'
+import Link from 'next/link'
 import {
     ChevronDown,
     ChevronLeft,
@@ -20,6 +21,7 @@ import { cn } from '@/lib/utils'
 interface Accommodation {
     id: string
     name: string
+    slug?: string | null
     url: string
     overview: string
     images?: { imageUrl: string; alt?: string }[]
@@ -240,9 +242,18 @@ const ItineraryAccordion: React.FunctionComponent<Props> = ({
                                     <p className="text-neutral-600 italic">
                                         Accommodation
                                     </p>
-                                    <p className="font-extrabold uppercase">
-                                        {accommodationData.name}
-                                    </p>
+                                    {accommodationData.slug ? (
+                                        <Link
+                                            href={`/accommodations/${accommodationData.slug}`}
+                                            className="font-extrabold uppercase hover:text-primary hover:underline"
+                                        >
+                                            {accommodationData.name}
+                                        </Link>
+                                    ) : (
+                                        <p className="font-extrabold uppercase">
+                                            {accommodationData.name}
+                                        </p>
+                                    )}
                                     {accommodationData.url && (
                                         <a
                                             href={accommodationData.url}

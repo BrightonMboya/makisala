@@ -8,6 +8,14 @@ const MARKDOWN_ROUTES: Array<(pathname: string) => string | null> = [
         const match = pathname.match(/^\/tours\/([^/]+)\/?$/)
         return match ? `/tours/${match[1]}.md` : null
     },
+    pathname =>
+        pathname === '/accommodations' || pathname === '/accommodations/'
+            ? '/accommodations.md'
+            : null,
+    pathname => {
+        const match = pathname.match(/^\/accommodations\/([^/]+)\/?$/)
+        return match ? `/accommodations/${match[1]}.md` : null
+    },
 ]
 
 function prefersMarkdown(accept: string | null): boolean {
@@ -52,6 +60,15 @@ export async function middleware(request: NextRequest) {
         response.headers.set('Vary', 'Accept')
     }
 
+    const accommodationMatch = pathname.match(/^\/accommodations\/([^/]+)\/?$/)
+    if (accommodationMatch) {
+        response.headers.set(
+            'Link',
+            `</accommodations/${accommodationMatch[1]}.md>; rel="alternate"; type="text/markdown"`
+        )
+        response.headers.set('Vary', 'Accept')
+    }
+
     // const sessionCookie = getSessionCookie(request)
     //
     // if (sessionCookie && ['/sign-up', '/login'].includes(pathname)) {
@@ -66,5 +83,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-    matcher: ['/cms', '/tours', '/tours/:slug*'],
+    matcher: ['/cms', '/tours', '/tours/:slug*', '/accommodations', '/accommodations/:slug*'],
 }

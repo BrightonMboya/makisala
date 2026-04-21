@@ -473,6 +473,7 @@ export const itineraryDaysRelations = relations(itineraryDays, ({ one, many }) =
 export const accommodations = pgTable('accommodations', {
   id: uuid('id').defaultRandom().primaryKey(),
   name: text('name').notNull(),
+  slug: text('slug').unique(),
   url: text('url'), // e.g. https://www.melia.com/...
   overview: text('overview'), // scraped accommodation overview
   description: text('description'),

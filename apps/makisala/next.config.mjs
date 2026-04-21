@@ -24,6 +24,7 @@ const nextConfig = {
         const linkHeader = [
             '</sitemap.xml>; rel="sitemap"; type="application/xml"',
             '</tours.md>; rel="describedby"; type="text/markdown"; title="All tours (markdown index for agents)"',
+            '</accommodations.md>; rel="describedby"; type="text/markdown"; title="All accommodations (markdown index for agents)"',
             '</robots.txt>; rel="describedby"; type="text/plain"',
         ].join(', ')
         return [
@@ -38,6 +39,13 @@ const nextConfig = {
                 source: '/tours',
                 headers: [
                     { key: 'Link', value: '</tours.md>; rel="alternate"; type="text/markdown"' },
+                    { key: 'Vary', value: 'Accept' },
+                ],
+            },
+            {
+                source: '/accommodations',
+                headers: [
+                    { key: 'Link', value: '</accommodations.md>; rel="alternate"; type="text/markdown"' },
                     { key: 'Vary', value: 'Accept' },
                 ],
             },

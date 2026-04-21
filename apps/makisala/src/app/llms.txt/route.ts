@@ -1,14 +1,20 @@
 import { NextResponse } from 'next/server'
-import { AllToursSlugs, fetchAllNps, fetchAllBlogs } from '@/lib/cms-service'
+import {
+    AllToursSlugs,
+    fetchAllNps,
+    fetchAllBlogs,
+    getAccommodationSlugs,
+} from '@/lib/cms-service'
 import { capitalize } from '@/lib/utils'
 
 export const dynamic = 'force-dynamic'
 
 export async function GET() {
-    const [tourSlugs, parks, blogs] = await Promise.all([
+    const [tourSlugs, parks, blogs, accommodationSlugs] = await Promise.all([
         AllToursSlugs(),
         fetchAllNps(),
         fetchAllBlogs('blog'),
+        getAccommodationSlugs(),
     ])
 
     const lines: string[] = []
@@ -27,6 +33,20 @@ export async function GET() {
         if (tour.slug) {
             lines.push(
                 `- [${tour.slug}](https://makisala.com/tours/${tour.slug}/md)`
+            )
+        }
+    }
+    lines.push('')
+
+    // Accommodations
+    lines.push(`## Accommodations`)
+    lines.push(
+        `- [All accommodations (index)](https://makisala.com/accommodations/md)`
+    )
+    for (const a of accommodationSlugs) {
+        if (a.slug) {
+            lines.push(
+                `- [${a.slug}](https://makisala.com/accommodations/${a.slug}/md)`
             )
         }
     }

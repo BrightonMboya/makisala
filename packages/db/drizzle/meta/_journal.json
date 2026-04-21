@@ -281,6 +281,13 @@
       "when": 1776600402953,
       "tag": "0039_majestic_winter_soldier",
       "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "7",
+      "when": 1776766336561,
+      "tag": "0040_white_thunderbird",
+      "breakpoints": true
     }
   ]
 }

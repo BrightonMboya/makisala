@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getProgramaticTourBySlug } from '@/lib/cms-service'
-import { inclusions, exclusions } from '@/lib/constants'
+import { BASE_URL, inclusions, exclusions } from '@/lib/constants'
 import { capitalize } from '@/lib/utils'
 
 export const dynamic = 'force-dynamic'
@@ -51,7 +51,13 @@ export async function GET(
 
             const accommodations = day.itineraryAccommodations
             if (accommodations.length > 0) {
-                const names = accommodations.map(ia => ia.accommodation.name).join(', ')
+                const names = accommodations
+                    .map(ia =>
+                        ia.accommodation.slug
+                            ? `[${ia.accommodation.name}](${BASE_URL}/accommodations/${ia.accommodation.slug})`
+                            : ia.accommodation.name
+                    )
+                    .join(', ')
                 lines.push(`**Accommodation:** ${names}`)
                 lines.push('')
             }

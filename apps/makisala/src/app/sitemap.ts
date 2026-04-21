@@ -72,5 +72,9 @@ export default function sitemap(): MetadataRoute.Sitemap {
             url: `${BASE_URL}/wildlife/sitemap.xml`,
             lastModified: new Date(),
         },
+        {
+            url: `${BASE_URL}/accommodations/sitemap.xml`,
+            lastModified: new Date(),
+        },
     ]
 }
