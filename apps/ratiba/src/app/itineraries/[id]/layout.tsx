@@ -1,7 +1,7 @@
 'use client';
 
 import { Button } from '@repo/ui/button';
-import { Check, ChevronRight, Copy, Info, Loader2, Plus, Users, X } from 'lucide-react';
+import { Check, ChevronRight, Info, Loader2, Plus, Users, X } from 'lucide-react';
 import Link from 'next/link';
 import { useParams, usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { Popover, PopoverContent, PopoverTrigger } from '@repo/ui/popover';
@@ -135,16 +135,6 @@ function Header() {
 
   const router = useRouter();
   const saveProposalMutation = trpc.proposals.save.useMutation();
-
-  const duplicateMutation = trpc.proposals.duplicate.useMutation({
-    onSuccess: (data) => {
-      toast({ title: 'Proposal duplicated' });
-      router.push(`/itineraries/${data.newProposalId}/day-by-day`);
-    },
-    onError: (err) => {
-      toast({ title: err.message || 'Failed to duplicate proposal', variant: 'destructive' });
-    },
-  });
 
   // Save Draft Mutation
   const saveDraftMutation = useMutation({
@@ -317,7 +307,10 @@ function Header() {
                 </PopoverTrigger>
                 <PopoverContent className="w-64 p-3" align="start">
                   <Combobox
-                    items={(clientsData?.clients ?? []).map((c) => ({ value: c.id, label: c.name }))}
+                    items={(clientsData?.clients ?? []).map((c) => ({
+                      value: c.id,
+                      label: c.name,
+                    }))}
                     value={clientId}
                     onChange={(value) => {
                       setClientId(value);
@@ -430,22 +423,6 @@ function Header() {
 
           {/* Team Notes Panel */}
           <NotesPanel proposalId={id} />
-
-          <Button
-            variant="ghost"
-            size="sm"
-            className="gap-1.5 text-stone-600 hover:bg-stone-50 hover:text-stone-900"
-            onClick={() => duplicateMutation.mutate({ proposalId: id })}
-            disabled={duplicateMutation.isPending}
-            title="Duplicate this proposal"
-          >
-            {duplicateMutation.isPending ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Copy className="h-4 w-4" />
-            )}
-            <span className="hidden font-medium sm:inline">Duplicate</span>
-          </Button>
 
           <div className="h-6 w-px bg-stone-200" />
 
