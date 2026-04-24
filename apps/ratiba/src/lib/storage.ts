@@ -1,9 +1,11 @@
 import {
   S3Client,
   PutObjectCommand,
+  GetObjectCommand,
   DeleteObjectCommand,
   ListObjectsV2Command,
 } from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { env } from './env';
 import { cfImage, type CfImageOptions } from './cf-image';
 
@@ -74,6 +76,41 @@ export function getPublicUrl(_bucket: string, key: string, options?: CfImageOpti
   return cfImage(rawUrl, options);
 }
 
+
+interface UploadPdfParams {
+  file: Buffer | Uint8Array;
+  key: string;
+}
+
+export async function uploadPdfToStorage({ file, key }: UploadPdfParams): Promise<UploadResult> {
+  await r2.send(
+    new PutObjectCommand({
+      Bucket: env.R2_BUCKET_NAME,
+      Key: key,
+      Body: file,
+      ContentType: 'application/pdf',
+    }),
+  );
+  return { bucket: env.R2_BUCKET_NAME, key };
+}
+
+export async function getSignedDownloadUrl(
+  key: string,
+  options: { expiresInSeconds?: number; downloadAs?: string } = {},
+): Promise<string> {
+  const { expiresInSeconds = 300, downloadAs } = options;
+  return getSignedUrl(
+    r2,
+    new GetObjectCommand({
+      Bucket: env.R2_BUCKET_NAME,
+      Key: key,
+      ResponseContentDisposition: downloadAs
+        ? `attachment; filename="${downloadAs.replace(/"/g, '')}"`
+        : undefined,
+    }),
+    { expiresIn: expiresInSeconds },
+  );
+}
 
 export async function deleteFromStorage(key: string): Promise<void> {
   await r2.send(

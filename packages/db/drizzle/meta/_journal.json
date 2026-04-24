@@ -309,6 +309,13 @@
       "when": 1779458456233,
       "tag": "0043_medical_blackheart",
       "breakpoints": true
+    },
+    {
+      "idx": 48,
+      "version": "7",
+      "when": 1776962644433,
+      "tag": "0048_peaceful_penance",
+      "breakpoints": true
     }
   ]
 }

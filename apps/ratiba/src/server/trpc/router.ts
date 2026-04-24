@@ -11,6 +11,7 @@ import { contentLibraryRouter } from './routers/contentLibrary';
 import { settingsRouter } from './routers/settings';
 import { toursRouter } from './routers/tours';
 import { proposalsRouter } from './routers/proposals';
+import { invoicesRouter } from './routers/invoices';
 import { translationsRouter } from './routers/translations';
 import { rateCardsRouter } from './routers/rateCards';
 import { pricingRouter } from './routers/pricing';
@@ -28,6 +29,7 @@ export const appRouter = router({
   settings: settingsRouter,
   tours: toursRouter,
   proposals: proposalsRouter,
+  invoices: invoicesRouter,
   translations: translationsRouter,
   rateCards: rateCardsRouter,
   pricing: pricingRouter,

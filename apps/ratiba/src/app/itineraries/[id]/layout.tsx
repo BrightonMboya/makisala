@@ -1,7 +1,7 @@
 'use client';
 
 import { Button } from '@repo/ui/button';
-import { Check, ChevronRight, Info, Loader2, Plus, Users, X } from 'lucide-react';
+import { Check, ChevronRight, FileText, Info, Loader2, Plus, Users, X } from 'lucide-react';
 import Link from 'next/link';
 import { useParams, usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { Popover, PopoverContent, PopoverTrigger } from '@repo/ui/popover';
@@ -445,6 +445,13 @@ function Header() {
           <div className="h-6 w-px bg-stone-200" />
 
           <div className="flex items-center gap-2">
+            <Link
+              href={`/invoices/${id}`}
+              className="inline-flex items-center gap-2 rounded-md border border-stone-200 px-3 py-1.5 text-sm font-medium text-stone-600 transition-colors hover:bg-stone-50 hover:text-stone-900"
+            >
+              <FileText className="h-4 w-4" />
+              Invoices
+            </Link>
             <Button
               variant="outline"
               size="sm"

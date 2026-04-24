@@ -116,7 +116,17 @@ export default function ItinerariesPage() {
                     <div className="mt-1">Created {req.received}</div>
                   </div>
                 </div>
-                <div className="mt-4 flex justify-end border-t border-stone-100 pt-3">
+                <div className="mt-4 flex items-center justify-end gap-4 border-t border-stone-100 pt-3">
+                  <button
+                    className="text-xs font-medium text-stone-600 hover:text-stone-900 hover:underline"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      router.push(`/invoices/${req.id}`);
+                    }}
+                  >
+                    Invoices
+                  </button>
                   <button
                     className="text-xs font-medium text-green-700 hover:text-green-800 hover:underline"
                     onClick={(e) => {

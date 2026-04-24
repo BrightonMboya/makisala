@@ -953,6 +953,7 @@ export const proposalsRelations = relations(proposals, ({ one, many }) => ({
   notes: many(proposalNotes),
   assignments: many(proposalAssignments),
   translations: many(proposalTranslations),
+  invoices: many(invoices),
 }));
 
 export const proposalDaysRelations = relations(proposalDays, ({ one, many }) => ({
@@ -1169,6 +1170,84 @@ export const activityLibraryRelations = relations(activityLibrary, ({ one, many 
   }),
   rates: many(activityRates),
 }));
+
+// ---------- INVOICES ----------
+export interface InvoiceLineItem {
+  id: string;
+  name: string;
+  description?: string | null;
+  quantity: number;
+  unitPriceCents: number;
+}
+
+export interface InvoicePartyDetails {
+  name?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  address?: string | null;
+  logoUrl?: string | null;
+}
+
+export const invoices = pgTable(
+  'invoices',
+  {
+    id: text('id').primaryKey(),
+    organizationId: uuid('organization_id')
+      .notNull()
+      .references(() => organizations.id, { onDelete: 'cascade' }),
+    proposalId: text('proposal_id').references(() => proposals.id, {
+      onDelete: 'cascade',
+    }),
+    clientId: uuid('client_id').references(() => clients.id, { onDelete: 'set null' }),
+    number: text('number').notNull(),
+    title: text('title'),
+    currency: text('currency').default('USD').notNull(),
+    subtotalCents: integer('subtotal_cents').default(0).notNull(),
+    taxRatePct: numeric('tax_rate_pct', { precision: 5, scale: 2 }),
+    taxCents: integer('tax_cents').default(0).notNull(),
+    totalCents: integer('total_cents').default(0).notNull(),
+    lineItems: json('line_items').$type<InvoiceLineItem[]>().default([]).notNull(),
+    fromDetails: json('from_details').$type<InvoicePartyDetails>(),
+    toDetails: json('to_details').$type<InvoicePartyDetails>(),
+    notes: text('notes'),
+    issueDate: timestamp('issue_date', { precision: 3, mode: 'string' })
+      .default(sql`CURRENT_TIMESTAMP`)
+      .notNull(),
+    dueDate: timestamp('due_date', { precision: 3, mode: 'string' }),
+    sentAt: timestamp('sent_at', { precision: 3, mode: 'string' }),
+    pdfKey: text('pdf_key'),
+    shareToken: text('share_token').unique(),
+    createdAt: timestamp('created_at', { precision: 3, mode: 'string' })
+      .default(sql`CURRENT_TIMESTAMP`)
+      .notNull(),
+    updatedAt: timestamp('updated_at', { precision: 3, mode: 'string' })
+      .default(sql`CURRENT_TIMESTAMP`)
+      .notNull(),
+  },
+  (table) => [
+    uniqueIndex('invoices_org_number_idx').on(table.organizationId, table.number),
+    index('invoices_proposal_idx').on(table.proposalId),
+    index('invoices_org_idx').on(table.organizationId),
+  ],
+);
+
+export const invoicesRelations = relations(invoices, ({ one }) => ({
+  organization: one(organizations, {
+    fields: [invoices.organizationId],
+    references: [organizations.id],
+  }),
+  proposal: one(proposals, {
+    fields: [invoices.proposalId],
+    references: [proposals.id],
+  }),
+  client: one(clients, {
+    fields: [invoices.clientId],
+    references: [clients.id],
+  }),
+}));
+
+export type Invoice = typeof invoices.$inferSelect;
+export type NewInvoice = typeof invoices.$inferInsert;
 
 // ---------- DAY CONTENT TEMPLATES ----------
 export const DayType = pgEnum('day_type', ['arrival', 'full_day', 'half_day', 'departure']);

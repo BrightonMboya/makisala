@@ -4,6 +4,7 @@ import { orgFromAddress, platformFromAddress } from '../from';
 import { renderCommentNotificationEmail } from '../templates/comment-notification';
 import { renderProposalShareEmail } from '../templates/proposal-share';
 import { renderProposalAcceptanceEmail } from '../templates/proposal-acceptance';
+import { renderInvoiceShareEmail } from '../templates/invoice-share';
 import { renderTeamInvitationEmail } from '../templates/team-invitation';
 import { renderEmailVerificationEmail } from '../templates/email-verification';
 import { renderNoteMentionEmail } from '../templates/note-mention';
@@ -318,6 +319,75 @@ export async function sendProposalAcceptanceEmail(
     return { success: true };
   } catch (error) {
     // Error details returned to caller for centralized logging
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error occurred',
+    };
+  }
+}
+
+export interface InvoiceShareData {
+  clientEmail: string;
+  clientName: string;
+  agencyName: string;
+  invoiceNumber: string;
+  invoiceTitle?: string;
+  amountDisplay: string;
+  dueDate?: string;
+  invoiceUrl: string;
+  message?: string;
+  pdfAttachment?: {
+    filename: string;
+    content: Buffer;
+  };
+  replyTo?: string;
+}
+
+/**
+ * Sends an invoice to a client with a link to the branded view and a PDF attachment.
+ */
+export async function sendInvoiceShareEmail(
+  data: InvoiceShareData,
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const html = renderInvoiceShareEmail({
+      clientName: data.clientName,
+      agencyName: data.agencyName,
+      invoiceNumber: data.invoiceNumber,
+      invoiceTitle: data.invoiceTitle,
+      amountDisplay: data.amountDisplay,
+      dueDate: data.dueDate,
+      invoiceUrl: data.invoiceUrl,
+      message: data.message,
+    });
+
+    const fromEmail = env.RESEND_FROM_EMAIL || 'notifications@makisala.com';
+
+    const result = await resend.emails.send({
+      from: fromEmail,
+      to: data.clientEmail,
+      subject: `Invoice ${data.invoiceNumber} from ${data.agencyName}`,
+      html,
+      replyTo: data.replyTo,
+      attachments: data.pdfAttachment
+        ? [
+            {
+              filename: data.pdfAttachment.filename,
+              content: data.pdfAttachment.content,
+            },
+          ]
+        : undefined,
+    });
+
+    if (result.error) {
+      return {
+        success: false,
+        error: result.error.message || 'Failed to send email',
+      };
+    }
+
+    return { success: true };
+  } catch (error) {
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error occurred',
