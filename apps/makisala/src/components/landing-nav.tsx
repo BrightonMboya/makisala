@@ -19,7 +19,7 @@ export default function LandingNav({ ctaText = 'Check Availability' }: { ctaText
                             </div>
                         </div>
                     </div>
-                    <a href="#inquiry-form">
+                    <a href="#bottom-form">
                         <Button className="bg-primary px-6 py-2 text-sm font-medium text-white">
                             {ctaText}
                         </Button>

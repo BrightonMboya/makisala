@@ -20,7 +20,7 @@ export default function StickyMobileCTA() {
     return (
         <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-gray-200 bg-white p-3 shadow-lg lg:hidden">
             <div className="flex gap-2">
-                <a href="#inquiry-form" className="flex-1">
+                <a href="#bottom-form" className="flex-1">
                     <Button className="w-full py-3 text-base font-semibold" size="lg">
                         Get a Free Quote
                     </Button>

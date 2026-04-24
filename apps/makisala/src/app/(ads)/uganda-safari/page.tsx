@@ -542,7 +542,7 @@ export default function UgandaSafariPage() {
                             </p>
                         </div>
                         <a
-                            href="#inquiry-form"
+                            href="#bottom-form"
                             className="inline-flex shrink-0 items-center justify-center rounded-full bg-white px-8 py-3 text-sm font-semibold text-gray-900 transition-colors hover:bg-gray-100"
                         >
                             Get a Free Quote
