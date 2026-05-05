@@ -262,34 +262,42 @@ export default async function ParkPage({ params }: IParams) {
                                 <div className="flex flex-col md:flex-row">
                                     <div className="relative min-h-[300px] md:w-5/12">
                                         <Image
-                                            src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=600&q=80"
-                                            alt="Safari specialist"
+                                            src="/images/brighton-mboya.jpg"
+                                            alt="Brighton Mboya, Makisala trip designer"
                                             fill
                                             className="object-cover"
                                         />
                                     </div>
                                     <div className="flex flex-col justify-center p-8 md:w-7/12 md:p-10">
                                         <h3 className="font-serif text-[32px] font-light leading-[40px] md:text-[44px] md:leading-[52px]">
-                                            James Mollel
+                                            Brighton Mboya
                                         </h3>
                                         <div className="mt-6">
                                             <h6 className="text-[16px] font-semibold">
                                                 Regions of Speciality:
                                             </h6>
                                             <p className="text-[16px]">
-                                                Eastern Africa, Kilimanjaro, Northern Circuit
+                                                Tanzania, Rwanda, Uganda
                                             </p>
                                         </div>
                                         <div className="mt-4">
                                             <h6 className="text-[16px] font-semibold">
-                                                Mountain Guide &amp; Trip Designer
+                                                Trip Designer
                                             </h6>
                                             <p className="mt-1 text-[16px] leading-[24px]">
-                                                Born and raised in Moshi at the foot of Kilimanjaro,
-                                                James has summited the mountain over 200 times
-                                                across all six routes. He brings an intimate
-                                                understanding of the mountain&apos;s moods and the
-                                                best campsites for sunrise views.
+                                                Brighton has spent the last decade building
+                                                safaris across the East African circuit, from the
+                                                Serengeti&apos;s migration corridors to the misty
+                                                volcanoes of Rwanda and the Bwindi Impenetrable
+                                                Forest in Uganda. He started out guiding walking
+                                                safaris in Tarangire, then moved into gorilla and
+                                                chimp trekking after years escorting researchers
+                                                through the Albertine Rift. His itineraries turn
+                                                on the small details most operators skip: the
+                                                right camp on the right night of the migration, a
+                                                permit window that lines up with the gorilla
+                                                family closest to your lodge, a quiet bush
+                                                airstrip that saves a full day on transfer.
                                             </p>
                                         </div>
                                     </div>

@@ -30,6 +30,7 @@ import {
     eq,
     ilike,
     isNotNull,
+    isNull,
     type InferInsertModel,
     type InferSelectModel,
     or,
@@ -239,7 +240,7 @@ export async function createInquiry(data: NewInquiries & { phoneNumber?: string 
 }
 
 export async function getTours(country: string, modifier: string) {
-    const whereClauses: any[] = [eq(tours.country, country)]
+    const whereClauses: any[] = [eq(tours.country, country), isNull(tours.organizationId)]
 
     if (modifiers.includes(modifier)) {
         const durationMatch = modifier.match(/^(\d+)-day$/)
@@ -263,13 +264,17 @@ export async function getTours(country: string, modifier: string) {
 }
 
 export const getToursByCountry = async (country: string) => {
-    return db.select().from(tours).where(eq(tours.country, country)).orderBy(desc(tours.pricing))
+    return db
+        .select()
+        .from(tours)
+        .where(and(eq(tours.country, country), isNull(tours.organizationId)))
+        .orderBy(desc(tours.pricing))
 }
 const R2_PUBLIC_URL = 'https://assets.makisala.com'
 
 export const getProgramaticTourBySlug = async (slug: string) => {
     const tour = await db.query.tours.findFirst({
-        where: eq(tours.slug, slug),
+        where: and(eq(tours.slug, slug), isNull(tours.organizationId)),
         with: {
             days: {
                 orderBy: (days, { asc }) => [asc(days.dayNumber)],
@@ -428,6 +433,7 @@ export async function getNPInfo(name: string, pageColumn: keyof typeof nationalP
                            JOIN itinerary_days d
                        ON d.tour_id = t.id
                        WHERE d.national_park_id = national_parks.id
+                           AND t.organization_id IS NULL
                            LIMIT 6) t)
             `.as('tours'),
         })
@@ -517,6 +523,7 @@ export async function getWildlifeByNameAndPark(animalName: string, parkName: str
                            JOIN itinerary_days d
                        ON d.tour_id = t.id
                        WHERE d.national_park_id = ${parkId.id}
+                           AND t.organization_id IS NULL
                            LIMIT 6) t)
             `.as('tours'),
         })
@@ -551,6 +558,7 @@ export async function AllToursSlugs() {
             slug: tours.slug,
         })
         .from(tours)
+        .where(isNull(tours.organizationId))
 }
 
 export async function getWeekendDeals() {
@@ -566,6 +574,7 @@ export async function getWeekendDeals() {
             t.number_of_days
         FROM tours t
         WHERE t.pricing >= 1800
+            AND t.organization_id IS NULL
         ORDER BY t.tags[1], t.pricing ASC
             LIMIT 4
     `)
@@ -628,7 +637,12 @@ export async function getToursFeaturingAccommodation(accommodationId: string) {
         .from(itineraryAccommodations)
         .innerJoin(itineraryDays, eq(itineraryDays.id, itineraryAccommodations.itineraryDayId))
         .innerJoin(tours, eq(tours.id, itineraryDays.tourId))
-        .where(eq(itineraryAccommodations.accommodationId, accommodationId))
+        .where(
+            and(
+                eq(itineraryAccommodations.accommodationId, accommodationId),
+                isNull(tours.organizationId)
+            )
+        )
         .limit(6)
     return rows
 }

@@ -8,6 +8,7 @@ import { format } from 'date-fns'
 import { capitalize, cn } from '@/lib/utils'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { usePostHog } from 'posthog-js/react'
 import {
     Command,
     CommandEmpty,
@@ -28,11 +29,23 @@ export default function Hero({ parks }: HeroProps) {
     const [openDestination, setOpenDestination] = useState(false)
     const [travellers, setTravellers] = useState(1)
     const router = useRouter()
+    const posthog = usePostHog()
 
     const handleSearch = () => {
         const params = new URLSearchParams()
         if (date) params.set('date', date.toISOString())
         if (travellers) params.set('travellers', travellers.toString())
+
+        posthog?.capture('Hero Search Submitted', {
+            destination: destination || null,
+            destination_type: destination
+                ? ['Tanzania', 'Rwanda'].includes(destination)
+                    ? 'country'
+                    : 'park'
+                : 'none',
+            date: date ? date.toISOString() : null,
+            travellers,
+        })
 
         // Check if destination is a country or a park
         const isCountry = ['Tanzania', 'Rwanda'].includes(destination)
