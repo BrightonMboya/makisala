@@ -86,25 +86,35 @@ export async function fetchAllBlogs(page_type: 'blog' | 'page'): Promise<Page[]>
     return await db
         .select()
         .from(pages)
-        .where(eq(pages.page_type, page_type))
+        .where(and(eq(pages.app, 'makisala'), eq(pages.page_type, page_type)))
         .orderBy(desc(pages.createdAt))
 }
 
 export async function searchPagesByTitle({ query }: { query: string }) {
     const q = (query || '').trim()
     if (!q) {
-        return db.select().from(pages).orderBy(desc(pages.createdAt))
+        return db
+            .select()
+            .from(pages)
+            .where(eq(pages.app, 'makisala'))
+            .orderBy(desc(pages.createdAt))
     }
 
     // pattern for partial match
     const pattern = `%${q}%`
 
     // Use case-insensitive match (ILIKE)
-    return db.select().from(pages).where(ilike(pages.title, pattern)) // or use your client's `ilike` equivalent
+    return db
+        .select()
+        .from(pages)
+        .where(and(eq(pages.app, 'makisala'), ilike(pages.title, pattern)))
 }
 
 export async function getPageSlugs(page_type: 'blog' | 'page') {
-    return await db.select({ slug: pages.slug }).from(pages).where(eq(pages.page_type, page_type))
+    return await db
+        .select({ slug: pages.slug })
+        .from(pages)
+        .where(and(eq(pages.app, 'makisala'), eq(pages.page_type, page_type)))
 }
 
 /* ------------------------------------------------------------------ */
@@ -122,7 +132,11 @@ export async function getPageById(id: string): Promise<Page | null> {
 
 /* ------------------------------------------------------------------ */
 export async function getPageBySlug(slug: string): Promise<Page | null> {
-    const [page] = await db.select().from(pages).where(eq(pages.slug, slug)).limit(1)
+    const [page] = await db
+        .select()
+        .from(pages)
+        .where(and(eq(pages.app, 'makisala'), eq(pages.slug, slug)))
+        .limit(1)
 
     return page ?? null
 }
