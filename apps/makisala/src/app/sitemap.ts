@@ -41,10 +41,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
         },
         // Child sitemaps
         {
-            url: `${BASE_URL}/to_book/sitemap.xml`,
-            lastModified: new Date(),
-        },
-        {
             url: `${BASE_URL}/blog/sitemap.xml`,
             lastModified: new Date(),
         },

@@ -83,14 +83,6 @@ export default function Footer() {
                             {/*</li>*/}
                             <li>
                                 <Link
-                                    href="/to_book/migration-tracker-safari-tz-ke"
-                                    className="hover:text-gray-900"
-                                >
-                                    The Wildebeest Migration
-                                </Link>
-                            </li>
-                            <li>
-                                <Link
                                     href="/sitemap.xml"
                                     className="hover:text-gray-900"
                                 >
@@ -211,15 +203,6 @@ export default function Footer() {
                                     Trekking Safaris
                                 </Link>
                             </li>
-                            <li>
-                                <Link
-                                    href="/to_book/northern-tanzania-safari"
-                                    className="hover:text-gray-900"
-                                >
-                                    Classic Safaris
-                                </Link>
-                            </li>
-
                             <li>
                                 <Link
                                     href="/location/rwanda"

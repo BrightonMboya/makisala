@@ -140,7 +140,7 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
             <div className="mx-auto mb-24 grid max-w-7xl justify-center gap-12 max-sm:flex max-sm:h-full max-sm:flex-col md:grid-cols-2 xl:grid-cols-3">
                 {tours?.map(tour => (
                     <div key={tour.id} className="">
-                        <Link href={`/to_book/${tour.slug}`}>
+                        <Link href={`/tours/${tour.slug}`}>
                             <ImageCard
                                 title={tour.title}
                                 img_url={tour.hero_image_url || '/placeholder.svg'}

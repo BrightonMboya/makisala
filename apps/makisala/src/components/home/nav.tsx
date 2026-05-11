@@ -115,33 +115,6 @@ export default function Nav() {
                                         </NavigationMenuContent>
                                     </NavigationMenuItem>
 
-                                    {/*<NavigationMenuItem>*/}
-                                    {/*    <NavigationMenuTrigger*/}
-                                    {/*        className="text-sm font-medium bg-transparent hover:bg-transparent data-[active]:bg-transparent data-[state=open]:bg-transparent">*/}
-                                    {/*        EXPERIENCES*/}
-                                    {/*    </NavigationMenuTrigger>*/}
-                                    {/*    <NavigationMenuContent>*/}
-                                    {/*        <div className="w-[400px] gap-3 p-6">*/}
-                                    {/*            <div className="space-y-3">*/}
-                                    {/*                {experiences.map((experience) => (*/}
-                                    {/*                    <NavigationMenuLink asChild key={experience.name}>*/}
-                                    {/*                        <Link*/}
-                                    {/*                            href="#"*/}
-                                    {/*                            className="block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground">*/}
-                                    {/*                            <div className="text-sm font-medium leading-none">*/}
-                                    {/*                                {experience.name}*/}
-                                    {/*                            </div>*/}
-                                    {/*                            <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">*/}
-                                    {/*                                {experience.description}*/}
-                                    {/*                            </p>*/}
-                                    {/*                        </Link>*/}
-                                    {/*                    </NavigationMenuLink>*/}
-                                    {/*                ))}*/}
-                                    {/*            </div>*/}
-                                    {/*        </div>*/}
-                                    {/*    </NavigationMenuContent>*/}
-                                    {/*</NavigationMenuItem>*/}
-
                                     <NavigationMenuItem>
                                         <NavigationMenuTrigger className="bg-transparent text-sm font-medium hover:bg-transparent data-[active]:bg-transparent data-[state=open]:bg-transparent">
                                             ABOUT US
@@ -342,20 +315,6 @@ export default function Nav() {
                                                 </AccordionContent>
                                             </AccordionItem>
                                         </Accordion>
-
-                                        {/*<div className="space-y-2">*/}
-                                        {/*    <h3 className="font-medium">EXPERIENCES</h3>*/}
-                                        {/*    <div className="pl-4 space-y-2 text-sm text-gray-600">*/}
-                                        {/*        {experiences.map((experience) => (*/}
-                                        {/*            <Link*/}
-                                        {/*                href="#"*/}
-                                        {/*                key={experience.name}*/}
-                                        {/*                className="block hover:text-gray-900">*/}
-                                        {/*                {experience.name}*/}
-                                        {/*            </Link>*/}
-                                        {/*        ))}*/}
-                                        {/*    </div>*/}
-                                        {/*</div>*/}
 
                                         <div className="border-t pt-6">
                                             <InquiryDialog>

@@ -80,14 +80,9 @@ export const why_travel_with_us = [
 
 export const safaris_nav = [
     {
-        name: 'Great Migration',
-        description: "Witness the world's greatest wildlife spectacle",
-        page_url: '/to_book/migration-tracker-safari-tz-ke',
-    },
-    {
-        name: 'Big 5 Safari',
-        description: "Track Africa's most iconic animals",
-        page_url: '/to_book/northern-tanzania-safari',
+        name: 'Gorilla Trekking',
+        description: 'Track mountain gorillas in Rwanda',
+        page_url: '/tours/3-day-gorilla-trekking-and-cultural-experience',
     },
     // {
     //     name: "Luxury Safari",
