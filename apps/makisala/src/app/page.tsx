@@ -6,6 +6,7 @@ import { featured_national_parks, safaris, why_travel_with_us } from '@/lib/cons
 import ContactForm from '../components/contact-form'
 import { fetchAllNps, getWeekendDeals } from '@/lib/cms-service'
 import Hero from '@/components/hero'
+import HeroPlanForm from '@/components/hero-plan-form'
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
@@ -95,8 +96,8 @@ export default async function Page() {
 
     return (
         <main className="min-h-screen">
-            {/* Hero Section */}
-            <Hero parks={parks} />
+            {/* Hero Section — new form-first prototype. Old search-widget hero kept as <Hero parks={parks} /> for easy revert. */}
+            <HeroPlanForm />
 
             {/* Experience Cards - TripAdvisor Style */}
             <section className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
