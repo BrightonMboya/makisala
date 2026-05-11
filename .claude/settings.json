@@ -14,7 +14,6 @@
       "Bash(grep:*)",
       "Bash(bun *)",
       "Bash(bunx *)",
-      "WebSearch(*)",
       "Bash(cat:*)",
       "Bash(npx next lint:*)",
       "Bash(git checkout:*)",
@@ -24,7 +23,8 @@
       "Bash(cd:*)",
       "Bash(npx tsx:*)",
       "Bash(gws *)",
-      "mcp__posthog__query-trends"
+      "mcp__posthog__query-trends",
+      "mcp__posthog__query-run"
     ]
   }
 }
