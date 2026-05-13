@@ -8,6 +8,7 @@ jiti('./src/lib/env')
 
 const withMDX = createMDX({})
 
+/** @type {import('next').NextConfig} */
 const nextConfig = {
     staticPageGenerationTimeout: 180,
     async rewrites() {
@@ -53,40 +54,21 @@ const nextConfig = {
     },
     pageExtensions: ['js', 'jsx', 'md', 'mdx', 'ts', 'tsx'],
     images: {
+        // Bypass Vercel's image optimizer. Each source is rewritten to its own
+        // CDN's transform API in src/lib/image-loader.ts.
+        loader: 'custom',
+        loaderFile: './src/lib/image-loader.ts',
         remotePatterns: [
-            {
-                protocol: 'https',
-                hostname: 'images.unsplash.com',
-                port: '',
-                pathname: '/**',
-            },
-            {
-                protocol: 'https',
-                hostname: 'lh3.googleusercontent.com',
-                port: '',
-                pathname: '/**',
-            },
-            {
-                protocol: 'https',
-                hostname: 'res.cloudinary.com',
-                port: '',
-                pathname: '/**',
-            },
-            {
-                protocol: 'https',
-                hostname: 'assets.makisala.com',
-                port: '',
-                pathname: '/**',
-            },
+            { protocol: 'https', hostname: 'images.unsplash.com', port: '', pathname: '/**' },
+            { protocol: 'https', hostname: 'lh3.googleusercontent.com', port: '', pathname: '/**' },
+            { protocol: 'https', hostname: 'res.cloudinary.com', port: '', pathname: '/**' },
+            { protocol: 'https', hostname: 'assets.makisala.com', port: '', pathname: '/**' },
         ],
     },
     typescript: {
         ignoreBuildErrors: true,
     },
     transpilePackages: ['next-mdx-remote'],
-    eslint: {
-        ignoreDuringBuilds: true,
-    },
 }
 
 export default withAxiom(withMDX(nextConfig))
