@@ -1,4 +1,4 @@
-import Image from 'next/legacy/image'
+import Image from 'next/image'
 import { UserAuthForm } from './_components/user-auth-form'
 
 export default function Page() {
@@ -10,7 +10,7 @@ export default function Page() {
                     <Image
                         src="https://res.cloudinary.com/dr2tdyz2w/image/upload/v1758806094/pexels-photo-208965_avgumx.jpg"
                         alt="hero"
-                        layout="fill"
+                        fill
                         className="object-cover opacity-40"
                     />
                 </div>

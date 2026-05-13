@@ -1,4 +1,4 @@
-import Image from 'next/legacy/image'
+import Image from 'next/image'
 import { LoginForm } from './_components/LoginForm'
 
 export default function Page() {
@@ -10,7 +10,7 @@ export default function Page() {
                     <Image
                         src="https://res.cloudinary.com/dr2tdyz2w/image/upload/v1758802547/photo-1623847976687-8b742dc59073_zfrip9.jpg"
                         alt="hero"
-                        layout="fill"
+                        fill
                         className="object-cover opacity-40"
                     />
                 </div>
