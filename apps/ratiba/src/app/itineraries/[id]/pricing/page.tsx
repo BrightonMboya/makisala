@@ -4,14 +4,16 @@ import { Button } from '@repo/ui/button';
 import { Checkbox } from '@repo/ui/checkbox';
 import { Input } from '@repo/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@repo/ui/select';
-import { Plus, Trash2, ArrowRight } from 'lucide-react';
+import { Plus, Trash2, ArrowRight, Calculator, AlertTriangle } from 'lucide-react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { Combobox } from '@repo/ui/combobox';
 import { commonExtras } from '@/lib/data/itinerary-data';
 import { useBuilder } from '@/components/itinerary-builder/builder-context';
 import type { PricingRow, ExtraOption } from '@/types/itinerary-types';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
+import { trpc } from '@/lib/trpc';
+import { addDays, parseISO } from 'date-fns';
 
 export default function PricingPage() {
   const params = useParams();
@@ -28,6 +30,19 @@ export default function PricingPage() {
     setExclusions,
     hidePricing,
     setHidePricing,
+    useAutoPricing,
+    setUseAutoPricing,
+    vehicleId,
+    setVehicleId,
+    markupPct,
+    setMarkupPct,
+    pickupTransferId,
+    setPickupTransferId,
+    dropoffTransferId,
+    setDropoffTransferId,
+    days,
+    travelerGroups,
+    startDate,
   } = useBuilder();
 
   const handleAddRow = () => {
@@ -74,6 +89,59 @@ export default function PricingPage() {
   const extrasTotal = extras.filter((e) => e.selected).reduce((acc, e) => acc + e.price, 0);
   const grandTotal = rowsTotal + extrasTotal;
 
+  // --- Auto pricing engine ---
+  const totalPax = useMemo(
+    () => travelerGroups.reduce((sum, g) => sum + g.count, 0),
+    [travelerGroups],
+  );
+
+  const dayInputs = useMemo(() => {
+    if (!startDate || days.length === 0) return [];
+    return days.map((d, idx) => ({
+      dayNumber: d.dayNumber,
+      date: addDays(startDate, idx).toISOString(),
+      accommodationId: d.accommodation,
+      roomType: (d.roomType ?? null) as
+        | 'single'
+        | 'double'
+        | 'triple'
+        | 'quad'
+        | 'family'
+        | null,
+      mealPlan: (d.mealPlan ?? null) as 'ro' | 'bb' | 'hb' | 'fb' | 'ai' | null,
+      // BuilderDay.destination can be either a national-park UUID or a freeform
+      // geo string. UUIDs are 36 chars with dashes — anything else gets ignored
+      // for park-fee lookup.
+      parkId:
+        d.destination && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+          d.destination,
+        )
+          ? d.destination
+          : null,
+    }));
+  }, [days, startDate]);
+
+  const computeQuery = trpc.pricing.compute.useQuery(
+    {
+      days: dayInputs,
+      pax: totalPax,
+      travelerCategory: 'non_resident_adult',
+      vehicleId,
+      pickupTransferId,
+      dropoffTransferId,
+      markupPct,
+      currency: 'USD',
+    },
+    {
+      enabled:
+        useAutoPricing && dayInputs.length > 0 && totalPax > 0,
+    },
+  );
+
+  const { data: vehicles = [] } = trpc.rateCards.vehicles.list.useQuery();
+  const { data: transferOptions = [] } = trpc.rateCards.transferRates.list.useQuery();
+  const { data: pricingDefaults } = trpc.rateCards.settings.get.useQuery();
+
   return (
     <div className="mx-auto max-w-7xl space-y-8 px-6 pb-20">
       {/* Header */}
@@ -88,6 +156,215 @@ export default function PricingPage() {
             $ {grandTotal.toLocaleString('en-US', { minimumFractionDigits: 2 })}
           </span>
         </div>
+      </div>
+
+      {/* Auto-pricing panel (rate-card-driven) */}
+      <div className="rounded-xl border border-stone-200 bg-white shadow-sm">
+        <div className="flex items-center justify-between rounded-t-xl border-b border-stone-100 bg-emerald-50/50 px-6 py-4">
+          <h3 className="flex items-center gap-2 font-bold text-stone-800">
+            <Calculator className="h-4 w-4 text-emerald-700" />
+            Auto pricing (rate cards)
+          </h3>
+          <label className="flex items-center gap-2 text-sm font-medium text-stone-700">
+            <Checkbox
+              checked={useAutoPricing}
+              onCheckedChange={(c) => setUseAutoPricing(c === true)}
+            />
+            Enable
+          </label>
+        </div>
+
+        {useAutoPricing && (
+          <div className="space-y-4 p-6">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
+              <div>
+                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-stone-500">
+                  Vehicle (per-day, all-in)
+                </label>
+                <select
+                  value={vehicleId ?? ''}
+                  onChange={(e) => setVehicleId(e.target.value || null)}
+                  className="h-9 w-full rounded-md border border-stone-200 bg-stone-50 px-2 text-sm"
+                >
+                  <option value="">— none —</option>
+                  {vehicles.map((v) => (
+                    <option key={v.id} value={v.id}>
+                      {v.name} (${Number(v.perDayRate)}/day)
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-stone-500">
+                  Pickup transfer
+                </label>
+                <select
+                  value={pickupTransferId ?? ''}
+                  onChange={(e) => setPickupTransferId(e.target.value || null)}
+                  className="h-9 w-full rounded-md border border-stone-200 bg-stone-50 px-2 text-sm"
+                >
+                  <option value="">— none —</option>
+                  {transferOptions.map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {t.name} ({t.mode === 'per_pax' ? 'per pax' : 'flat'})
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-stone-500">
+                  Dropoff transfer
+                </label>
+                <select
+                  value={dropoffTransferId ?? ''}
+                  onChange={(e) => setDropoffTransferId(e.target.value || null)}
+                  className="h-9 w-full rounded-md border border-stone-200 bg-stone-50 px-2 text-sm"
+                >
+                  <option value="">— none —</option>
+                  {transferOptions.map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {t.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-stone-500">
+                  Markup % on cost
+                </label>
+                <Input
+                  type="number"
+                  value={markupPct}
+                  onChange={(e) => setMarkupPct(Number(e.target.value) || 0)}
+                  className="border-stone-200 bg-stone-50 shadow-none"
+                />
+                {pricingDefaults && Number(pricingDefaults.defaultMarkupPct) !== markupPct && (
+                  <button
+                    onClick={() => setMarkupPct(Number(pricingDefaults.defaultMarkupPct))}
+                    className="mt-1 text-xs text-stone-500 hover:text-stone-700 hover:underline"
+                  >
+                    reset to default ({Number(pricingDefaults.defaultMarkupPct)}%)
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {!startDate && (
+              <div className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+                <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+                Set a tour start date in the day-by-day step. Without it the engine can't pick a
+                season.
+              </div>
+            )}
+
+            {computeQuery.isLoading && startDate && (
+              <p className="text-sm text-stone-500">Computing…</p>
+            )}
+
+            {computeQuery.data && (
+              <div className="space-y-3">
+                {computeQuery.data.warnings.length > 0 && (
+                  <div className="space-y-1 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+                    <div className="flex items-center gap-2 font-semibold">
+                      <AlertTriangle className="h-4 w-4" /> Missing rate data
+                    </div>
+                    <ul className="list-disc space-y-0.5 pl-5 text-xs">
+                      {computeQuery.data.warnings.map((w, i) => (
+                        <li key={i}>{w}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                <div className="overflow-hidden rounded-md border border-stone-200">
+                  <table className="w-full text-sm">
+                    <thead className="bg-stone-50 text-xs uppercase tracking-wide text-stone-500">
+                      <tr>
+                        <th className="px-3 py-2 text-left">Line</th>
+                        <th className="px-3 py-2 text-right">Qty</th>
+                        <th className="px-3 py-2 text-right">Unit</th>
+                        <th className="px-3 py-2 text-right">Total</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-stone-100">
+                      {computeQuery.data.lineItems.map((li, i) => (
+                        <tr key={i}>
+                          <td className="px-3 py-2">
+                            {li.label}
+                            {li.missing && (
+                              <span className="ml-2 text-xs text-amber-600">
+                                ({li.missing})
+                              </span>
+                            )}
+                          </td>
+                          <td className="px-3 py-2 text-right text-stone-500">{li.quantity}</td>
+                          <td className="px-3 py-2 text-right">
+                            ${li.unitCost.toLocaleString()}
+                          </td>
+                          <td className="px-3 py-2 text-right font-medium">
+                            ${li.totalCost.toLocaleString()}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                    <tfoot className="bg-stone-50 text-sm">
+                      <tr>
+                        <td className="px-3 py-2 font-semibold" colSpan={3}>
+                          Cost subtotal
+                        </td>
+                        <td className="px-3 py-2 text-right font-semibold">
+                          ${computeQuery.data.costSubtotal.toLocaleString()}
+                        </td>
+                      </tr>
+                      <tr>
+                        <td className="px-3 py-2" colSpan={3}>
+                          Markup ({computeQuery.data.markupPct}%)
+                        </td>
+                        <td className="px-3 py-2 text-right">
+                          ${computeQuery.data.markupAmount.toLocaleString()}
+                        </td>
+                      </tr>
+                      <tr className="border-t border-stone-200">
+                        <td className="px-3 py-2 font-bold text-emerald-700" colSpan={3}>
+                          Sell total
+                        </td>
+                        <td className="px-3 py-2 text-right text-lg font-bold text-emerald-700">
+                          ${computeQuery.data.sellTotal.toLocaleString()}
+                        </td>
+                      </tr>
+                      <tr>
+                        <td className="px-3 py-2 text-xs text-stone-500" colSpan={3}>
+                          Per-pax sell (×{computeQuery.data.pax})
+                        </td>
+                        <td className="px-3 py-2 text-right text-sm font-medium text-stone-700">
+                          ${computeQuery.data.sellPerPax.toLocaleString()}
+                        </td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    if (!computeQuery.data) return;
+                    setPricingRows(
+                      travelerGroups.map((g) => ({
+                        id: g.id,
+                        count: g.count,
+                        type: g.type,
+                        unitPrice: computeQuery.data.sellPerPax,
+                      })),
+                    );
+                  }}
+                >
+                  Copy per-pax sell into manual rows below
+                </Button>
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Add Price Section */}

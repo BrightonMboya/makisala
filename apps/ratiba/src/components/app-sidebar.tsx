@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useState } from 'react';
 import {
+  Calculator,
   FileText,
   LayoutDashboard,
   Library,
@@ -98,6 +99,12 @@ export function AppSidebar({ serverData }: { serverData?: SidebarServerData | nu
       label: 'Clients',
       href: '/clients',
       active: pathname?.startsWith('/clients'),
+    },
+    {
+      icon: Calculator,
+      label: 'Rate Cards',
+      href: '/rate-cards',
+      active: pathname?.startsWith('/rate-cards'),
     },
     {
       icon: Settings,

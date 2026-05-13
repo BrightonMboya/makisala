@@ -12,12 +12,18 @@ export type BuilderActivity = {
   imageUrl?: string;
 };
 
+export type RoomTypeOption = 'single' | 'double' | 'triple' | 'quad' | 'family';
+export type MealPlanOption = 'ro' | 'bb' | 'hb' | 'fb' | 'ai';
+
 export type BuilderDay = {
   id: string;
   dayNumber: number;
   date: string;
   accommodation: string | null;
   accommodationName?: string | null; // Cached name to avoid re-fetching
+  // Used by the pricing engine to pick the right hotel rate row.
+  roomType?: RoomTypeOption | null;
+  mealPlan?: MealPlanOption | null;
   destination: string | null;
   destinationName?: string | null; // Cached display name (for non-park destinations)
   destinationLat?: number | null;
@@ -115,6 +121,18 @@ export type BuilderContextType = {
   setPricingRows: React.Dispatch<React.SetStateAction<PricingRow[]>>;
   extras: ExtraOption[];
   setExtras: React.Dispatch<React.SetStateAction<ExtraOption[]>>;
+
+  // Auto-pricing (rate-card driven)
+  useAutoPricing: boolean;
+  setUseAutoPricing: React.Dispatch<React.SetStateAction<boolean>>;
+  vehicleId: string | null;
+  setVehicleId: React.Dispatch<React.SetStateAction<string | null>>;
+  markupPct: number;
+  setMarkupPct: React.Dispatch<React.SetStateAction<number>>;
+  pickupTransferId: string | null;
+  setPickupTransferId: React.Dispatch<React.SetStateAction<string | null>>;
+  dropoffTransferId: string | null;
+  setDropoffTransferId: React.Dispatch<React.SetStateAction<string | null>>;
 
   // Inclusions & Exclusions
   inclusions: string[];

@@ -396,6 +396,40 @@ function SortableDayRow({
               placeholder="Search accommodation..."
               className="w-full"
             />
+            {day.accommodation && (
+              <div className="flex gap-1">
+                <select
+                  value={day.roomType ?? ''}
+                  onChange={(e) =>
+                    onUpdate(day.id, 'roomType', e.target.value || null)
+                  }
+                  className="h-8 flex-1 rounded-md border border-stone-200 bg-white px-2 text-xs text-stone-600"
+                  title="Room type"
+                >
+                  <option value="">Room…</option>
+                  <option value="single">Single</option>
+                  <option value="double">Double</option>
+                  <option value="triple">Triple</option>
+                  <option value="quad">Quad</option>
+                  <option value="family">Family</option>
+                </select>
+                <select
+                  value={day.mealPlan ?? ''}
+                  onChange={(e) =>
+                    onUpdate(day.id, 'mealPlan', e.target.value || null)
+                  }
+                  className="h-8 flex-1 rounded-md border border-stone-200 bg-white px-2 text-xs text-stone-600"
+                  title="Meal plan"
+                >
+                  <option value="">Plan…</option>
+                  <option value="ro">RO</option>
+                  <option value="bb">BB</option>
+                  <option value="hb">HB</option>
+                  <option value="fb">FB</option>
+                  <option value="ai">AI</option>
+                </select>
+              </div>
+            )}
           </div>
         </div>
 

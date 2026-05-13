@@ -288,6 +288,13 @@
       "when": 1776766336561,
       "tag": "0040_white_thunderbird",
       "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "7",
+      "when": 1778604881675,
+      "tag": "0041_loose_earthquake",
+      "breakpoints": true
     }
   ]
 }
