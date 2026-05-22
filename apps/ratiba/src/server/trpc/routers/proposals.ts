@@ -18,6 +18,7 @@ import {
 } from '@repo/resend';
 import { router, protectedProcedure, adminProcedure, publicProcedure, escapeLikeQuery } from '../init';
 import { checkFeatureAccess, getOrgPlan, ALLOWED_THEMES_BY_TIER } from '@/lib/plans';
+import { deriveMealPlan } from '@/lib/pricing-engine';
 import { env } from '@/lib/env';
 
 interface BuilderData {
@@ -78,6 +79,11 @@ interface BuilderDay {
   destinationLat?: number | null;
   destinationLng?: number | null;
   accommodation?: string;
+  // Room mix used by the pricing engine. Board basis is derived from `meals`.
+  rooms?: Array<{
+    roomType: 'single' | 'double' | 'triple' | 'quad' | 'family' | null;
+    pax: number;
+  }>;
   activities?: BuilderActivity[];
   meals?: { breakfast?: boolean; lunch?: boolean; dinner?: boolean };
   transfer?: BuilderTransfer;
@@ -262,7 +268,12 @@ export const proposalsRouter = router({
             },
             with: {
               accommodations: {
-                columns: { accommodationId: true },
+                columns: {
+                  accommodationId: true,
+                  roomType: true,
+                  mealPlan: true,
+                  paxCount: true,
+                },
                 with: {
                   accommodation: { columns: { id: true, name: true } },
                 },
@@ -462,10 +473,26 @@ export const proposalsRouter = router({
               day.accommodation,
             );
             if (isUUID) {
-              await tx.insert(proposalAccommodations).values({
-                proposalDayId: proposalDay.id,
-                accommodationId: day.accommodation,
-              });
+              // One row per room type in the night's mix. Fall back to a single
+              // row (no room/pax) so the hotel selection survives even before a
+              // room mix is configured.
+              const roomRows =
+                day.rooms && day.rooms.length > 0
+                  ? day.rooms.map((r) => ({
+                      roomType: r.roomType ?? null,
+                      paxCount: r.pax ?? null,
+                    }))
+                  : [{ roomType: null, paxCount: null }];
+              const nightMealPlan = deriveMealPlan(day.meals);
+              for (const rr of roomRows) {
+                await tx.insert(proposalAccommodations).values({
+                  proposalDayId: proposalDay.id,
+                  accommodationId: day.accommodation,
+                  roomType: rr.roomType,
+                  mealPlan: nightMealPlan,
+                  paxCount: rr.paxCount,
+                });
+              }
             }
           }
 

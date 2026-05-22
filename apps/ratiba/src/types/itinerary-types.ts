@@ -13,7 +13,14 @@ export type BuilderActivity = {
 };
 
 export type RoomTypeOption = 'single' | 'double' | 'triple' | 'quad' | 'family';
-export type MealPlanOption = 'ro' | 'bb' | 'hb' | 'fb' | 'ai';
+export type MealPlanOption = 'ro' | 'bb' | 'hb' | 'fb';
+
+// One room type on a night and how many travelers occupy it. A night can hold
+// several of these (a "room mix"), e.g. 1 double (2 pax) + 1 family (3 pax).
+export type RoomAllocation = {
+  roomType: RoomTypeOption | null;
+  pax: number;
+};
 
 export type BuilderDay = {
   id: string;
@@ -21,9 +28,9 @@ export type BuilderDay = {
   date: string;
   accommodation: string | null;
   accommodationName?: string | null; // Cached name to avoid re-fetching
-  // Used by the pricing engine to pick the right hotel rate row.
-  roomType?: RoomTypeOption | null;
-  mealPlan?: MealPlanOption | null;
+  // Used by the pricing engine to pick the right hotel rate rows. Room type
+  // varies per allocation; the board basis is derived from the meals toggles.
+  rooms?: RoomAllocation[];
   destination: string | null;
   destinationName?: string | null; // Cached display name (for non-park destinations)
   destinationLat?: number | null;

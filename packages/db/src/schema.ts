@@ -83,6 +83,8 @@ export const InvitationStatus = pgEnum('invitation_status', [
 // and pgEnum calls are eager at module load.
 export const RoomType = pgEnum('room_type', ['single', 'double', 'triple', 'quad', 'family']);
 export const MealPlan = pgEnum('meal_plan', ['ro', 'bb', 'hb', 'fb', 'ai']);
+// How a hotel rate is charged: per traveler sharing, or a flat price per room.
+export const RateBasis = pgEnum('rate_basis', ['per_person', 'per_room']);
 export const ParkFeeCategory = pgEnum('park_fee_category', [
   'non_resident_adult',
   'non_resident_child',
@@ -737,8 +739,12 @@ export const proposalAccommodations = pgTable('proposal_accommodations', {
     .notNull()
     .references(() => accommodations.id, { onDelete: 'cascade' }),
   // Stay-specific fields used by the pricing engine to pick a rate row.
+  // A night can hold several rows (a "room mix"): one per room type, each
+  // carrying how many travelers occupy that room type. mealPlan is uniform
+  // across the night's rows.
   roomType: RoomType('room_type'),
   mealPlan: MealPlan('meal_plan'),
+  paxCount: integer('pax_count'),
   createdAt: timestamp('created_at', { precision: 3, mode: 'string' })
     .default(sql`CURRENT_TIMESTAMP`)
     .notNull(),
@@ -1198,6 +1204,11 @@ export const accommodationRates = pgTable(
     roomType: RoomType('room_type').notNull(),
     mealPlan: MealPlan('meal_plan').notNull(),
     perPaxRate: numeric('per_pax_rate', { precision: 12, scale: 2 }).notNull(),
+    // Whether perPaxRate is charged per traveler or as a flat per-room price.
+    // For per_room rates, maxOccupancy is the room capacity used to derive how
+    // many rooms a given pax count needs. These are set per (hotel, room type).
+    rateBasis: RateBasis('rate_basis').notNull().default('per_person'),
+    maxOccupancy: integer('max_occupancy'),
     currency: text('currency').notNull().default('USD'),
     createdAt: timestamp('created_at').defaultNow().notNull(),
     updatedAt: timestamp('updated_at').defaultNow().notNull(),

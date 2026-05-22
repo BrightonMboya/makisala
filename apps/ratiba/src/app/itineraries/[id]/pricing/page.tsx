@@ -4,7 +4,17 @@ import { Button } from '@repo/ui/button';
 import { Checkbox } from '@repo/ui/checkbox';
 import { Input } from '@repo/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@repo/ui/select';
-import { Plus, Trash2, ArrowRight, Calculator, AlertTriangle } from 'lucide-react';
+import {
+  Plus,
+  Trash2,
+  ArrowRight,
+  Calculator,
+  AlertTriangle,
+  Building,
+  TreePine,
+  Car,
+  Plane,
+} from 'lucide-react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { Combobox } from '@repo/ui/combobox';
@@ -13,7 +23,18 @@ import { useBuilder } from '@/components/itinerary-builder/builder-context';
 import type { PricingRow, ExtraOption } from '@/types/itinerary-types';
 import { useMemo, useState } from 'react';
 import { trpc } from '@/lib/trpc';
-import { addDays, parseISO } from 'date-fns';
+import { addDays } from 'date-fns';
+import type { PricingBreakdown, WarningKind } from '@/lib/pricing-engine';
+import { deriveMealPlan } from '@/lib/pricing-engine';
+
+type LineSource = 'accommodation' | 'park_fee' | 'vehicle' | 'transfer';
+
+const CATEGORY_META: Record<LineSource, { label: string; icon: typeof Building }> = {
+  accommodation: { label: 'Accommodation', icon: Building },
+  park_fee: { label: 'Park fees', icon: TreePine },
+  vehicle: { label: 'Vehicle', icon: Car },
+  transfer: { label: 'Transfers', icon: Plane },
+};
 
 export default function PricingPage() {
   const params = useParams();
@@ -85,10 +106,6 @@ export default function PricingPage() {
     setExtras(extras.map((extra) => (extra.id === extraId ? { ...extra, [field]: value } : extra)));
   };
 
-  const rowsTotal = pricingRows.reduce((acc, row) => acc + row.count * row.unitPrice, 0);
-  const extrasTotal = extras.filter((e) => e.selected).reduce((acc, e) => acc + e.price, 0);
-  const grandTotal = rowsTotal + extrasTotal;
-
   // --- Auto pricing engine ---
   const totalPax = useMemo(
     () => travelerGroups.reduce((sum, g) => sum + g.count, 0),
@@ -101,17 +118,19 @@ export default function PricingPage() {
       dayNumber: d.dayNumber,
       date: addDays(startDate, idx).toISOString(),
       accommodationId: d.accommodation,
-      roomType: (d.roomType ?? null) as
-        | 'single'
-        | 'double'
-        | 'triple'
-        | 'quad'
-        | 'family'
-        | null,
-      mealPlan: (d.mealPlan ?? null) as 'ro' | 'bb' | 'hb' | 'fb' | 'ai' | null,
-      // BuilderDay.destination can be either a national-park UUID or a freeform
-      // geo string. UUIDs are 36 chars with dashes — anything else gets ignored
-      // for park-fee lookup.
+      accommodationName: d.accommodationName ?? null,
+      // Board basis comes from the day's meals (B/L/D), not a separate field.
+      mealPlan: deriveMealPlan(d.meals),
+      rooms: (d.rooms ?? []).map((r) => ({
+        roomType: (r.roomType ?? null) as
+          | 'single'
+          | 'double'
+          | 'triple'
+          | 'quad'
+          | 'family'
+          | null,
+        pax: r.pax,
+      })),
       parkId:
         d.destination && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
           d.destination,
@@ -133,14 +152,37 @@ export default function PricingPage() {
       currency: 'USD',
     },
     {
-      enabled:
-        useAutoPricing && dayInputs.length > 0 && totalPax > 0,
+      enabled: useAutoPricing && dayInputs.length > 0 && totalPax > 0,
     },
   );
 
   const { data: vehicles = [] } = trpc.rateCards.vehicles.list.useQuery();
   const { data: transferOptions = [] } = trpc.rateCards.transferRates.list.useQuery();
   const { data: pricingDefaults } = trpc.rateCards.settings.get.useQuery();
+
+  // Group line items by category for the breakdown view.
+  const groupedLines = useMemo(() => {
+    const data = computeQuery.data;
+    const order: LineSource[] = ['accommodation', 'park_fee', 'vehicle', 'transfer'];
+    if (!data) return [] as Array<{ source: LineSource; subtotal: number; items: PricingBreakdown['lineItems'] }>;
+    return order
+      .map((source) => {
+        const items = data.lineItems.filter((li) => li.source === source);
+        const subtotal = items.reduce((sum, li) => sum + li.totalCost, 0);
+        return { source, subtotal, items };
+      })
+      .filter((g) => g.items.length > 0);
+  }, [computeQuery.data]);
+
+  // Totals
+  const manualRowsTotal = pricingRows.reduce(
+    (acc, row) => acc + row.count * row.unitPrice,
+    0,
+  );
+  const extrasTotal = extras.filter((e) => e.selected).reduce((acc, e) => acc + e.price, 0);
+  const autoSellTotal = computeQuery.data?.sellTotal ?? 0;
+  const tripTotal = useAutoPricing && computeQuery.data ? autoSellTotal : manualRowsTotal;
+  const grandTotal = tripTotal + extrasTotal;
 
   return (
     <div className="mx-auto max-w-7xl space-y-8 px-6 pb-20">
@@ -158,216 +200,7 @@ export default function PricingPage() {
         </div>
       </div>
 
-      {/* Auto-pricing panel (rate-card-driven) */}
-      <div className="rounded-xl border border-stone-200 bg-white shadow-sm">
-        <div className="flex items-center justify-between rounded-t-xl border-b border-stone-100 bg-emerald-50/50 px-6 py-4">
-          <h3 className="flex items-center gap-2 font-bold text-stone-800">
-            <Calculator className="h-4 w-4 text-emerald-700" />
-            Auto pricing (rate cards)
-          </h3>
-          <label className="flex items-center gap-2 text-sm font-medium text-stone-700">
-            <Checkbox
-              checked={useAutoPricing}
-              onCheckedChange={(c) => setUseAutoPricing(c === true)}
-            />
-            Enable
-          </label>
-        </div>
-
-        {useAutoPricing && (
-          <div className="space-y-4 p-6">
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
-              <div>
-                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-stone-500">
-                  Vehicle (per-day, all-in)
-                </label>
-                <select
-                  value={vehicleId ?? ''}
-                  onChange={(e) => setVehicleId(e.target.value || null)}
-                  className="h-9 w-full rounded-md border border-stone-200 bg-stone-50 px-2 text-sm"
-                >
-                  <option value="">— none —</option>
-                  {vehicles.map((v) => (
-                    <option key={v.id} value={v.id}>
-                      {v.name} (${Number(v.perDayRate)}/day)
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-stone-500">
-                  Pickup transfer
-                </label>
-                <select
-                  value={pickupTransferId ?? ''}
-                  onChange={(e) => setPickupTransferId(e.target.value || null)}
-                  className="h-9 w-full rounded-md border border-stone-200 bg-stone-50 px-2 text-sm"
-                >
-                  <option value="">— none —</option>
-                  {transferOptions.map((t) => (
-                    <option key={t.id} value={t.id}>
-                      {t.name} ({t.mode === 'per_pax' ? 'per pax' : 'flat'})
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-stone-500">
-                  Dropoff transfer
-                </label>
-                <select
-                  value={dropoffTransferId ?? ''}
-                  onChange={(e) => setDropoffTransferId(e.target.value || null)}
-                  className="h-9 w-full rounded-md border border-stone-200 bg-stone-50 px-2 text-sm"
-                >
-                  <option value="">— none —</option>
-                  {transferOptions.map((t) => (
-                    <option key={t.id} value={t.id}>
-                      {t.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-stone-500">
-                  Markup % on cost
-                </label>
-                <Input
-                  type="number"
-                  value={markupPct}
-                  onChange={(e) => setMarkupPct(Number(e.target.value) || 0)}
-                  className="border-stone-200 bg-stone-50 shadow-none"
-                />
-                {pricingDefaults && Number(pricingDefaults.defaultMarkupPct) !== markupPct && (
-                  <button
-                    onClick={() => setMarkupPct(Number(pricingDefaults.defaultMarkupPct))}
-                    className="mt-1 text-xs text-stone-500 hover:text-stone-700 hover:underline"
-                  >
-                    reset to default ({Number(pricingDefaults.defaultMarkupPct)}%)
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {!startDate && (
-              <div className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
-                <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-                Set a tour start date in the day-by-day step. Without it the engine can't pick a
-                season.
-              </div>
-            )}
-
-            {computeQuery.isLoading && startDate && (
-              <p className="text-sm text-stone-500">Computing…</p>
-            )}
-
-            {computeQuery.data && (
-              <div className="space-y-3">
-                {computeQuery.data.warnings.length > 0 && (
-                  <div className="space-y-1 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
-                    <div className="flex items-center gap-2 font-semibold">
-                      <AlertTriangle className="h-4 w-4" /> Missing rate data
-                    </div>
-                    <ul className="list-disc space-y-0.5 pl-5 text-xs">
-                      {computeQuery.data.warnings.map((w, i) => (
-                        <li key={i}>{w}</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-
-                <div className="overflow-hidden rounded-md border border-stone-200">
-                  <table className="w-full text-sm">
-                    <thead className="bg-stone-50 text-xs uppercase tracking-wide text-stone-500">
-                      <tr>
-                        <th className="px-3 py-2 text-left">Line</th>
-                        <th className="px-3 py-2 text-right">Qty</th>
-                        <th className="px-3 py-2 text-right">Unit</th>
-                        <th className="px-3 py-2 text-right">Total</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-stone-100">
-                      {computeQuery.data.lineItems.map((li, i) => (
-                        <tr key={i}>
-                          <td className="px-3 py-2">
-                            {li.label}
-                            {li.missing && (
-                              <span className="ml-2 text-xs text-amber-600">
-                                ({li.missing})
-                              </span>
-                            )}
-                          </td>
-                          <td className="px-3 py-2 text-right text-stone-500">{li.quantity}</td>
-                          <td className="px-3 py-2 text-right">
-                            ${li.unitCost.toLocaleString()}
-                          </td>
-                          <td className="px-3 py-2 text-right font-medium">
-                            ${li.totalCost.toLocaleString()}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                    <tfoot className="bg-stone-50 text-sm">
-                      <tr>
-                        <td className="px-3 py-2 font-semibold" colSpan={3}>
-                          Cost subtotal
-                        </td>
-                        <td className="px-3 py-2 text-right font-semibold">
-                          ${computeQuery.data.costSubtotal.toLocaleString()}
-                        </td>
-                      </tr>
-                      <tr>
-                        <td className="px-3 py-2" colSpan={3}>
-                          Markup ({computeQuery.data.markupPct}%)
-                        </td>
-                        <td className="px-3 py-2 text-right">
-                          ${computeQuery.data.markupAmount.toLocaleString()}
-                        </td>
-                      </tr>
-                      <tr className="border-t border-stone-200">
-                        <td className="px-3 py-2 font-bold text-emerald-700" colSpan={3}>
-                          Sell total
-                        </td>
-                        <td className="px-3 py-2 text-right text-lg font-bold text-emerald-700">
-                          ${computeQuery.data.sellTotal.toLocaleString()}
-                        </td>
-                      </tr>
-                      <tr>
-                        <td className="px-3 py-2 text-xs text-stone-500" colSpan={3}>
-                          Per-pax sell (×{computeQuery.data.pax})
-                        </td>
-                        <td className="px-3 py-2 text-right text-sm font-medium text-stone-700">
-                          ${computeQuery.data.sellPerPax.toLocaleString()}
-                        </td>
-                      </tr>
-                    </tfoot>
-                  </table>
-                </div>
-
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    if (!computeQuery.data) return;
-                    setPricingRows(
-                      travelerGroups.map((g) => ({
-                        id: g.id,
-                        count: g.count,
-                        type: g.type,
-                        unitPrice: computeQuery.data.sellPerPax,
-                      })),
-                    );
-                  }}
-                >
-                  Copy per-pax sell into manual rows below
-                </Button>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-
-      {/* Add Price Section */}
+      {/* Pricing mode toggle */}
       <div className="rounded-xl border border-stone-200 bg-white shadow-sm">
         <div className="flex items-center justify-between rounded-t-xl border-b border-stone-100 bg-stone-50/50 px-6 py-4">
           <h3 className="flex items-center gap-2 font-bold text-stone-800">
@@ -376,109 +209,45 @@ export default function PricingPage() {
             </span>
             Trip Pricing
           </h3>
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold tracking-wide text-stone-500 uppercase">
-              Currency
-            </span>
-            <Select defaultValue="USD">
-              <SelectTrigger className="h-8 w-[180px] border-stone-200 bg-white text-xs shadow-none">
-                <SelectValue placeholder="Select currency" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="USD">U.S. Dollar - $</SelectItem>
-                <SelectItem value="EUR">Euro - €</SelectItem>
-              </SelectContent>
-            </Select>
+          <div className="flex items-center gap-4">
+            <label className="flex items-center gap-2 text-sm font-medium text-stone-700">
+              <Checkbox
+                checked={useAutoPricing}
+                onCheckedChange={(c) => setUseAutoPricing(c === true)}
+              />
+              <Calculator className="h-3.5 w-3.5 text-emerald-700" />
+              Use auto pricing (rate cards)
+            </label>
           </div>
         </div>
 
-        <div className="grid grid-cols-12 gap-4 border-b border-stone-100 bg-stone-50/30 px-6 py-3 text-xs font-bold tracking-wide text-stone-500 uppercase">
-          <div className="col-span-5">Travelers & Type</div>
-          <div className="col-span-3">Unit Price</div>
-          <div className="col-span-4">Total</div>
-        </div>
-
-        <div className="space-y-3 p-6">
-          {pricingRows.map((row) => (
-            <div key={row.id} className="grid grid-cols-12 items-center gap-4">
-              <div className="col-span-5 flex items-center gap-3">
-                <Select
-                  value={row.count.toString()}
-                  onValueChange={(val) => handleUpdateRow(row.id, 'count', parseInt(val))}
-                >
-                  <SelectTrigger className="w-20 border-stone-200 bg-stone-50 shadow-none">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((num) => (
-                      <SelectItem key={num} value={num.toString()}>
-                        {num}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <span className="text-sm text-stone-400">x</span>
-                <div className="flex-1">
-                  <Select
-                    value={row.type}
-                    onValueChange={(val) => handleUpdateRow(row.id, 'type', val)}
-                  >
-                    <SelectTrigger className="border-stone-200 bg-stone-50 shadow-none">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Adult">Adult</SelectItem>
-                      <SelectItem value="Senior">Senior</SelectItem>
-                      <SelectItem value="Child">Child</SelectItem>
-                      <SelectItem value="Baby">Baby</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <div className="col-span-3">
-                <div className="relative">
-                  <span className="absolute top-2.5 left-3 text-sm font-medium text-stone-500">
-                    $
-                  </span>
-                  <Input
-                    type="number"
-                    value={row.unitPrice}
-                    onChange={(e) =>
-                      handleUpdateRow(row.id, 'unitPrice', parseFloat(e.target.value) || 0)
-                    }
-                    className="border-stone-200 bg-stone-50 pl-7 shadow-none"
-                  />
-                </div>
-              </div>
-              <div className="col-span-4 flex items-center justify-between pl-4">
-                <span className="text-lg font-bold text-stone-900">
-                  ${' '}
-                  {(row.count * row.unitPrice).toLocaleString('en-US', {
-                    minimumFractionDigits: 2,
-                  })}
-                </span>
-                <button
-                  className="rounded-md p-2 text-stone-400 transition-colors hover:bg-red-50 hover:text-red-500"
-                  onClick={() => handleRemoveRow(row.id)}
-                  disabled={pricingRows.length === 1}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        <div className="rounded-b-xl border-t border-stone-100 bg-stone-50 p-4">
-          <Button
-            variant="outline"
-            className="w-full justify-center gap-2 border-dashed bg-white text-stone-600 shadow-sm hover:border-stone-300 hover:bg-stone-50 hover:text-stone-900"
-            onClick={handleAddRow}
-          >
-            <Plus className="h-4 w-4" />
-            Add another price line
-          </Button>
-        </div>
+        {useAutoPricing ? (
+          <AutoPricingSection
+            vehicleId={vehicleId}
+            setVehicleId={setVehicleId}
+            pickupTransferId={pickupTransferId}
+            setPickupTransferId={setPickupTransferId}
+            dropoffTransferId={dropoffTransferId}
+            setDropoffTransferId={setDropoffTransferId}
+            markupPct={markupPct}
+            setMarkupPct={setMarkupPct}
+            vehicles={vehicles}
+            transferOptions={transferOptions}
+            pricingDefaults={pricingDefaults}
+            startDate={startDate}
+            dayInputs={dayInputs}
+            totalPax={totalPax}
+            computeQuery={computeQuery}
+            groupedLines={groupedLines}
+          />
+        ) : (
+          <ManualPricingSection
+            pricingRows={pricingRows}
+            onAddRow={handleAddRow}
+            onRemoveRow={handleRemoveRow}
+            onUpdateRow={handleUpdateRow}
+          />
+        )}
       </div>
 
       <div className="flex items-center justify-end gap-2 pr-2">
@@ -628,6 +397,409 @@ export default function PricingPage() {
     </div>
   );
 }
+
+// --- Auto-pricing section -------------------------------------------------
+
+function AutoPricingSection({
+  vehicleId,
+  setVehicleId,
+  pickupTransferId,
+  setPickupTransferId,
+  dropoffTransferId,
+  setDropoffTransferId,
+  markupPct,
+  setMarkupPct,
+  vehicles,
+  transferOptions,
+  pricingDefaults,
+  startDate,
+  dayInputs,
+  totalPax,
+  computeQuery,
+  groupedLines,
+}: {
+  vehicleId: string | null;
+  setVehicleId: (v: string | null) => void;
+  pickupTransferId: string | null;
+  setPickupTransferId: (v: string | null) => void;
+  dropoffTransferId: string | null;
+  setDropoffTransferId: (v: string | null) => void;
+  markupPct: number;
+  setMarkupPct: (v: number) => void;
+  vehicles: Array<{ id: string; name: string; perDayRate: string | number }>;
+  transferOptions: Array<{ id: string; name: string; mode: 'per_vehicle' | 'per_pax' }>;
+  pricingDefaults: { defaultMarkupPct: string | number } | null | undefined;
+  startDate: Date | undefined;
+  dayInputs: Array<unknown>;
+  totalPax: number;
+  computeQuery: {
+    isLoading: boolean;
+    data: PricingBreakdown | undefined;
+  };
+  groupedLines: Array<{
+    source: LineSource;
+    subtotal: number;
+    items: PricingBreakdown['lineItems'];
+  }>;
+}) {
+  return (
+    <div className="space-y-5 p-6">
+      {/* Trip-wide auto settings */}
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
+        <div>
+          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-stone-500">
+            Vehicle (per-day)
+          </label>
+          <select
+            value={vehicleId ?? ''}
+            onChange={(e) => setVehicleId(e.target.value || null)}
+            className="h-9 w-full rounded-md border border-stone-200 bg-stone-50 px-2 text-sm"
+          >
+            <option value="">— none —</option>
+            {vehicles.map((v) => (
+              <option key={v.id} value={v.id}>
+                {v.name} (${Number(v.perDayRate)}/day)
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-stone-500">
+            Pickup transfer
+          </label>
+          <select
+            value={pickupTransferId ?? ''}
+            onChange={(e) => setPickupTransferId(e.target.value || null)}
+            className="h-9 w-full rounded-md border border-stone-200 bg-stone-50 px-2 text-sm"
+          >
+            <option value="">— none —</option>
+            {transferOptions.map((t) => (
+              <option key={t.id} value={t.id}>
+                {t.name} ({t.mode === 'per_pax' ? 'per pax' : 'flat'})
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-stone-500">
+            Dropoff transfer
+          </label>
+          <select
+            value={dropoffTransferId ?? ''}
+            onChange={(e) => setDropoffTransferId(e.target.value || null)}
+            className="h-9 w-full rounded-md border border-stone-200 bg-stone-50 px-2 text-sm"
+          >
+            <option value="">— none —</option>
+            {transferOptions.map((t) => (
+              <option key={t.id} value={t.id}>
+                {t.name}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-stone-500">
+            Markup % on cost
+          </label>
+          <Input
+            type="number"
+            value={markupPct}
+            onChange={(e) => setMarkupPct(Number(e.target.value) || 0)}
+            className="border-stone-200 bg-stone-50 shadow-none"
+          />
+          {pricingDefaults && Number(pricingDefaults.defaultMarkupPct) !== markupPct && (
+            <button
+              onClick={() => setMarkupPct(Number(pricingDefaults.defaultMarkupPct))}
+              className="mt-1 text-xs text-stone-500 hover:text-stone-700 hover:underline"
+            >
+              reset to default ({Number(pricingDefaults.defaultMarkupPct)}%)
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Pre-conditions */}
+      {!startDate && (
+        <div className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+          <span>
+            Set a tour start date in the day-by-day step. Without it the engine can't pick a season.
+          </span>
+        </div>
+      )}
+
+      {startDate && totalPax === 0 && (
+        <div className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+          <span>No travelers set. Add traveler groups in Tour details.</span>
+        </div>
+      )}
+
+      {startDate && totalPax > 0 && dayInputs.length === 0 && (
+        <div className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+          <span>No days defined yet. Add days in the day-by-day step.</span>
+        </div>
+      )}
+
+      {computeQuery.isLoading && startDate && totalPax > 0 && dayInputs.length > 0 && (
+        <p className="text-sm text-stone-500">Computing…</p>
+      )}
+
+      {computeQuery.data && (
+        <div className="space-y-3">
+          {computeQuery.data.warnings.length > 0 && (
+            <WarningsList warnings={computeQuery.data.warnings} />
+          )}
+
+          {/* Grouped breakdown */}
+          <div className="space-y-3">
+            {groupedLines.map((group) => {
+              const meta = CATEGORY_META[group.source];
+              const Icon = meta.icon;
+              return (
+                <div
+                  key={group.source}
+                  className="overflow-hidden rounded-md border border-stone-200"
+                >
+                  <div className="flex items-center justify-between bg-stone-50 px-4 py-2">
+                    <span className="flex items-center gap-2 text-sm font-semibold text-stone-700">
+                      <Icon className="h-4 w-4 text-stone-500" />
+                      {meta.label}
+                    </span>
+                    <span className="text-sm font-medium text-stone-700">
+                      ${group.subtotal.toLocaleString()}
+                    </span>
+                  </div>
+                  <table className="w-full text-sm">
+                    <tbody className="divide-y divide-stone-100">
+                      {group.items.map((li, i) => (
+                        <tr key={i}>
+                          <td className="px-4 py-2 text-stone-700">
+                            {li.label}
+                            {li.missing && (
+                              <span className="ml-2 text-xs text-amber-600">
+                                ({li.missing})
+                              </span>
+                            )}
+                          </td>
+                          <td className="w-20 px-4 py-2 text-right text-stone-500">
+                            {li.quantity > 1 ? `× ${li.quantity}` : ''}
+                          </td>
+                          <td className="w-24 px-4 py-2 text-right text-stone-500">
+                            ${li.unitCost.toLocaleString()}
+                          </td>
+                          <td className="w-24 px-4 py-2 text-right font-medium text-stone-800">
+                            ${li.totalCost.toLocaleString()}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Totals card */}
+          <div className="rounded-md border border-stone-200 bg-white">
+            <table className="w-full text-sm">
+              <tbody>
+                <tr className="border-b border-stone-100">
+                  <td className="px-4 py-2 font-semibold text-stone-700">Cost subtotal</td>
+                  <td className="w-32 px-4 py-2 text-right font-semibold text-stone-700">
+                    ${computeQuery.data.costSubtotal.toLocaleString()}
+                  </td>
+                </tr>
+                <tr className="border-b border-stone-100">
+                  <td className="px-4 py-2 text-stone-600">
+                    Markup ({computeQuery.data.markupPct}%)
+                  </td>
+                  <td className="px-4 py-2 text-right text-stone-600">
+                    ${computeQuery.data.markupAmount.toLocaleString()}
+                  </td>
+                </tr>
+                <tr className="bg-emerald-50/40">
+                  <td className="px-4 py-3 text-base font-bold text-emerald-700">
+                    Sell total
+                  </td>
+                  <td className="px-4 py-3 text-right text-lg font-bold text-emerald-700">
+                    ${computeQuery.data.sellTotal.toLocaleString()}
+                  </td>
+                </tr>
+                <tr>
+                  <td className="px-4 py-2 text-xs text-stone-500" colSpan={1}>
+                    Per pax (× {computeQuery.data.pax})
+                  </td>
+                  <td className="px-4 py-2 text-right text-sm font-medium text-stone-600">
+                    ${computeQuery.data.sellPerPax.toLocaleString()}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// --- Manual pricing section -----------------------------------------------
+
+function ManualPricingSection({
+  pricingRows,
+  onAddRow,
+  onRemoveRow,
+  onUpdateRow,
+}: {
+  pricingRows: PricingRow[];
+  onAddRow: () => void;
+  onRemoveRow: (id: string) => void;
+  onUpdateRow: (id: string, field: keyof PricingRow, value: any) => void;
+}) {
+  return (
+    <>
+      <div className="grid grid-cols-12 gap-4 border-b border-stone-100 bg-stone-50/30 px-6 py-3 text-xs font-bold tracking-wide text-stone-500 uppercase">
+        <div className="col-span-5">Travelers & Type</div>
+        <div className="col-span-3">Unit Price</div>
+        <div className="col-span-4">Total</div>
+      </div>
+
+      <div className="space-y-3 p-6">
+        {pricingRows.map((row) => (
+          <div key={row.id} className="grid grid-cols-12 items-center gap-4">
+            <div className="col-span-5 flex items-center gap-3">
+              <Select
+                value={row.count.toString()}
+                onValueChange={(val) => onUpdateRow(row.id, 'count', parseInt(val))}
+              >
+                <SelectTrigger className="w-20 border-stone-200 bg-stone-50 shadow-none">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((num) => (
+                    <SelectItem key={num} value={num.toString()}>
+                      {num}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <span className="text-sm text-stone-400">x</span>
+              <div className="flex-1">
+                <Select
+                  value={row.type}
+                  onValueChange={(val) => onUpdateRow(row.id, 'type', val)}
+                >
+                  <SelectTrigger className="border-stone-200 bg-stone-50 shadow-none">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Adult">Adult</SelectItem>
+                    <SelectItem value="Senior">Senior</SelectItem>
+                    <SelectItem value="Child">Child</SelectItem>
+                    <SelectItem value="Baby">Baby</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="col-span-3">
+              <div className="relative">
+                <span className="absolute top-2.5 left-3 text-sm font-medium text-stone-500">
+                  $
+                </span>
+                <Input
+                  type="number"
+                  value={row.unitPrice}
+                  onChange={(e) =>
+                    onUpdateRow(row.id, 'unitPrice', parseFloat(e.target.value) || 0)
+                  }
+                  className="border-stone-200 bg-stone-50 pl-7 shadow-none"
+                />
+              </div>
+            </div>
+            <div className="col-span-4 flex items-center justify-between pl-4">
+              <span className="text-lg font-bold text-stone-900">
+                ${' '}
+                {(row.count * row.unitPrice).toLocaleString('en-US', {
+                  minimumFractionDigits: 2,
+                })}
+              </span>
+              <button
+                className="rounded-md p-2 text-stone-400 transition-colors hover:bg-red-50 hover:text-red-500"
+                onClick={() => onRemoveRow(row.id)}
+                disabled={pricingRows.length === 1}
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="rounded-b-xl border-t border-stone-100 bg-stone-50 p-4">
+        <Button
+          variant="outline"
+          className="w-full justify-center gap-2 border-dashed bg-white text-stone-600 shadow-sm hover:border-stone-300 hover:bg-stone-50 hover:text-stone-900"
+          onClick={onAddRow}
+        >
+          <Plus className="h-4 w-4" />
+          Add another price line
+        </Button>
+      </div>
+    </>
+  );
+}
+
+// --- Warnings -------------------------------------------------------------
+
+const WARNING_FIX: Record<
+  WarningKind,
+  { tab: string | null; label: string } | null
+> = {
+  missing_room_meal: { tab: null, label: 'Set in day-by-day' },
+  room_pax_mismatch: { tab: null, label: 'Check room mix' },
+  missing_room_capacity: { tab: 'hotels', label: 'Set room capacity' },
+  no_season: { tab: 'seasons', label: 'Add season band' },
+  missing_hotel_rate: { tab: 'hotels', label: 'Add hotel rate' },
+  missing_park_fee: { tab: 'parks', label: 'Add park fee' },
+  missing_vehicle: { tab: 'vehicles', label: 'Check vehicle' },
+  missing_transfer: { tab: 'transfers', label: 'Check transfer' },
+};
+
+function WarningsList({ warnings }: { warnings: PricingBreakdown['warnings'] }) {
+  return (
+    <div className="space-y-2 rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+      <div className="flex items-center gap-2 font-semibold">
+        <AlertTriangle className="h-4 w-4" /> Missing rate data
+      </div>
+      <ul className="space-y-1.5">
+        {warnings.map((w, i) => {
+          const fix = WARNING_FIX[w.kind];
+          return (
+            <li
+              key={i}
+              className="flex flex-wrap items-center justify-between gap-2 text-xs"
+            >
+              <span>{w.message}</span>
+              {fix?.tab ? (
+                <Link
+                  href={`/rate-cards?tab=${fix.tab}`}
+                  className="shrink-0 rounded-md border border-amber-300 bg-white px-2 py-0.5 text-[11px] font-medium text-amber-800 hover:bg-amber-100"
+                >
+                  {fix.label} →
+                </Link>
+              ) : fix ? (
+                <span className="shrink-0 text-[11px] text-amber-700">{fix.label}</span>
+              ) : null}
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+}
+
+// --- Inclusion/Exclusion helpers ------------------------------------------
 
 function InclusionList({
   items,

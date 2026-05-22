@@ -1,0 +1,1 @@
+ALTER TABLE "proposal_accommodations" ADD COLUMN "pax_count" integer;

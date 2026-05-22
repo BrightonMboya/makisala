@@ -11,10 +11,11 @@ import {
 } from '@repo/db/schema';
 import { and, asc, eq } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
-import { router, protectedProcedure } from '../init';
+import { router, protectedProcedure, adminProcedure } from '../init';
 
 const ROOM_TYPES = ['single', 'double', 'triple', 'quad', 'family'] as const;
-const MEAL_PLANS = ['ro', 'bb', 'hb', 'fb', 'ai'] as const;
+const MEAL_PLANS = ['ro', 'bb', 'hb', 'fb'] as const;
+const RATE_BASES = ['per_person', 'per_room'] as const;
 const PARK_FEE_CATEGORIES = [
   'non_resident_adult',
   'non_resident_child',
@@ -43,7 +44,7 @@ const seasonsRouter = router({
       .orderBy(asc(seasons.priority), asc(seasons.startMonth), asc(seasons.startDay)),
   ),
 
-  create: protectedProcedure
+  create: adminProcedure
     .input(
       z
         .object({
@@ -60,7 +61,7 @@ const seasonsRouter = router({
       return row;
     }),
 
-  update: protectedProcedure
+  update: adminProcedure
     .input(
       z
         .object({
@@ -81,7 +82,7 @@ const seasonsRouter = router({
       return row;
     }),
 
-  delete: protectedProcedure
+  delete: adminProcedure
     .input(z.object({ id: z.string().uuid() }))
     .mutation(async ({ ctx, input }) => {
       await ctx.db
@@ -91,7 +92,7 @@ const seasonsRouter = router({
     }),
 
   // Seeds the standard East Africa season calendar if the org has no seasons yet.
-  seedDefaults: protectedProcedure.mutation(async ({ ctx }) => {
+  seedDefaults: adminProcedure.mutation(async ({ ctx }) => {
     const existing = await ctx.db
       .select({ id: seasons.id })
       .from(seasons)
@@ -189,6 +190,8 @@ const accommodationRatesRouter = router({
         roomType: accommodationRates.roomType,
         mealPlan: accommodationRates.mealPlan,
         perPaxRate: accommodationRates.perPaxRate,
+        rateBasis: accommodationRates.rateBasis,
+        maxOccupancy: accommodationRates.maxOccupancy,
         currency: accommodationRates.currency,
       })
       .from(accommodationRates)
@@ -196,7 +199,7 @@ const accommodationRatesRouter = router({
       .where(eq(accommodationRates.organizationId, ctx.orgId)),
   ),
 
-  create: protectedProcedure
+  create: adminProcedure
     .input(
       z.object({
         accommodationId: z.string().uuid(),
@@ -204,6 +207,8 @@ const accommodationRatesRouter = router({
         roomType: z.enum(ROOM_TYPES),
         mealPlan: z.enum(MEAL_PLANS),
         perPaxRate: z.number().nonnegative(),
+        rateBasis: z.enum(RATE_BASES).default('per_person'),
+        maxOccupancy: z.number().int().positive().nullable().optional(),
         currency: z.string().length(3).default('USD'),
       }),
     )
@@ -213,13 +218,14 @@ const accommodationRatesRouter = router({
         .values({
           ...input,
           perPaxRate: String(input.perPaxRate),
+          maxOccupancy: input.maxOccupancy ?? null,
           organizationId: ctx.orgId,
         })
         .returning();
       return row;
     }),
 
-  update: protectedProcedure
+  update: adminProcedure
     .input(
       z.object({
         id: z.string().uuid(),
@@ -227,6 +233,8 @@ const accommodationRatesRouter = router({
         roomType: z.enum(ROOM_TYPES).optional(),
         mealPlan: z.enum(MEAL_PLANS).optional(),
         perPaxRate: z.number().nonnegative().optional(),
+        rateBasis: z.enum(RATE_BASES).optional(),
+        maxOccupancy: z.number().int().positive().nullable().optional(),
         currency: z.string().length(3).optional(),
       }),
     )
@@ -245,7 +253,36 @@ const accommodationRatesRouter = router({
       return row;
     }),
 
-  delete: protectedProcedure
+  // Basis + capacity are properties of a (hotel, room type), so set them across
+  // every rate row for that room type at once.
+  setRoomTypeBasis: adminProcedure
+    .input(
+      z.object({
+        accommodationId: z.string().uuid(),
+        roomType: z.enum(ROOM_TYPES),
+        rateBasis: z.enum(RATE_BASES),
+        maxOccupancy: z.number().int().positive().nullable(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      await ctx.db
+        .update(accommodationRates)
+        .set({
+          rateBasis: input.rateBasis,
+          maxOccupancy: input.rateBasis === 'per_room' ? input.maxOccupancy : null,
+          updatedAt: new Date(),
+        })
+        .where(
+          and(
+            eq(accommodationRates.organizationId, ctx.orgId),
+            eq(accommodationRates.accommodationId, input.accommodationId),
+            eq(accommodationRates.roomType, input.roomType),
+          ),
+        );
+      return { ok: true };
+    }),
+
+  delete: adminProcedure
     .input(z.object({ id: z.string().uuid() }))
     .mutation(async ({ ctx, input }) => {
       await ctx.db
@@ -292,7 +329,7 @@ const parkFeeRatesRouter = router({
       .where(eq(parkFeeRates.organizationId, ctx.orgId)),
   ),
 
-  create: protectedProcedure
+  create: adminProcedure
     .input(
       z.object({
         parkId: z.string().uuid(),
@@ -315,7 +352,7 @@ const parkFeeRatesRouter = router({
       return row;
     }),
 
-  update: protectedProcedure
+  update: adminProcedure
     .input(
       z.object({
         id: z.string().uuid(),
@@ -338,7 +375,7 @@ const parkFeeRatesRouter = router({
       return row;
     }),
 
-  delete: protectedProcedure
+  delete: adminProcedure
     .input(z.object({ id: z.string().uuid() }))
     .mutation(async ({ ctx, input }) => {
       await ctx.db
@@ -360,7 +397,7 @@ const vehiclesRouter = router({
       .orderBy(asc(vehicles.name)),
   ),
 
-  create: protectedProcedure
+  create: adminProcedure
     .input(
       z.object({
         name: z.string().min(1).max(200),
@@ -382,7 +419,7 @@ const vehiclesRouter = router({
       return row;
     }),
 
-  update: protectedProcedure
+  update: adminProcedure
     .input(
       z.object({
         id: z.string().uuid(),
@@ -406,7 +443,7 @@ const vehiclesRouter = router({
       return row;
     }),
 
-  delete: protectedProcedure
+  delete: adminProcedure
     .input(z.object({ id: z.string().uuid() }))
     .mutation(async ({ ctx, input }) => {
       await ctx.db
@@ -426,7 +463,7 @@ const transferRatesRouter = router({
       .orderBy(asc(transferRates.name)),
   ),
 
-  create: protectedProcedure
+  create: adminProcedure
     .input(
       z.object({
         name: z.string().min(1).max(200),
@@ -447,7 +484,7 @@ const transferRatesRouter = router({
       return row;
     }),
 
-  update: protectedProcedure
+  update: adminProcedure
     .input(
       z.object({
         id: z.string().uuid(),
@@ -470,7 +507,7 @@ const transferRatesRouter = router({
       return row;
     }),
 
-  delete: protectedProcedure
+  delete: adminProcedure
     .input(z.object({ id: z.string().uuid() }))
     .mutation(async ({ ctx, input }) => {
       await ctx.db
@@ -493,7 +530,7 @@ const settingsRouter = router({
     return row ?? null;
   }),
 
-  upsert: protectedProcedure
+  upsert: adminProcedure
     .input(
       z.object({
         defaultMarkupPct: z.number().nonnegative().max(1000),

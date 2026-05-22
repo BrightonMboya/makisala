@@ -8,7 +8,7 @@ import {
   vehicles,
 } from '@repo/db/schema';
 import { eq } from 'drizzle-orm';
-import { router, protectedProcedure } from '../init';
+import { protectedProcedure, router } from '../init';
 import {
   computePricing,
   type ItineraryDayInput,
@@ -18,7 +18,7 @@ import {
 } from '@/lib/pricing-engine';
 
 const ROOM_TYPES = ['single', 'double', 'triple', 'quad', 'family'] as const;
-const MEAL_PLANS = ['ro', 'bb', 'hb', 'fb', 'ai'] as const;
+const MEAL_PLANS = ['ro', 'bb', 'hb', 'fb'] as const;
 const PARK_FEE_CATEGORIES = [
   'non_resident_adult',
   'non_resident_child',
@@ -28,12 +28,18 @@ const PARK_FEE_CATEGORIES = [
   'citizen_child',
 ] as const;
 
+const roomNightSchema = z.object({
+  roomType: z.enum(ROOM_TYPES).nullable(),
+  pax: z.number().int().nonnegative(),
+});
+
 const dayInputSchema = z.object({
   dayNumber: z.number().int(),
   date: z.coerce.date(),
   accommodationId: z.string().uuid().nullable(),
-  roomType: z.enum(ROOM_TYPES).nullable(),
+  accommodationName: z.string().nullish(),
   mealPlan: z.enum(MEAL_PLANS).nullable(),
+  rooms: z.array(roomNightSchema).default([]),
   parkId: z.string().uuid().nullable(),
 });
 
@@ -76,8 +82,12 @@ export const pricingRouter = router({
           dayNumber: d.dayNumber,
           date: d.date,
           accommodationId: d.accommodationId,
-          roomType: d.roomType as RoomType | null,
+          accommodationName: d.accommodationName ?? null,
           mealPlan: d.mealPlan as MealPlan | null,
+          rooms: d.rooms.map((r) => ({
+            roomType: r.roomType as RoomType | null,
+            pax: r.pax,
+          })),
           parkId: d.parkId,
         }),
       ),
@@ -101,8 +111,11 @@ export const pricingRouter = router({
         accommodationId: r.accommodationId,
         seasonId: r.seasonId,
         roomType: r.roomType,
-        mealPlan: r.mealPlan,
+        // DB enum still carries the unused 'ai' value; narrow at the boundary.
+        mealPlan: r.mealPlan as MealPlan,
         perPaxRate: Number(r.perPaxRate),
+        rateBasis: r.rateBasis,
+        maxOccupancy: r.maxOccupancy,
       })),
       parkFeeRates: parkRows.map((r) => ({
         parkId: r.parkId,

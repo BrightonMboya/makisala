@@ -569,6 +569,11 @@ function BuilderLayoutInner({ children }: { children: React.ReactNode }) {
 
     // If we have proposal data, use it
     if (proposal) {
+      // Used to back-fill pax for legacy room rows saved before per-room counts.
+      const loadedTotalPax = ((proposal.travelerGroups as any[]) || []).reduce(
+        (sum, g) => sum + (Number(g?.count) || 0),
+        0,
+      );
       data = {
         ...data,
         tourId: proposal.tourId || tourId,
@@ -609,6 +614,14 @@ function BuilderLayoutInner({ children }: { children: React.ReactNode }) {
           destinationLng: day.destinationLng ? parseFloat(day.destinationLng) : null,
           accommodation: day.accommodations?.[0]?.accommodationId || null,
           accommodationName: day.accommodations?.[0]?.accommodation?.name || null,
+          // Rebuild the room mix from all rows that have a room type set.
+          // Board basis is derived from the meals toggles, not stored here.
+          rooms: (day.accommodations || [])
+            .filter((a: any) => a.roomType)
+            .map((a: any) => ({
+              roomType: a.roomType,
+              pax: a.paxCount ?? loadedTotalPax,
+            })),
           description: day.description || '',
           previewImage: day.previewImage || undefined,
           meals: {
