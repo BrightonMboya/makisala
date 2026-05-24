@@ -14,7 +14,7 @@ export const organizationSchema = {
     'Ratiba is a proposal and itinerary platform built for safari operators and tour companies. Teams build interactive, mobile-optimized safari proposals that clients can view, comment on, and approve.',
   sameAs: [
     'https://www.linkedin.com/company/makisala',
-    'https://twitter.com/ratiba',
+    // 'https://twitter.com/ratiba',
   ],
 };
 
