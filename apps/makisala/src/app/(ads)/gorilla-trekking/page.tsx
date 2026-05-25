@@ -14,12 +14,23 @@ import {
 } from 'lucide-react'
 import type { Metadata } from 'next'
 import LandingNav from '@/components/landing-nav'
-import GorillaTrekForm from '@/app/(ads)/gorilla-trekking/_components/gorilla-trek-form'
+import LandingInquiryForm, {
+    type LandingInquiryFormProps,
+} from '@/app/(ads)/_components/landing-inquiry-form'
 import StickyMobileCTA from '@/app/(ads)/gorilla-trekking/_components/sticky-mobile-cta'
 import { BreadcrumbSchema, FAQSchema, TouristTripSchema } from '@/components/schema'
 import { FAQ } from '@/components/faq'
 import { BASE_URL } from '@/lib/constants'
 import Image from 'next/image'
+
+const inquiryFormProps: LandingInquiryFormProps = {
+    variant: 'detailed',
+    conversionSendTo: 'AW-17982843958/autmCMmsk4EcELbY8f5C',
+    logLabel: 'Gorilla trek form submission failed',
+    submitLabel: 'Check Availability',
+    pendingLabel: 'Checking...',
+    messagePlaceholder: 'Preferred dates, questions...',
+}
 
 const faqs = [
     {
@@ -251,7 +262,7 @@ export default function GorillaTrekkingPage() {
                                     Tell us your dates — we'll confirm availability and send you a
                                     free, personalized quote. No commitment.
                                 </p>
-                                <GorillaTrekForm />
+                                <LandingInquiryForm {...inquiryFormProps} />
                             </div>
                         </div>
                     </div>
@@ -573,7 +584,7 @@ export default function GorillaTrekkingPage() {
                             </p>
                         </div>
                         <div className="rounded-2xl border border-gray-700 bg-white p-6 shadow-xl md:p-8">
-                            <GorillaTrekForm />
+                            <LandingInquiryForm {...inquiryFormProps} />
                         </div>
                         <div className="mt-8 text-center">
                             <p className="mb-4 text-sm text-gray-400">

@@ -13,12 +13,22 @@ import {
 } from 'lucide-react'
 import type { Metadata } from 'next'
 import LandingNav from '@/components/landing-nav'
-import UgandaSafariForm from '@/app/(ads)/uganda-safari/_components/uganda-safari-form'
+import LandingInquiryForm, {
+    type LandingInquiryFormProps,
+} from '@/app/(ads)/_components/landing-inquiry-form'
 import StickyMobileCTA from '@/app/(ads)/uganda-safari/_components/sticky-mobile-cta'
 import { BreadcrumbSchema, FAQSchema, TouristTripSchema } from '@/components/schema'
 import { FAQ } from '@/components/faq'
 import { BASE_URL } from '@/lib/constants'
 import Image from 'next/image'
+
+const inquiryFormProps: LandingInquiryFormProps = {
+    variant: 'simple',
+    conversionSendTo: 'AW-17982843958/CyrHCO_cj5EcELbY8f5C',
+    logLabel: 'Uganda safari form submission failed',
+    messagePlaceholder: 'Tell us about your ideal trip: dates, group size, budget...',
+    showRiskReducer: true,
+}
 
 const faqs = [
     {
@@ -284,7 +294,7 @@ export default function UgandaSafariPage() {
                                     Tell us what you're looking for. We'll build a personalized
                                     itinerary and quote within 24 hours.
                                 </p>
-                                <UgandaSafariForm />
+                                <LandingInquiryForm {...inquiryFormProps} />
                             </div>
                         </div>
                     </div>
@@ -640,7 +650,7 @@ export default function UgandaSafariPage() {
                             </p>
                         </div>
                         <div className="rounded-2xl border border-gray-700 bg-white p-6 shadow-xl md:p-8">
-                            <UgandaSafariForm />
+                            <LandingInquiryForm {...inquiryFormProps} />
                         </div>
                         <div className="mt-6 flex items-center justify-center gap-6 text-xs text-gray-400">
                             <span className="flex items-center gap-1.5">

@@ -13,12 +13,22 @@ import {
 } from 'lucide-react'
 import type { Metadata } from 'next'
 import LandingNav from '@/components/landing-nav'
-import KilimanjaroForm from '@/app/(ads)/kilimanjaro/_components/kilimanjaro-form'
+import LandingInquiryForm, {
+    type LandingInquiryFormProps,
+} from '@/app/(ads)/_components/landing-inquiry-form'
 import StickyMobileCTA from '@/app/(ads)/kilimanjaro/_components/sticky-mobile-cta'
 import { BreadcrumbSchema, FAQSchema, TouristTripSchema } from '@/components/schema'
 import { FAQ } from '@/components/faq'
 import { BASE_URL } from '@/lib/constants'
 import Image from 'next/image'
+
+const inquiryFormProps: LandingInquiryFormProps = {
+    variant: 'simple',
+    conversionSendTo: 'AW-17982843958/Yck8CP3NwZwcELbY8f5C',
+    logLabel: 'Kilimanjaro form submission failed',
+    messagePlaceholder: 'Preferred route, dates, group size, fitness level...',
+    showRiskReducer: true,
+}
 
 const faqs = [
     {
@@ -302,7 +312,7 @@ export default function KilimanjaroPage() {
                                     Tell us your dates and preferred route. We'll send a
                                     personalized quote within 24 hours.
                                 </p>
-                                <KilimanjaroForm />
+                                <LandingInquiryForm {...inquiryFormProps} />
                             </div>
                         </div>
                     </div>
@@ -641,7 +651,7 @@ export default function KilimanjaroPage() {
                             </p>
                         </div>
                         <div className="rounded-2xl border border-gray-700 bg-white p-6 shadow-xl md:p-8">
-                            <KilimanjaroForm />
+                            <LandingInquiryForm {...inquiryFormProps} />
                         </div>
                         <div className="mt-6 flex items-center justify-center gap-6 text-xs text-gray-400">
                             <span className="flex items-center gap-1.5">
