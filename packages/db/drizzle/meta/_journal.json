@@ -288,6 +288,27 @@
       "when": 1776766336561,
       "tag": "0040_white_thunderbird",
       "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "7",
+      "when": 1778604881675,
+      "tag": "0041_loose_earthquake",
+      "breakpoints": true
+    },
+    {
+      "idx": 42,
+      "version": "7",
+      "when": 1779454067588,
+      "tag": "0042_wealthy_bulldozer",
+      "breakpoints": true
+    },
+    {
+      "idx": 43,
+      "version": "7",
+      "when": 1779458456233,
+      "tag": "0043_medical_blackheart",
+      "breakpoints": true
     }
   ]
 }

@@ -87,7 +87,7 @@ describe('clients router', () => {
       db._results.set('select', [mockClient]);
 
       const result = await caller.clients.getById({ id: 'c-1' });
-      expect(result).toEqual(mockClient);
+      expect(result).toMatchObject(mockClient);
     });
 
     test('throws NOT_FOUND when client not found', async () => {

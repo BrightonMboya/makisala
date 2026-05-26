@@ -12,12 +12,25 @@ export type BuilderActivity = {
   imageUrl?: string;
 };
 
+export type RoomTypeOption = 'single' | 'double' | 'triple' | 'quad' | 'family';
+export type MealPlanOption = 'ro' | 'bb' | 'hb' | 'fb';
+
+// One room type on a night and how many travelers occupy it. A night can hold
+// several of these (a "room mix"), e.g. 1 double (2 pax) + 1 family (3 pax).
+export type RoomAllocation = {
+  roomType: RoomTypeOption | null;
+  pax: number;
+};
+
 export type BuilderDay = {
   id: string;
   dayNumber: number;
   date: string;
   accommodation: string | null;
   accommodationName?: string | null; // Cached name to avoid re-fetching
+  // Used by the pricing engine to pick the right hotel rate rows. Room type
+  // varies per allocation; the board basis is derived from the meals toggles.
+  rooms?: RoomAllocation[];
   destination: string | null;
   destinationName?: string | null; // Cached display name (for non-park destinations)
   destinationLat?: number | null;
@@ -115,6 +128,18 @@ export type BuilderContextType = {
   setPricingRows: React.Dispatch<React.SetStateAction<PricingRow[]>>;
   extras: ExtraOption[];
   setExtras: React.Dispatch<React.SetStateAction<ExtraOption[]>>;
+
+  // Auto-pricing (rate-card driven)
+  useAutoPricing: boolean;
+  setUseAutoPricing: React.Dispatch<React.SetStateAction<boolean>>;
+  vehicleId: string | null;
+  setVehicleId: React.Dispatch<React.SetStateAction<string | null>>;
+  markupPct: number;
+  setMarkupPct: React.Dispatch<React.SetStateAction<number>>;
+  pickupTransferId: string | null;
+  setPickupTransferId: React.Dispatch<React.SetStateAction<string | null>>;
+  dropoffTransferId: string | null;
+  setDropoffTransferId: React.Dispatch<React.SetStateAction<string | null>>;
 
   // Inclusions & Exclusions
   inclusions: string[];

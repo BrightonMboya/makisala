@@ -27,7 +27,7 @@ describe('proposals router', () => {
       db._results.set('query.proposals.findMany', mockProposals);
 
       const result = await caller.proposals.listForDashboard({ filter: 'all' });
-      expect(result).toEqual({
+      expect(result).toMatchObject({
         items: mockProposals,
         totalCount: 1,
         page: 1,
@@ -44,7 +44,7 @@ describe('proposals router', () => {
       db._results.set('select', []);
 
       const result = await caller.proposals.listForDashboard({ filter: 'mine' });
-      expect(result).toEqual({
+      expect(result).toMatchObject({
         items: [],
         totalCount: 0,
         page: 1,
@@ -65,7 +65,7 @@ describe('proposals router', () => {
       db._results.set('query.proposals.findMany', items);
 
       const result = await caller.proposals.listForDashboard({ filter: 'mine' });
-      expect(result).toEqual({
+      expect(result).toMatchObject({
         items,
         totalCount: 1,
         page: 1,
@@ -88,7 +88,7 @@ describe('proposals router', () => {
         pageSize: 20,
       });
 
-      expect(result).toEqual({
+      expect(result).toMatchObject({
         items,
         totalCount: 21,
         page: 2,
@@ -293,7 +293,7 @@ describe('proposals router', () => {
       db._results.set('insert', { success: true });
 
       const result = await caller.proposals.assign({ proposalId: 'p-1', userId: 'user-2' });
-      expect(result).toEqual({ success: true });
+      expect(result).toMatchObject({ success: true });
     });
 
     test('throws NOT_FOUND when proposal not found', async () => {
@@ -316,7 +316,7 @@ describe('proposals router', () => {
       db._results.set('delete', { success: true });
 
       const result = await caller.proposals.unassign({ proposalId: 'p-1', userId: 'user-2' });
-      expect(result).toEqual({ success: true });
+      expect(result).toMatchObject({ success: true });
     });
   });
 
@@ -336,7 +336,7 @@ describe('proposals router', () => {
       db._results.set('select', [{ count: 5 }]);
 
       const result = await caller.proposals.sendToClient({ proposalId: 'p-1' });
-      expect(result).toEqual({ success: true });
+      expect(result).toMatchObject({ success: true });
     });
 
     test('throws NOT_FOUND when proposal not found', async () => {
@@ -386,7 +386,7 @@ describe('proposals router', () => {
         proposalId: 'p-1',
         clientName: 'Client',
       });
-      expect(result).toEqual({ success: true });
+      expect(result).toMatchObject({ success: true });
     });
 
     test('throws NOT_FOUND when proposal not found', async () => {

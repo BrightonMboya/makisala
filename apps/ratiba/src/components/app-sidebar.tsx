@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useState } from 'react';
 import {
+  Calculator,
   FileText,
   LayoutDashboard,
   Library,
@@ -48,6 +49,7 @@ export function AppSidebar({ serverData }: { serverData?: SidebarServerData | nu
   // but initialize from server data to avoid flash
   const { data: orgSettings } = trpc.settings.getOrg.useQuery();
   const { data: userProfile } = trpc.settings.getCurrentUser.useQuery();
+  const { data: isAdmin } = trpc.settings.checkAdmin.useQuery();
 
   // Prefer fresh client data when available, fall back to server-rendered data
   const orgName = orgSettings?.name || serverData?.orgName || '';
@@ -100,12 +102,19 @@ export function AppSidebar({ serverData }: { serverData?: SidebarServerData | nu
       active: pathname?.startsWith('/clients'),
     },
     {
+      icon: Calculator,
+      label: 'Rate Cards',
+      href: '/rate-cards',
+      active: pathname?.startsWith('/rate-cards'),
+      adminOnly: true,
+    },
+    {
       icon: Settings,
       label: 'Settings',
       href: '/settings',
       active: pathname?.startsWith('/settings'),
     },
-  ];
+  ].filter((item) => !('adminOnly' in item && item.adminOnly) || isAdmin);
 
   return (
     <Sidebar collapsible="icon">

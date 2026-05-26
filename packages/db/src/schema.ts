@@ -77,6 +77,27 @@ export const InvitationStatus = pgEnum('invitation_status', [
   'expired',
   'revoked',
 ]);
+
+// ---------- PRICING / RATE CARD ENUMS ----------
+// Declared up here because proposalAccommodations references RoomType / MealPlan,
+// and pgEnum calls are eager at module load.
+export const RoomType = pgEnum('room_type', ['single', 'double', 'triple', 'quad', 'family']);
+export const MealPlan = pgEnum('meal_plan', ['ro', 'bb', 'hb', 'fb', 'ai']);
+// How a hotel rate is charged: per traveler sharing, or a flat price per room.
+export const RateBasis = pgEnum('rate_basis', ['per_person', 'per_room']);
+export const ParkFeeCategory = pgEnum('park_fee_category', [
+  'non_resident_adult',
+  'non_resident_child',
+  'east_african_resident_adult',
+  'east_african_resident_child',
+  'citizen_adult',
+  'citizen_child',
+]);
+export const TransferRateMode = pgEnum('transfer_rate_mode', ['per_vehicle', 'per_pax']);
+export const ParkAncillaryChargeBasis = pgEnum('park_ancillary_charge_basis', [
+  'per_vehicle_per_day',
+  'per_vehicle_once_per_visit',
+]);
 export const pages = pgTable('pages', {
   id: text().primaryKey().notNull(),
   title: text().notNull(),
@@ -671,6 +692,16 @@ export const proposals = pgTable('proposals', {
   exclusions: text('exclusions').array(),
   hidePricing: boolean('hide_pricing').default(false),
   language: text('language').default('en'),
+  // ----- Pricing engine (rate-card-driven) -----
+  useAutoPricing: boolean('use_auto_pricing').default(false).notNull(),
+  vehicleId: uuid('vehicle_id').references((): any => vehicles.id, { onDelete: 'set null' }),
+  markupPct: numeric('markup_pct', { precision: 6, scale: 2 }),
+  pickupTransferRateId: uuid('pickup_transfer_rate_id').references((): any => transferRates.id, {
+    onDelete: 'set null',
+  }),
+  dropoffTransferRateId: uuid('dropoff_transfer_rate_id').references((): any => transferRates.id, {
+    onDelete: 'set null',
+  }),
   organizationId: uuid('organization_id').references(() => organizations.id),
   status: ProposalStatus('status').default('draft').notNull(),
   createdAt: timestamp('created_at', { precision: 3, mode: 'string' })
@@ -711,6 +742,13 @@ export const proposalAccommodations = pgTable('proposal_accommodations', {
   accommodationId: uuid('accommodation_id')
     .notNull()
     .references(() => accommodations.id, { onDelete: 'cascade' }),
+  // Stay-specific fields used by the pricing engine to pick a rate row.
+  // A night can hold several rows (a "room mix"): one per room type, each
+  // carrying how many travelers occupy that room type. mealPlan is uniform
+  // across the night's rows.
+  roomType: RoomType('room_type'),
+  mealPlan: MealPlan('meal_plan'),
+  paxCount: integer('pax_count'),
   createdAt: timestamp('created_at', { precision: 3, mode: 'string' })
     .default(sql`CURRENT_TIMESTAMP`)
     .notNull(),
@@ -1115,3 +1153,264 @@ export type NewActivityLibraryItem = typeof activityLibrary.$inferInsert;
 // Transportation types
 export type ProposalTransportation = typeof proposalTransportation.$inferSelect;
 export type NewProposalTransportation = typeof proposalTransportation.$inferInsert;
+
+// ============================================================
+// PRICING ENGINE / RATE CARDS
+// Org-scoped rate inputs that drive automatic itinerary pricing.
+// (Enums are defined earlier in the file so they can be referenced
+// by proposalAccommodations.)
+// ============================================================
+
+// ---------- SEASONS ----------
+// Each band is one row; a logical season ("High") may span multiple bands.
+export const seasons = pgTable(
+  'seasons',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    organizationId: uuid('organization_id')
+      .notNull()
+      .references(() => organizations.id, { onDelete: 'cascade' }),
+    name: text('name').notNull(),
+    startMonth: integer('start_month').notNull(),
+    startDay: integer('start_day').notNull(),
+    endMonth: integer('end_month').notNull(),
+    endDay: integer('end_day').notNull(),
+    priority: integer('priority').default(0).notNull(),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  },
+  (table) => [index('idx_seasons_org').on(table.organizationId)],
+);
+
+export const seasonsRelations = relations(seasons, ({ one, many }) => ({
+  organization: one(organizations, {
+    fields: [seasons.organizationId],
+    references: [organizations.id],
+  }),
+  accommodationRates: many(accommodationRates),
+  parkFeeRates: many(parkFeeRates),
+}));
+
+// ---------- ACCOMMODATION RATES ----------
+export const accommodationRates = pgTable(
+  'accommodation_rates',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    organizationId: uuid('organization_id')
+      .notNull()
+      .references(() => organizations.id, { onDelete: 'cascade' }),
+    accommodationId: uuid('accommodation_id')
+      .notNull()
+      .references(() => accommodations.id, { onDelete: 'cascade' }),
+    seasonId: uuid('season_id')
+      .notNull()
+      .references(() => seasons.id, { onDelete: 'cascade' }),
+    roomType: RoomType('room_type').notNull(),
+    mealPlan: MealPlan('meal_plan').notNull(),
+    perPaxRate: numeric('per_pax_rate', { precision: 12, scale: 2 }).notNull(),
+    // Whether perPaxRate is charged per traveler or as a flat per-room price.
+    // For per_room rates, maxOccupancy is the room capacity used to derive how
+    // many rooms a given pax count needs. These are set per (hotel, room type).
+    rateBasis: RateBasis('rate_basis').notNull().default('per_person'),
+    maxOccupancy: integer('max_occupancy'),
+    currency: text('currency').notNull().default('USD'),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  },
+  (table) => [
+    uniqueIndex('uniq_accom_rate').on(
+      table.organizationId,
+      table.accommodationId,
+      table.seasonId,
+      table.roomType,
+      table.mealPlan,
+    ),
+    index('idx_accom_rates_org').on(table.organizationId),
+    index('idx_accom_rates_accom').on(table.accommodationId),
+  ],
+);
+
+export const accommodationRatesRelations = relations(accommodationRates, ({ one }) => ({
+  organization: one(organizations, {
+    fields: [accommodationRates.organizationId],
+    references: [organizations.id],
+  }),
+  accommodation: one(accommodations, {
+    fields: [accommodationRates.accommodationId],
+    references: [accommodations.id],
+  }),
+  season: one(seasons, {
+    fields: [accommodationRates.seasonId],
+    references: [seasons.id],
+  }),
+}));
+
+// ---------- PARK FEE RATES ----------
+// seasonId is nullable so operators can store a flat year-round fee.
+export const parkFeeRates = pgTable(
+  'park_fee_rates',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    organizationId: uuid('organization_id')
+      .notNull()
+      .references(() => organizations.id, { onDelete: 'cascade' }),
+    parkId: uuid('park_id')
+      .notNull()
+      .references(() => nationalParks.id, { onDelete: 'cascade' }),
+    seasonId: uuid('season_id').references(() => seasons.id, { onDelete: 'cascade' }),
+    category: ParkFeeCategory('category').notNull(),
+    perPersonRate: numeric('per_person_rate', { precision: 12, scale: 2 }).notNull(),
+    currency: text('currency').notNull().default('USD'),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  },
+  (table) => [
+    index('idx_park_fee_org').on(table.organizationId),
+    index('idx_park_fee_park').on(table.parkId),
+  ],
+);
+
+export const parkFeeRatesRelations = relations(parkFeeRates, ({ one }) => ({
+  organization: one(organizations, {
+    fields: [parkFeeRates.organizationId],
+    references: [organizations.id],
+  }),
+  park: one(nationalParks, {
+    fields: [parkFeeRates.parkId],
+    references: [nationalParks.id],
+  }),
+  season: one(seasons, {
+    fields: [parkFeeRates.seasonId],
+    references: [seasons.id],
+  }),
+}));
+
+export const parkAncillaryFees = pgTable(
+  'park_ancillary_fees',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    organizationId: uuid('organization_id')
+      .notNull()
+      .references(() => organizations.id, { onDelete: 'cascade' }),
+    parkId: uuid('park_id')
+      .notNull()
+      .references(() => nationalParks.id, { onDelete: 'cascade' }),
+    seasonId: uuid('season_id').references(() => seasons.id, { onDelete: 'cascade' }),
+    name: text('name').notNull(),
+    chargeBasis: ParkAncillaryChargeBasis('charge_basis').notNull(),
+    rate: numeric('rate', { precision: 12, scale: 2 }).notNull(),
+    currency: text('currency').notNull().default('USD'),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  },
+  (table) => [
+    index('idx_park_ancillary_org').on(table.organizationId),
+    index('idx_park_ancillary_park').on(table.parkId),
+  ],
+);
+
+export const parkAncillaryFeesRelations = relations(parkAncillaryFees, ({ one }) => ({
+  organization: one(organizations, {
+    fields: [parkAncillaryFees.organizationId],
+    references: [organizations.id],
+  }),
+  park: one(nationalParks, {
+    fields: [parkAncillaryFees.parkId],
+    references: [nationalParks.id],
+  }),
+  season: one(seasons, {
+    fields: [parkAncillaryFees.seasonId],
+    references: [seasons.id],
+  }),
+}));
+
+// ---------- VEHICLES ----------
+// perDayRate is all-in: car + driver + fuel.
+export const vehicles = pgTable(
+  'vehicles',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    organizationId: uuid('organization_id')
+      .notNull()
+      .references(() => organizations.id, { onDelete: 'cascade' }),
+    name: text('name').notNull(),
+    description: text('description'),
+    capacity: integer('capacity').notNull(),
+    perDayRate: numeric('per_day_rate', { precision: 12, scale: 2 }).notNull(),
+    currency: text('currency').notNull().default('USD'),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  },
+  (table) => [index('idx_vehicles_org').on(table.organizationId)],
+);
+
+export const vehiclesRelations = relations(vehicles, ({ one }) => ({
+  organization: one(organizations, {
+    fields: [vehicles.organizationId],
+    references: [organizations.id],
+  }),
+}));
+
+// ---------- TRANSFER RATES ----------
+export const transferRates = pgTable(
+  'transfer_rates',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    organizationId: uuid('organization_id')
+      .notNull()
+      .references(() => organizations.id, { onDelete: 'cascade' }),
+    name: text('name').notNull(),
+    mode: TransferRateMode('mode').notNull(),
+    rate: numeric('rate', { precision: 12, scale: 2 }).notNull(),
+    currency: text('currency').notNull().default('USD'),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  },
+  (table) => [index('idx_transfer_rates_org').on(table.organizationId)],
+);
+
+export const transferRatesRelations = relations(transferRates, ({ one }) => ({
+  organization: one(organizations, {
+    fields: [transferRates.organizationId],
+    references: [organizations.id],
+  }),
+}));
+
+// ---------- PRICING SETTINGS (per org) ----------
+export const pricingSettings = pgTable('pricing_settings', {
+  organizationId: uuid('organization_id')
+    .primaryKey()
+    .references(() => organizations.id, { onDelete: 'cascade' }),
+  defaultMarkupPct: numeric('default_markup_pct', { precision: 6, scale: 2 })
+    .default('30')
+    .notNull(),
+  defaultCurrency: text('default_currency').notNull().default('USD'),
+  defaultTravelerCategory: ParkFeeCategory('default_traveler_category')
+    .notNull()
+    .default('non_resident_adult'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+export const pricingSettingsRelations = relations(pricingSettings, ({ one }) => ({
+  organization: one(organizations, {
+    fields: [pricingSettings.organizationId],
+    references: [organizations.id],
+  }),
+}));
+
+// Rate-card types
+export type Season = typeof seasons.$inferSelect;
+export type NewSeason = typeof seasons.$inferInsert;
+export type AccommodationRate = typeof accommodationRates.$inferSelect;
+export type NewAccommodationRate = typeof accommodationRates.$inferInsert;
+export type ParkFeeRate = typeof parkFeeRates.$inferSelect;
+export type NewParkFeeRate = typeof parkFeeRates.$inferInsert;
+export type ParkAncillaryFee = typeof parkAncillaryFees.$inferSelect;
+export type NewParkAncillaryFee = typeof parkAncillaryFees.$inferInsert;
+export type Vehicle = typeof vehicles.$inferSelect;
+export type NewVehicle = typeof vehicles.$inferInsert;
+export type TransferRate = typeof transferRates.$inferSelect;
+export type NewTransferRate = typeof transferRates.$inferInsert;
+export type PricingSettings = typeof pricingSettings.$inferSelect;
+export type NewPricingSettings = typeof pricingSettings.$inferInsert;

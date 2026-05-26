@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { nationalParks } from '@repo/db/schema';
-import { eq, ilike } from 'drizzle-orm';
+import { and, eq, ilike, isNull } from 'drizzle-orm';
 import { router, publicProcedure, escapeLikeQuery } from '../init';
 
 export const nationalParksRouter = router({
@@ -26,18 +26,24 @@ export const nationalParksRouter = router({
     )
     .query(async ({ ctx, input }) => {
       const trimmed = input.query.trim();
+      const cols = {
+        id: nationalParks.id,
+        name: nationalParks.name,
+        country: nationalParks.country,
+        latitude: nationalParks.latitude,
+        longitude: nationalParks.longitude,
+      };
+
+      const catalogOnly = isNull(nationalParks.overview_page_id);
 
       if (!trimmed) {
-        return ctx.db
-          .select({ id: nationalParks.id, name: nationalParks.name })
-          .from(nationalParks)
-          .limit(input.limit);
+        return ctx.db.select(cols).from(nationalParks).where(catalogOnly).limit(input.limit);
       }
 
       return ctx.db
-        .select({ id: nationalParks.id, name: nationalParks.name })
+        .select(cols)
         .from(nationalParks)
-        .where(ilike(nationalParks.name, `%${escapeLikeQuery(trimmed)}%`))
+        .where(and(ilike(nationalParks.name, `%${escapeLikeQuery(trimmed)}%`), catalogOnly))
         .limit(input.limit);
     }),
 
@@ -47,7 +53,7 @@ export const nationalParksRouter = router({
       return (
         (await ctx.db.query.nationalParks.findFirst({
           where: eq(nationalParks.id, input.id),
-          columns: { id: true, name: true },
+          columns: { id: true, name: true, latitude: true, longitude: true },
         })) ?? null
       );
     }),

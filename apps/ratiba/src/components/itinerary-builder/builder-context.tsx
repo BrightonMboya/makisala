@@ -68,6 +68,13 @@ export function BuilderProvider({
   // Pricing visibility
   const [hidePricing, setHidePricing] = useState(false);
 
+  // Auto-pricing (rate-card driven) — kept in builder state; persistence comes later.
+  const [useAutoPricing, setUseAutoPricing] = useState(false);
+  const [vehicleId, setVehicleId] = useState<string | null>(null);
+  const [markupPct, setMarkupPct] = useState<number>(30);
+  const [pickupTransferId, setPickupTransferId] = useState<string | null>(null);
+  const [dropoffTransferId, setDropoffTransferId] = useState<string | null>(null);
+
   // Theme
   const [selectedTheme, setSelectedTheme] = useState<ThemeType>('minimalistic');
   const [heroImage, setHeroImage] = useState<string>(
@@ -152,6 +159,15 @@ export function BuilderProvider({
       if (initialData.inclusions) setInclusions(initialData.inclusions);
       if (initialData.exclusions) setExclusions(initialData.exclusions);
       if (initialData.hidePricing != null) setHidePricing(initialData.hidePricing);
+
+      // Auto-pricing fields from proposals table
+      if (initialData.useAutoPricing != null) setUseAutoPricing(!!initialData.useAutoPricing);
+      if (initialData.vehicleId !== undefined) setVehicleId(initialData.vehicleId);
+      if (initialData.markupPct != null) setMarkupPct(Number(initialData.markupPct));
+      if (initialData.pickupTransferRateId !== undefined)
+        setPickupTransferId(initialData.pickupTransferRateId);
+      if (initialData.dropoffTransferRateId !== undefined)
+        setDropoffTransferId(initialData.dropoffTransferRateId);
 
       // Add other fields as needed
       if (initialData.theme) setSelectedTheme(initialData.theme);
@@ -239,6 +255,16 @@ export function BuilderProvider({
         setExclusions,
         hidePricing,
         setHidePricing,
+        useAutoPricing,
+        setUseAutoPricing,
+        vehicleId,
+        setVehicleId,
+        markupPct,
+        setMarkupPct,
+        pickupTransferId,
+        setPickupTransferId,
+        dropoffTransferId,
+        setDropoffTransferId,
         selectedTheme,
         setSelectedTheme,
         heroImage,

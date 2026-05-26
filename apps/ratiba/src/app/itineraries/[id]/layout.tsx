@@ -119,6 +119,11 @@ function Header() {
     countries,
     selectedTheme,
     heroImage,
+    useAutoPricing,
+    vehicleId,
+    markupPct,
+    pickupTransferId,
+    dropoffTransferId,
   } = useBuilder();
 
   const params = useParams();
@@ -168,6 +173,11 @@ function Header() {
         countries,
         selectedTheme,
         heroImage,
+        useAutoPricing,
+        vehicleId,
+        markupPct,
+        pickupTransferRateId: pickupTransferId,
+        dropoffTransferRateId: dropoffTransferId,
       };
 
       return await saveProposalMutation.mutateAsync({
@@ -226,6 +236,11 @@ function Header() {
         countries,
         selectedTheme,
         heroImage,
+        useAutoPricing,
+        vehicleId,
+        markupPct,
+        pickupTransferRateId: pickupTransferId,
+        dropoffTransferRateId: dropoffTransferId,
       };
 
       return await saveProposalMutation.mutateAsync({
@@ -569,6 +584,11 @@ function BuilderLayoutInner({ children }: { children: React.ReactNode }) {
 
     // If we have proposal data, use it
     if (proposal) {
+      // Used to back-fill pax for legacy room rows saved before per-room counts.
+      const loadedTotalPax = ((proposal.travelerGroups as any[]) || []).reduce(
+        (sum, g) => sum + (Number(g?.count) || 0),
+        0,
+      );
       data = {
         ...data,
         tourId: proposal.tourId || tourId,
@@ -588,6 +608,11 @@ function BuilderLayoutInner({ children }: { children: React.ReactNode }) {
         inclusions: proposal.inclusions || [],
         exclusions: proposal.exclusions || [],
         hidePricing: (proposal as any).hidePricing || false,
+        useAutoPricing: (proposal as any).useAutoPricing ?? false,
+        vehicleId: (proposal as any).vehicleId ?? null,
+        markupPct: (proposal as any).markupPct ?? null,
+        pickupTransferRateId: (proposal as any).pickupTransferRateId ?? null,
+        dropoffTransferRateId: (proposal as any).dropoffTransferRateId ?? null,
         selectedTheme: proposal.theme || 'minimalistic',
         heroImage: proposal.heroImage || null,
         days: (proposal.days || []).map((day: any) => ({
@@ -603,12 +628,20 @@ function BuilderLayoutInner({ children }: { children: React.ReactNode }) {
                   parseFloat(day.destinationLng),
                   day.destinationName || 'Destination',
                 )
-              : null),
+              : day.destinationName || null),
           destinationName: day.destinationName || null,
           destinationLat: day.destinationLat ? parseFloat(day.destinationLat) : null,
           destinationLng: day.destinationLng ? parseFloat(day.destinationLng) : null,
           accommodation: day.accommodations?.[0]?.accommodationId || null,
           accommodationName: day.accommodations?.[0]?.accommodation?.name || null,
+          // Rebuild the room mix from all rows that have a room type set.
+          // Board basis is derived from the meals toggles, not stored here.
+          rooms: (day.accommodations || [])
+            .filter((a: any) => a.roomType)
+            .map((a: any) => ({
+              roomType: a.roomType,
+              pax: a.paxCount ?? loadedTotalPax,
+            })),
           description: day.description || '',
           previewImage: day.previewImage || undefined,
           meals: {

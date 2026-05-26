@@ -77,9 +77,9 @@ describe('storage router', () => {
 
       const result = await caller.storage.searchAccommodationFolders({ query: 'serena' });
       expect(result).toHaveLength(1);
-      expect(result[0].displayName).toBe('Serena Lodge');
-      expect(result[0].name).toBe('acc-1');
-      expect(result[0].path).toBe('accommodations/acc-1');
+      expect(result[0]!.displayName).toBe('Serena Lodge');
+      expect(result[0]!.name).toBe('acc-1');
+      expect(result[0]!.path).toBe('accommodations/acc-1');
     });
 
     test('rejects query shorter than 2 chars', async () => {

@@ -36,31 +36,41 @@ import {
   Trash2,
   X,
 } from 'lucide-react';
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
 import { ActivityModal } from './activity-modal';
 import { AsyncCombobox } from './async-combobox';
 import { CreatableAsyncCombobox } from './creatable-async-combobox';
 import { Textarea } from '@repo/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@repo/ui/select';
 import { Input } from '@repo/ui/input';
-import type { BuilderActivity, BuilderDay, TransportModeType } from '@/types/itinerary-types';
+import type {
+  BuilderActivity,
+  BuilderDay,
+  RoomAllocation,
+  RoomTypeOption,
+  TransportModeType,
+} from '@/types/itinerary-types';
 import { addDays, format } from 'date-fns';
 import { trpc } from '@/lib/trpc';
-import { buildGeoValue, parseGeoValue, searchPlaces } from '@/lib/geocoding';
+import { parseGeoValue } from '@/lib/geocoding';
 
 type Day = BuilderDay;
 type Activity = BuilderActivity;
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export function DayTable({
   days,
   setDays,
   startDate,
   countries,
+  totalPax = 0,
 }: {
   days: Day[];
   setDays: React.Dispatch<React.SetStateAction<Day[]>>;
   startDate?: Date;
   countries?: string[];
+  totalPax?: number;
 }) {
   const [isActivityModalOpen, setIsActivityModalOpen] = useState(false);
   const [selectedDayId, setSelectedDayId] = useState<string | null>(null);
@@ -197,7 +207,7 @@ export function DayTable({
               <SortableDayRow
                 key={day.id}
                 day={day}
-                countries={countries}
+                totalPax={totalPax}
                 onAddActivity={handleAddActivity}
                 onToggleMeal={handleToggleMeal}
                 onDelete={handleDeleteDay}
@@ -253,7 +263,7 @@ export function DayTable({
 
 function SortableDayRow({
   day,
-  countries,
+  totalPax,
   onAddActivity,
   onToggleMeal,
   onDelete,
@@ -262,7 +272,7 @@ function SortableDayRow({
   onUpdateMultiple,
 }: {
   day: Day;
-  countries?: string[];
+  totalPax: number;
   onAddActivity: (id: string) => void;
   onToggleMeal: (id: string, meal: 'breakfast' | 'lunch' | 'dinner') => void;
   onDelete: (id: string) => void;
@@ -272,13 +282,51 @@ function SortableDayRow({
 }) {
   const utils = trpc.useUtils();
 
+  // Remember id -> name for hotels seen in search so we can store the name on
+  // pick (it shows in the pricing breakdown and avoids a refetch).
+  const accommodationNameCache = useRef<Map<string, string>>(new Map());
+
+  const parkCache = useRef<Map<string, { name: string; lat: number | null; lng: number | null }>>(
+    new Map(),
+  );
+
   // Callbacks for async accommodation search
   const handleAccommodationSearch = useCallback(
     async (query: string) => {
       const results = await utils.accommodations.search.fetch({ query, limit: 10 });
+      results.forEach((acc) => accommodationNameCache.current.set(acc.id, acc.name));
       return results.map((acc) => ({ value: acc.id, label: acc.name }));
     },
     [utils],
+  );
+
+  // Persist both the id and the display name when a hotel is picked (or cleared).
+  const handleAccommodationChange = useCallback(
+    (val: string) => {
+      if (!val) {
+        onUpdateMultiple(day.id, { accommodation: null, accommodationName: null, rooms: [] });
+        return;
+      }
+      const cachedName = accommodationNameCache.current.get(val) ?? null;
+      onUpdateMultiple(day.id, {
+        accommodation: val,
+        accommodationName: cachedName,
+        // Seed a first room row so the night is ready to price.
+        ...((day.rooms?.length ?? 0) === 0
+          ? { rooms: [{ roomType: null, pax: totalPax > 0 ? totalPax : 1 }] }
+          : {}),
+      });
+      // Fallback: resolve the name if it wasn't in the search cache.
+      if (!cachedName) {
+        utils.accommodations.getLookup.fetch({ id: val }).then((acc) => {
+          if (acc?.name) {
+            accommodationNameCache.current.set(val, acc.name);
+            onUpdate(day.id, 'accommodationName', acc.name);
+          }
+        });
+      }
+    },
+    [day.id, day.rooms, totalPax, onUpdate, onUpdateMultiple, utils],
   );
 
   // Only fetch label if we don't already have the accommodation name
@@ -295,27 +343,47 @@ function SortableDayRow({
     [day.accommodationName, utils],
   );
 
-  // Destination search handler
   const handleDestinationSearch = useCallback(
     async (query: string) => {
       if (query.length < 2) return [];
 
-      const results = await searchPlaces(query, countries);
+      const results = await utils.nationalParks.search.fetch({ query, limit: 20 });
 
-      return results.map((r) => ({
-        value: buildGeoValue(r.latitude, r.longitude, r.name),
-        label: r.displayName,
-      }));
+      results.forEach((p) =>
+        parkCache.current.set(p.id, {
+          name: p.name,
+          lat: p.latitude != null ? Number(p.latitude) : null,
+          lng: p.longitude != null ? Number(p.longitude) : null,
+        }),
+      );
+
+      return results.map((p) => ({ value: p.id, label: p.name }));
     },
-    [countries],
+    [utils],
   );
 
-  // Get destination label from stored value
-  const handleGetDestinationLabel = useCallback(async (id: string) => {
-    const geo = parseGeoValue(id);
-    if (geo) return geo.name;
-    return id;
-  }, []);
+  const handleGetDestinationLabel = useCallback(
+    async (id: string) => {
+      if (UUID_RE.test(id)) {
+        const cached = parkCache.current.get(id);
+        if (cached) return cached.name;
+        const park = await utils.nationalParks.getById.fetch({ id });
+        if (park) {
+          parkCache.current.set(id, {
+            name: park.name,
+            lat: park.latitude != null ? Number(park.latitude) : null,
+            lng: park.longitude != null ? Number(park.longitude) : null,
+          });
+          return park.name;
+        }
+        return null;
+      }
+      const geo = parseGeoValue(id);
+      if (geo) return geo.name;
+      return id;
+    },
+    [utils],
+  );
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: day.id,
   });
@@ -362,6 +430,33 @@ function SortableDayRow({
     opacity: isDragging ? 0.5 : 1,
   };
 
+  // ----- Room mix (per night) -----
+  const rooms = day.rooms ?? [];
+  const assignedPax = rooms.reduce((sum, r) => sum + (Number(r.pax) || 0), 0);
+  const paxMatches = totalPax > 0 && assignedPax === totalPax;
+
+  const updateRoom = (index: number, patch: Partial<RoomAllocation>) => {
+    onUpdate(
+      day.id,
+      'rooms',
+      rooms.map((r, i) => (i === index ? { ...r, ...patch } : r)),
+    );
+  };
+  const addRoom = () => {
+    const remaining = totalPax - assignedPax;
+    onUpdate(day.id, 'rooms', [
+      ...rooms,
+      { roomType: null, pax: remaining > 0 ? remaining : 1 },
+    ]);
+  };
+  const removeRoom = (index: number) => {
+    onUpdate(
+      day.id,
+      'rooms',
+      rooms.filter((_, i) => i !== index),
+    );
+  };
+
   return (
     <div
       ref={setNodeRef}
@@ -389,13 +484,91 @@ function SortableDayRow({
           <div className="space-y-2">
             <AsyncCombobox
               value={day.accommodation}
-              onChange={(val) => onUpdate(day.id, 'accommodation', val)}
+              onChange={handleAccommodationChange}
               onSearch={handleAccommodationSearch}
               onGetLabel={handleGetAccommodationLabel}
               initialLabel={day.accommodationName}
               placeholder="Search accommodation..."
               className="w-full"
             />
+            {day.accommodation && (
+              <div className="space-y-2">
+                {/* Room mix — one row per room type, with how many travelers in each.
+                    Board basis is taken from the Meal Plan (B/L/D) column. */}
+                <div>
+                  <div className="mb-0.5 flex items-center justify-between">
+                    <label className="block text-[10px] font-medium uppercase tracking-wide text-stone-500">
+                      Rooms
+                    </label>
+                    {totalPax > 0 && (
+                      <span
+                        className={`text-[10px] font-medium ${
+                          paxMatches ? 'text-stone-400' : 'text-amber-600'
+                        }`}
+                        title="Travelers assigned to rooms vs. total travelers"
+                      >
+                        {assignedPax}/{totalPax} pax
+                      </span>
+                    )}
+                  </div>
+                  <div className="space-y-1">
+                    {rooms.map((room, idx) => (
+                      <div key={idx} className="flex items-center gap-1">
+                        <select
+                          value={room.roomType ?? ''}
+                          onChange={(e) =>
+                            updateRoom(idx, {
+                              roomType: (e.target.value || null) as RoomTypeOption | null,
+                            })
+                          }
+                          className={`h-8 min-w-0 flex-1 rounded-md border bg-white px-2 text-xs ${
+                            room.roomType
+                              ? 'border-stone-200 text-stone-700'
+                              : 'border-amber-300 bg-amber-50 text-amber-800'
+                          }`}
+                          title="Room type"
+                        >
+                          <option value="">Room…</option>
+                          <option value="single">Single</option>
+                          <option value="double">Double</option>
+                          <option value="triple">Triple</option>
+                          <option value="quad">Quad</option>
+                          <option value="family">Family</option>
+                        </select>
+                        <input
+                          type="number"
+                          min={1}
+                          value={room.pax || ''}
+                          onChange={(e) =>
+                            updateRoom(idx, { pax: parseInt(e.target.value, 10) || 0 })
+                          }
+                          className="h-8 w-12 shrink-0 rounded-md border border-stone-200 bg-white px-1 text-center text-xs text-stone-700"
+                          title="Travelers in this room type"
+                        />
+                        {rooms.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => removeRoom(idx)}
+                            className="shrink-0 rounded p-1 text-stone-400 hover:bg-stone-100 hover:text-stone-600"
+                            title="Remove room type"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={addRoom}
+                    className="mt-1 flex items-center gap-1 text-[11px] font-medium text-green-600 hover:text-green-700"
+                  >
+                    <Plus className="h-3 w-3" />
+                    Add room type
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -404,19 +577,37 @@ function SortableDayRow({
           <CreatableAsyncCombobox
             value={day.destination}
             onChange={(val) => {
-              const geo = parseGeoValue(val);
-              if (geo) {
+              if (!val) {
                 onUpdateMultiple(day.id, {
-                  destination: val,
-                  destinationName: geo.name,
-                  destinationLat: geo.lat,
-                  destinationLng: geo.lng,
-                });
-              } else {
-                // Custom text — clear geo coords
-                onUpdateMultiple(day.id, {
-                  destination: val,
+                  destination: null,
                   destinationName: null,
+                  destinationLat: null,
+                  destinationLng: null,
+                });
+                return;
+              }
+              if (UUID_RE.test(val)) {
+                const cached = parkCache.current.get(val);
+                onUpdateMultiple(day.id, {
+                  destination: val,
+                  destinationName: cached?.name ?? day.destinationName ?? null,
+                  destinationLat: cached?.lat ?? null,
+                  destinationLng: cached?.lng ?? null,
+                });
+                if (!cached) {
+                  handleGetDestinationLabel(val).then((name) => {
+                    const resolved = parkCache.current.get(val);
+                    onUpdateMultiple(day.id, {
+                      destinationName: name ?? null,
+                      destinationLat: resolved?.lat ?? null,
+                      destinationLng: resolved?.lng ?? null,
+                    });
+                  });
+                }
+              } else {
+                onUpdateMultiple(day.id, {
+                  destination: val,
+                  destinationName: val,
                   destinationLat: null,
                   destinationLng: null,
                 });
@@ -425,7 +616,7 @@ function SortableDayRow({
             onSearch={handleDestinationSearch}
             onGetLabel={handleGetDestinationLabel}
             initialLabel={day.destinationName}
-            placeholder="Select Destination"
+            placeholder="Search parks or type a destination"
             createLabel="Use"
           />
         </div>

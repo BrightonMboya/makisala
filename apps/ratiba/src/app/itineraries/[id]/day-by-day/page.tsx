@@ -42,7 +42,10 @@ export default function DayByDayPage() {
     country,
     countries,
     setCountries,
+    travelerGroups,
   } = useBuilder();
+
+  const totalPax = travelerGroups.reduce((sum, g) => sum + g.count, 0);
 
   const searchCities = useCallback(
     async (query: string) => {
@@ -215,6 +218,7 @@ export default function DayByDayPage() {
           setDays={setDays}
           startDate={startDate}
           countries={countries.length > 0 ? countries : country ? [country] : undefined}
+          totalPax={totalPax}
         />
       </div>
 
