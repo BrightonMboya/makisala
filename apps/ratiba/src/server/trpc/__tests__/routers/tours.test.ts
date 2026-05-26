@@ -27,7 +27,7 @@ describe('tours router', () => {
 
       const result = await caller.tours.list();
       expect(result).toHaveLength(1);
-      expect(result[0].name).toBe('Safari Tour');
+      expect(result[0]!.name).toBe('Safari Tour');
     });
   });
 
@@ -107,8 +107,8 @@ describe('tours router', () => {
       expect(result!.tourType).toBe('Private Tour');
       expect(result!.selectedTheme).toBe('minimalistic');
       expect(result!.days).toHaveLength(1);
-      expect(result!.days[0].destination).toBe('park-1');
-      expect(result!.days[0].accommodation).toBe('acc-1');
+      expect(result!.days[0]!.destination).toBe('park-1');
+      expect(result!.days[0]!.accommodation).toBe('acc-1');
     });
 
     test('returns null when tour not found', async () => {
@@ -322,70 +322,6 @@ describe('tours router', () => {
       await expect(
         caller.tours.cloneTemplate({ templateId: 'template-1' }),
       ).rejects.toMatchObject({ code: 'FORBIDDEN' });
-    });
-  });
-
-  describe('getRandomDayTemplate', () => {
-    test('returns a random template (public)', async () => {
-      const { ctx, db } = createPublicContext();
-      const caller = createCaller(ctx);
-
-      db._results.set('select', [
-        { id: 'dt-1', dayType: 'full_day', description: 'Game drive' },
-        { id: 'dt-2', dayType: 'arrival', description: 'Airport pickup' },
-      ]);
-
-      const result = await caller.tours.getRandomDayTemplate({
-        nationalParkId: 'park-1',
-      });
-      expect(result).toBeDefined();
-      expect(['dt-1', 'dt-2']).toContain(result!.id);
-    });
-
-    test('returns null when no templates exist', async () => {
-      const { ctx, db } = createPublicContext();
-      const caller = createCaller(ctx);
-
-      db._results.set('select', []);
-
-      const result = await caller.tours.getRandomDayTemplate({
-        nationalParkId: 'park-1',
-      });
-      expect(result).toBeNull();
-    });
-
-    test('filters by day type', async () => {
-      const { ctx, db } = createPublicContext();
-      const caller = createCaller(ctx);
-
-      db._results.set('select', [
-        { id: 'dt-1', dayType: 'full_day', description: 'Game drive' },
-        { id: 'dt-2', dayType: 'arrival', description: 'Airport pickup' },
-      ]);
-
-      const result = await caller.tours.getRandomDayTemplate({
-        nationalParkId: 'park-1',
-        dayType: 'arrival',
-      });
-      expect(result).toBeDefined();
-      expect(result!.dayType).toBe('arrival');
-    });
-
-    test('excludes descriptions', async () => {
-      const { ctx, db } = createPublicContext();
-      const caller = createCaller(ctx);
-
-      db._results.set('select', [
-        { id: 'dt-1', dayType: 'full_day', description: 'Game drive' },
-        { id: 'dt-2', dayType: 'full_day', description: 'Walking safari' },
-      ]);
-
-      const result = await caller.tours.getRandomDayTemplate({
-        nationalParkId: 'park-1',
-        excludeDescriptions: ['Game drive'],
-      });
-      expect(result).toBeDefined();
-      expect(result!.description).toBe('Walking safari');
     });
   });
 

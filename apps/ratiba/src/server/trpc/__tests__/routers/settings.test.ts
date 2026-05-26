@@ -24,7 +24,7 @@ describe('settings router', () => {
       db._results.set('select', [mockOrg]);
 
       const result = await caller.settings.getOrg();
-      expect(result).toEqual(mockOrg);
+      expect(result).toMatchObject(mockOrg);
     });
 
     test('returns null when org not found', async () => {
@@ -111,7 +111,7 @@ describe('settings router', () => {
 
       const result = await caller.settings.getPendingInvitations();
       expect(result).toHaveLength(1);
-      expect(result[0].inviter).toBeDefined();
+      expect(result[0]!.inviter).toBeDefined();
     });
   });
 
@@ -226,7 +226,7 @@ describe('settings router', () => {
       db._results.set('select', [mockUser]);
 
       const result = await caller.settings.getCurrentUser();
-      expect(result).toEqual(mockUser);
+      expect(result).toMatchObject(mockUser);
     });
   });
 

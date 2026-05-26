@@ -31,7 +31,7 @@ describe('contentLibrary router', () => {
         query: '',
       });
       expect(result.accommodations).toHaveLength(1);
-      expect(result.accommodations[0].imageUrl).toContain('img.webp');
+      expect(result.accommodations[0]!.imageUrl).toContain('img.webp');
       expect(result.pagination.page).toBe(1);
     });
 
@@ -45,7 +45,7 @@ describe('contentLibrary router', () => {
       db._results.set('select', [{ count: 1 }]);
 
       const result = await caller.contentLibrary.getAccommodationsWithStatus();
-      expect(result.accommodations[0].imageUrl).toBeNull();
+      expect(result.accommodations[0]!.imageUrl).toBeNull();
     });
   });
 
@@ -69,7 +69,7 @@ describe('contentLibrary router', () => {
 
       const result = await caller.contentLibrary.getOrgImages();
       expect(result.images).toHaveLength(1);
-      expect(result.images[0].url).toContain('photo.webp');
+      expect(result.images[0]!.url).toContain('photo.webp');
       expect(result.nextCursor).toBeNull();
     });
 

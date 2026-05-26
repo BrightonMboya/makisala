@@ -130,7 +130,7 @@ describe('accommodations router', () => {
 
       const result = await caller.accommodations.getAll();
       expect(result).toHaveLength(1);
-      expect(result[0].images[0].url).toContain('accommodations/acc-1/img.webp');
+      expect(result[0]!.images[0]!.url).toContain('accommodations/acc-1/img.webp');
     });
   });
 

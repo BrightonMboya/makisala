@@ -35,13 +35,13 @@ describe('comments router', () => {
 
       const result = await caller.comments.list({ proposalId: 'prop-1' });
       expect(result).toHaveLength(1);
-      expect(result[0].posX).toBe(10.5);
-      expect(result[0].posY).toBe(20.3);
-      expect(result[0].width).toBe(100);
-      expect(result[0].height).toBeUndefined();
-      expect(result[0].userName).toBe('John');
-      expect(result[0].replies).toHaveLength(1);
-      expect(result[0].replies[0].userName).toBe('Jane');
+      expect(result[0]!.posX).toBe(10.5);
+      expect(result[0]!.posY).toBe(20.3);
+      expect(result[0]!.width).toBe(100);
+      expect(result[0]!.height).toBeUndefined();
+      expect(result[0]!.userName).toBe('John');
+      expect(result[0]!.replies).toHaveLength(1);
+      expect(result[0]!.replies[0]!.userName).toBe('Jane');
     });
 
     test('returns empty array when no comments', async () => {
@@ -74,7 +74,7 @@ describe('comments router', () => {
       ]);
 
       const result = await caller.comments.list({ proposalId: 'prop-1' });
-      expect(result[0].userName).toBe('Guest User');
+      expect(result[0]!.userName).toBe('Guest User');
     });
   });
 
