@@ -94,6 +94,10 @@ export const ParkFeeCategory = pgEnum('park_fee_category', [
   'citizen_child',
 ]);
 export const TransferRateMode = pgEnum('transfer_rate_mode', ['per_vehicle', 'per_pax']);
+export const ParkAncillaryChargeBasis = pgEnum('park_ancillary_charge_basis', [
+  'per_vehicle_per_day',
+  'per_vehicle_once_per_visit',
+]);
 export const pages = pgTable('pages', {
   id: text().primaryKey().notNull(),
   title: text().notNull(),
@@ -1281,6 +1285,45 @@ export const parkFeeRatesRelations = relations(parkFeeRates, ({ one }) => ({
   }),
 }));
 
+export const parkAncillaryFees = pgTable(
+  'park_ancillary_fees',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    organizationId: uuid('organization_id')
+      .notNull()
+      .references(() => organizations.id, { onDelete: 'cascade' }),
+    parkId: uuid('park_id')
+      .notNull()
+      .references(() => nationalParks.id, { onDelete: 'cascade' }),
+    seasonId: uuid('season_id').references(() => seasons.id, { onDelete: 'cascade' }),
+    name: text('name').notNull(),
+    chargeBasis: ParkAncillaryChargeBasis('charge_basis').notNull(),
+    rate: numeric('rate', { precision: 12, scale: 2 }).notNull(),
+    currency: text('currency').notNull().default('USD'),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  },
+  (table) => [
+    index('idx_park_ancillary_org').on(table.organizationId),
+    index('idx_park_ancillary_park').on(table.parkId),
+  ],
+);
+
+export const parkAncillaryFeesRelations = relations(parkAncillaryFees, ({ one }) => ({
+  organization: one(organizations, {
+    fields: [parkAncillaryFees.organizationId],
+    references: [organizations.id],
+  }),
+  park: one(nationalParks, {
+    fields: [parkAncillaryFees.parkId],
+    references: [nationalParks.id],
+  }),
+  season: one(seasons, {
+    fields: [parkAncillaryFees.seasonId],
+    references: [seasons.id],
+  }),
+}));
+
 // ---------- VEHICLES ----------
 // perDayRate is all-in: car + driver + fuel.
 export const vehicles = pgTable(
@@ -1363,6 +1406,8 @@ export type AccommodationRate = typeof accommodationRates.$inferSelect;
 export type NewAccommodationRate = typeof accommodationRates.$inferInsert;
 export type ParkFeeRate = typeof parkFeeRates.$inferSelect;
 export type NewParkFeeRate = typeof parkFeeRates.$inferInsert;
+export type ParkAncillaryFee = typeof parkAncillaryFees.$inferSelect;
+export type NewParkAncillaryFee = typeof parkAncillaryFees.$inferInsert;
 export type Vehicle = typeof vehicles.$inferSelect;
 export type NewVehicle = typeof vehicles.$inferInsert;
 export type TransferRate = typeof transferRates.$inferSelect;

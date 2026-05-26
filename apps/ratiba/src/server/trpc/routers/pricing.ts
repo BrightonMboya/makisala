@@ -1,6 +1,8 @@
 import { z } from 'zod';
 import {
   accommodationRates,
+  nationalParks,
+  parkAncillaryFees,
   parkFeeRates,
   pricingSettings,
   seasons,
@@ -41,6 +43,7 @@ const dayInputSchema = z.object({
   mealPlan: z.enum(MEAL_PLANS).nullable(),
   rooms: z.array(roomNightSchema).default([]),
   parkId: z.string().uuid().nullable(),
+  destinationName: z.string().nullish(),
 });
 
 const computeInputSchema = z.object({
@@ -59,14 +62,43 @@ export const pricingRouter = router({
     const orgId = ctx.orgId;
 
     // Load all rate-card data in parallel. Cheap reads, all org-scoped.
-    const [seasonRows, accomRows, parkRows, vehicleRows, transferRows, settingsRow] =
-      await Promise.all([
+    const [
+      seasonRows,
+      accomRows,
+      parkRows,
+      parkAncillaryRows,
+      vehicleRows,
+      transferRows,
+      settingsRow,
+    ] = await Promise.all([
         ctx.db.select().from(seasons).where(eq(seasons.organizationId, orgId)),
         ctx.db
           .select()
           .from(accommodationRates)
           .where(eq(accommodationRates.organizationId, orgId)),
-        ctx.db.select().from(parkFeeRates).where(eq(parkFeeRates.organizationId, orgId)),
+        ctx.db
+          .select({
+            parkId: parkFeeRates.parkId,
+            parkName: nationalParks.name,
+            seasonId: parkFeeRates.seasonId,
+            category: parkFeeRates.category,
+            perPersonRate: parkFeeRates.perPersonRate,
+          })
+          .from(parkFeeRates)
+          .leftJoin(nationalParks, eq(nationalParks.id, parkFeeRates.parkId))
+          .where(eq(parkFeeRates.organizationId, orgId)),
+        ctx.db
+          .select({
+            parkId: parkAncillaryFees.parkId,
+            parkName: nationalParks.name,
+            seasonId: parkAncillaryFees.seasonId,
+            name: parkAncillaryFees.name,
+            chargeBasis: parkAncillaryFees.chargeBasis,
+            rate: parkAncillaryFees.rate,
+          })
+          .from(parkAncillaryFees)
+          .leftJoin(nationalParks, eq(nationalParks.id, parkAncillaryFees.parkId))
+          .where(eq(parkAncillaryFees.organizationId, orgId)),
         ctx.db.select().from(vehicles).where(eq(vehicles.organizationId, orgId)),
         ctx.db.select().from(transferRates).where(eq(transferRates.organizationId, orgId)),
         ctx.db
@@ -89,6 +121,7 @@ export const pricingRouter = router({
             pax: r.pax,
           })),
           parkId: d.parkId,
+          destinationName: d.destinationName ?? null,
         }),
       ),
       pax: input.pax,
@@ -119,9 +152,18 @@ export const pricingRouter = router({
       })),
       parkFeeRates: parkRows.map((r) => ({
         parkId: r.parkId,
+        parkName: r.parkName ?? '',
         seasonId: r.seasonId,
         category: r.category,
         perPersonRate: Number(r.perPersonRate),
+      })),
+      parkAncillaryFees: parkAncillaryRows.map((r) => ({
+        parkId: r.parkId,
+        parkName: r.parkName ?? '',
+        seasonId: r.seasonId,
+        name: r.name,
+        chargeBasis: r.chargeBasis,
+        rate: Number(r.rate),
       })),
       vehicles: vehicleRows.map((v) => ({
         id: v.id,

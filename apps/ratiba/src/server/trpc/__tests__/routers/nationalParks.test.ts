@@ -12,8 +12,8 @@ describe('nationalParks router', () => {
       const caller = createCaller(ctx);
 
       const mockParks = [
-        { id: 'park-1', name: 'Serengeti', overview_page_id: null, latitude: '-2.33', longitude: '34.83', park_overview: 'Great migration' },
-        { id: 'park-2', name: 'Ngorongoro', overview_page_id: null, latitude: '-3.17', longitude: '35.58', park_overview: 'Crater' },
+        { id: 'park-1', name: 'Serengeti', overview_page_id: null, latitude: '-2.33', longitude: '34.83', park_overview: null },
+        { id: 'park-2', name: 'Ngorongoro', overview_page_id: null, latitude: '-3.17', longitude: '35.58', park_overview: null },
       ];
       db._results.set('select', mockParks);
 
@@ -36,10 +36,13 @@ describe('nationalParks router', () => {
       const { ctx, db } = createPublicContext();
       const caller = createCaller(ctx);
 
-      db._results.set('select', [{ id: 'park-1', name: 'Serengeti' }]);
+      const match = [
+        { id: 'park-1', name: 'Serengeti', country: 'Tanzania', latitude: '-2.33', longitude: '34.83' },
+      ];
+      db._results.set('select', match);
 
       const result = await caller.nationalParks.search({ query: 'seren', limit: 10 });
-      expect(result).toEqual([{ id: 'park-1', name: 'Serengeti' }]);
+      expect(result).toEqual(match);
     });
 
     test('returns all parks when query is empty', async () => {
@@ -47,8 +50,8 @@ describe('nationalParks router', () => {
       const caller = createCaller(ctx);
 
       const mockParks = [
-        { id: 'park-1', name: 'Serengeti' },
-        { id: 'park-2', name: 'Ngorongoro' },
+        { id: 'park-1', name: 'Serengeti', country: 'Tanzania', latitude: '-2.33', longitude: '34.83' },
+        { id: 'park-2', name: 'Ngorongoro', country: 'Tanzania', latitude: '-3.17', longitude: '35.58' },
       ];
       db._results.set('select', mockParks);
 
@@ -71,10 +74,11 @@ describe('nationalParks router', () => {
       const { ctx, db } = createPublicContext();
       const caller = createCaller(ctx);
 
-      db._results.set('query.nationalParks.findFirst', { id: 'park-1', name: 'Serengeti' });
+      const park = { id: 'park-1', name: 'Serengeti', latitude: '-2.33', longitude: '34.83' };
+      db._results.set('query.nationalParks.findFirst', park);
 
       const result = await caller.nationalParks.getById({ id: 'park-1' });
-      expect(result).toEqual({ id: 'park-1', name: 'Serengeti' });
+      expect(result).toEqual(park);
     });
 
     test('returns null when park not found', async () => {

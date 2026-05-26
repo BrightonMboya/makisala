@@ -137,6 +137,7 @@ export default function PricingPage() {
         )
           ? d.destination
           : null,
+      destinationName: d.destinationName ?? null,
     }));
   }, [days, startDate]);
 
@@ -181,8 +182,12 @@ export default function PricingPage() {
   );
   const extrasTotal = extras.filter((e) => e.selected).reduce((acc, e) => acc + e.price, 0);
   const autoSellTotal = computeQuery.data?.sellTotal ?? 0;
-  const tripTotal = useAutoPricing && computeQuery.data ? autoSellTotal : manualRowsTotal;
-  const grandTotal = tripTotal + extrasTotal;
+  const tripTotal: number | null = useAutoPricing
+    ? computeQuery.data
+      ? autoSellTotal
+      : null
+    : manualRowsTotal;
+  const grandTotal = tripTotal == null ? null : tripTotal + extrasTotal;
 
   return (
     <div className="mx-auto max-w-7xl space-y-8 px-6 pb-20">
@@ -194,9 +199,16 @@ export default function PricingPage() {
         </div>
         <div className="flex items-center gap-4 rounded-lg border border-stone-200 bg-white px-4 py-2 text-sm shadow-sm">
           <span className="font-bold text-stone-700">Total Quote Value:</span>
-          <span className="text-xl font-bold text-green-700">
-            $ {grandTotal.toLocaleString('en-US', { minimumFractionDigits: 2 })}
-          </span>
+          {grandTotal == null ? (
+            <span className="flex items-center gap-2 text-sm font-medium text-stone-400">
+              <Calculator className="h-3.5 w-3.5 animate-pulse" />
+              Computing…
+            </span>
+          ) : (
+            <span className="text-xl font-bold text-green-700">
+              $ {grandTotal.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+            </span>
+          )}
         </div>
       </div>
 
@@ -762,6 +774,7 @@ const WARNING_FIX: Record<
   no_season: { tab: 'seasons', label: 'Add season band' },
   missing_hotel_rate: { tab: 'hotels', label: 'Add hotel rate' },
   missing_park_fee: { tab: 'parks', label: 'Add park fee' },
+  missing_park_ancillary_no_vehicle: { tab: 'vehicles', label: 'Select vehicle' },
   missing_vehicle: { tab: 'vehicles', label: 'Check vehicle' },
   missing_transfer: { tab: 'transfers', label: 'Check transfer' },
 };

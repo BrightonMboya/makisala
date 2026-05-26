@@ -3,6 +3,7 @@ import {
   seasons,
   accommodationRates,
   parkFeeRates,
+  parkAncillaryFees,
   vehicles,
   transferRates,
   pricingSettings,
@@ -25,6 +26,7 @@ const PARK_FEE_CATEGORIES = [
   'citizen_child',
 ] as const;
 const TRANSFER_MODES = ['per_vehicle', 'per_pax'] as const;
+const ANCILLARY_CHARGE_BASES = ['per_vehicle_per_day', 'per_vehicle_once_per_visit'] as const;
 
 // ----- helpers -----
 const monthDay = z.object({
@@ -387,6 +389,104 @@ const parkFeeRatesRouter = router({
     }),
 });
 
+const parkAncillaryFeesRouter = router({
+  listByPark: protectedProcedure
+    .input(z.object({ parkId: z.string().uuid() }))
+    .query(({ ctx, input }) =>
+      ctx.db
+        .select()
+        .from(parkAncillaryFees)
+        .where(
+          and(
+            eq(parkAncillaryFees.organizationId, ctx.orgId),
+            eq(parkAncillaryFees.parkId, input.parkId),
+          ),
+        )
+        .orderBy(asc(parkAncillaryFees.name)),
+    ),
+
+  listAll: protectedProcedure.query(({ ctx }) =>
+    ctx.db
+      .select({
+        id: parkAncillaryFees.id,
+        parkId: parkAncillaryFees.parkId,
+        parkName: nationalParks.name,
+        seasonId: parkAncillaryFees.seasonId,
+        name: parkAncillaryFees.name,
+        chargeBasis: parkAncillaryFees.chargeBasis,
+        rate: parkAncillaryFees.rate,
+        currency: parkAncillaryFees.currency,
+      })
+      .from(parkAncillaryFees)
+      .leftJoin(nationalParks, eq(nationalParks.id, parkAncillaryFees.parkId))
+      .where(eq(parkAncillaryFees.organizationId, ctx.orgId)),
+  ),
+
+  create: adminProcedure
+    .input(
+      z.object({
+        parkId: z.string().uuid(),
+        seasonId: z.string().uuid().nullable().optional(),
+        name: z.string().min(1).max(120),
+        chargeBasis: z.enum(ANCILLARY_CHARGE_BASES),
+        rate: z.number().nonnegative(),
+        currency: z.string().length(3).default('USD'),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const [row] = await ctx.db
+        .insert(parkAncillaryFees)
+        .values({
+          ...input,
+          seasonId: input.seasonId ?? null,
+          rate: String(input.rate),
+          organizationId: ctx.orgId,
+        })
+        .returning();
+      return row;
+    }),
+
+  update: adminProcedure
+    .input(
+      z.object({
+        id: z.string().uuid(),
+        seasonId: z.string().uuid().nullable().optional(),
+        name: z.string().min(1).max(120).optional(),
+        chargeBasis: z.enum(ANCILLARY_CHARGE_BASES).optional(),
+        rate: z.number().nonnegative().optional(),
+        currency: z.string().length(3).optional(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const { id, rate, ...rest } = input;
+      const patch: Record<string, unknown> = { ...rest, updatedAt: new Date() };
+      if (rate !== undefined) patch.rate = String(rate);
+      const [row] = await ctx.db
+        .update(parkAncillaryFees)
+        .set(patch)
+        .where(
+          and(eq(parkAncillaryFees.id, id), eq(parkAncillaryFees.organizationId, ctx.orgId)),
+        )
+        .returning();
+      if (!row) throw new TRPCError({ code: 'NOT_FOUND' });
+      return row;
+    }),
+
+  delete: adminProcedure
+    .input(z.object({ id: z.string().uuid() }))
+    .mutation(async ({ ctx, input }) => {
+      await ctx.db
+        .delete(parkAncillaryFees)
+        .where(
+          and(
+            eq(parkAncillaryFees.id, input.id),
+            eq(parkAncillaryFees.organizationId, ctx.orgId),
+          ),
+        );
+      return { ok: true };
+    }),
+});
+
 // ----- vehicles -----
 const vehiclesRouter = router({
   list: protectedProcedure.query(({ ctx }) =>
@@ -565,6 +665,7 @@ export const rateCardsRouter = router({
   seasons: seasonsRouter,
   accommodationRates: accommodationRatesRouter,
   parkFeeRates: parkFeeRatesRouter,
+  parkAncillaryFees: parkAncillaryFeesRouter,
   vehicles: vehiclesRouter,
   transferRates: transferRatesRouter,
   settings: settingsRouter,

@@ -78,7 +78,7 @@ export function VehiclesTab() {
                     <tr>
                       <th className="px-3 py-2 text-left">Name</th>
                       <th className="px-3 py-2 text-left">Description</th>
-                      <th className="w-16 px-3 py-2 text-left">Pax</th>
+                      <th className="w-20 px-3 py-2 text-left">Pax</th>
                       <th className="w-28 px-3 py-2 text-right">$ / day</th>
                       <th className="w-10 px-3 py-2" />
                     </tr>

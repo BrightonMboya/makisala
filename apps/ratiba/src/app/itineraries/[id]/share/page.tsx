@@ -77,6 +77,13 @@ export default function SharePage() {
     exclusions,
     selectedTheme,
     heroImage,
+    hidePricing,
+    countries,
+    useAutoPricing,
+    vehicleId,
+    markupPct,
+    pickupTransferId,
+    dropoffTransferId,
   } = useBuilder();
 
   const [activeTab, setActiveTab] = useState<'edit' | 'preview'>('edit');
@@ -160,6 +167,13 @@ export default function SharePage() {
         exclusions,
         selectedTheme,
         heroImage,
+        hidePricing,
+        countries,
+        useAutoPricing,
+        vehicleId,
+        markupPct,
+        pickupTransferRateId: pickupTransferId,
+        dropoffTransferRateId: dropoffTransferId,
       };
 
       return await saveProposalMutation.mutateAsync({

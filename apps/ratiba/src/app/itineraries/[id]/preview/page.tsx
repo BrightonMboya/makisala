@@ -72,6 +72,11 @@ export default function PreviewPage() {
     setSelectedTheme,
     heroImage,
     setHeroImage,
+    useAutoPricing,
+    vehicleId,
+    markupPct,
+    pickupTransferId,
+    dropoffTransferId,
   } = useBuilder();
 
   const router = useRouter();
@@ -220,6 +225,11 @@ export default function PreviewPage() {
         countries,
         selectedTheme,
         heroImage,
+        useAutoPricing,
+        vehicleId,
+        markupPct,
+        pickupTransferRateId: pickupTransferId,
+        dropoffTransferRateId: dropoffTransferId,
       };
 
       return await saveProposalMutation.mutateAsync({

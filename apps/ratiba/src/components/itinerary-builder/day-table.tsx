@@ -52,10 +52,12 @@ import type {
 } from '@/types/itinerary-types';
 import { addDays, format } from 'date-fns';
 import { trpc } from '@/lib/trpc';
-import { buildGeoValue, parseGeoValue, searchPlaces } from '@/lib/geocoding';
+import { parseGeoValue } from '@/lib/geocoding';
 
 type Day = BuilderDay;
 type Activity = BuilderActivity;
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export function DayTable({
   days,
@@ -205,7 +207,6 @@ export function DayTable({
               <SortableDayRow
                 key={day.id}
                 day={day}
-                countries={countries}
                 totalPax={totalPax}
                 onAddActivity={handleAddActivity}
                 onToggleMeal={handleToggleMeal}
@@ -262,7 +263,6 @@ export function DayTable({
 
 function SortableDayRow({
   day,
-  countries,
   totalPax,
   onAddActivity,
   onToggleMeal,
@@ -272,7 +272,6 @@ function SortableDayRow({
   onUpdateMultiple,
 }: {
   day: Day;
-  countries?: string[];
   totalPax: number;
   onAddActivity: (id: string) => void;
   onToggleMeal: (id: string, meal: 'breakfast' | 'lunch' | 'dinner') => void;
@@ -286,6 +285,10 @@ function SortableDayRow({
   // Remember id -> name for hotels seen in search so we can store the name on
   // pick (it shows in the pricing breakdown and avoids a refetch).
   const accommodationNameCache = useRef<Map<string, string>>(new Map());
+
+  const parkCache = useRef<Map<string, { name: string; lat: number | null; lng: number | null }>>(
+    new Map(),
+  );
 
   // Callbacks for async accommodation search
   const handleAccommodationSearch = useCallback(
@@ -340,27 +343,47 @@ function SortableDayRow({
     [day.accommodationName, utils],
   );
 
-  // Destination search handler
   const handleDestinationSearch = useCallback(
     async (query: string) => {
       if (query.length < 2) return [];
 
-      const results = await searchPlaces(query, countries);
+      const results = await utils.nationalParks.search.fetch({ query, limit: 20 });
 
-      return results.map((r) => ({
-        value: buildGeoValue(r.latitude, r.longitude, r.name),
-        label: r.displayName,
-      }));
+      results.forEach((p) =>
+        parkCache.current.set(p.id, {
+          name: p.name,
+          lat: p.latitude != null ? Number(p.latitude) : null,
+          lng: p.longitude != null ? Number(p.longitude) : null,
+        }),
+      );
+
+      return results.map((p) => ({ value: p.id, label: p.name }));
     },
-    [countries],
+    [utils],
   );
 
-  // Get destination label from stored value
-  const handleGetDestinationLabel = useCallback(async (id: string) => {
-    const geo = parseGeoValue(id);
-    if (geo) return geo.name;
-    return id;
-  }, []);
+  const handleGetDestinationLabel = useCallback(
+    async (id: string) => {
+      if (UUID_RE.test(id)) {
+        const cached = parkCache.current.get(id);
+        if (cached) return cached.name;
+        const park = await utils.nationalParks.getById.fetch({ id });
+        if (park) {
+          parkCache.current.set(id, {
+            name: park.name,
+            lat: park.latitude != null ? Number(park.latitude) : null,
+            lng: park.longitude != null ? Number(park.longitude) : null,
+          });
+          return park.name;
+        }
+        return null;
+      }
+      const geo = parseGeoValue(id);
+      if (geo) return geo.name;
+      return id;
+    },
+    [utils],
+  );
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: day.id,
   });
@@ -554,19 +577,37 @@ function SortableDayRow({
           <CreatableAsyncCombobox
             value={day.destination}
             onChange={(val) => {
-              const geo = parseGeoValue(val);
-              if (geo) {
+              if (!val) {
                 onUpdateMultiple(day.id, {
-                  destination: val,
-                  destinationName: geo.name,
-                  destinationLat: geo.lat,
-                  destinationLng: geo.lng,
-                });
-              } else {
-                // Custom text — clear geo coords
-                onUpdateMultiple(day.id, {
-                  destination: val,
+                  destination: null,
                   destinationName: null,
+                  destinationLat: null,
+                  destinationLng: null,
+                });
+                return;
+              }
+              if (UUID_RE.test(val)) {
+                const cached = parkCache.current.get(val);
+                onUpdateMultiple(day.id, {
+                  destination: val,
+                  destinationName: cached?.name ?? day.destinationName ?? null,
+                  destinationLat: cached?.lat ?? null,
+                  destinationLng: cached?.lng ?? null,
+                });
+                if (!cached) {
+                  handleGetDestinationLabel(val).then((name) => {
+                    const resolved = parkCache.current.get(val);
+                    onUpdateMultiple(day.id, {
+                      destinationName: name ?? null,
+                      destinationLat: resolved?.lat ?? null,
+                      destinationLng: resolved?.lng ?? null,
+                    });
+                  });
+                }
+              } else {
+                onUpdateMultiple(day.id, {
+                  destination: val,
+                  destinationName: val,
                   destinationLat: null,
                   destinationLng: null,
                 });
@@ -575,7 +616,7 @@ function SortableDayRow({
             onSearch={handleDestinationSearch}
             onGetLabel={handleGetDestinationLabel}
             initialLabel={day.destinationName}
-            placeholder="Select Destination"
+            placeholder="Search parks or type a destination"
             createLabel="Use"
           />
         </div>

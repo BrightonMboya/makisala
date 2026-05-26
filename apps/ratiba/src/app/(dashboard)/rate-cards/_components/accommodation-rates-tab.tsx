@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { Button } from '@repo/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@repo/ui/card';
 import { toast } from '@repo/ui/toast';
@@ -75,12 +75,7 @@ export function AccommodationRatesTab() {
     return [...map.entries()].map(([id, name]) => ({ id, name }));
   }, [allRates]);
 
-  // Default-select the first hotel once data is in.
-  useEffect(() => {
-    if (!selected && hotelsWithRates.length > 0) {
-      setSelected(hotelsWithRates[0]!);
-    }
-  }, [hotelsWithRates, selected]);
+  const active = selected ?? hotelsWithRates[0] ?? null;
 
   const pills = useMemo(() => {
     const list = [...hotelsWithRates];
@@ -90,14 +85,14 @@ export function AccommodationRatesTab() {
 
   const { data: rates = [], isLoading: ratesLoading } =
     trpc.rateCards.accommodationRates.listByAccommodation.useQuery(
-      { accommodationId: selected?.id ?? '' },
-      { enabled: !!selected },
+      { accommodationId: active?.id ?? '' },
+      { enabled: !!active },
     );
 
   const invalidate = () => {
-    if (selected) {
+    if (active) {
       utils.rateCards.accommodationRates.listByAccommodation.invalidate({
-        accommodationId: selected.id,
+        accommodationId: active.id,
       });
     }
     utils.rateCards.accommodationRates.listAll.invalidate();
@@ -135,16 +130,16 @@ export function AccommodationRatesTab() {
   const changeBasis = (rt: RoomType, basis: RateBasis) => {
     const maxOccupancy = basis === 'per_room' ? cfgFor(rt).maxOccupancy : null;
     setRoomConfig((p) => ({ ...p, [rt]: { basis, maxOccupancy } }));
-    if (selected && rtHasRows(rt)) {
-      setBasis.mutate({ accommodationId: selected.id, roomType: rt, rateBasis: basis, maxOccupancy });
+    if (active && rtHasRows(rt)) {
+      setBasis.mutate({ accommodationId: active.id, roomType: rt, rateBasis: basis, maxOccupancy });
     }
   };
 
   const changeCapacity = (rt: RoomType, maxOccupancy: number | null) => {
     setRoomConfig((p) => ({ ...p, [rt]: { basis: 'per_room', maxOccupancy } }));
-    if (selected && rtHasRows(rt)) {
+    if (active && rtHasRows(rt)) {
       setBasis.mutate({
-        accommodationId: selected.id,
+        accommodationId: active.id,
         roomType: rt,
         rateBasis: 'per_room',
         maxOccupancy,
@@ -218,7 +213,7 @@ export function AccommodationRatesTab() {
   }, [rows]);
 
   const commitCell = (ids: string[], rt: RoomType, mp: MealPlan, raw: string) => {
-    if (!selected) return;
+    if (!active) return;
     const value = Number(raw);
     const isEmpty = raw.trim() === '' || !value || value <= 0;
 
@@ -232,7 +227,7 @@ export function AccommodationRatesTab() {
       } else {
         const cfg = cfgFor(rt);
         create.mutate({
-          accommodationId: selected.id,
+          accommodationId: active.id,
           seasonId,
           roomType: rt,
           mealPlan: mp,
@@ -280,7 +275,7 @@ export function AccommodationRatesTab() {
               onClick={() => selectHotel(h.id, h.name)}
               className={cn(
                 'rounded-full border px-3 py-1.5 text-sm transition-colors',
-                selected?.id === h.id
+                active?.id === h.id
                   ? 'border-emerald-300 bg-emerald-50 font-medium text-emerald-900'
                   : 'border-stone-200 text-stone-600 hover:border-stone-300 hover:bg-stone-50',
               )}
@@ -332,7 +327,7 @@ export function AccommodationRatesTab() {
           )}
         </div>
 
-        {!selected && (
+        {!active && (
           <div className="rounded-md border border-dashed border-stone-200 px-4 py-10 text-center">
             <p className="text-sm text-stone-500">
               Add a hotel to start recording its rates.
@@ -340,19 +335,19 @@ export function AccommodationRatesTab() {
           </div>
         )}
 
-        {selected && seasons.length === 0 && (
+        {active && seasons.length === 0 && (
           <div className="rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
             Define your seasons first (Seasons &amp; Defaults). Hotel rates are stored per season.
           </div>
         )}
 
-        {selected && seasons.length > 0 && ratesLoading && (
+        {active && seasons.length > 0 && ratesLoading && (
           <div className="flex items-center justify-center gap-2 rounded-md border border-stone-200 py-12 text-sm text-stone-500">
             <Loader2 className="h-4 w-4 animate-spin" /> Loading rates…
           </div>
         )}
 
-        {selected && seasons.length > 0 && !ratesLoading && (
+        {active && seasons.length > 0 && !ratesLoading && (
           <div className="space-y-3">
             <div className="overflow-x-auto rounded-md border border-stone-200">
               <table className="w-full border-collapse text-sm">

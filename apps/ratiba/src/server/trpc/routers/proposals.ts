@@ -44,6 +44,11 @@ interface BuilderData {
   inclusions?: string[] | null;
   exclusions?: string[] | null;
   hidePricing?: boolean;
+  useAutoPricing?: boolean | null;
+  vehicleId?: string | null;
+  markupPct?: number | string | null;
+  pickupTransferRateId?: string | null;
+  dropoffTransferRateId?: string | null;
   days?: BuilderDay[];
 }
 
@@ -248,6 +253,11 @@ export const proposalsRouter = router({
           inclusions: true,
           exclusions: true,
           hidePricing: true,
+          useAutoPricing: true,
+          vehicleId: true,
+          markupPct: true,
+          pickupTransferRateId: true,
+          dropoffTransferRateId: true,
           theme: true,
           heroImage: true,
           language: true,
@@ -374,6 +384,14 @@ export const proposalsRouter = router({
         inclusions: builderData.inclusions || null,
         exclusions: builderData.exclusions || null,
         hidePricing: builderData.hidePricing || false,
+        useAutoPricing: builderData.useAutoPricing ?? false,
+        vehicleId: builderData.vehicleId ?? null,
+        markupPct:
+          builderData.markupPct == null || builderData.markupPct === ''
+            ? null
+            : String(builderData.markupPct),
+        pickupTransferRateId: builderData.pickupTransferRateId ?? null,
+        dropoffTransferRateId: builderData.dropoffTransferRateId ?? null,
         status: input.status || 'draft',
         updatedAt: new Date().toISOString(),
       };
@@ -407,6 +425,11 @@ export const proposalsRouter = router({
             inclusions: proposalData.inclusions || null,
             exclusions: proposalData.exclusions || null,
             hidePricing: proposalData.hidePricing || false,
+            useAutoPricing: proposalData.useAutoPricing,
+            vehicleId: proposalData.vehicleId,
+            markupPct: proposalData.markupPct,
+            pickupTransferRateId: proposalData.pickupTransferRateId,
+            dropoffTransferRateId: proposalData.dropoffTransferRateId,
             status: proposalData.status || 'draft',
             updatedAt: new Date().toISOString(),
           })
@@ -432,6 +455,12 @@ export const proposalsRouter = router({
               countries: proposalData.countries || null,
               inclusions: proposalData.inclusions || null,
               exclusions: proposalData.exclusions || null,
+              hidePricing: proposalData.hidePricing || false,
+              useAutoPricing: proposalData.useAutoPricing,
+              vehicleId: proposalData.vehicleId,
+              markupPct: proposalData.markupPct,
+              pickupTransferRateId: proposalData.pickupTransferRateId,
+              dropoffTransferRateId: proposalData.dropoffTransferRateId,
               status: proposalData.status || 'draft',
               updatedAt: new Date().toISOString(),
             },
@@ -811,6 +840,11 @@ export const proposalsRouter = router({
           inclusions: original.inclusions,
           exclusions: original.exclusions,
           hidePricing: original.hidePricing,
+          useAutoPricing: original.useAutoPricing,
+          vehicleId: original.vehicleId,
+          markupPct: original.markupPct,
+          pickupTransferRateId: original.pickupTransferRateId,
+          dropoffTransferRateId: original.dropoffTransferRateId,
           status: 'draft',
         });
 

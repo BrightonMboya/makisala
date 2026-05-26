@@ -61,9 +61,21 @@ export interface AccommodationRate {
 
 export interface ParkFeeRate {
   parkId: string;
+  parkName: string;
   seasonId: string | null;
   category: ParkFeeCategory;
   perPersonRate: number;
+}
+
+export type ParkAncillaryChargeBasis = 'per_vehicle_per_day' | 'per_vehicle_once_per_visit';
+
+export interface ParkAncillaryFeeRate {
+  parkId: string;
+  parkName: string;
+  seasonId: string | null;
+  name: string;
+  chargeBasis: ParkAncillaryChargeBasis;
+  rate: number;
 }
 
 export interface VehicleRate {
@@ -92,6 +104,7 @@ export interface ItineraryDayInput {
   mealPlan: MealPlan | null;
   rooms: RoomNight[];
   parkId: string | null;
+  destinationName?: string | null;
 }
 
 export interface PricingInput {
@@ -108,6 +121,7 @@ export interface PricingInput {
   seasons: SeasonBand[];
   accommodationRates: AccommodationRate[];
   parkFeeRates: ParkFeeRate[];
+  parkAncillaryFees: ParkAncillaryFeeRate[];
   vehicles: VehicleRate[];
   transferRates: TransferRate[];
 }
@@ -129,6 +143,7 @@ export type WarningKind =
   | 'no_season'
   | 'missing_hotel_rate'
   | 'missing_park_fee'
+  | 'missing_park_ancillary_no_vehicle'
   | 'missing_vehicle'
   | 'missing_transfer';
 
@@ -170,6 +185,28 @@ export function resolveSeason(date: Date, seasons: SeasonBand[]): SeasonBand | n
 }
 
 const num = (n: number) => Math.round(n * 100) / 100;
+
+function normalizeParkName(s: string): string {
+  return s
+    .toLowerCase()
+    .trim()
+    .replace(/\b(national\s+park|conservation\s+area|national\s+reserve|game\s+reserve)\b/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function resolveParkIdByName(
+  destinationName: string,
+  parkFeeRates: ParkFeeRate[],
+): string | null {
+  const target = normalizeParkName(destinationName);
+  if (!target) return null;
+  for (const r of parkFeeRates) {
+    if (!r.parkName) continue;
+    if (normalizeParkName(r.parkName) === target) return r.parkId;
+  }
+  return null;
+}
 
 export function computePricing(input: PricingInput): PricingBreakdown {
   const { pax, markupPct, currency } = input;
@@ -267,21 +304,27 @@ export function computePricing(input: PricingInput): PricingBreakdown {
     }
   }
 
-  // ---------- Park fee lines (per day) ----------
-  for (const day of input.days) {
-    if (!day.parkId) continue;
+  const daysWithParkId = input.days.map((day) => {
+    const parkId =
+      day.parkId ??
+      (day.destinationName ? resolveParkIdByName(day.destinationName, input.parkFeeRates) : null);
+    return { day, parkId };
+  });
+
+  for (const { day, parkId } of daysWithParkId) {
+    if (!parkId) continue;
     const season = resolveSeason(day.date, input.seasons);
     // park fees: season-specific row preferred, fall back to season-less (year-round)
     const rate =
       input.parkFeeRates.find(
         (r) =>
-          r.parkId === day.parkId &&
+          r.parkId === parkId &&
           r.category === input.travelerCategory &&
           r.seasonId === (season?.id ?? null),
       ) ??
       input.parkFeeRates.find(
         (r) =>
-          r.parkId === day.parkId && r.category === input.travelerCategory && r.seasonId === null,
+          r.parkId === parkId && r.category === input.travelerCategory && r.seasonId === null,
       );
     if (!rate) {
       warnings.push({
@@ -291,14 +334,63 @@ export function computePricing(input: PricingInput): PricingBreakdown {
       });
       continue;
     }
+    const parkLabel = rate.parkName?.trim() || day.destinationName?.trim() || 'Park fee';
     lineItems.push({
-      label: `Park fee (Day ${day.dayNumber})`,
+      label: `${parkLabel} (Day ${day.dayNumber})`,
       dayNumber: day.dayNumber,
       quantity: pax,
       unitCost: rate.perPersonRate,
       totalCost: num(rate.perPersonRate * pax),
       source: 'park_fee',
     });
+  }
+
+  if (input.parkAncillaryFees.length > 0) {
+    const hasVehicle = !!input.vehicleId;
+    const dayCountByPark = new Map<string, number>();
+    const firstDayByPark = new Map<string, (typeof daysWithParkId)[number]>();
+    for (const entry of daysWithParkId) {
+      if (!entry.parkId) continue;
+      dayCountByPark.set(entry.parkId, (dayCountByPark.get(entry.parkId) ?? 0) + 1);
+      if (!firstDayByPark.has(entry.parkId)) firstDayByPark.set(entry.parkId, entry);
+    }
+
+    const feesByPark = new Map<string, ParkAncillaryFeeRate[]>();
+    for (const fee of input.parkAncillaryFees) {
+      const list = feesByPark.get(fee.parkId) ?? [];
+      list.push(fee);
+      feesByPark.set(fee.parkId, list);
+    }
+
+    for (const [parkId, dayCount] of dayCountByPark) {
+      const fees = feesByPark.get(parkId);
+      const firstFee = fees?.[0];
+      if (!fees || !firstFee) continue;
+      if (!hasVehicle) {
+        warnings.push({
+          kind: 'missing_park_ancillary_no_vehicle',
+          message: `${firstFee.parkName || 'Park'}: vehicle-based fees skipped (no vehicle selected)`,
+        });
+        continue;
+      }
+      const firstEntry = firstDayByPark.get(parkId);
+      if (!firstEntry) continue;
+      for (const fee of fees) {
+        const occurrences = fee.chargeBasis === 'per_vehicle_per_day' ? dayCount : 1;
+        const totalCost = num(fee.rate * occurrences);
+        lineItems.push({
+          label:
+            fee.chargeBasis === 'per_vehicle_per_day'
+              ? `${fee.parkName || 'Park'} — ${fee.name} (${occurrences} day${occurrences === 1 ? '' : 's'})`
+              : `${fee.parkName || 'Park'} — ${fee.name}`,
+          dayNumber: firstEntry.day.dayNumber,
+          quantity: pax,
+          unitCost: pax > 0 ? num(totalCost / pax) : 0,
+          totalCost,
+          source: 'park_fee',
+        });
+      }
+    }
   }
 
   // ---------- Vehicle (one line, all days) ----------

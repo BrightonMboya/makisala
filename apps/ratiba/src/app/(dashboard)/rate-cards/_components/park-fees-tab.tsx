@@ -1,12 +1,20 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { Button } from '@repo/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@repo/ui/card';
-import { Loader2, Plus, X } from 'lucide-react';
+import { Loader2, Plus, Trash2, X } from 'lucide-react';
 import { trpc } from '@/lib/trpc';
 import { cn } from '@/lib/utils';
 import { AsyncCombobox } from '@/components/itinerary-builder/async-combobox';
+
+const ANCILLARY_BASES = ['per_vehicle_per_day', 'per_vehicle_once_per_visit'] as const;
+type AncillaryBasis = (typeof ANCILLARY_BASES)[number];
+
+const ANCILLARY_BASIS_LABEL: Record<AncillaryBasis, string> = {
+  per_vehicle_per_day: 'Per vehicle, per day',
+  per_vehicle_once_per_visit: 'Per vehicle, once per visit',
+};
 
 const CATEGORIES = [
   'non_resident_adult',
@@ -54,9 +62,7 @@ export function ParkFeesTab() {
     return [...map.entries()].map(([id, name]) => ({ id, name }));
   }, [allRates]);
 
-  useEffect(() => {
-    if (!selected && parksWithRates.length > 0) setSelected(parksWithRates[0]!);
-  }, [parksWithRates, selected]);
+  const active = selected ?? parksWithRates[0] ?? null;
 
   const pills = useMemo(() => {
     const list = [...parksWithRates];
@@ -66,18 +72,47 @@ export function ParkFeesTab() {
 
   const { data: rates = [], isLoading: ratesLoading } =
     trpc.rateCards.parkFeeRates.listByPark.useQuery(
-      { parkId: selected?.id ?? '' },
-      { enabled: !!selected },
+      { parkId: active?.id ?? '' },
+      { enabled: !!active },
     );
 
   const invalidate = () => {
-    if (selected) utils.rateCards.parkFeeRates.listByPark.invalidate({ parkId: selected.id });
+    if (active) utils.rateCards.parkFeeRates.listByPark.invalidate({ parkId: active.id });
     utils.rateCards.parkFeeRates.listAll.invalidate();
   };
 
   const create = trpc.rateCards.parkFeeRates.create.useMutation({ onSuccess: invalidate });
   const update = trpc.rateCards.parkFeeRates.update.useMutation({ onSuccess: invalidate });
   const remove = trpc.rateCards.parkFeeRates.delete.useMutation({ onSuccess: invalidate });
+
+  const { data: ancillaryFees = [] } = trpc.rateCards.parkAncillaryFees.listByPark.useQuery(
+    { parkId: active?.id ?? '' },
+    { enabled: !!active },
+  );
+  const invalidateAncillary = () => {
+    if (active) utils.rateCards.parkAncillaryFees.listByPark.invalidate({ parkId: active.id });
+    utils.rateCards.parkAncillaryFees.listAll.invalidate();
+  };
+  const createAncillary = trpc.rateCards.parkAncillaryFees.create.useMutation({
+    onSuccess: invalidateAncillary,
+  });
+  const updateAncillary = trpc.rateCards.parkAncillaryFees.update.useMutation({
+    onSuccess: invalidateAncillary,
+  });
+  const removeAncillary = trpc.rateCards.parkAncillaryFees.delete.useMutation({
+    onSuccess: invalidateAncillary,
+  });
+
+  const addAncillary = (basis: AncillaryBasis) => {
+    if (!active) return;
+    createAncillary.mutate({
+      parkId: active.id,
+      name:
+        basis === 'per_vehicle_per_day' ? 'Vehicle entry fee' : 'Crater descent fee',
+      chargeBasis: basis,
+      rate: 0,
+    });
+  };
 
   const rateMap = useMemo(() => {
     const m = new Map<string, { id: string; perPersonRate: number }>();
@@ -127,7 +162,7 @@ export function ParkFeesTab() {
   };
 
   const commitCell = (ids: (string | null)[], category: Category, raw: string) => {
-    if (!selected) return;
+    if (!active) return;
     const value = Number(raw);
     const isEmpty = raw.trim() === '' || !value || value <= 0;
     // Fan the value out to every band that shares this season name.
@@ -139,7 +174,7 @@ export function ParkFeesTab() {
         if (value !== existing.perPersonRate)
           update.mutate({ id: existing.id, perPersonRate: value });
       } else {
-        create.mutate({ parkId: selected.id, seasonId, category, perPersonRate: value });
+        create.mutate({ parkId: active.id, seasonId, category, perPersonRate: value });
       }
     }
   };
@@ -162,7 +197,7 @@ export function ParkFeesTab() {
               onClick={() => selectPark(p.id, p.name)}
               className={cn(
                 'rounded-full border px-3 py-1.5 text-sm transition-colors',
-                selected?.id === p.id
+                active?.id === p.id
                   ? 'border-emerald-300 bg-emerald-50 font-medium text-emerald-900'
                   : 'border-stone-200 text-stone-600 hover:border-stone-300 hover:bg-stone-50',
               )}
@@ -214,19 +249,19 @@ export function ParkFeesTab() {
           )}
         </div>
 
-        {!selected && (
+        {!active && (
           <div className="rounded-md border border-dashed border-stone-200 px-4 py-10 text-center">
             <p className="text-sm text-stone-500">Add a park to start recording its fees.</p>
           </div>
         )}
 
-        {selected && ratesLoading && (
+        {active && ratesLoading && (
           <div className="flex items-center justify-center gap-2 rounded-md border border-stone-200 py-12 text-sm text-stone-500">
             <Loader2 className="h-4 w-4 animate-spin" /> Loading fees…
           </div>
         )}
 
-        {selected && !ratesLoading && (
+        {active && !ratesLoading && (
           <div className="space-y-3">
             <div className="overflow-x-auto rounded-md border border-stone-200">
               <table className="w-full border-collapse text-sm">
@@ -283,6 +318,115 @@ export function ParkFeesTab() {
               The engine applies your default traveler category (set in Seasons &amp; Defaults) to
               every traveler for now. Per-traveler overrides land in a later release.
             </p>
+
+            <div className="space-y-3 border-t border-stone-100 pt-5">
+              <div>
+                <h3 className="text-sm font-semibold text-stone-800">Other fees</h3>
+                <p className="text-xs text-stone-500">
+                  Per-vehicle add-ons charged on top of the per-person entry. The crater descent
+                  fees, NCAA gate fees and the like. Leave empty for parks that don&apos;t have
+                  them.
+                </p>
+              </div>
+
+              {ancillaryFees.length > 0 && (
+                <div className="overflow-hidden rounded-md border border-stone-200">
+                  <table className="w-full text-sm">
+                    <thead className="bg-stone-50 text-xs font-semibold uppercase tracking-wide text-stone-500">
+                      <tr>
+                        <th className="px-3 py-2 text-left">Name</th>
+                        <th className="w-56 px-3 py-2 text-left">Charge basis</th>
+                        <th className="w-28 px-3 py-2 text-right">Rate</th>
+                        <th className="w-10 px-3 py-2" />
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-stone-100">
+                      {ancillaryFees.map((fee) => (
+                        <tr key={fee.id}>
+                          <td className="px-3 py-2">
+                            <input
+                              defaultValue={fee.name}
+                              onBlur={(e) => {
+                                if (e.target.value.trim() && e.target.value !== fee.name) {
+                                  updateAncillary.mutate({ id: fee.id, name: e.target.value });
+                                }
+                              }}
+                              className="h-9 w-full rounded-md border border-stone-200 bg-white px-3 text-sm focus:border-emerald-400 focus:outline-none"
+                            />
+                          </td>
+                          <td className="px-3 py-2">
+                            <select
+                              value={fee.chargeBasis}
+                              onChange={(e) =>
+                                updateAncillary.mutate({
+                                  id: fee.id,
+                                  chargeBasis: e.target.value as AncillaryBasis,
+                                })
+                              }
+                              className="h-9 w-full rounded-md border border-stone-200 bg-white px-2 text-sm focus:border-emerald-400 focus:outline-none"
+                            >
+                              {ANCILLARY_BASES.map((b) => (
+                                <option key={b} value={b}>
+                                  {ANCILLARY_BASIS_LABEL[b]}
+                                </option>
+                              ))}
+                            </select>
+                          </td>
+                          <td className="px-3 py-2">
+                            <div className="relative">
+                              <span className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-xs text-stone-400">
+                                $
+                              </span>
+                              <input
+                                key={fee.rate}
+                                type="number"
+                                min={0}
+                                defaultValue={Number(fee.rate)}
+                                onBlur={(e) => {
+                                  const next = Number(e.target.value) || 0;
+                                  if (next !== Number(fee.rate)) {
+                                    updateAncillary.mutate({ id: fee.id, rate: next });
+                                  }
+                                }}
+                                className="h-9 w-full rounded-md border border-stone-200 bg-white pl-5 pr-2 text-right text-sm tabular-nums focus:border-emerald-400 focus:outline-none"
+                              />
+                            </div>
+                          </td>
+                          <td className="px-3 py-2 text-right">
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              onClick={() => removeAncillary.mutate({ id: fee.id })}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+              <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={() => addAncillary('per_vehicle_per_day')}
+                  disabled={createAncillary.isPending}
+                  className="flex items-center gap-1 rounded-md border border-dashed border-stone-300 px-3 py-1.5 text-xs text-stone-600 hover:border-stone-400 hover:bg-stone-50"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  Per-vehicle, per-day fee
+                </button>
+                <button
+                  onClick={() => addAncillary('per_vehicle_once_per_visit')}
+                  disabled={createAncillary.isPending}
+                  className="flex items-center gap-1 rounded-md border border-dashed border-stone-300 px-3 py-1.5 text-xs text-stone-600 hover:border-stone-400 hover:bg-stone-50"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  One-time visit fee
+                </button>
+              </div>
+            </div>
           </div>
         )}
       </CardContent>
