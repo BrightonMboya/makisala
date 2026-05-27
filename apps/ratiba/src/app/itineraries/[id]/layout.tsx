@@ -651,6 +651,7 @@ function BuilderLayoutInner({ children }: { children: React.ReactNode }) {
           },
           activities: (day.activities || []).map((act: any) => ({
             id: act.id,
+            libraryId: act.activityLibraryId ?? null,
             name: act.name,
             description: act.description,
             location: act.location,

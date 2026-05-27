@@ -20,13 +20,20 @@ export function TransfersTab() {
     onSuccess: () => {
       utils.rateCards.transferRates.list.invalidate();
       setIsAdding(false);
+      toast({ title: 'Transfer added' });
     },
   });
   const update = trpc.rateCards.transferRates.update.useMutation({
-    onSuccess: () => utils.rateCards.transferRates.list.invalidate(),
+    onSuccess: () => {
+      utils.rateCards.transferRates.list.invalidate();
+      toast({ title: 'Transfer updated' });
+    },
   });
   const remove = trpc.rateCards.transferRates.delete.useMutation({
-    onSuccess: () => utils.rateCards.transferRates.list.invalidate(),
+    onSuccess: () => {
+      utils.rateCards.transferRates.list.invalidate();
+      toast({ title: 'Transfer removed' });
+    },
   });
 
   const [isAdding, setIsAdding] = useState(false);

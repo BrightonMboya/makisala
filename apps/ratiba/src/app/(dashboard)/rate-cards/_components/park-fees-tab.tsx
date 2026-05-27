@@ -3,6 +3,7 @@
 import { useMemo, useRef, useState } from 'react';
 import { Button } from '@repo/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@repo/ui/card';
+import { toast } from '@repo/ui/toast';
 import { Loader2, Plus, Trash2, X } from 'lucide-react';
 import { trpc } from '@/lib/trpc';
 import { cn } from '@/lib/utils';
@@ -81,9 +82,24 @@ export function ParkFeesTab() {
     utils.rateCards.parkFeeRates.listAll.invalidate();
   };
 
-  const create = trpc.rateCards.parkFeeRates.create.useMutation({ onSuccess: invalidate });
-  const update = trpc.rateCards.parkFeeRates.update.useMutation({ onSuccess: invalidate });
-  const remove = trpc.rateCards.parkFeeRates.delete.useMutation({ onSuccess: invalidate });
+  const create = trpc.rateCards.parkFeeRates.create.useMutation({
+    onSuccess: () => {
+      invalidate();
+      toast({ title: 'Park fee saved' });
+    },
+  });
+  const update = trpc.rateCards.parkFeeRates.update.useMutation({
+    onSuccess: () => {
+      invalidate();
+      toast({ title: 'Park fee updated' });
+    },
+  });
+  const remove = trpc.rateCards.parkFeeRates.delete.useMutation({
+    onSuccess: () => {
+      invalidate();
+      toast({ title: 'Park fee removed' });
+    },
+  });
 
   const { data: ancillaryFees = [] } = trpc.rateCards.parkAncillaryFees.listByPark.useQuery(
     { parkId: active?.id ?? '' },
@@ -94,13 +110,22 @@ export function ParkFeesTab() {
     utils.rateCards.parkAncillaryFees.listAll.invalidate();
   };
   const createAncillary = trpc.rateCards.parkAncillaryFees.create.useMutation({
-    onSuccess: invalidateAncillary,
+    onSuccess: () => {
+      invalidateAncillary();
+      toast({ title: 'Ancillary fee added' });
+    },
   });
   const updateAncillary = trpc.rateCards.parkAncillaryFees.update.useMutation({
-    onSuccess: invalidateAncillary,
+    onSuccess: () => {
+      invalidateAncillary();
+      toast({ title: 'Ancillary fee updated' });
+    },
   });
   const removeAncillary = trpc.rateCards.parkAncillaryFees.delete.useMutation({
-    onSuccess: invalidateAncillary,
+    onSuccess: () => {
+      invalidateAncillary();
+      toast({ title: 'Ancillary fee removed' });
+    },
   });
 
   const addAncillary = (basis: AncillaryBasis) => {

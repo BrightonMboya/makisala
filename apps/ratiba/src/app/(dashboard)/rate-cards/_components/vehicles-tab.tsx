@@ -20,13 +20,20 @@ export function VehiclesTab() {
     onSuccess: () => {
       utils.rateCards.vehicles.list.invalidate();
       setIsAdding(false);
+      toast({ title: 'Vehicle added' });
     },
   });
   const update = trpc.rateCards.vehicles.update.useMutation({
-    onSuccess: () => utils.rateCards.vehicles.list.invalidate(),
+    onSuccess: () => {
+      utils.rateCards.vehicles.list.invalidate();
+      toast({ title: 'Vehicle updated' });
+    },
   });
   const remove = trpc.rateCards.vehicles.delete.useMutation({
-    onSuccess: () => utils.rateCards.vehicles.list.invalidate(),
+    onSuccess: () => {
+      utils.rateCards.vehicles.list.invalidate();
+      toast({ title: 'Vehicle removed' });
+    },
   });
 
   const [isAdding, setIsAdding] = useState(false);

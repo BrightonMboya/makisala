@@ -9,7 +9,7 @@ import {
   ChevronUp,
   Image as ImageIcon,
 } from 'lucide-react';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import type { BuilderActivity as Activity } from '@/types/itinerary-types';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@repo/ui/select';
 import { Input } from '@repo/ui/input';
@@ -58,16 +58,58 @@ export function ActivityModal({
   const utils = trpc.useUtils();
   const createActivityMutation = trpc.activities.create.useMutation();
 
-  // Activity search handler
+  const libraryCacheRef = useRef<
+    Map<string, { name: string; locationName: string | null; latitude: number | null; longitude: number | null }>
+  >(new Map());
+
+  const resolveActivityById = useCallback(
+    async (id: string) => {
+      const cached = libraryCacheRef.current.get(id);
+      if (cached) return cached;
+      const a = await utils.activities.getById.fetch({ id });
+      if (!a) return null;
+      const next = {
+        name: a.name,
+        locationName: a.locationName,
+        latitude: a.latitude != null ? Number(a.latitude) : null,
+        longitude: a.longitude != null ? Number(a.longitude) : null,
+      };
+      libraryCacheRef.current.set(id, next);
+      return next;
+    },
+    [utils],
+  );
+
   const handleActivitySearch = useCallback(async (query: string) => {
     const results = await utils.activities.search.fetch({ query, limit: 10 });
-    return results.map((a) => ({ value: a.name, label: a.name }));
+    results.forEach((a) =>
+      libraryCacheRef.current.set(a.id, {
+        name: a.name,
+        locationName: null,
+        latitude: null,
+        longitude: null,
+      }),
+    );
+    return results.map((a) => ({ value: a.id, label: a.name }));
   }, [utils]);
 
-  // Activity create handler
+  const handleActivityGetLabel = useCallback(
+    async (id: string) => {
+      const a = await resolveActivityById(id);
+      return a?.name ?? null;
+    },
+    [resolveActivityById],
+  );
+
   const handleActivityCreate = useCallback(async (name: string) => {
     const activity = await createActivityMutation.mutateAsync({ name });
-    return { value: activity.name, label: activity.name };
+    libraryCacheRef.current.set(activity.id, {
+      name: activity.name,
+      locationName: null,
+      latitude: null,
+      longitude: null,
+    });
+    return { value: activity.id, label: activity.name };
   }, [createActivityMutation]);
 
   // Location search handler — Photon autocomplete
@@ -168,6 +210,8 @@ export function ActivityModal({
                     onDelete={handleDeleteActivity}
                     onActivitySearch={handleActivitySearch}
                     onActivityCreate={handleActivityCreate}
+                    onActivityGetLabel={handleActivityGetLabel}
+                    onActivityResolve={resolveActivityById}
                     onLocationSearch={handleLocationSearch}
                   />
                 ))}
@@ -205,6 +249,8 @@ function SortableActivityRow({
   onDelete,
   onActivitySearch,
   onActivityCreate,
+  onActivityGetLabel,
+  onActivityResolve,
   onLocationSearch,
 }: {
   activity: Activity;
@@ -212,6 +258,15 @@ function SortableActivityRow({
   onDelete: (id: string) => void;
   onActivitySearch: (query: string) => Promise<{ value: string; label: string }[]>;
   onActivityCreate: (name: string) => Promise<{ value: string; label: string } | null>;
+  onActivityGetLabel: (id: string) => Promise<string | null>;
+  onActivityResolve: (
+    id: string,
+  ) => Promise<{
+    name: string;
+    locationName: string | null;
+    latitude: number | null;
+    longitude: number | null;
+  } | null>;
   onLocationSearch: (query: string) => Promise<{ value: string; label: string }[]>;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
@@ -247,10 +302,33 @@ function SortableActivityRow({
         </div>
         <div className="col-span-3">
           <CreatableAsyncCombobox
-            value={activity.name}
-            onChange={(val) => onUpdate(activity.id, 'name', val)}
+            value={activity.libraryId ?? activity.name}
+            onChange={async (val) => {
+              if (!val) {
+                onUpdate(activity.id, 'libraryId', null);
+                onUpdate(activity.id, 'name', '');
+                return;
+              }
+              const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+                val,
+              );
+              if (!isUuid) {
+                onUpdate(activity.id, 'libraryId', null);
+                onUpdate(activity.id, 'name', val);
+                return;
+              }
+              onUpdate(activity.id, 'libraryId', val);
+              const resolved = await onActivityResolve(val);
+              if (resolved) {
+                onUpdate(activity.id, 'name', resolved.name);
+                if (!activity.location && resolved.locationName) {
+                  onUpdate(activity.id, 'location', resolved.locationName);
+                }
+              }
+            }}
             onSearch={onActivitySearch}
             onCreate={onActivityCreate}
+            onGetLabel={onActivityGetLabel}
             initialLabel={activity.name || null}
             placeholder="Select activity"
             createLabel="Create"

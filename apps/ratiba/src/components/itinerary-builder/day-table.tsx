@@ -36,7 +36,7 @@ import {
   Trash2,
   X,
 } from 'lucide-react';
-import React, { useCallback, useRef, useState } from 'react';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { ActivityModal } from './activity-modal';
 import { AsyncCombobox } from './async-combobox';
 import { CreatableAsyncCombobox } from './creatable-async-combobox';
@@ -47,7 +47,6 @@ import type {
   BuilderActivity,
   BuilderDay,
   RoomAllocation,
-  RoomTypeOption,
   TransportModeType,
 } from '@/types/itinerary-types';
 import { addDays, format } from 'date-fns';
@@ -435,6 +434,35 @@ function SortableDayRow({
   const assignedPax = rooms.reduce((sum, r) => sum + (Number(r.pax) || 0), 0);
   const paxMatches = totalPax > 0 && assignedPax === totalPax;
 
+  const accommodationUuid =
+    day.accommodation && UUID_RE.test(day.accommodation) ? day.accommodation : null;
+  const { data: hotelRoomTypes = [] } =
+    trpc.rateCards.accommodationRates.roomTypesForAccommodation.useQuery(
+      { accommodationId: accommodationUuid ?? '' },
+      { enabled: !!accommodationUuid },
+    );
+  const roomOptions = useMemo(() => {
+    const generic = ['single', 'double', 'triple', 'quad', 'family'];
+    if (hotelRoomTypes.length > 0) {
+      const seen = new Set<string>();
+      const out: string[] = [];
+      for (const r of hotelRoomTypes) {
+        if (!seen.has(r.roomType)) {
+          seen.add(r.roomType);
+          out.push(r.roomType);
+        }
+      }
+      return out;
+    }
+    return generic;
+  }, [hotelRoomTypes]);
+  const roomListId = `rooms-${day.id}`;
+  const titleCase = (s: string) =>
+    s
+      .split(/\s+/)
+      .map((w) => (w ? w[0]!.toUpperCase() + w.slice(1) : ''))
+      .join(' ');
+
   const updateRoom = (index: number, patch: Partial<RoomAllocation>) => {
     onUpdate(
       day.id,
@@ -511,30 +539,33 @@ function SortableDayRow({
                       </span>
                     )}
                   </div>
+                  <datalist id={roomListId}>
+                    {roomOptions.map((rt) => (
+                      <option key={rt} value={rt}>
+                        {titleCase(rt)}
+                      </option>
+                    ))}
+                  </datalist>
                   <div className="space-y-1">
                     {rooms.map((room, idx) => (
                       <div key={idx} className="flex items-center gap-1">
-                        <select
+                        <input
+                          type="text"
+                          list={roomListId}
                           value={room.roomType ?? ''}
                           onChange={(e) =>
                             updateRoom(idx, {
-                              roomType: (e.target.value || null) as RoomTypeOption | null,
+                              roomType: e.target.value || null,
                             })
                           }
+                          placeholder="Room…"
                           className={`h-8 min-w-0 flex-1 rounded-md border bg-white px-2 text-xs ${
                             room.roomType
                               ? 'border-stone-200 text-stone-700'
                               : 'border-amber-300 bg-amber-50 text-amber-800'
                           }`}
-                          title="Room type"
-                        >
-                          <option value="">Room…</option>
-                          <option value="single">Single</option>
-                          <option value="double">Double</option>
-                          <option value="triple">Triple</option>
-                          <option value="quad">Quad</option>
-                          <option value="family">Family</option>
-                        </select>
+                          title="Pick a room from the hotel's rate card, or type a new name"
+                        />
                         <input
                           type="number"
                           min={1}

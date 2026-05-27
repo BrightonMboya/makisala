@@ -9,11 +9,11 @@ import { trpc } from '@/lib/trpc';
 import { cn } from '@/lib/utils';
 import { AsyncCombobox } from '@/components/itinerary-builder/async-combobox';
 
-const ROOM_TYPES = ['single', 'double', 'triple', 'quad', 'family'] as const;
 const MEAL_PLANS = ['ro', 'bb', 'hb', 'fb'] as const;
 const RATE_BASES = ['per_person', 'per_room'] as const;
 
-type RoomType = (typeof ROOM_TYPES)[number];
+const ROOM_PRESETS = ['single', 'double', 'triple', 'quad', 'family'] as const;
+
 type MealPlan = (typeof MEAL_PLANS)[number];
 type RateBasis = (typeof RATE_BASES)[number];
 
@@ -24,13 +24,11 @@ const BASIS_LABEL: Record<RateBasis, string> = {
 
 type RoomConfig = { basis: RateBasis; maxOccupancy: number | null };
 
-const ROOM_LABEL: Record<RoomType, string> = {
-  single: 'Single',
-  double: 'Double',
-  triple: 'Triple',
-  quad: 'Quad',
-  family: 'Family',
-};
+const labelFor = (rt: string) =>
+  rt
+    .split(/\s+/)
+    .map((w) => (w ? w[0]!.toUpperCase() + w.slice(1) : ''))
+    .join(' ');
 
 const MEAL_LABEL: Record<MealPlan, string> = {
   ro: 'RO',
@@ -46,8 +44,19 @@ const MEAL_FULL: Record<MealPlan, string> = {
   fb: 'Full board',
 };
 
-const rowKey = (rt: RoomType, mp: MealPlan) => `${rt}|${mp}`;
-const cellKey = (seasonId: string, rt: RoomType, mp: MealPlan) => `${seasonId}|${rt}|${mp}`;
+const rowKey = (rt: string, mp: MealPlan) => `${rt}|${mp}`;
+const cellKey = (seasonId: string, rt: string, mp: MealPlan) => `${seasonId}|${rt}|${mp}`;
+
+const presetIndex = (rt: string) => {
+  const i = (ROOM_PRESETS as readonly string[]).indexOf(rt);
+  return i === -1 ? Number.MAX_SAFE_INTEGER : i;
+};
+const compareRooms = (a: string, b: string) => {
+  const pa = presetIndex(a);
+  const pb = presetIndex(b);
+  if (pa !== pb) return pa - pb;
+  return a.localeCompare(b);
+};
 
 export function AccommodationRatesTab() {
   const utils = trpc.useUtils();
@@ -57,11 +66,11 @@ export function AccommodationRatesTab() {
   const { data: seasons = [] } = trpc.rateCards.seasons.list.useQuery();
   const { data: allRates = [] } = trpc.rateCards.accommodationRates.listAll.useQuery();
   const [extraRows, setExtraRows] = useState<string[]>([]);
-  const [newRoom, setNewRoom] = useState<RoomType>('double');
+  const [newRoom, setNewRoom] = useState<string>('double');
   const [newMeal, setNewMeal] = useState<MealPlan>('fb');
+  const [newBasis, setNewBasis] = useState<RateBasis>('per_person');
+  const [newCapacity, setNewCapacity] = useState<string>('');
 
-  // Caches id -> name for hotels surfaced in search, so onChange can resolve a
-  // name without re-fetching.
   const searchCacheRef = useRef<Map<string, string>>(new Map());
 
   // Hotels that already have at least one rate, derived from listAll.
@@ -94,25 +103,46 @@ export function AccommodationRatesTab() {
       utils.rateCards.accommodationRates.listByAccommodation.invalidate({
         accommodationId: active.id,
       });
+      utils.rateCards.accommodationRates.roomTypesForAccommodation.invalidate({
+        accommodationId: active.id,
+      });
     }
     utils.rateCards.accommodationRates.listAll.invalidate();
   };
 
-  const create = trpc.rateCards.accommodationRates.create.useMutation({ onSuccess: invalidate });
-  const update = trpc.rateCards.accommodationRates.update.useMutation({ onSuccess: invalidate });
-  const remove = trpc.rateCards.accommodationRates.delete.useMutation({ onSuccess: invalidate });
+  const create = trpc.rateCards.accommodationRates.create.useMutation({
+    onSuccess: () => {
+      invalidate();
+      toast({ title: 'Rate saved' });
+    },
+  });
+  const update = trpc.rateCards.accommodationRates.update.useMutation({
+    onSuccess: () => {
+      invalidate();
+      toast({ title: 'Rate updated' });
+    },
+  });
+  const remove = trpc.rateCards.accommodationRates.delete.useMutation({
+    onSuccess: () => {
+      invalidate();
+      toast({ title: 'Rate removed' });
+    },
+  });
   const setBasis = trpc.rateCards.accommodationRates.setRoomTypeBasis.useMutation({
-    onSuccess: invalidate,
+    onSuccess: () => {
+      invalidate();
+      toast({ title: 'Pricing basis updated' });
+    },
   });
 
   // Pricing basis + capacity are per (hotel, room type). The server value lives
   // on the rate rows; local edits override until the refetch catches up.
-  const [roomConfig, setRoomConfig] = useState<Partial<Record<RoomType, RoomConfig>>>({});
+  const [roomConfig, setRoomConfig] = useState<Record<string, RoomConfig>>({});
 
   const serverConfig = useMemo(() => {
-    const m = new Map<RoomType, RoomConfig>();
+    const m = new Map<string, RoomConfig>();
     for (const r of rates) {
-      const rt = r.roomType as RoomType;
+      const rt = r.roomType;
       if (!m.has(rt)) {
         m.set(rt, {
           basis: ((r as { rateBasis?: RateBasis }).rateBasis ?? 'per_person') as RateBasis,
@@ -123,11 +153,11 @@ export function AccommodationRatesTab() {
     return m;
   }, [rates]);
 
-  const cfgFor = (rt: RoomType): RoomConfig =>
+  const cfgFor = (rt: string): RoomConfig =>
     roomConfig[rt] ?? serverConfig.get(rt) ?? { basis: 'per_person', maxOccupancy: null };
-  const rtHasRows = (rt: RoomType) => rates.some((r) => (r.roomType as RoomType) === rt);
+  const rtHasRows = (rt: string) => rates.some((r) => r.roomType === rt);
 
-  const changeBasis = (rt: RoomType, basis: RateBasis) => {
+  const changeBasis = (rt: string, basis: RateBasis) => {
     const maxOccupancy = basis === 'per_room' ? cfgFor(rt).maxOccupancy : null;
     setRoomConfig((p) => ({ ...p, [rt]: { basis, maxOccupancy } }));
     if (active && rtHasRows(rt)) {
@@ -135,7 +165,7 @@ export function AccommodationRatesTab() {
     }
   };
 
-  const changeCapacity = (rt: RoomType, maxOccupancy: number | null) => {
+  const changeCapacity = (rt: string, maxOccupancy: number | null) => {
     setRoomConfig((p) => ({ ...p, [rt]: { basis: 'per_room', maxOccupancy } }));
     if (active && rtHasRows(rt)) {
       setBasis.mutate({
@@ -151,7 +181,7 @@ export function AccommodationRatesTab() {
   const rateMap = useMemo(() => {
     const m = new Map<string, { id: string; perPaxRate: number }>();
     for (const r of rates) {
-      m.set(cellKey(r.seasonId, r.roomType as RoomType, r.mealPlan as MealPlan), {
+      m.set(cellKey(r.seasonId, r.roomType, r.mealPlan as MealPlan), {
         id: r.id,
         perPaxRate: Number(r.perPaxRate),
       });
@@ -175,7 +205,7 @@ export function AccommodationRatesTab() {
     return order.map((name) => ({ name, ids: byName.get(name)! }));
   }, [seasons]);
 
-  const cellValue = (ids: string[], rt: RoomType, mp: MealPlan) => {
+  const cellValue = (ids: string[], rt: string, mp: MealPlan) => {
     for (const id of ids) {
       const r = rateMap.get(cellKey(id, rt, mp));
       if (r) return r.perPaxRate;
@@ -186,14 +216,16 @@ export function AccommodationRatesTab() {
   // Rows = distinct room/meal in rates + locally-added empty rows.
   const rows = useMemo(() => {
     const set = new Set<string>(extraRows);
-    for (const r of rates) set.add(rowKey(r.roomType as RoomType, r.mealPlan as MealPlan));
+    for (const r of rates) set.add(rowKey(r.roomType, r.mealPlan as MealPlan));
     return [...set]
       .map((k) => {
-        const [rt, mp] = k.split('|') as [RoomType, MealPlan];
+        const i = k.indexOf('|');
+        const rt = k.slice(0, i);
+        const mp = k.slice(i + 1) as MealPlan;
         return { rt, mp, key: k };
       })
       .sort((a, b) => {
-        const ra = ROOM_TYPES.indexOf(a.rt) - ROOM_TYPES.indexOf(b.rt);
+        const ra = compareRooms(a.rt, b.rt);
         return ra !== 0 ? ra : MEAL_PLANS.indexOf(a.mp) - MEAL_PLANS.indexOf(b.mp);
       });
   }, [rates, extraRows]);
@@ -207,12 +239,12 @@ export function AccommodationRatesTab() {
 
   // Distinct room types currently in the sheet, for the pricing-basis panel.
   const roomTypesInSheet = useMemo(() => {
-    const set = new Set<RoomType>();
+    const set = new Set<string>();
     for (const r of rows) set.add(r.rt);
-    return [...set].sort((a, b) => ROOM_TYPES.indexOf(a) - ROOM_TYPES.indexOf(b));
+    return [...set].sort(compareRooms);
   }, [rows]);
 
-  const commitCell = (ids: string[], rt: RoomType, mp: MealPlan, raw: string) => {
+  const commitCell = (ids: string[], rt: string, mp: MealPlan, raw: string) => {
     if (!active) return;
     const value = Number(raw);
     const isEmpty = raw.trim() === '' || !value || value <= 0;
@@ -240,15 +272,39 @@ export function AccommodationRatesTab() {
   };
 
   const addRow = () => {
-    const k = rowKey(newRoom, newMeal);
+    const trimmed = newRoom.trim();
+    if (!trimmed) {
+      toast({ title: 'Give the room a name first' });
+      return;
+    }
+    const capacity = newCapacity ? parseInt(newCapacity, 10) : null;
+    if (newBasis === 'per_room' && (!capacity || capacity < 1)) {
+      toast({ title: 'Per-room rooms need a max occupancy' });
+      return;
+    }
+    const k = rowKey(trimmed, newMeal);
     if (rows.some((r) => r.key === k)) {
       toast({ title: 'That room + meal row already exists' });
       return;
     }
     setExtraRows((prev) => [...prev, k]);
+    setRoomConfig((p) => ({
+      ...p,
+      [trimmed]: { basis: newBasis, maxOccupancy: newBasis === 'per_room' ? capacity : null },
+    }));
+    if (active && rtHasRows(trimmed)) {
+      setBasis.mutate({
+        accommodationId: active.id,
+        roomType: trimmed,
+        rateBasis: newBasis,
+        maxOccupancy: newBasis === 'per_room' ? capacity : null,
+      });
+    }
+    setNewRoom('');
+    setNewCapacity('');
   };
 
-  const removeRow = (rt: RoomType, mp: MealPlan) => {
+  const removeRow = (rt: string, mp: MealPlan) => {
     for (const s of seasons) {
       const existing = rateMap.get(cellKey(s.id, rt, mp));
       if (existing) remove.mutate({ id: existing.id });
@@ -262,8 +318,10 @@ export function AccommodationRatesTab() {
         <CardTitle>Hotels &amp; Camps</CardTitle>
         <CardDescription>
           Pick a hotel, then fill its STO sheet: room &amp; meal plan down the side, seasons across
-          the top. Rates are per person sharing by default; switch a room type to per room below
-          if a hotel charges a flat room price. Leave a cell blank if you don&apos;t sell it.
+          the top. Rooms are free-form, so camps with named suites (e.g. &quot;Lagoon View&quot;,
+          &quot;Savannah Panoramic&quot;) can record them alongside the generic single/double labels.
+          Rates are per person sharing by default; switch a room type to per room below if a hotel
+          charges a flat room price.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-5">
@@ -368,7 +426,7 @@ export function AccommodationRatesTab() {
                   {rows.map((row) => (
                     <tr key={row.key}>
                       <td className="sticky left-0 z-10 bg-white px-3 py-1.5 whitespace-nowrap text-stone-700">
-                        {ROOM_LABEL[row.rt]}{' '}
+                        {labelFor(row.rt)}{' '}
                         <span className="text-stone-400">·</span>{' '}
                         <span title={MEAL_FULL[row.mp]}>{MEAL_LABEL[row.mp]}</span>
                       </td>
@@ -416,7 +474,7 @@ export function AccommodationRatesTab() {
                     const cfg = cfgFor(rt);
                     return (
                       <div key={rt} className="flex flex-wrap items-center gap-2 text-sm">
-                        <span className="w-14 text-stone-700">{ROOM_LABEL[rt]}</span>
+                        <span className="min-w-[3.5rem] text-stone-700">{labelFor(rt)}</span>
                         <select
                           value={cfg.basis}
                           onChange={(e) => changeBasis(rt, e.target.value as RateBasis)}
@@ -464,43 +522,94 @@ export function AccommodationRatesTab() {
             )}
 
             {/* Add room/meal row */}
-            <div className="flex flex-wrap items-end gap-2 rounded-md border border-stone-200 bg-stone-50/50 p-3">
-              <div>
-                <label className="mb-1 block text-[11px] font-medium uppercase tracking-wide text-stone-500">
-                  Room type
-                </label>
-                <select
-                  className="h-9 rounded-md border border-stone-200 bg-white px-2 text-sm"
-                  value={newRoom}
-                  onChange={(e) => setNewRoom(e.target.value as RoomType)}
-                >
-                  {ROOM_TYPES.map((rt) => (
-                    <option key={rt} value={rt}>
-                      {ROOM_LABEL[rt]}
-                    </option>
-                  ))}
-                </select>
+            <div className="space-y-2 rounded-md border border-stone-200 bg-stone-50/50 p-3">
+              <div className="flex flex-wrap items-end gap-2">
+                <div className="min-w-[12rem] flex-1">
+                  <label className="mb-1 block text-[11px] font-medium uppercase tracking-wide text-stone-500">
+                    Room name
+                  </label>
+                  <input
+                    type="text"
+                    value={newRoom}
+                    onChange={(e) => setNewRoom(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        addRow();
+                      }
+                    }}
+                    placeholder="e.g. Double, Lagoon View, Savannah Panoramic"
+                    className="h-9 w-full rounded-md border border-stone-200 bg-white px-2 text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-[11px] font-medium uppercase tracking-wide text-stone-500">
+                    Meal plan
+                  </label>
+                  <select
+                    className="h-9 rounded-md border border-stone-200 bg-white px-2 text-sm"
+                    value={newMeal}
+                    onChange={(e) => setNewMeal(e.target.value as MealPlan)}
+                  >
+                    {MEAL_PLANS.map((mp) => (
+                      <option key={mp} value={mp}>
+                        {MEAL_LABEL[mp]} — {MEAL_FULL[mp]}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="mb-1 block text-[11px] font-medium uppercase tracking-wide text-stone-500">
+                    Basis
+                  </label>
+                  <select
+                    className="h-9 rounded-md border border-stone-200 bg-white px-2 text-sm"
+                    value={newBasis}
+                    onChange={(e) => setNewBasis(e.target.value as RateBasis)}
+                  >
+                    {RATE_BASES.map((b) => (
+                      <option key={b} value={b}>
+                        {BASIS_LABEL[b]}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                {newBasis === 'per_room' && (
+                  <div>
+                    <label className="mb-1 block text-[11px] font-medium uppercase tracking-wide text-stone-500">
+                      Max occupancy
+                    </label>
+                    <input
+                      type="number"
+                      min={1}
+                      value={newCapacity}
+                      onChange={(e) => setNewCapacity(e.target.value)}
+                      placeholder="e.g. 2"
+                      className={cn(
+                        'h-9 w-24 rounded-md border bg-white px-2 text-sm',
+                        newCapacity ? 'border-stone-200' : 'border-amber-300 bg-amber-50',
+                      )}
+                    />
+                  </div>
+                )}
+                <Button variant="outline" onClick={addRow} className="gap-1">
+                  <Plus className="h-4 w-4" />
+                  Add room / meal
+                </Button>
               </div>
-              <div>
-                <label className="mb-1 block text-[11px] font-medium uppercase tracking-wide text-stone-500">
-                  Meal plan
-                </label>
-                <select
-                  className="h-9 rounded-md border border-stone-200 bg-white px-2 text-sm"
-                  value={newMeal}
-                  onChange={(e) => setNewMeal(e.target.value as MealPlan)}
-                >
-                  {MEAL_PLANS.map((mp) => (
-                    <option key={mp} value={mp}>
-                      {MEAL_LABEL[mp]} — {MEAL_FULL[mp]}
-                    </option>
-                  ))}
-                </select>
+              <div className="flex flex-wrap items-center gap-1.5">
+                <span className="text-[11px] text-stone-500">Quick add:</span>
+                {ROOM_PRESETS.map((p) => (
+                  <button
+                    key={p}
+                    type="button"
+                    onClick={() => setNewRoom(p)}
+                    className="rounded-full border border-stone-200 bg-white px-2 py-0.5 text-[11px] text-stone-600 hover:border-stone-300 hover:bg-stone-100"
+                  >
+                    {labelFor(p)}
+                  </button>
+                ))}
               </div>
-              <Button variant="outline" onClick={addRow} className="gap-1">
-                <Plus className="h-4 w-4" />
-                Add room / meal
-              </Button>
             </div>
           </div>
         )}

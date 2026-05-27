@@ -9,7 +9,7 @@
 // loads the rate data and feeds it in.
 // ============================================================
 
-export type RoomType = 'single' | 'double' | 'triple' | 'quad' | 'family';
+export type RoomType = string;
 export type MealPlan = 'ro' | 'bb' | 'hb' | 'fb';
 
 export function deriveMealPlan(meals?: {
@@ -90,6 +90,22 @@ export interface TransferRate {
   rate: number;
 }
 
+export type ActivityChargeBasis = 'per_person' | 'per_group';
+
+export interface ActivityRate {
+  activityId: string;
+  activityName: string;
+  seasonId: string | null;
+  chargeBasis: ActivityChargeBasis;
+  rate: number;
+}
+
+export interface DayActivityInput {
+  libraryId?: string | null;
+  name?: string | null;
+  isOptional?: boolean;
+}
+
 export interface RoomNight {
   roomType: RoomType | null;
   pax: number;
@@ -105,6 +121,7 @@ export interface ItineraryDayInput {
   rooms: RoomNight[];
   parkId: string | null;
   destinationName?: string | null;
+  activities?: DayActivityInput[];
 }
 
 export interface PricingInput {
@@ -124,6 +141,7 @@ export interface PricingInput {
   parkAncillaryFees: ParkAncillaryFeeRate[];
   vehicles: VehicleRate[];
   transferRates: TransferRate[];
+  activityRates: ActivityRate[];
 }
 
 export interface LineItem {
@@ -132,7 +150,7 @@ export interface LineItem {
   quantity: number;
   unitCost: number;
   totalCost: number;
-  source: 'accommodation' | 'park_fee' | 'vehicle' | 'transfer';
+  source: 'accommodation' | 'park_fee' | 'activity' | 'vehicle' | 'transfer';
   missing?: string; // human-readable note if a rate could not be found
 }
 
@@ -144,6 +162,7 @@ export type WarningKind =
   | 'missing_hotel_rate'
   | 'missing_park_fee'
   | 'missing_park_ancillary_no_vehicle'
+  | 'missing_activity_rate'
   | 'missing_vehicle'
   | 'missing_transfer';
 
@@ -225,7 +244,7 @@ export function computePricing(input: PricingInput): PricingBreakdown {
       warnings.push({
         kind: 'missing_room_meal',
         dayNumber: day.dayNumber,
-        message: `Day ${day.dayNumber}: room mix / meal plan not set, hotel cost skipped`,
+        message: `${hotelName} (Day ${day.dayNumber}): room mix / meal plan not set, hotel cost skipped`,
       });
       continue;
     }
@@ -234,7 +253,7 @@ export function computePricing(input: PricingInput): PricingBreakdown {
       warnings.push({
         kind: 'no_season',
         dayNumber: day.dayNumber,
-        message: `Day ${day.dayNumber}: no season matches ${day.date.toDateString()}`,
+        message: `${hotelName} (Day ${day.dayNumber}): no season matches ${day.date.toDateString()}`,
       });
       continue;
     }
@@ -250,7 +269,7 @@ export function computePricing(input: PricingInput): PricingBreakdown {
         warnings.push({
           kind: 'missing_hotel_rate',
           dayNumber: day.dayNumber,
-          message: `Day ${day.dayNumber}: no hotel rate for ${room.roomType}/${day.mealPlan} in ${season.name}`,
+          message: `${hotelName} (Day ${day.dayNumber}): no rate for ${room.roomType}/${day.mealPlan} in ${season.name}`,
         });
         lineItems.push({
           label: `${hotelName} (Day ${day.dayNumber}) — ${room.roomType}/${day.mealPlan}`,
@@ -388,6 +407,60 @@ export function computePricing(input: PricingInput): PricingBreakdown {
           unitCost: pax > 0 ? num(totalCost / pax) : 0,
           totalCost,
           source: 'park_fee',
+        });
+      }
+    }
+  }
+
+  const normalizeName = (s: string) => s.trim().toLowerCase();
+  for (const day of input.days) {
+    if (!day.activities || day.activities.length === 0) continue;
+    const season = resolveSeason(day.date, input.seasons);
+    for (const activity of day.activities) {
+      if (activity.isOptional) continue;
+      const nameKey = activity.name ? normalizeName(activity.name) : null;
+      if (!activity.libraryId && !nameKey) continue;
+      const matches = (r: ActivityRate) =>
+        (activity.libraryId && r.activityId === activity.libraryId) ||
+        (!activity.libraryId && nameKey && normalizeName(r.activityName) === nameKey);
+      const rate =
+        input.activityRates.find((r) => matches(r) && r.seasonId === (season?.id ?? null)) ??
+        input.activityRates.find((r) => matches(r) && r.seasonId === null);
+      const activityLabel = activity.name?.trim() || rate?.activityName?.trim() || 'Activity';
+      if (!rate) {
+        warnings.push({
+          kind: 'missing_activity_rate',
+          dayNumber: day.dayNumber,
+          message: `Day ${day.dayNumber}: no rate for "${activityLabel}"`,
+        });
+        lineItems.push({
+          label: `${activityLabel} (Day ${day.dayNumber})`,
+          dayNumber: day.dayNumber,
+          quantity: 0,
+          unitCost: 0,
+          totalCost: 0,
+          source: 'activity',
+          missing: 'rate not configured',
+        });
+        continue;
+      }
+      if (rate.chargeBasis === 'per_group') {
+        lineItems.push({
+          label: `${activityLabel} (Day ${day.dayNumber}) — per group`,
+          dayNumber: day.dayNumber,
+          quantity: 1,
+          unitCost: rate.rate,
+          totalCost: num(rate.rate),
+          source: 'activity',
+        });
+      } else {
+        lineItems.push({
+          label: `${activityLabel} (Day ${day.dayNumber})`,
+          dayNumber: day.dayNumber,
+          quantity: pax,
+          unitCost: rate.rate,
+          totalCost: num(rate.rate * pax),
+          source: 'activity',
         });
       }
     }

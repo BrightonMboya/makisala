@@ -1,20 +1,22 @@
 'use client';
 
 import { useState } from 'react';
-import { Building, TreePine, Car, Plane, Calendar, Check } from 'lucide-react';
+import { Building, TreePine, Car, Plane, Calendar, Check, Sparkles } from 'lucide-react';
 import { trpc } from '@/lib/trpc';
 import { cn } from '@/lib/utils';
 import { AccommodationRatesTab } from './accommodation-rates-tab';
 import { ParkFeesTab } from './park-fees-tab';
+import { ActivitiesTab } from './activities-tab';
 import { VehiclesTab } from './vehicles-tab';
 import { TransfersTab } from './transfers-tab';
 import { SeasonsDefaultsTab } from './seasons-defaults-tab';
 
-type SectionKey = 'hotels' | 'parks' | 'vehicles' | 'transfers' | 'seasons';
+type SectionKey = 'hotels' | 'parks' | 'activities' | 'vehicles' | 'transfers' | 'seasons';
 
 const ICONS: Record<SectionKey, typeof Building> = {
   hotels: Building,
   parks: TreePine,
+  activities: Sparkles,
   vehicles: Car,
   transfers: Plane,
   seasons: Calendar,
@@ -25,12 +27,14 @@ export function RateCardsShell({ defaultTab }: { defaultTab: SectionKey }) {
 
   const { data: hotelRates = [] } = trpc.rateCards.accommodationRates.listAll.useQuery();
   const { data: parkRates = [] } = trpc.rateCards.parkFeeRates.listAll.useQuery();
+  const { data: activityRates = [] } = trpc.rateCards.activityRates.listAll.useQuery();
   const { data: vehicles = [] } = trpc.rateCards.vehicles.list.useQuery();
   const { data: transfers = [] } = trpc.rateCards.transferRates.list.useQuery();
   const { data: seasons = [] } = trpc.rateCards.seasons.list.useQuery();
 
   const hotelCount = new Set(hotelRates.map((r) => r.accommodationId)).size;
   const parkCount = new Set(parkRates.map((r) => r.parkId)).size;
+  const activityCount = new Set(activityRates.map((r) => r.activityId)).size;
 
   const sections: {
     key: SectionKey;
@@ -49,6 +53,15 @@ export function RateCardsShell({ defaultTab }: { defaultTab: SectionKey }) {
       label: 'Parks',
       done: parkRates.length > 0,
       hint: parkCount > 0 ? `${parkCount} ${parkCount === 1 ? 'park' : 'parks'}` : 'Add entry fees',
+    },
+    {
+      key: 'activities',
+      label: 'Activities',
+      done: activityRates.length > 0,
+      hint:
+        activityCount > 0
+          ? `${activityCount} ${activityCount === 1 ? 'activity' : 'activities'}`
+          : 'Add activity prices',
     },
     {
       key: 'vehicles',
@@ -127,6 +140,7 @@ export function RateCardsShell({ defaultTab }: { defaultTab: SectionKey }) {
       <div className="min-w-0 flex-1">
         {active === 'hotels' && <AccommodationRatesTab />}
         {active === 'parks' && <ParkFeesTab />}
+        {active === 'activities' && <ActivitiesTab />}
         {active === 'vehicles' && <VehiclesTab />}
         {active === 'transfers' && <TransfersTab />}
         {active === 'seasons' && <SeasonsDefaultsTab />}

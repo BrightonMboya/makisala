@@ -22,12 +22,14 @@ export default async function DashboardLayout({ children }: { children: React.Re
     userName: string;
     userEmail: string;
     userImage: string | null;
+    isAdmin: boolean;
   } | null = null;
 
   const trpc = await createServerCaller();
-  const [org, userProfile] = await Promise.all([
+  const [org, userProfile, isAdmin] = await Promise.all([
     trpc.settings.getOrg().catch(() => null),
     trpc.settings.getCurrentUser().catch(() => null),
+    trpc.settings.checkAdmin().catch(() => false),
   ]);
 
   // Server-side onboarding redirect — no client roundtrip needed
@@ -41,6 +43,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
     userName: userProfile?.name || session.user.name || '',
     userEmail: session.user.email || '',
     userImage: userProfile?.image || null,
+    isAdmin: !!isAdmin,
   };
 
   return (

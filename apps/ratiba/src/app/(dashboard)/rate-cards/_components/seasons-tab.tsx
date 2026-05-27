@@ -35,13 +35,20 @@ export function SeasonsTab() {
     onSuccess: () => {
       utils.rateCards.seasons.list.invalidate();
       setIsAdding(false);
+      toast({ title: 'Season added' });
     },
   });
   const update = trpc.rateCards.seasons.update.useMutation({
-    onSuccess: () => utils.rateCards.seasons.list.invalidate(),
+    onSuccess: () => {
+      utils.rateCards.seasons.list.invalidate();
+      toast({ title: 'Season updated' });
+    },
   });
   const remove = trpc.rateCards.seasons.delete.useMutation({
-    onSuccess: () => utils.rateCards.seasons.list.invalidate(),
+    onSuccess: () => {
+      utils.rateCards.seasons.list.invalidate();
+      toast({ title: 'Season removed' });
+    },
   });
   const seed = trpc.rateCards.seasons.seedDefaults.useMutation({
     onSuccess: (r) => {

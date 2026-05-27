@@ -1,6 +1,8 @@
 import { z } from 'zod';
 import {
   accommodationRates,
+  activityLibrary,
+  activityRates,
   nationalParks,
   parkAncillaryFees,
   parkFeeRates,
@@ -16,10 +18,8 @@ import {
   type ItineraryDayInput,
   type MealPlan,
   type ParkFeeCategory,
-  type RoomType,
 } from '@/lib/pricing-engine';
 
-const ROOM_TYPES = ['single', 'double', 'triple', 'quad', 'family'] as const;
 const MEAL_PLANS = ['ro', 'bb', 'hb', 'fb'] as const;
 const PARK_FEE_CATEGORIES = [
   'non_resident_adult',
@@ -31,8 +31,14 @@ const PARK_FEE_CATEGORIES = [
 ] as const;
 
 const roomNightSchema = z.object({
-  roomType: z.enum(ROOM_TYPES).nullable(),
+  roomType: z.string().min(1).nullable(),
   pax: z.number().int().nonnegative(),
+});
+
+const activityInputSchema = z.object({
+  libraryId: z.string().uuid().nullable().optional(),
+  name: z.string().nullish(),
+  isOptional: z.boolean().optional(),
 });
 
 const dayInputSchema = z.object({
@@ -44,6 +50,7 @@ const dayInputSchema = z.object({
   rooms: z.array(roomNightSchema).default([]),
   parkId: z.string().uuid().nullable(),
   destinationName: z.string().nullish(),
+  activities: z.array(activityInputSchema).default([]),
 });
 
 const computeInputSchema = z.object({
@@ -67,6 +74,7 @@ export const pricingRouter = router({
       accomRows,
       parkRows,
       parkAncillaryRows,
+      activityRows,
       vehicleRows,
       transferRows,
       settingsRow,
@@ -99,6 +107,17 @@ export const pricingRouter = router({
           .from(parkAncillaryFees)
           .leftJoin(nationalParks, eq(nationalParks.id, parkAncillaryFees.parkId))
           .where(eq(parkAncillaryFees.organizationId, orgId)),
+        ctx.db
+          .select({
+            activityId: activityRates.activityId,
+            activityName: activityLibrary.name,
+            seasonId: activityRates.seasonId,
+            chargeBasis: activityRates.chargeBasis,
+            rate: activityRates.rate,
+          })
+          .from(activityRates)
+          .leftJoin(activityLibrary, eq(activityLibrary.id, activityRates.activityId))
+          .where(eq(activityRates.organizationId, orgId)),
         ctx.db.select().from(vehicles).where(eq(vehicles.organizationId, orgId)),
         ctx.db.select().from(transferRates).where(eq(transferRates.organizationId, orgId)),
         ctx.db
@@ -117,11 +136,16 @@ export const pricingRouter = router({
           accommodationName: d.accommodationName ?? null,
           mealPlan: d.mealPlan as MealPlan | null,
           rooms: d.rooms.map((r) => ({
-            roomType: r.roomType as RoomType | null,
+            roomType: r.roomType,
             pax: r.pax,
           })),
           parkId: d.parkId,
           destinationName: d.destinationName ?? null,
+          activities: d.activities.map((a) => ({
+            libraryId: a.libraryId ?? null,
+            name: a.name ?? null,
+            isOptional: a.isOptional ?? false,
+          })),
         }),
       ),
       pax: input.pax,
@@ -174,6 +198,13 @@ export const pricingRouter = router({
         name: t.name,
         mode: t.mode,
         rate: Number(t.rate),
+      })),
+      activityRates: activityRows.map((r) => ({
+        activityId: r.activityId,
+        activityName: r.activityName ?? '',
+        seasonId: r.seasonId,
+        chargeBasis: r.chargeBasis,
+        rate: Number(r.rate),
       })),
     });
   }),

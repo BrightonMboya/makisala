@@ -14,6 +14,7 @@ import {
   TreePine,
   Car,
   Plane,
+  Sparkles,
 } from 'lucide-react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
@@ -27,11 +28,12 @@ import { addDays } from 'date-fns';
 import type { PricingBreakdown, WarningKind } from '@/lib/pricing-engine';
 import { deriveMealPlan } from '@/lib/pricing-engine';
 
-type LineSource = 'accommodation' | 'park_fee' | 'vehicle' | 'transfer';
+type LineSource = 'accommodation' | 'park_fee' | 'activity' | 'vehicle' | 'transfer';
 
 const CATEGORY_META: Record<LineSource, { label: string; icon: typeof Building }> = {
   accommodation: { label: 'Accommodation', icon: Building },
   park_fee: { label: 'Park fees', icon: TreePine },
+  activity: { label: 'Activities', icon: Sparkles },
   vehicle: { label: 'Vehicle', icon: Car },
   transfer: { label: 'Transfers', icon: Plane },
 };
@@ -138,6 +140,11 @@ export default function PricingPage() {
           ? d.destination
           : null,
       destinationName: d.destinationName ?? null,
+      activities: d.activities.map((a) => ({
+        libraryId: a.libraryId ?? null,
+        name: a.name ?? null,
+        isOptional: a.isOptional,
+      })),
     }));
   }, [days, startDate]);
 
@@ -164,7 +171,7 @@ export default function PricingPage() {
   // Group line items by category for the breakdown view.
   const groupedLines = useMemo(() => {
     const data = computeQuery.data;
-    const order: LineSource[] = ['accommodation', 'park_fee', 'vehicle', 'transfer'];
+    const order: LineSource[] = ['accommodation', 'park_fee', 'activity', 'vehicle', 'transfer'];
     if (!data) return [] as Array<{ source: LineSource; subtotal: number; items: PricingBreakdown['lineItems'] }>;
     return order
       .map((source) => {
@@ -775,6 +782,7 @@ const WARNING_FIX: Record<
   missing_hotel_rate: { tab: 'hotels', label: 'Add hotel rate' },
   missing_park_fee: { tab: 'parks', label: 'Add park fee' },
   missing_park_ancillary_no_vehicle: { tab: 'vehicles', label: 'Select vehicle' },
+  missing_activity_rate: { tab: 'activities', label: 'Add activity rate' },
   missing_vehicle: { tab: 'vehicles', label: 'Check vehicle' },
   missing_transfer: { tab: 'transfers', label: 'Check transfer' },
 };

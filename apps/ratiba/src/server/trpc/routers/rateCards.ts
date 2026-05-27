@@ -9,12 +9,13 @@ import {
   pricingSettings,
   accommodations,
   nationalParks,
+  activityLibrary,
+  activityRates,
 } from '@repo/db/schema';
 import { and, asc, eq } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
 import { router, protectedProcedure, adminProcedure } from '../init';
 
-const ROOM_TYPES = ['single', 'double', 'triple', 'quad', 'family'] as const;
 const MEAL_PLANS = ['ro', 'bb', 'hb', 'fb'] as const;
 const RATE_BASES = ['per_person', 'per_room'] as const;
 const PARK_FEE_CATEGORIES = [
@@ -27,6 +28,7 @@ const PARK_FEE_CATEGORIES = [
 ] as const;
 const TRANSFER_MODES = ['per_vehicle', 'per_pax'] as const;
 const ANCILLARY_CHARGE_BASES = ['per_vehicle_per_day', 'per_vehicle_once_per_visit'] as const;
+const ACTIVITY_CHARGE_BASES = ['per_person', 'per_group'] as const;
 
 // ----- helpers -----
 const monthDay = z.object({
@@ -181,6 +183,35 @@ const accommodationRatesRouter = router({
         ),
     ),
 
+  roomTypesForAccommodation: protectedProcedure
+    .input(z.object({ accommodationId: z.string().uuid() }))
+    .query(async ({ ctx, input }) => {
+      const rows = await ctx.db
+        .select({
+          roomType: accommodationRates.roomType,
+          rateBasis: accommodationRates.rateBasis,
+          maxOccupancy: accommodationRates.maxOccupancy,
+        })
+        .from(accommodationRates)
+        .where(
+          and(
+            eq(accommodationRates.organizationId, ctx.orgId),
+            eq(accommodationRates.accommodationId, input.accommodationId),
+          ),
+        );
+      const map = new Map<string, { roomType: string; rateBasis: string; maxOccupancy: number | null }>();
+      for (const r of rows) {
+        if (!map.has(r.roomType)) {
+          map.set(r.roomType, {
+            roomType: r.roomType,
+            rateBasis: r.rateBasis,
+            maxOccupancy: r.maxOccupancy ?? null,
+          });
+        }
+      }
+      return [...map.values()];
+    }),
+
   // List with accommodation name joined, for the top-level rate-card admin page.
   listAll: protectedProcedure.query(({ ctx }) =>
     ctx.db
@@ -206,7 +237,7 @@ const accommodationRatesRouter = router({
       z.object({
         accommodationId: z.string().uuid(),
         seasonId: z.string().uuid(),
-        roomType: z.enum(ROOM_TYPES),
+        roomType: z.string().min(1).max(100),
         mealPlan: z.enum(MEAL_PLANS),
         perPaxRate: z.number().nonnegative(),
         rateBasis: z.enum(RATE_BASES).default('per_person'),
@@ -232,7 +263,7 @@ const accommodationRatesRouter = router({
       z.object({
         id: z.string().uuid(),
         seasonId: z.string().uuid().optional(),
-        roomType: z.enum(ROOM_TYPES).optional(),
+        roomType: z.string().min(1).max(100).optional(),
         mealPlan: z.enum(MEAL_PLANS).optional(),
         perPaxRate: z.number().nonnegative().optional(),
         rateBasis: z.enum(RATE_BASES).optional(),
@@ -261,7 +292,7 @@ const accommodationRatesRouter = router({
     .input(
       z.object({
         accommodationId: z.string().uuid(),
-        roomType: z.enum(ROOM_TYPES),
+        roomType: z.string().min(1).max(100),
         rateBasis: z.enum(RATE_BASES),
         maxOccupancy: z.number().int().positive().nullable(),
       }),
@@ -487,6 +518,98 @@ const parkAncillaryFeesRouter = router({
     }),
 });
 
+const activityRatesRouter = router({
+  listAll: protectedProcedure.query(({ ctx }) =>
+    ctx.db
+      .select({
+        id: activityRates.id,
+        activityId: activityRates.activityId,
+        activityName: activityLibrary.name,
+        activityLocationName: activityLibrary.locationName,
+        activityLatitude: activityLibrary.latitude,
+        activityLongitude: activityLibrary.longitude,
+        seasonId: activityRates.seasonId,
+        chargeBasis: activityRates.chargeBasis,
+        rate: activityRates.rate,
+        currency: activityRates.currency,
+      })
+      .from(activityRates)
+      .leftJoin(activityLibrary, eq(activityLibrary.id, activityRates.activityId))
+      .where(eq(activityRates.organizationId, ctx.orgId)),
+  ),
+
+  listByActivity: protectedProcedure
+    .input(z.object({ activityId: z.string().uuid() }))
+    .query(({ ctx, input }) =>
+      ctx.db
+        .select()
+        .from(activityRates)
+        .where(
+          and(
+            eq(activityRates.organizationId, ctx.orgId),
+            eq(activityRates.activityId, input.activityId),
+          ),
+        ),
+    ),
+
+  create: adminProcedure
+    .input(
+      z.object({
+        activityId: z.string().uuid(),
+        seasonId: z.string().uuid().nullable().optional(),
+        chargeBasis: z.enum(ACTIVITY_CHARGE_BASES).default('per_person'),
+        rate: z.number().nonnegative(),
+        currency: z.string().length(3).default('USD'),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const [row] = await ctx.db
+        .insert(activityRates)
+        .values({
+          ...input,
+          seasonId: input.seasonId ?? null,
+          rate: String(input.rate),
+          organizationId: ctx.orgId,
+        })
+        .returning();
+      return row;
+    }),
+
+  update: adminProcedure
+    .input(
+      z.object({
+        id: z.string().uuid(),
+        seasonId: z.string().uuid().nullable().optional(),
+        chargeBasis: z.enum(ACTIVITY_CHARGE_BASES).optional(),
+        rate: z.number().nonnegative().optional(),
+        currency: z.string().length(3).optional(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const { id, rate, ...rest } = input;
+      const patch: Record<string, unknown> = { ...rest, updatedAt: new Date() };
+      if (rate !== undefined) patch.rate = String(rate);
+      const [row] = await ctx.db
+        .update(activityRates)
+        .set(patch)
+        .where(and(eq(activityRates.id, id), eq(activityRates.organizationId, ctx.orgId)))
+        .returning();
+      if (!row) throw new TRPCError({ code: 'NOT_FOUND' });
+      return row;
+    }),
+
+  delete: adminProcedure
+    .input(z.object({ id: z.string().uuid() }))
+    .mutation(async ({ ctx, input }) => {
+      await ctx.db
+        .delete(activityRates)
+        .where(
+          and(eq(activityRates.id, input.id), eq(activityRates.organizationId, ctx.orgId)),
+        );
+      return { ok: true };
+    }),
+});
+
 // ----- vehicles -----
 const vehiclesRouter = router({
   list: protectedProcedure.query(({ ctx }) =>
@@ -666,6 +789,7 @@ export const rateCardsRouter = router({
   accommodationRates: accommodationRatesRouter,
   parkFeeRates: parkFeeRatesRouter,
   parkAncillaryFees: parkAncillaryFeesRouter,
+  activityRates: activityRatesRouter,
   vehicles: vehiclesRouter,
   transferRates: transferRatesRouter,
   settings: settingsRouter,

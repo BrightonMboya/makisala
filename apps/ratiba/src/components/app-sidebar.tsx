@@ -37,6 +37,7 @@ interface SidebarServerData {
   userName: string;
   userEmail: string;
   userImage: string | null;
+  isAdmin: boolean;
 }
 
 export function AppSidebar({ serverData }: { serverData?: SidebarServerData | null }) {
@@ -49,7 +50,8 @@ export function AppSidebar({ serverData }: { serverData?: SidebarServerData | nu
   // but initialize from server data to avoid flash
   const { data: orgSettings } = trpc.settings.getOrg.useQuery();
   const { data: userProfile } = trpc.settings.getCurrentUser.useQuery();
-  const { data: isAdmin } = trpc.settings.checkAdmin.useQuery();
+  const { data: isAdminClient } = trpc.settings.checkAdmin.useQuery();
+  const isAdmin = isAdminClient ?? serverData?.isAdmin ?? false;
 
   // Prefer fresh client data when available, fall back to server-rendered data
   const orgName = orgSettings?.name || serverData?.orgName || '';

@@ -3,7 +3,7 @@ import { dehydrate, HydrationBoundary, QueryClient } from '@tanstack/react-query
 import { RateCardsShell } from './_components/rate-cards-shell';
 import { createServerCaller } from '@/server/trpc/caller';
 
-type SectionKey = 'hotels' | 'parks' | 'vehicles' | 'transfers' | 'seasons';
+type SectionKey = 'hotels' | 'parks' | 'activities' | 'vehicles' | 'transfers' | 'seasons';
 
 interface PageProps {
   searchParams: Promise<{ tab?: string }>;
@@ -15,7 +15,7 @@ function qKey(path: string[], input?: unknown) {
 
 export default async function RateCardsPage({ searchParams }: PageProps) {
   const params = await searchParams;
-  const validTabs: SectionKey[] = ['hotels', 'parks', 'vehicles', 'transfers', 'seasons'];
+  const validTabs: SectionKey[] = ['hotels', 'parks', 'activities', 'vehicles', 'transfers', 'seasons'];
   // Older deep links pointed at the merged settings tab.
   const requested = params.tab === 'settings' ? 'seasons' : params.tab;
   const defaultTab: SectionKey =
@@ -47,9 +47,10 @@ export default async function RateCardsPage({ searchParams }: PageProps) {
   }
 
   const queryClient = new QueryClient();
-  const [hotelRates, parkRates, vehicles, transfers, seasons] = await Promise.all([
+  const [hotelRates, parkRates, activityRates, vehicles, transfers, seasons] = await Promise.all([
     trpc.rateCards.accommodationRates.listAll(),
     trpc.rateCards.parkFeeRates.listAll(),
+    trpc.rateCards.activityRates.listAll(),
     trpc.rateCards.vehicles.list(),
     trpc.rateCards.transferRates.list(),
     trpc.rateCards.seasons.list(),
@@ -57,6 +58,7 @@ export default async function RateCardsPage({ searchParams }: PageProps) {
 
   queryClient.setQueryData(qKey(['rateCards', 'accommodationRates', 'listAll']), hotelRates);
   queryClient.setQueryData(qKey(['rateCards', 'parkFeeRates', 'listAll']), parkRates);
+  queryClient.setQueryData(qKey(['rateCards', 'activityRates', 'listAll']), activityRates);
   queryClient.setQueryData(qKey(['rateCards', 'vehicles', 'list']), vehicles);
   queryClient.setQueryData(qKey(['rateCards', 'transferRates', 'list']), transfers);
   queryClient.setQueryData(qKey(['rateCards', 'seasons', 'list']), seasons);
@@ -86,6 +88,19 @@ export default async function RateCardsPage({ searchParams }: PageProps) {
       queryClient.setQueryData(
         qKey(['rateCards', 'accommodationRates', 'listByAccommodation'], {
           accommodationId: firstHotelId,
+        }),
+        rates,
+      );
+    }
+  } else if (defaultTab === 'activities') {
+    const firstActivityId = activityRates.find((r) => r.activityId)?.activityId;
+    if (firstActivityId) {
+      const rates = await trpc.rateCards.activityRates.listByActivity({
+        activityId: firstActivityId,
+      });
+      queryClient.setQueryData(
+        qKey(['rateCards', 'activityRates', 'listByActivity'], {
+          activityId: firstActivityId,
         }),
         rates,
       );

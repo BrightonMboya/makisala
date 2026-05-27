@@ -3,6 +3,7 @@ import type React from 'react';
 // ========== BUILDER TYPES (for form/state management) ==========
 export type BuilderActivity = {
   id: string;
+  libraryId?: string | null;
   name: string;
   location: string;
   moment: 'Morning' | 'Afternoon' | 'Evening' | 'Half Day' | 'Full Day' | 'Night';
@@ -12,7 +13,7 @@ export type BuilderActivity = {
   imageUrl?: string;
 };
 
-export type RoomTypeOption = 'single' | 'double' | 'triple' | 'quad' | 'family';
+export type RoomTypeOption = string;
 export type MealPlanOption = 'ro' | 'bb' | 'hb' | 'fb';
 
 // One room type on a night and how many travelers occupy it. A night can hold

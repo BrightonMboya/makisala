@@ -53,6 +53,7 @@ interface BuilderData {
 }
 
 interface BuilderActivity {
+  libraryId?: string | null;
   name: string;
   description?: string | null;
   location?: string | null;
@@ -84,9 +85,8 @@ interface BuilderDay {
   destinationLat?: number | null;
   destinationLng?: number | null;
   accommodation?: string;
-  // Room mix used by the pricing engine. Board basis is derived from `meals`.
   rooms?: Array<{
-    roomType: 'single' | 'double' | 'triple' | 'quad' | 'family' | null;
+    roomType: string | null;
     pax: number;
   }>;
   activities?: BuilderActivity[];
@@ -289,7 +289,7 @@ export const proposalsRouter = router({
                 },
               },
               meals: { columns: { breakfast: true, lunch: true, dinner: true } },
-              activities: { columns: { id: true, name: true, description: true, location: true, moment: true, time: true, isOptional: true, imageUrl: true } },
+              activities: { columns: { id: true, activityLibraryId: true, name: true, description: true, location: true, moment: true, time: true, isOptional: true, imageUrl: true } },
               transportation: {
                 columns: {
                   id: true,
@@ -529,6 +529,7 @@ export const proposalsRouter = router({
             for (const activity of day.activities) {
               await tx.insert(proposalActivities).values({
                 proposalDayId: proposalDay.id,
+                activityLibraryId: activity.libraryId || null,
                 name: activity.name,
                 description: activity.description || null,
                 location: activity.location || null,
@@ -876,6 +877,7 @@ export const proposalsRouter = router({
           for (const activity of day.activities) {
             await tx.insert(proposalActivities).values({
               proposalDayId: newDay.id,
+              activityLibraryId: activity.activityLibraryId,
               name: activity.name,
               description: activity.description,
               location: activity.location,
