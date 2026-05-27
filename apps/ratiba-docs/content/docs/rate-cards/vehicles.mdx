@@ -1,0 +1,39 @@
+---
+title: Vehicles
+description: Safari vehicle daily rates, fuel, and driver-guide assumptions.
+---
+
+Vehicles in Ratiba represent the rolling stock you bill to clients: 4x4 Land Cruisers, minivans, transfer cars, light aircraft (for the few operators who own them).
+
+## Vehicle entries
+
+Each vehicle has:
+
+- **Name.** "Toyota Land Cruiser, 6-seat", "Toyota Hiace minibus, 9-seat", "Transfer sedan".
+- **Capacity.** Max pax.
+- **Pricing basis.**
+  - **Per day.** Flat daily rate.
+  - **Per kilometer.** Multiplied by the day's distance (you enter distance in the itinerary day editor).
+  - **Per day + per km.** Both, summed.
+- **Rate.** Day rate, km rate, or both.
+- **Currency.**
+- **Fuel included** (yes/no). Cosmetic flag, doesn't change pricing but appears in the proposal inclusions list.
+- **Driver-guide included** (yes/no). Same.
+
+## Picking a vehicle on the itinerary
+
+When you set up a day, you pick a vehicle. Ratiba uses the same vehicle for the rest of the trip by default. Override per day if you swap vehicles for a transfer day.
+
+## Capacity enforcement
+
+If you place more pax in a vehicle than its capacity, Ratiba warns but doesn't block. Some operators routinely overload for short transfers — your judgment, your liability.
+
+## Multi-vehicle trips
+
+If you need two vehicles for one day (a large group), use the **Additional vehicle** option on the day editor. The second vehicle line is independent.
+
+## Aircraft and transfers
+
+Light aircraft (for charter flights) can be modeled as vehicles with a high day rate. Or treat them as transfers — see [Transfers](/docs/rate-cards/transfers).
+
+We'll add a dedicated aircraft module if enough operators ask for it.

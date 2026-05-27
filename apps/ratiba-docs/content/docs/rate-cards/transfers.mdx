@@ -1,0 +1,40 @@
+---
+title: Transfers
+description: Point-to-point transfer rates.
+---
+
+Use transfers for one-off journeys between two named points: an airport pickup, an inter-park transfer, a private shuttle. They're separate from vehicles so you can sell a fixed-price transfer without exposing a daily vehicle rate.
+
+## Fields
+
+Each transfer row has:
+
+- **From.** A named point (city, airport, park, lodge).
+- **To.** Another named point.
+- **Mode.** Road, scheduled flight, charter flight, boat.
+- **Rate basis.**
+  - **Per vehicle.** Flat rate for the whole vehicle, regardless of pax.
+  - **Per person.** Multiplied by pax.
+- **Rate.**
+- **Currency.**
+- **Notes.** Anything (typical duration, included refreshments).
+
+## Picking a transfer on the itinerary
+
+In the day editor, click **Add transfer**. Pick a from-to pair. Ratiba auto-fills the rate.
+
+If no transfer row matches, you can still add one manually with a custom price for this trip only — but you'll be re-typing it next time. Better to add it to the rate card.
+
+## Scheduled flights
+
+For commercial flights (Coastal, Air Excel, Auric Air, Safari Air Link), enter the route as a transfer with **mode = scheduled flight** and **basis = per person**. Update rates each season.
+
+If a route has different prices by season, add multiple rows referencing different [seasons](/docs/rate-cards/seasons).
+
+## Charter flights
+
+For charter flights (Caravan, Cessna 208), use **mode = charter flight** and **basis = per vehicle** (where "vehicle" is the whole aircraft). Set the rate as the per-leg charter cost.
+
+## Empty legs and deadhead
+
+When charter aircraft has to position empty, that cost still has to go somewhere. Add a separate "Deadhead Manyara → Arusha" transfer row and add it to the trip if the client owes it.

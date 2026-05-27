@@ -1,0 +1,56 @@
+---
+title: Accommodation rates
+description: Per-night lodge and camp rates by season, room type, and meal plan.
+---
+
+This is the biggest rate card for most operators. It's the table that turns "Lodge X for two nights" into a concrete supplier cost.
+
+## Anatomy of a rate row
+
+Each row has:
+
+- **Accommodation.** Picks from your [Content Library accommodations](/docs/content-library/accommodations).
+- **Season.** Picks from your [Seasons](/docs/rate-cards/seasons).
+- **Room type.** Must match a room type defined on the accommodation.
+- **Meal plan.** RO, BB, HB, or FB.
+- **Rate basis.**
+  - **Per person per night.** Multiplied by pax in that room.
+  - **Per room per night.** Flat, with a `max occupancy`.
+- **Rate.** The number.
+- **Currency.** Usually USD or EUR. Can differ per row.
+- **Notes.** Free-form.
+
+## How rate matching works
+
+When you place an accommodation on a day, the pricing engine looks for the row matching all of:
+
+- Accommodation ID
+- Season covering the day (highest priority wins)
+- Selected room type
+- Derived meal plan (see [Pricing model](/docs/concepts/pricing-model#meal-plan-derivation))
+
+If no row matches exactly, the day's accommodation line is flagged as missing.
+
+## Per-room vs per-person
+
+Many lodges in East Africa price per person sharing. Some, especially camps with fixed-size tents, price per room. Some have both depending on the room type.
+
+If a lodge has a 4-person family suite priced as one flat number, use **per-room** basis and set `max occupancy = 4`. Ratiba will warn if you try to book 5 pax into it.
+
+## Single supplements
+
+If a lodge charges a single supplement for sole occupancy, add it as a separate **per-person** rate row with the room type "Single". When the day is a single occupancy, pick "Single" as the room type.
+
+We may add an explicit single-supplement field in future, but the room-type workaround works today.
+
+## Bulk operations
+
+- **Copy a season.** Select all rows in one season and duplicate them into another season at a percentage of the original (for example, Shoulder = 90% of High).
+- **Bulk update.** Filter by accommodation, then bulk-update the rate column.
+- **CSV import.** Paste a tab-separated table directly into the rate card grid.
+
+## Common errors
+
+- **"Meal plan not available"** — the accommodation in the content library doesn't list this meal plan as available. Open the accommodation and add it, then re-add the rate.
+- **"Room type not found"** — same issue with room types.
+- **"Season overlap"** — two rate rows match the same date with the same room type and meal plan. Ratiba uses the higher-priority season; if both have the same priority, it picks the cheaper one and warns.

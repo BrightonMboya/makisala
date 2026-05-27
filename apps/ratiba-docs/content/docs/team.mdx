@@ -1,0 +1,56 @@
+---
+title: Team and settings
+description: Workspace settings, members, roles, branding, integrations.
+---
+
+Open **Settings** from the sidebar. You'll find five sections: Workspace, Members, Branding, Workflow, Integrations.
+
+## Workspace
+
+- **Workspace name.** Your company name.
+- **Subdomain.** Used for proposal URLs.
+- **Reporting currency.** Default trip currency.
+- **Country.** Default country for park fees and residency.
+- **Time zone.** Used for scheduling and notification time stamps.
+
+Changing the subdomain breaks existing public proposal URLs unless you set up a redirect; contact support if you need to rename.
+
+## Members
+
+Manage who has access to the workspace.
+
+- **Invite.** Email an invitation. The recipient creates an account if they don't have one.
+- **Roles.**
+  - **Owner.** Full access including billing and deletion. There must be at least one owner.
+  - **Admin.** Manage content, rate cards, members. Cannot delete the workspace or change billing.
+  - **Member.** Build itineraries and send proposals. Cannot edit rate cards or invite teammates.
+- **Remove.** Revokes access immediately. Itineraries the user created stay in place.
+
+## Branding
+
+Controls the look of your proposals and PDF exports.
+
+- **Logo.** Square or wide. PNG with transparent background recommended.
+- **Primary color.** Theme accent.
+- **Secondary color.** Used for buttons and highlights.
+- **Font.** Choose from a built-in set, or specify a Google Font (paid plans).
+- **Email signature.** Appended to outbound proposal emails.
+- **Custom domain.** Set up a CNAME so proposals live on your domain.
+
+## Workflow
+
+Optional team workflows.
+
+- **Approval required.** Members must request admin approval before publishing.
+- **Notification routing.** Choose which events email everyone vs only the assigned owner.
+- **Default markup.** The fallback markup for new itineraries.
+- **Default inclusions/exclusions.** Pre-fills every new itinerary's proposal.
+
+## Integrations
+
+- **Email.** SMTP credentials if you want proposals to send from your own domain. Otherwise Ratiba uses its own SMTP.
+- **Calendar.** Sync trip dates and team availability to Google Calendar or iCal.
+- **Webhooks.** Ping a URL when proposal events fire. Useful for connecting to HubSpot, Pipedrive, or Zapier.
+- **API key.** For custom integrations. See our API docs (link below).
+
+API documentation is in beta. Email [api@ratiba.io](mailto:api@ratiba.io) if you need access.

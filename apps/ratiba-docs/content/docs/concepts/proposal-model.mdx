@@ -1,0 +1,62 @@
+---
+title: Proposal model
+description: How proposals relate to itineraries, and what the client sees.
+---
+
+A proposal in Ratiba is a public, branded, read-only view of an itinerary, designed for the client to read, react to, and accept.
+
+## Proposal vs itinerary
+
+You do not "build" a proposal directly. You build an [itinerary](/docs/concepts/itinerary-model) and then *publish* it as a proposal. Publishing produces:
+
+- A public URL at `<your-subdomain>.ratiba.io/proposal/<id>` (or your custom domain).
+- A snapshot of the itinerary as of publish time.
+- A theme, branding, and any client-facing notes you've configured.
+
+If you change the itinerary after publishing, the proposal does not update until you click **Republish**. This prevents accidental "the number changed!" surprises while the client is reviewing.
+
+## What the client sees
+
+- The trip name, dates, and pax.
+- A hero image and intro paragraph.
+- A day-by-day breakdown with photos and descriptions.
+- One clear total price (with optional per-person breakdown).
+- Inclusions and exclusions.
+- Your branding, theme, and contact info.
+- An **Accept** button.
+- A comment box for questions.
+
+The client does **not** see:
+
+- Supplier costs, individual line items, or your markup.
+- Other clients' proposals or internal notes.
+
+## Themes
+
+Each proposal can pick from one of the built-in themes (Classic, Editorial, Bold). Themes change typography, layout, and image treatment, not data. You can preview each one before sending.
+
+## Tracking
+
+When a client opens a proposal, Ratiba records:
+
+- First viewed (timestamp).
+- Total views and last viewed (timestamp).
+- Comments left.
+- Acceptance.
+
+You'll get an in-app notification and an email when any of these happen.
+
+## PDF export
+
+If the client asks for a PDF, click **Export PDF** on the proposal page. It renders the same content as the web view but optimized for paper.
+
+## Acceptance
+
+When the client clicks **Accept**, Ratiba:
+
+- Sets the itinerary status to "accepted".
+- Records the timestamp and (optionally) the client's typed signature.
+- Sends you and the client an email confirmation.
+- Stops further edits from auto-republishing.
+
+You can then proceed to invoicing and operations as you do today.

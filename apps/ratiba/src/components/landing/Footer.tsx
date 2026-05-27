@@ -6,6 +6,7 @@ const columns = [
     links: [
       { label: 'Features', href: '/features' },
       { label: 'Pricing', href: '/pricing' },
+      { label: 'Documentation', href: 'https://docs.ratiba.io' },
       { label: 'Book a demo', href: '/demo' },
     ],
   },

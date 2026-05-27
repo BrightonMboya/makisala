@@ -1,0 +1,76 @@
+---
+title: Proposals
+description: Publish a trip as a branded, interactive client proposal.
+---
+
+A proposal is the client-facing presentation of an itinerary. You build the itinerary, then publish it as a proposal to share with the client.
+
+## Publishing
+
+From the itinerary's **Share** tab, click **Publish proposal**. Ratiba creates:
+
+- A snapshot of the itinerary as of right now.
+- A public URL at `<your-subdomain>.ratiba.io/proposal/<id>`.
+- A preview link you can open to QA before sharing.
+
+You can publish, edit, and republish as many times as you want. Each publish overwrites the previous snapshot (the URL stays the same).
+
+## What's on a proposal
+
+By default, every proposal shows:
+
+- **Hero section.** Trip name, dates, pax, lead photo.
+- **Intro paragraph.** A short narrative welcome you can write per-trip.
+- **Day-by-day cards.** Each day's accommodation, activities, photos.
+- **Inclusions and exclusions.** Pulled from workspace defaults plus any trip-specific overrides.
+- **Pricing summary.** Total price, optionally per-person breakdown.
+- **About you.** Your logo, contact info, and any "about the operator" copy.
+- **Accept and comment.** Buttons for the client to act.
+
+You can hide any section per-trip from the publish settings.
+
+## Themes
+
+Three built-in themes:
+
+- **Classic.** Clean, type-led, photo-light. Best for traditional operators.
+- **Editorial.** Magazine-style, image-heavy, large hero shots. Best for luxury.
+- **Bold.** High-contrast, modern, lots of color. Best for adventurous brands.
+
+Switch themes from the **Theme** dropdown above the preview. Changes apply on next publish.
+
+## Branding
+
+From [Settings → Branding](/docs/team), set:
+
+- **Logo.** Used in the proposal header.
+- **Primary color.** Theme accent.
+- **Custom font** (optional, paid plans only).
+- **Contact info.** Email, WhatsApp, phone. Shown at the bottom of every proposal.
+
+## Custom intro and outro
+
+Per proposal, you can write a custom intro paragraph and outro paragraph that appears at the top and bottom of the trip body. Useful for personal touches:
+
+> "Dear Smith family — we've designed this safari around your love of birdlife, with two days in Tarangire's baobab plains and an extra hide visit at Lake Manyara..."
+
+These don't replace your standard about-the-operator block; they sit alongside it.
+
+## PDF export
+
+For clients who insist on PDF, click **Export PDF** on the published proposal. The PDF mirrors the web view, optimized for printing. You can email it directly from Ratiba or download it.
+
+PDFs are regenerated on demand, so they always reflect the latest published snapshot.
+
+## Republishing
+
+Edits to the itinerary do not change the published proposal until you click **Republish**. This lets you tweak in private and push a single clean update.
+
+Each republish:
+
+- Updates the snapshot.
+- Notifies anyone who has viewed the proposal that it's been updated (optional, off by default).
+
+## Unpublishing
+
+To take a proposal offline, click **Unpublish**. The URL returns a polite 404 (or a custom "this proposal is no longer available" page if you've configured one). The data stays on the itinerary for your records.

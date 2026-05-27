@@ -1,0 +1,48 @@
+---
+title: Pricing settings
+description: Default markup, currency, rounding, FX.
+---
+
+Pricing settings are workspace-level defaults that apply to every new itinerary. You can override any of them per-trip.
+
+## Default markup
+
+The markup percent applied when an itinerary doesn't specify its own. Most operators set this between 15% and 30%.
+
+If you sell net (no markup, supplier-paid commission), set to 0.
+
+## Reporting currency
+
+The currency you quote clients in. Most safari operators use USD or EUR.
+
+Rate cards can be in any currency. When the engine sums an itinerary, each line is converted to the reporting currency using the workspace FX rates.
+
+## FX rates
+
+You can either:
+
+- **Pin manual FX rates** (recommended for stability). Set USD/TZS, USD/EUR, etc. once a month or once a quarter. Quotes stay consistent within a price book period.
+- **Use live rates** (off by default). Pulls daily mid-market rates from a provider. Quotes can fluctuate between yesterday and today.
+
+For most operators, pinned rates are safer. Surprises in FX are rarely surprises clients enjoy.
+
+## Rounding
+
+How the final selling price is rounded.
+
+- **None.** Show two decimal places.
+- **Whole units.** Round to the nearest 1.
+- **Nearest 10.** Round to the nearest 10 for cleaner-looking numbers.
+- **Nearest 100.** Cleaner still, common for luxury operators selling in USD.
+
+Rounding only affects the displayed total. Internal line calculations stay precise.
+
+## Tax handling
+
+Most safari quotes are tax-inclusive of VAT, so Ratiba doesn't add VAT on top by default. If you need to display VAT separately, contact support — we have an advanced VAT toggle that's not on the standard UI.
+
+## Default inclusions and exclusions
+
+You can set workspace-wide default inclusions ("All park fees", "Mineral water in vehicle") and exclusions ("International flights", "Visa fees", "Optional gratuities"). These pre-fill every new itinerary and you can edit per trip.
+
+These show on the proposal as standardized lists, so clients see consistent messaging across every quote.

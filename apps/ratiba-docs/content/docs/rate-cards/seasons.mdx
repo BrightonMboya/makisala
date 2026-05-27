@@ -1,0 +1,55 @@
+---
+title: Seasons
+description: Define season bands so every rate card stays in sync.
+---
+
+Seasons are the date ranges that make a rate apply. Every other rate card (accommodation, park, activity) references a season.
+
+## Why a separate tab
+
+Most safari rate sheets quote different prices for different times of year (green, shoulder, high, peak). Rather than copy each season's date range onto every rate row, you define seasons once in this tab. Then each accommodation rate just picks a season.
+
+This means when a lodge updates their dates ("Peak now starts Dec 18 not Dec 20"), you change it once, and every rate that uses Peak shifts automatically.
+
+## Fields
+
+Each season has:
+
+- **Name.** "Green", "Shoulder", "High", "Peak Christmas", etc.
+- **Start month and day.**
+- **End month and day.**
+- **Priority.** Higher wins when two seasons overlap a date.
+
+Seasons wrap around year boundaries. A season ending Mar 15 and starting Nov 1 (with start later than end) is interpreted as Nov 1 through Mar 15 of the following year.
+
+## Priority
+
+When more than one season covers a given date, Ratiba picks the highest-priority season for that line.
+
+Example:
+
+- Shoulder: priority 1, Apr 1 to Oct 31.
+- High: priority 5, Jun 15 to Sep 30.
+- Peak Christmas: priority 10, Dec 20 to Jan 5.
+
+A date in July picks **High** (priority 5 > 1). A date in October picks **Shoulder**. Dec 25 picks **Peak Christmas**.
+
+This lets you layer narrow overrides on top of broad bands without copying date ranges everywhere.
+
+## Recommended starter setup
+
+If you don't have a clear season structure from your suppliers, use this as a starting point and adjust later:
+
+| Name      | Dates           | Priority |
+| --------- | --------------- | -------- |
+| Green     | Apr 1 – Jun 14  | 1        |
+| Shoulder  | Jan 6 – Mar 31  | 1        |
+|           | Oct 1 – Dec 19  | 1        |
+| High      | Jun 15 – Sep 30 | 5        |
+| Peak Xmas | Dec 20 – Jan 5  | 10       |
+
+## Editing
+
+You can rename, re-date, or delete seasons any time. If you delete a season that an existing rate row references, the rate row becomes "orphaned" and the pricing engine will warn on any itinerary that hits it.
+
+We recommend renaming or re-dating instead of deleting.

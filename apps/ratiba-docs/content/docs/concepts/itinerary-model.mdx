@@ -1,0 +1,60 @@
+---
+title: Itinerary model
+description: How Ratiba structures a multi-day trip internally.
+---
+
+An itinerary in Ratiba has three levels: the trip, the day, and the line item.
+
+## Trip level
+
+The trip holds the things that apply to the whole booking.
+
+- **Client.** Who the trip is for, linked to the [Clients](/docs/clients) module.
+- **Start date** and **duration in days** (derived from the number of day rows).
+- **Pax mix.** Number of adults, children, and infants. Pax counts can vary by day (some travelers may depart early), but most trips use the same count throughout.
+- **Currency.** The selling currency. Defaults to your workspace reporting currency.
+- **Status.** Draft, sent, accepted, declined, archived.
+- **Markup override.** Optional trip-wide markup that overrides the workspace default.
+- **Notes.** Internal notes only your team sees.
+
+## Day level
+
+Each day in the trip has:
+
+- **Date** (computed from the trip start date and the day index).
+- **Title.** A short label clients see, for example "Serengeti game drive" or "Transfer to Ngorongoro".
+- **Region or park.** Drives default park fees.
+- **Accommodation.** One lodge per day (we'll add multi-stay-per-day support later if requested).
+- **Room type and meal plan.** Pulled from the accommodation's available options.
+- **Activities.** Zero or more, with per-person or per-group pricing.
+- **Vehicle.** Whichever vehicle is in use that day. Most safaris use one vehicle for the trip; some use a different one for transfer days.
+- **Transfers.** Optional point-to-point transfer for the day.
+- **Custom day cost.** Optional fixed amount for things not covered by rate cards.
+
+## Line item level
+
+Inside each day, every billable thing is a **line item**. A line item is one row in the supplier cost breakdown. Examples:
+
+- "Serena Serengeti, twin, BB, x 2 pax x 1 night".
+- "Serengeti park fee, non-resident adult, x 2 pax".
+- "Land Cruiser, 1 day".
+
+Each line item carries its own cost, markup, and selling price. You can override any of them.
+
+## Validation
+
+Ratiba flags an itinerary as "incomplete" if any required line is missing. Common cases:
+
+- Accommodation chosen but no rate found for the date/season/room type.
+- Park visited but no park fee on file.
+- Vehicle on the trip but no daily rate set.
+
+You can still send a proposal with warnings, but the margin number won't be reliable until they're resolved.
+
+## How re-pricing works
+
+When you change a rate card, **existing itineraries do not re-price automatically.** This is intentional. You typically don't want a sent proposal to silently change price.
+
+To re-price, open the itinerary and click **Recalculate**. Ratiba pulls the latest rates and updates line items. You can review what changed before saving.
+
+See [Pricing model](/docs/concepts/pricing-model) for the math.

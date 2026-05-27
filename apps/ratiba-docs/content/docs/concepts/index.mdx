@@ -1,0 +1,49 @@
+---
+title: Core concepts
+description: A mental model of how Ratiba represents trips, costs, and proposals.
+---
+
+Three concepts run through every part of Ratiba. Once these click, everything else in the product makes sense.
+
+## Itinerary
+
+An **itinerary** is a multi-day trip plan for one client. It is a list of **days**, each with a date, a region or park, an accommodation, activities, and optionally a vehicle and transfers. Itineraries are the unit of work in Ratiba.
+
+Read more: [Itinerary model](/docs/concepts/itinerary-model).
+
+## Rate card
+
+A **rate card** is how Ratiba knows what things cost. Rate cards are stored separately from itineraries so you can update prices once and have every future quote reflect them. There are five rate-card types:
+
+- Accommodation rates (per pax per night, by season, by room type, by meal plan).
+- Park fees (per person per day, by residency category).
+- Vehicles (per day or per kilometer).
+- Transfers (point-to-point).
+- Activity rates (per person or per group).
+
+Read more: [Pricing model](/docs/concepts/pricing-model).
+
+## Proposal
+
+A **proposal** is the client-facing presentation of an itinerary. Same data as the itinerary, but formatted for the buyer: a branded web page with photos, descriptions, and one clear price. Proposals get a public URL you can share by email or WhatsApp.
+
+Read more: [Proposal model](/docs/concepts/proposal-model).
+
+## Workspace data
+
+Everything else in Ratiba either flows into or comes out of those three.
+
+- **Content library** items (accommodations, activities, images) are reusable inputs to itineraries.
+- **Clients** are who itineraries are built for.
+- **Tours** are reusable itinerary templates.
+- **Team members** are who build the itineraries and send the proposals.
+
+## How they fit together
+
+```
+Content library  ─┐
+                  ├── Itinerary ── Proposal ── Client
+Rate cards       ─┘
+```
+
+You set up content and rate cards once. From then on, building a trip is mostly assembling pieces and letting the pricing engine do the math.

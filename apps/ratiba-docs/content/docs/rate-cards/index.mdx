@@ -1,0 +1,47 @@
+---
+title: Rate cards
+description: Supplier rates, seasonal pricing, and pricing defaults.
+---
+
+Rate cards are Ratiba's pricing brain. They hold every supplier-side number that the [pricing engine](/docs/concepts/pricing-model) uses to compute a cost-plus quote.
+
+Open **Rate Cards** from the sidebar. You'll see seven tabs.
+
+## The seven rate-card tabs
+
+1. **[Seasons](/docs/rate-cards/seasons).** Define season bands (green, shoulder, high) once. Every other rate card references these.
+2. **[Accommodation rates](/docs/rate-cards/accommodation-rates).** Per-night rates by lodge, room type, meal plan, and season.
+3. **[Park fees](/docs/rate-cards/park-fees).** Per-person, per-day fees by park and residency category. Plus ancillary charges like concession and camping fees.
+4. **[Vehicles](/docs/rate-cards/vehicles).** Daily rates for safari vehicles.
+5. **[Transfers](/docs/rate-cards/transfers).** Point-to-point transfer costs.
+6. **[Activities](/docs/rate-cards/activities).** Per-person or per-group activity rates.
+7. **[Pricing settings](/docs/rate-cards/pricing-settings).** Workspace defaults: default markup, currency, rounding.
+
+## Workflow
+
+The recommended order to populate rate cards for a new workspace:
+
+1. Define seasons.
+2. Add accommodations to the [content library](/docs/content-library/accommodations).
+3. Add accommodation rates for those accommodations.
+4. Add park fees for the parks you sell.
+5. Add at least one vehicle.
+6. Add transfers as needed (most operators don't need many).
+7. Add activity rates for the paid activities you sell.
+
+Each rate card is self-contained but they all reference seasons, so set those first.
+
+## Multi-currency
+
+Each rate card row carries its own currency. You can have USD-denominated lodge rates, TZS-denominated park fees, and EUR-denominated activities all in the same workspace. The pricing engine converts each line to the trip currency using the day's FX rate (or your workspace's pinned rate).
+
+See [Pricing settings](/docs/rate-cards/pricing-settings) for FX configuration.
+
+## Versioning
+
+Rate cards are not versioned automatically. When you change a rate, the new rate applies to:
+
+- All future itineraries built after the change.
+- Existing itineraries only if you click **Recalculate** on them.
+
+If you need historical pricing for audits, **archive** the old rate row instead of deleting it. Archived rates retain the audit trail but don't appear in new itineraries.

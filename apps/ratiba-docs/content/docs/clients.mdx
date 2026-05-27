@@ -1,0 +1,62 @@
+---
+title: Clients
+description: A lightweight CRM for your safari pipeline.
+---
+
+The clients module is a CRM-lite, optimized for safari sales. Every itinerary belongs to a client, and every client has a history of every proposal you've ever sent them.
+
+## When to use it
+
+If you already use a separate CRM (HubSpot, Pipedrive, a spreadsheet), you can largely ignore the clients module and just type a name when creating an itinerary.
+
+If you don't, Ratiba's clients module covers what most operators need: contact info, deal pipeline, follow-up reminders, and lifecycle tracking.
+
+## Creating a client
+
+Two ways:
+
+1. **From scratch.** Open **Clients** then **New client**. Fill in name, email, phone, country, and any notes.
+2. **From an itinerary.** While creating a new itinerary, the client picker has a **+ New client** option that creates one inline.
+
+## Client fields
+
+- **Name** (or family name, like "Smith family").
+- **Email.**
+- **Phone or WhatsApp.**
+- **Country.** Used for default residency category on park fees.
+- **Source.** Where they came from (Google Ads, referral, agent, repeat).
+- **Tags.** Free-form ("honeymoon", "high-spend", "agent: ABC Travel").
+- **Notes.** Anything internal.
+
+## Client detail page
+
+Each client has a detail page showing:
+
+- All their itineraries (any status).
+- Total value sold (sum of accepted itineraries).
+- Last contact date.
+- Notifications timeline (proposal views, comments, acceptances).
+
+This is the page you'll open before any follow-up call or email.
+
+## Pipeline view
+
+Switch the clients view to **Pipeline** for a Kanban-style board. Stages are based on itinerary statuses:
+
+- **Enquiry.** Client created, no itinerary yet.
+- **Building.** Itinerary in draft.
+- **Sent.** Proposal published.
+- **Won.** Accepted.
+- **Lost.** Declined or gone cold.
+
+Drag cards between stages to update status. Stage changes auto-update the underlying itinerary statuses.
+
+## Follow-up reminders
+
+Set a reminder on any client to "follow up in 3 days". You'll get an in-app and email reminder. Useful for the well-documented "follow up at least 3 times" rule of safari sales.
+
+## Agents and intermediaries
+
+If you sell through travel agents, you can mark a client as an **Agent** in their fields. Then when you create itineraries, you can specify both the agent (the buyer) and the end traveler (the family).
+
+This is also useful for commission tracking. Add the agent's commission percent to their record, and Ratiba can flag it on proposals.

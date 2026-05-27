@@ -1,0 +1,71 @@
+---
+title: Building an itinerary
+description: Day-by-day construction, the activity modal, the AI assistant.
+---
+
+## The builder layout
+
+When you open an itinerary, you see four tabs:
+
+- **Day-by-day.** The main editor. A table of days, one row per day.
+- **Pricing.** The cost breakdown and selling price.
+- **Preview.** The proposal as the client will see it.
+- **Share.** Publishing controls.
+
+## Creating days
+
+Days are created automatically based on the trip's duration. If you change the duration (in trip settings), rows are added or removed.
+
+To rearrange days, drag the row's left handle. The dates re-compute as days move.
+
+## Editing a day
+
+Click any cell in a day row to edit inline. Or click the row to open the full day editor with these sections:
+
+- **Title and description.** What clients see at the top of the day card. ("Day 3: Serengeti game drive")
+- **Region or park.** Drives default park fees. Pick from your park list or type a free-form region.
+- **Accommodation.** Search and pick from your [accommodations library](/docs/content-library/accommodations). The room type and meal plan dropdowns are populated based on what the accommodation supports.
+- **Activities.** Add one or more. See the [activity modal](#the-activity-modal) below.
+- **Vehicle.** Picks the day's vehicle. Defaults to the trip's primary vehicle.
+- **Transfer.** Optional. Add a from-to transfer for the day.
+- **Custom day cost.** Optional. A fixed amount for things not covered by rate cards.
+- **Internal notes.** Hidden from clients. Visible to your team.
+
+## The activity modal
+
+Clicking **Add activity** opens a searchable modal listing all activities from your library, filtered by the day's region by default.
+
+- Type to search by name.
+- Toggle the region filter off to see all activities.
+- Pick one or more. Selected activities show as chips below the search.
+- Click **Add** to add them to the day.
+
+Each activity carries its rate (from the [activity rate card](/docs/rate-cards/activities)) into the pricing tab automatically.
+
+## AI assistant
+
+The AI assistant lives in the bottom-right of the builder. Type a brief:
+
+> "7 day classic Tanzania, 2 adults, mid-range lodges, fly between parks, departing June 15"
+
+The assistant proposes a draft itinerary using your library content and current rate cards. It picks accommodations that match the style (mid-range), routes through likely parks (Tarangire, Manyara, Serengeti, Ngorongoro), and uses your stored vehicle and transfer rules.
+
+You can:
+
+- **Accept** the draft and edit from there.
+- **Regenerate** with a different style or different lodges.
+- **Reject** and start blank.
+
+The assistant only suggests content that exists in your library and rate cards. It will not invent lodges you haven't loaded.
+
+## Drag-and-drop content
+
+In the day editor, you can drag accommodations and activities from a side panel directly into a day. Useful when you're rapidly iterating on a trip.
+
+## Saving
+
+Every edit auto-saves. There's no "save" button. If two team members edit the same trip at the same time, see [Collaboration](/docs/itineraries/collaboration).
+
+## Duplicating a day
+
+Right-click any day row and choose **Duplicate**. Useful for back-to-back nights at the same lodge.

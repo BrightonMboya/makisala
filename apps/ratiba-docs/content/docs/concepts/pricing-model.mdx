@@ -1,0 +1,79 @@
+---
+title: Pricing model
+description: How Ratiba turns supplier rates into a selling price.
+---
+
+Ratiba uses **cost-plus pricing**. Supplier cost is summed from rate cards, then a markup percent is applied to produce the selling price.
+
+## The formula
+
+For each day, for each line item:
+
+```
+supplier_cost = (rate × quantity) according to rate-card rules
+markup_amount = supplier_cost × (markup_percent / 100)
+selling_price = supplier_cost + markup_amount
+```
+
+Trip totals sum across all days and line items.
+
+## Where each cost comes from
+
+| Line item       | Source                                                          |
+| --------------- | --------------------------------------------------------------- |
+| Accommodation   | Accommodation rate matching season + room type + meal plan      |
+| Park fee        | Park-fee rate for the park, residency category, and season      |
+| Park ancillary  | Park-fee rate's ancillary table (e.g. concession, camping fees) |
+| Vehicle         | Vehicle daily rate, optionally per km                           |
+| Transfer        | Transfer rate matching the from-to pair                         |
+| Activity        | Activity rate (per person or per group, by season)              |
+| Custom day cost | Whatever you typed                                              |
+
+## Season selection
+
+When multiple seasons cover the same date, Ratiba picks the season with the **highest priority** value. This is how you express "high season" overrides "shoulder season".
+
+Read more about season bands and overlaps in [Seasons](/docs/rate-cards/seasons).
+
+## Meal plan derivation
+
+If you mark a day's meals as breakfast, lunch, and/or dinner in the builder, Ratiba derives the meal plan:
+
+- All three → **FB** (full board)
+- Breakfast + one other → **HB** (half board)
+- Breakfast only → **BB** (bed and breakfast)
+- None → **RO** (room only)
+
+The accommodation rate card must have a rate for that meal plan, otherwise that line shows as a missing-rate warning.
+
+## Per-person vs per-room rates
+
+Accommodation rates can be priced two ways:
+
+- **Per person.** Multiplied by the pax count for that night.
+- **Per room.** Flat rate per room. Ratiba assumes one room per booking unless you explicitly add a second. Per-room rates carry a `max occupancy` and Ratiba will warn if your pax exceeds it.
+
+## Markup hierarchy
+
+Markup is resolved from most specific to least specific.
+
+1. Line-item override (set in the day editor).
+2. Day-level override.
+3. Trip-level override.
+4. Workspace default.
+
+If none of those are set, markup is 0.
+
+## What if I sell net?
+
+If you don't add markup and instead earn commission from suppliers, set the workspace default markup to 0. The selling price will equal the supplier cost. You can still record commission separately under each accommodation in the content library.
+
+## What if I sell flat day rates?
+
+Some operators sell a flat per-day price rather than cost-plus. Use the **custom day cost** field instead of populating supplier line items. Ratiba will treat the custom amount as the day's selling price.
+
+You lose margin tracking with this approach but gain simplicity.
+
+## Rounding
+
+Per-line costs are tracked to 2 decimal places. Trip totals are rounded to the nearest whole unit in the trip currency.

@@ -1,0 +1,70 @@
+---
+title: Pricing an itinerary
+description: Read and override the cost breakdown.
+---
+
+The pricing tab shows what the trip costs you, what you're selling it for, and the margin in between.
+
+## The pricing table
+
+For each day, the table lists every line item with:
+
+- **Description.** What the line is for ("Tarangire NP, non-resident adult, x 2").
+- **Quantity.** Pax, nights, or units.
+- **Unit cost.** From the rate card.
+- **Line cost.** Quantity times unit cost.
+- **Markup %.** Applied to that line.
+- **Selling price.** Line cost plus markup.
+
+At the bottom, the table sums to:
+
+- **Total supplier cost.**
+- **Total markup.**
+- **Total selling price.**
+- **Margin %** (markup ÷ selling price).
+- **Per-person price** (total ÷ pax).
+
+## Overriding markup
+
+Markup can be set at four levels (most-specific wins):
+
+1. **Per line.** Click the markup % cell on any line to override.
+2. **Per day.** Click the day header's markup field.
+3. **Per trip.** Open trip settings.
+4. **Workspace default.** From [Pricing settings](/docs/rate-cards/pricing-settings).
+
+A grayed value means "inherited". A bold value means "overridden here".
+
+## Overriding cost
+
+Sometimes a supplier gives you a one-off discount you don't want to ingrain in the rate card. Click any **unit cost** cell to override it for this trip only. The rate card is not modified.
+
+Overrides are sticky to the trip. If you recalculate, your overrides are preserved unless you explicitly choose to drop them.
+
+## Excluding a line
+
+To remove a line from the selling price (for complimentary items or value-adds), uncheck the **Sell** checkbox. The line still shows in the breakdown but doesn't add to the total. The proposal will list it as "Complimentary".
+
+## Adding a custom line
+
+Click **Add custom line** to type a one-off line item. Useful for:
+
+- Tip pool ($50 per person).
+- Single supplements not in the rate card.
+- Bottle of champagne on arrival.
+
+Custom lines carry their own cost, quantity, and markup like any other line.
+
+## Recalculating
+
+If you change a day's accommodation, activities, or pax mix, the pricing tab re-runs automatically.
+
+If a rate card has changed since you last looked at the trip, click **Recalculate** to pull the latest. You'll be shown a diff of what changed before you commit.
+
+## Multi-currency
+
+If your rate cards mix currencies, the pricing table shows each line in its source currency and then converts to the trip currency for the totals. The FX rate used is whichever rate the workspace has pinned (see [Pricing settings](/docs/rate-cards/pricing-settings)).
+
+## Saving as a tour template
+
+If the trip turns out well, click **Save as tour template** to convert it into a [reusable tour](/docs/tours). Future quotes can clone from it.

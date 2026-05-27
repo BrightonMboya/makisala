@@ -1,0 +1,17 @@
+{
+  "title": "Documentation",
+  "pages": [
+    "index",
+    "getting-started",
+    "concepts",
+    "content-library",
+    "rate-cards",
+    "itineraries",
+    "clients",
+    "tours",
+    "team",
+    "billing",
+    "faq",
+    "changelog"
+  ]
+}

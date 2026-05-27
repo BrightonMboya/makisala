@@ -1,0 +1,64 @@
+---
+title: Park fees
+description: National park and reserve entry fees, by category and season.
+---
+
+Park fees are per-person, per-day government charges to enter a national park, reserve, or conservation area. They are usually the largest non-accommodation line on a safari quote.
+
+## Park entries
+
+Each park has:
+
+- **Name.** "Serengeti", "Ngorongoro Crater", "Lake Manyara", "Maasai Mara National Reserve", etc.
+- **Country.** For multi-country operators.
+- **Default residency category.** Usually "Non-resident adult".
+- **Notes.** Internal.
+
+## Fee rows
+
+For each park, you add rate rows by:
+
+- **Season.** Optional. If left blank, the rate applies year-round.
+- **Residency category.** One of:
+  - Non-resident adult
+  - Non-resident child
+  - East African resident adult
+  - East African resident child
+  - Citizen adult
+  - Citizen child
+- **Rate.** Per-person, per-day.
+- **Currency.** Often USD for non-resident, local currency for residents/citizens.
+
+The pricing engine picks the right row based on:
+
+- The park visited that day.
+- The pax's residency category (set on the trip).
+- The day's season.
+
+## Ancillary park charges
+
+In addition to the per-person entry fee, some parks charge:
+
+- **Concession fees** (per-room or per-vehicle, per night) for lodging inside the park.
+- **Camping fees** (per-person, per-night) for mobile camps.
+- **Vehicle entry fees** (per-vehicle, per-day or once per visit).
+- **Crater service fees** (Ngorongoro-specific).
+
+Add these in the **Ancillary** section of each park. Each ancillary has its own charge basis:
+
+- Per vehicle per day
+- Per vehicle once per visit
+- Per person per night
+- Per room per night
+
+The pricing engine applies them automatically based on the day's accommodation and vehicle.
+
+## Pre-seeded parks
+
+When you sign up and pick a country, Ratiba pre-loads the major parks for that country (Tanzania, Kenya, Uganda, Rwanda, Botswana, South Africa, Namibia, Zambia, Zimbabwe). Rates are not pre-loaded because they change yearly and vary by operator agreement.
+
+## Updating yearly
+
+Tanzania and Kenya park fees change every July. We recommend setting a calendar reminder to update both countries on July 1.
+
+The fastest way to update is the bulk-edit dialog: filter by country and category, then enter new rates inline.

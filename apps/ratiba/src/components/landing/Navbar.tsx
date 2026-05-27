@@ -8,6 +8,7 @@ const navLinks = [
   { href: '/#why-ratiba', label: 'Why Ratiba' },
   { href: '/features', label: 'Features' },
   { href: '/pricing', label: 'Pricing' },
+  { href: 'https://docs.ratiba.io', label: 'Docs' },
   { href: '/login', label: 'Login' },
 ];
 

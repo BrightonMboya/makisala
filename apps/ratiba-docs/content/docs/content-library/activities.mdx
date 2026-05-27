@@ -1,0 +1,39 @@
+---
+title: Activities
+description: Game drives, walking safaris, balloon flights, cultural visits.
+---
+
+Activities are everything you can drop into a day that isn't an accommodation, a park fee, or a vehicle. Open **Content Library** then **Activities**.
+
+## Fields
+
+- **Name.** "Hot-air balloon over the Serengeti", "Sunset walking safari", "Visit to a Maasai boma".
+- **Location.** Park or region.
+- **Description.** Shown on proposals.
+- **Duration.** Approximate hours, used by the itinerary builder to flag overlapping activities.
+- **Pricing basis.**
+  - **Per person.** The activity rate is multiplied by the day's pax count.
+  - **Per group.** A flat rate per booking, regardless of pax.
+  - **Included.** No cost, used for free activities (lodge-included game drives).
+- **Supplier.** Optional, links to the operator who actually runs the activity, for ops.
+- **Images.** Same drag-and-drop as accommodations.
+
+## Rates
+
+Activity prices live on the rate card, see [Activity rates](/docs/rate-cards/activities). Like accommodations, the activity entity holds descriptions and the rate-card holds prices, so you can update one without re-doing the other.
+
+## Built-in vs custom
+
+Some activities are essentially built into a lodge stay (a lodge-included game drive, an included dinner). Mark them as **Included** and they appear in the itinerary as "Included by lodge", with no line cost.
+
+Custom activities (balloon, cultural visit) need a rate card entry.
+
+## Optional add-ons
+
+You can mark an activity as **Optional** on a specific day. It shows on the proposal as an add-on with its own price, and the client can request it without changing the base total.
+
+## Common gotchas
+
+- **Park fees are not activities.** Park fees are managed separately in [Park fees](/docs/rate-cards/park-fees), and Ratiba calculates them automatically based on the day's park.
+- **Game drives are usually free.** Most safari lodges include game drives in the rate. Only add a game-drive activity line if you're using an external guide or paying separately.
+- **Balloon flights are typically per-person and high-margin.** Make sure markup is set correctly.

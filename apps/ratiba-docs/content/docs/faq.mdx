@@ -1,0 +1,123 @@
+---
+title: FAQ
+description: Frequently asked questions.
+---
+
+## General
+
+### How is Ratiba different from Tourwriter or Wetu?
+
+Tourwriter and Wetu are built for the global tour-operator market. They are powerful but generic.
+
+Ratiba is purpose-built for safari operators. The data model knows about parks, residency categories, season bands, meal plans, and game-drive vehicles. Setup is faster, the UI is tighter, and the AI assistant only suggests content from your own library.
+
+If you sell European tours, Tourwriter is probably a better fit. If you sell East or Southern African safaris, Ratiba is.
+
+### Do I need to be technical to use Ratiba?
+
+No. Ratiba is a SaaS product with a normal web UI. No setup, no install, no code. Most operators are running within an hour of signup.
+
+### Can I import my existing rate cards?
+
+Yes. Paste tab-separated tables (from Excel or Google Sheets) directly into each rate-card grid. For larger imports, contact support and we'll help migrate.
+
+### What languages do you support?
+
+The app UI is in English. Proposals can be sent in any language — you write the descriptions in your language of choice, and Ratiba just renders them.
+
+We plan to add UI localization for French and Spanish in 2027.
+
+## Pricing and rates
+
+### Can I sell on a net basis (no markup)?
+
+Yes. Set the workspace default markup to 0. The selling price will equal the supplier cost. Track commission separately under each accommodation.
+
+### How do I handle a one-off discount from a lodge?
+
+Either:
+
+- Override the unit cost on the relevant line in the pricing tab (sticky to that trip).
+- Add a "custom discount" line with a negative cost.
+
+Don't change the rate card if it's a one-off.
+
+### How do I handle agent commissions?
+
+If you sell through an agent who takes commission off your selling price:
+
+1. Mark the agent as a client of type "Agent" in [Clients](/docs/clients).
+2. Set their commission percent on their record.
+3. On the proposal, the inclusions list will note "Agent commission included" if you enable it.
+
+Internally, Ratiba records both gross (what the client pays) and net (what you receive).
+
+### Can I quote in multiple currencies for the same client?
+
+The trip has one currency, but rate cards can mix. The pricing engine converts internally. Use the **Per-person breakdown** option on the proposal to show both supplier and client currencies if needed.
+
+## Proposals
+
+### Can clients accept proposals without creating an account?
+
+Yes. The accept button is one-click on the public proposal page. No signup, no login.
+
+### Can I edit a proposal after sending?
+
+Yes, but the changes won't be visible to the client until you click **Republish**. This prevents accidental "the price just changed" surprises.
+
+### What happens if a client never responds?
+
+The proposal stays published. You can set up follow-up reminders or set an expiry date so the proposal expires after, say, 14 days. Expired proposals show a polite message and prompt the client to request an updated quote.
+
+### Can I see who's viewed a proposal?
+
+Yes. The itinerary's activity timeline records every view, comment, and acceptance with timestamps and rough device info.
+
+## Team
+
+### Can multiple people edit the same trip at once?
+
+Yes. Ratiba is real-time. You'll see live edits from your teammates and cell-level presence markers.
+
+### Can I require approval before sending?
+
+Yes. Enable the approval workflow in [Settings → Workflow](/docs/team).
+
+### How do I hand off a trip to a teammate?
+
+Reassign it. From the itinerary header, click the assignee chip and pick the new owner.
+
+## Data and security
+
+### Where is my data stored?
+
+EU (Frankfurt) by default. Enterprise customers can request other regions.
+
+### Can I export my data?
+
+Yes. Each rate card exports to CSV. Each itinerary exports to PDF. The full workspace can be exported via the API.
+
+### What happens if I cancel?
+
+Your data stays for 90 days, then is permanently deleted. Export everything before the 90 days are up.
+
+### Is Ratiba GDPR compliant?
+
+Yes. We have a DPA available on request. Email [privacy@ratiba.io](mailto:privacy@ratiba.io).
+
+## Support
+
+### How do I get help?
+
+- In-app help button (lower right).
+- Email [support@ratiba.io](mailto:support@ratiba.io).
+- Book a setup call from the help menu.
+
+### What hours is support available?
+
+Monday to Friday, 8am to 6pm East Africa Time (UTC+3). Critical issues outside hours go to a paging rotation. We aim to respond within 4 business hours.
+
+### Do you offer onboarding help?
+
+Yes. Pro and Team plans include a free 30-minute onboarding call. Enterprise plans include a dedicated implementation manager.
