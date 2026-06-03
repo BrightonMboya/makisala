@@ -8,6 +8,7 @@ import { renderEmailVerificationEmail } from '../templates/email-verification';
 import { renderNoteMentionEmail } from '../templates/note-mention';
 import { renderInquiryNotificationEmail } from '../templates/inquiry-notification';
 import { renderDemoRequestNotificationEmail } from '../templates/demo-request-notification';
+import { renderPaymentChangeRequestEmail } from '../templates/payment-change-request';
 
 export interface CommentNotificationData {
   proposalId: string;
@@ -569,6 +570,56 @@ export async function sendDemoRequestEmail(
       subject: `New Demo Request from ${data.fullName} — ${data.company}`,
       html,
       replyTo: data.email,
+    });
+
+    if (result.error) {
+      return {
+        success: false,
+        error: result.error.message || 'Failed to send email',
+      };
+    }
+
+    return { success: true };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error occurred',
+    };
+  }
+}
+
+export interface PaymentChangeRequestData {
+  organizationName: string;
+  organizationId: string;
+  requesterName: string;
+  requesterEmail: string;
+  reason?: string;
+}
+
+/**
+ * Sends an email to the Ratiba team when an org admin requests to unlock their
+ * locked payment details. Unlocking stays a manual, out-of-band action.
+ */
+export async function sendPaymentDetailsChangeRequestEmail(
+  data: PaymentChangeRequestData,
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const html = renderPaymentChangeRequestEmail({
+      organizationName: data.organizationName,
+      organizationId: data.organizationId,
+      requesterName: data.requesterName,
+      requesterEmail: data.requesterEmail,
+      reason: data.reason,
+    });
+
+    const fromEmail = env.RESEND_FROM_EMAIL || 'notifications@makisala.com';
+
+    const result = await resend.emails.send({
+      from: fromEmail,
+      to: 'info@makisala.com',
+      subject: `Payment Details Change Request — ${data.organizationName}`,
+      html,
+      replyTo: data.requesterEmail,
     });
 
     if (result.error) {

@@ -17,6 +17,7 @@ import {
 import Image from 'next/image';
 import { Map, MapMarker, MapRoute, MarkerContent, MarkerTooltip } from '@repo/ui/map';
 import type { ItineraryData } from '@/types/itinerary-types';
+import { ConfirmProposalModal } from '@/components/proposal/ConfirmProposalModal';
 
 // --- TRIP MAP COMPONENT ---
 function TripMap({ data }: { data: ItineraryData['mapData'] }) {
@@ -254,6 +255,7 @@ export default function KuduTheme({ data, onHeroImageChange, onDayImageChange }:
     itinerary,
     pricing,
     hidePricing,
+    showPaymentDetails,
     includedItems,
     excludedItems,
     accommodations,
@@ -262,6 +264,8 @@ export default function KuduTheme({ data, onHeroImageChange, onDayImageChange }:
     organization,
     tripOverview,
   } = data;
+
+  const [showConfirm, setShowConfirm] = React.useState(false);
 
   return (
     <div className="h-screen snap-y snap-mandatory overflow-y-scroll scroll-smooth bg-[#F4F4F1] selection:bg-emerald-800 selection:text-white">
@@ -579,9 +583,14 @@ export default function KuduTheme({ data, onHeroImageChange, onDayImageChange }:
               </div>
             )}
 
-            <button className="flex w-full items-center justify-center gap-3 bg-emerald-700 py-5 text-xs font-bold tracking-widest text-white uppercase transition-all duration-500 hover:bg-emerald-600">
-              Confirm Proposal <ArrowRight size={16} />
-            </button>
+            {showPaymentDetails && (
+              <button
+                onClick={() => setShowConfirm(true)}
+                className="flex w-full cursor-pointer items-center justify-center gap-3 bg-emerald-700 py-5 text-xs font-bold tracking-widest text-white uppercase transition-all duration-500 hover:bg-emerald-600"
+              >
+                Confirm Proposal <ArrowRight size={16} />
+              </button>
+            )}
             {organization?.name && (
               <div className="mt-4 flex items-center justify-center gap-2">
                 {organization.logoUrl && (
@@ -634,6 +643,13 @@ export default function KuduTheme({ data, onHeroImageChange, onDayImageChange }:
           <div key={i} className="h-1.5 w-1.5 rounded-full bg-black/20" />
         ))}
       </div>
+
+      <ConfirmProposalModal
+        proposalId={data.id}
+        defaultName={clientName}
+        open={showConfirm}
+        onClose={() => setShowConfirm(false)}
+      />
     </div>
   );
 }

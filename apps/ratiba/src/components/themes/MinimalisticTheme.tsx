@@ -13,6 +13,7 @@ import {
 } from '@repo/ui/map';
 import type { ItineraryData } from '@/types/itinerary-types';
 import { trpc } from '@/lib/trpc';
+import { PaymentInstructions, type PaymentMethod } from '@/components/proposal/PaymentInstructions';
 
 function TripMap({ data }: { data: ItineraryData['mapData'] }) {
   const { locations, startLocation, endLocation } = data;
@@ -162,6 +163,7 @@ export default function MinimalisticTheme({ data, onHeroImageChange, onDayImageC
   const [isConfirming, setIsConfirming] = useState(false);
   const [confirmStatus, setConfirmStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [confirmError, setConfirmError] = useState('');
+  const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
 
   const confirmMutation = trpc.proposals.confirm.useMutation();
 
@@ -172,7 +174,8 @@ export default function MinimalisticTheme({ data, onHeroImageChange, onDayImageC
     setConfirmError('');
 
     try {
-      await confirmMutation.mutateAsync({ proposalId: data.id, clientName: confirmName.trim() });
+      const result = await confirmMutation.mutateAsync({ proposalId: data.id, clientName: confirmName.trim() });
+      setPaymentMethods((result.paymentMethods ?? []) as PaymentMethod[]);
       setConfirmStatus('success');
     } catch (err: any) {
       setConfirmStatus('error');
@@ -729,12 +732,14 @@ export default function MinimalisticTheme({ data, onHeroImageChange, onDayImageC
                   </>
                 )}
 
-                <button
-                  onClick={() => setShowConfirmModal(true)}
-                  className="w-full cursor-pointer rounded-xl bg-stone-800 px-8 py-5 text-sm font-medium tracking-[0.2em] text-white uppercase transition-colors hover:bg-stone-900"
-                >
-                  Confirm Proposal
-                </button>
+                {data.showPaymentDetails && (
+                  <button
+                    onClick={() => setShowConfirmModal(true)}
+                    className="w-full cursor-pointer rounded-xl bg-stone-800 px-8 py-5 text-sm font-medium tracking-[0.2em] text-white uppercase transition-colors hover:bg-stone-900"
+                  >
+                    Confirm Proposal
+                  </button>
+                )}
 
                 {/* Confirmation Modal */}
                 <AnimatePresence>
@@ -773,16 +778,20 @@ export default function MinimalisticTheme({ data, onHeroImageChange, onDayImageC
                             <h3 className="mb-2 font-serif text-2xl text-stone-900">
                               Proposal Confirmed!
                             </h3>
-                            <p className="mb-6 text-stone-600">
-                              Thank you for confirming. The tour operator has been notified and will
-                              contact you shortly to finalize your booking.
+                            <p className="mb-2 text-stone-600">
+                              {paymentMethods.length > 0
+                                ? 'Thank you for confirming. The operator has been notified. You can pay using the details below.'
+                                : 'Thank you for confirming. The tour operator has been notified and will contact you shortly to finalize your booking.'}
                             </p>
+
+                            <PaymentInstructions methods={paymentMethods} />
+
                             <button
                               onClick={() => {
                                 setShowConfirmModal(false);
                                 setConfirmStatus('idle');
                               }}
-                              className="rounded-lg bg-stone-800 px-6 py-3 text-sm font-medium text-white hover:bg-stone-900"
+                              className="mt-6 rounded-lg bg-stone-800 px-6 py-3 text-sm font-medium text-white hover:bg-stone-900"
                             >
                               Close
                             </button>

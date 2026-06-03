@@ -346,6 +346,7 @@ export function transformProposalToItineraryData(
     accommodations: Array.from(accommodationMap.values()),
     transportation: transportation.length > 0 ? transportation : undefined,
     hidePricing: proposal.hidePricing || false,
+    showPaymentDetails: proposal.showPaymentDetails || false,
     pricing,
     includedItems: inclusions,
     excludedItems: exclusions,

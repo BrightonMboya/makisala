@@ -68,6 +68,9 @@ export function BuilderProvider({
   // Pricing visibility
   const [hidePricing, setHidePricing] = useState(false);
 
+  // Reveal stored payment methods to the client after they confirm this proposal.
+  const [showPaymentDetails, setShowPaymentDetails] = useState(false);
+
   // Auto-pricing (rate-card driven) — kept in builder state; persistence comes later.
   const [useAutoPricing, setUseAutoPricing] = useState(false);
   const [vehicleId, setVehicleId] = useState<string | null>(null);
@@ -159,6 +162,8 @@ export function BuilderProvider({
       if (initialData.inclusions) setInclusions(initialData.inclusions);
       if (initialData.exclusions) setExclusions(initialData.exclusions);
       if (initialData.hidePricing != null) setHidePricing(initialData.hidePricing);
+      if (initialData.showPaymentDetails != null)
+        setShowPaymentDetails(initialData.showPaymentDetails);
 
       // Auto-pricing fields from proposals table
       if (initialData.useAutoPricing != null) setUseAutoPricing(!!initialData.useAutoPricing);
@@ -255,6 +260,8 @@ export function BuilderProvider({
         setExclusions,
         hidePricing,
         setHidePricing,
+        showPaymentDetails,
+        setShowPaymentDetails,
         useAutoPricing,
         setUseAutoPricing,
         vehicleId,

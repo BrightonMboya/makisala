@@ -123,24 +123,19 @@ export function AppSidebar({ serverData }: { serverData?: SidebarServerData | nu
       <SidebarHeader className="border-b border-stone-200 p-4 group-data-[collapsible=icon]:p-2">
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton
-              size="lg"
-              asChild
-              tooltip={orgName}
-              className="group-data-[collapsible=icon]:!p-2"
-            >
+            <SidebarMenuButton size="lg" asChild tooltip={orgName}>
               <Link href="/dashboard">
-                {orgLogo ? (
-                  <img
-                    src={orgLogo}
-                    alt={orgName}
-                    className="h-10 w-10 rounded-full border-2 border-stone-200 object-cover"
-                  />
-                ) : (
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-green-100 font-serif text-lg font-bold text-green-800">
-                    {orgInitial}
-                  </div>
-                )}
+                <div
+                  className={`flex aspect-square size-10 shrink-0 items-center justify-center overflow-hidden rounded-full group-data-[collapsible=icon]:size-8 ${
+                    orgLogo ? 'border-2 border-stone-200' : 'bg-green-100'
+                  }`}
+                >
+                  {orgLogo ? (
+                    <img src={orgLogo} alt={orgName} className="size-full object-cover" />
+                  ) : (
+                    <span className="font-serif text-lg font-bold text-green-800">{orgInitial}</span>
+                  )}
+                </div>
                 <span className="truncate font-serif text-lg font-bold text-green-800 group-data-[collapsible=icon]:hidden">
                   {orgName}
                 </span>
@@ -191,18 +186,14 @@ export function AppSidebar({ serverData }: { serverData?: SidebarServerData | nu
       <SidebarFooter className="border-t border-stone-200 p-2">
         <SidebarMenu className="gap-2">
           <SidebarMenuItem>
-            <SidebarMenuButton
-              size="lg"
-              tooltip={userName}
-              className="group-data-[collapsible=icon]:!p-2"
-            >
-              {userImage ? (
-                <img src={userImage} alt={userName} className="h-8 w-8 rounded-full object-cover" />
-              ) : (
-                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-green-100 font-bold text-green-800">
-                  {userName[0] || '?'}
-                </div>
-              )}
+            <SidebarMenuButton size="lg" tooltip={userName}>
+              <div className="flex aspect-square size-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-green-100">
+                {userImage ? (
+                  <img src={userImage} alt={userName} className="size-full object-cover" />
+                ) : (
+                  <span className="font-bold text-green-800">{userName[0] || '?'}</span>
+                )}
+              </div>
               <div className="flex flex-col items-start group-data-[collapsible=icon]:hidden">
                 <span className="truncate text-sm font-medium">{userName}</span>
                 <span className="truncate text-xs text-stone-500">{userEmail}</span>

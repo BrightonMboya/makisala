@@ -18,7 +18,7 @@ export const markdownComponents = {
                 <img
                     src={src || '/placeholder.svg'}
                     alt={alt}
-                    className="h-full w-full rounded-lg object-cover shadow-lg"
+                    className="h-auto w-full rounded-lg object-cover shadow-lg"
                     loading="lazy"
                     {...props}
                 />

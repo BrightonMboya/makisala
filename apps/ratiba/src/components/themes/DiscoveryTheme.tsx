@@ -43,6 +43,7 @@ import {
 import type { ItineraryData } from '@/types/itinerary-types';
 import { capitalize, cn } from '@/lib/utils';
 import { trpc } from '@/lib/trpc';
+import { PaymentInstructions, type PaymentMethod } from '@/components/proposal/PaymentInstructions';
 
 function joinList(items: string[]): string {
   if (items.length <= 2) return items.join(' & ');
@@ -840,15 +841,17 @@ const PricingSection = ({ data, onConfirm }: { data: ItineraryData; onConfirm: (
             experiences.
           </p>
 
-          <div className="mt-12">
-            <button
-              onClick={onConfirm}
-              className="group inline-flex items-center gap-3 bg-white px-8 py-4 text-sm font-medium tracking-wide text-stone-900 transition-colors hover:bg-stone-100"
-            >
-              Reserve This Journey
-              <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
-            </button>
-          </div>
+          {data.showPaymentDetails && (
+            <div className="mt-12">
+              <button
+                onClick={onConfirm}
+                className="group inline-flex items-center gap-3 bg-white px-8 py-4 text-sm font-medium tracking-wide text-stone-900 transition-colors hover:bg-stone-100"
+              >
+                Reserve This Journey
+                <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+              </button>
+            </div>
+          )}
         </motion.div>
 
         {/* Inclusions */}
@@ -1297,31 +1300,33 @@ const DaySection = ({
 // ============================================================================
 const Footer = ({ data, onConfirm }: { data: ItineraryData; onConfirm: () => void }) => (
   <footer className="bg-stone-950 text-white">
-    {/* CTA Section */}
-    <div className="border-b border-stone-800 px-8 py-24 text-center lg:px-16 lg:py-32">
-      <motion.div
-        initial={{ opacity: 0, y: 30 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true }}
-        className="mx-auto max-w-2xl"
-      >
-        <p className="mb-8 text-xs font-light tracking-[0.3em] text-stone-500 uppercase">
-          Begin Your Story
-        </p>
-        <h2 className="mb-8 font-serif text-4xl lg:text-5xl">Ready to embark?</h2>
-        <p className="mb-12 text-lg leading-relaxed font-light text-stone-400">
-          Every great journey begins with a single step. Let us guide you through an adventure that
-          will stay with you forever.
-        </p>
-        <button
-          onClick={onConfirm}
-          className="group inline-flex items-center gap-3 bg-white px-10 py-5 text-base font-medium tracking-wide text-stone-900 transition-colors hover:bg-stone-100"
+    {/* CTA Section — only when the operator opted to collect payment on this proposal */}
+    {data.showPaymentDetails && (
+      <div className="border-b border-stone-800 px-8 py-24 text-center lg:px-16 lg:py-32">
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          className="mx-auto max-w-2xl"
         >
-          Confirm &amp; Pay
-          <ChevronRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
-        </button>
-      </motion.div>
-    </div>
+          <p className="mb-8 text-xs font-light tracking-[0.3em] text-stone-500 uppercase">
+            Begin Your Story
+          </p>
+          <h2 className="mb-8 font-serif text-4xl lg:text-5xl">Ready to embark?</h2>
+          <p className="mb-12 text-lg leading-relaxed font-light text-stone-400">
+            Every great journey begins with a single step. Let us guide you through an adventure that
+            will stay with you forever.
+          </p>
+          <button
+            onClick={onConfirm}
+            className="group inline-flex items-center gap-3 bg-white px-10 py-5 text-base font-medium tracking-wide text-stone-900 transition-colors hover:bg-stone-100"
+          >
+            Confirm &amp; Pay
+            <ChevronRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
+          </button>
+        </motion.div>
+      </div>
+    )}
 
     {/* About & Payment Terms */}
     {(data.organization?.aboutDescription || data.organization?.paymentTerms) && (
@@ -1398,6 +1403,7 @@ export default function DiscoveryTheme({
   const [isConfirming, setIsConfirming] = useState(false);
   const [confirmStatus, setConfirmStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [confirmError, setConfirmError] = useState('');
+  const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
   const [hoveredDayImage, setHoveredDayImage] = useState<number | null>(null);
 
   const handleHeroImageChange = () => {
@@ -1415,7 +1421,8 @@ export default function DiscoveryTheme({
     setConfirmError('');
 
     try {
-      await confirmMutation.mutateAsync({ proposalId: data.id, clientName: confirmName.trim() });
+      const result = await confirmMutation.mutateAsync({ proposalId: data.id, clientName: confirmName.trim() });
+      setPaymentMethods((result.paymentMethods ?? []) as PaymentMethod[]);
       setConfirmStatus('success');
     } catch (err: any) {
       setConfirmStatus('error');
@@ -1474,7 +1481,7 @@ export default function DiscoveryTheme({
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
               onClick={(e) => e.stopPropagation()}
-              className="mx-4 w-full max-w-md rounded-2xl bg-white p-8 shadow-2xl"
+              className="mx-4 max-h-[90vh] w-full max-w-md overflow-y-auto rounded-2xl bg-white p-8 shadow-2xl"
             >
               {confirmStatus === 'success' ? (
                 <div className="text-center">
@@ -1482,16 +1489,20 @@ export default function DiscoveryTheme({
                     <Check className="h-8 w-8 text-green-600" />
                   </div>
                   <h3 className="mb-2 font-serif text-2xl text-stone-900">Proposal Confirmed!</h3>
-                  <p className="mb-6 text-stone-600">
-                    Thank you for confirming. The tour operator has been notified and will contact
-                    you shortly to finalize your booking.
+                  <p className="mb-2 text-stone-600">
+                    {paymentMethods.length > 0
+                      ? 'Thank you for confirming. The operator has been notified. You can pay using the details below.'
+                      : 'Thank you for confirming. The tour operator has been notified and will contact you shortly to finalize your booking.'}
                   </p>
+
+                  <PaymentInstructions methods={paymentMethods} />
+
                   <button
                     onClick={() => {
                       setShowConfirmModal(false);
                       setConfirmStatus('idle');
                     }}
-                    className="rounded-lg bg-stone-800 px-6 py-3 text-sm font-medium text-white hover:bg-stone-900"
+                    className="mt-6 rounded-lg bg-stone-800 px-6 py-3 text-sm font-medium text-white hover:bg-stone-900"
                   >
                     Close
                   </button>

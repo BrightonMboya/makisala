@@ -53,6 +53,8 @@ export default function PricingPage() {
     setExclusions,
     hidePricing,
     setHidePricing,
+    showPaymentDetails,
+    setShowPaymentDetails,
     useAutoPricing,
     setUseAutoPricing,
     vehicleId,
@@ -269,19 +271,41 @@ export default function PricingPage() {
         )}
       </div>
 
-      <div className="flex items-center justify-end gap-2 pr-2">
-        <Checkbox
-          id="hide-total"
-          checked={hidePricing}
-          onCheckedChange={(checked) => setHidePricing(checked === true)}
-          className="border-stone-300 data-[state=checked]:border-stone-900 data-[state=checked]:bg-stone-900"
-        />
-        <label
-          htmlFor="hide-total"
-          className="cursor-pointer text-sm font-medium text-stone-600 select-none"
-        >
-          Hide pricing in the final proposal
-        </label>
+      <div className="flex flex-col items-end gap-3 pr-2">
+        <div className="flex items-center gap-2">
+          <Checkbox
+            id="hide-total"
+            checked={hidePricing}
+            onCheckedChange={(checked) => setHidePricing(checked === true)}
+            className="border-stone-300 data-[state=checked]:border-stone-900 data-[state=checked]:bg-stone-900"
+          />
+          <label
+            htmlFor="hide-total"
+            className="cursor-pointer text-sm font-medium text-stone-600 select-none"
+          >
+            Hide pricing in the final proposal
+          </label>
+        </div>
+
+        <div className="flex items-start gap-2">
+          <Checkbox
+            id="show-payment-details"
+            checked={showPaymentDetails}
+            onCheckedChange={(checked) => setShowPaymentDetails(checked === true)}
+            className="mt-0.5 border-stone-300 data-[state=checked]:border-stone-900 data-[state=checked]:bg-stone-900"
+          />
+          <label
+            htmlFor="show-payment-details"
+            className="cursor-pointer select-none text-right"
+          >
+            <span className="block text-sm font-medium text-stone-600">
+              Show payment details after the client confirms
+            </span>
+            <span className="block text-xs text-stone-400">
+              On confirm, the client sees the payment methods from your Settings. Off keeps them hidden.
+            </span>
+          </label>
+        </div>
       </div>
 
       {/* Extras Section */}

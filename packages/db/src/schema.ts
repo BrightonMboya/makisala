@@ -184,6 +184,10 @@ export const organizations = pgTable(
     aboutDescription: text('about_description'),
     paymentTerms: text('payment_terms'),
     notificationEmail: text('notification_email'),
+    // When set, payment methods are locked and cannot be edited by the org admin.
+    // Unlocking is a privileged, out-of-band operation by the Ratiba team (security
+    // control against payout-detail tampering).
+    paymentDetailsLockedAt: timestamp('payment_details_locked_at'),
     planTier: PlanTier('plan_tier').default('free').notNull(),
     trialEndsAt: timestamp('trial_ends_at'),
     polarSubscriptionId: text('polar_subscription_id'),
@@ -202,6 +206,7 @@ export const organizationsRelations = relations(organizations, ({ many }) => ({
   proposals: many(proposals),
   clients: many(clients),
   images: many(organizationImages),
+  paymentMethods: many(paymentMethods),
   // Legacy invitations (to be removed after migration)
   teamInvitations: many(teamInvitations),
   // Better Auth organization plugin relations
@@ -248,6 +253,43 @@ export const clientsRelations = relations(clients, ({ one, many }) => ({
     references: [organizations.id],
   }),
   proposals: many(proposals),
+}));
+
+// ---------- PAYMENT METHODS (per org; shown to clients after they confirm) ----------
+// We never process payments. We only store the operator's payout instructions
+// (bank transfer details, hosted payment links) and surface them to a client
+// once they confirm a proposal so they can pay the operator directly.
+export const PaymentMethodType = pgEnum('payment_method_type', [
+  'bank_transfer',
+  'pesapal',
+  'stripe',
+  'paypal',
+  'other',
+]);
+
+export const paymentMethods = pgTable(
+  'payment_methods',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    organizationId: uuid('organization_id')
+      .notNull()
+      .references(() => organizations.id, { onDelete: 'cascade' }),
+    type: PaymentMethodType('type').notNull(),
+    label: text('label').notNull(), // Admin-facing/client-facing name, e.g. "Bank Transfer (USD)"
+    instructions: text('instructions'), // Freeform details, e.g. bank account info
+    url: text('url'), // Hosted payment link for link-based methods (pesapal/stripe/paypal)
+    sortOrder: integer('sort_order').default(0).notNull(),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  },
+  (table) => [index('idx_payment_methods_organization_id').on(table.organizationId)],
+);
+
+export const paymentMethodsRelations = relations(paymentMethods, ({ one }) => ({
+  organization: one(organizations, {
+    fields: [paymentMethods.organizationId],
+    references: [organizations.id],
+  }),
 }));
 
 // Better auth schemas
@@ -692,6 +734,9 @@ export const proposals = pgTable('proposals', {
   inclusions: text('inclusions').array(),
   exclusions: text('exclusions').array(),
   hidePricing: boolean('hide_pricing').default(false),
+  // When true, the operator's payment methods are revealed to the client after
+  // they confirm this proposal. Off by default so payment details stay private.
+  showPaymentDetails: boolean('show_payment_details').default(false),
   language: text('language').default('en'),
   // ----- Pricing engine (rate-card-driven) -----
   useAutoPricing: boolean('use_auto_pricing').default(false).notNull(),

@@ -9,8 +9,9 @@ import {
   proposalTransportation,
   member,
   clients,
+  paymentMethods,
 } from '@repo/db/schema';
-import { and, desc, eq, inArray, or, sql, count } from 'drizzle-orm';
+import { and, asc, desc, eq, inArray, or, sql, count } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
 import {
   sendProposalShareEmail,
@@ -44,6 +45,7 @@ interface BuilderData {
   inclusions?: string[] | null;
   exclusions?: string[] | null;
   hidePricing?: boolean;
+  showPaymentDetails?: boolean;
   useAutoPricing?: boolean | null;
   vehicleId?: string | null;
   markupPct?: number | string | null;
@@ -253,6 +255,7 @@ export const proposalsRouter = router({
           inclusions: true,
           exclusions: true,
           hidePricing: true,
+          showPaymentDetails: true,
           useAutoPricing: true,
           vehicleId: true,
           markupPct: true,
@@ -384,6 +387,7 @@ export const proposalsRouter = router({
         inclusions: builderData.inclusions || null,
         exclusions: builderData.exclusions || null,
         hidePricing: builderData.hidePricing || false,
+        showPaymentDetails: builderData.showPaymentDetails || false,
         useAutoPricing: builderData.useAutoPricing ?? false,
         vehicleId: builderData.vehicleId ?? null,
         markupPct:
@@ -425,6 +429,7 @@ export const proposalsRouter = router({
             inclusions: proposalData.inclusions || null,
             exclusions: proposalData.exclusions || null,
             hidePricing: proposalData.hidePricing || false,
+            showPaymentDetails: proposalData.showPaymentDetails || false,
             useAutoPricing: proposalData.useAutoPricing,
             vehicleId: proposalData.vehicleId,
             markupPct: proposalData.markupPct,
@@ -456,6 +461,7 @@ export const proposalsRouter = router({
               inclusions: proposalData.inclusions || null,
               exclusions: proposalData.exclusions || null,
               hidePricing: proposalData.hidePricing || false,
+              showPaymentDetails: proposalData.showPaymentDetails || false,
               useAutoPricing: proposalData.useAutoPricing,
               vehicleId: proposalData.vehicleId,
               markupPct: proposalData.markupPct,
@@ -757,7 +763,25 @@ export const proposalsRouter = router({
         .set({ status: 'awaiting_payment', updatedAt: new Date().toISOString() })
         .where(eq(proposals.id, input.proposalId));
 
-      return { success: true };
+      // Return the operator's payment methods so the client can pay directly,
+      // but only when this proposal opted in via showPaymentDetails. These are
+      // intentionally only surfaced after the client commits, never in the
+      // public proposal payload.
+      const methods = proposal.showPaymentDetails
+        ? await ctx.db
+            .select({
+              id: paymentMethods.id,
+              type: paymentMethods.type,
+              label: paymentMethods.label,
+              instructions: paymentMethods.instructions,
+              url: paymentMethods.url,
+            })
+            .from(paymentMethods)
+            .where(eq(paymentMethods.organizationId, proposal.organization.id))
+            .orderBy(asc(paymentMethods.sortOrder), asc(paymentMethods.createdAt))
+        : [];
+
+      return { success: true, paymentMethods: methods };
     }),
 
   updateStatus: protectedProcedure
@@ -841,6 +865,7 @@ export const proposalsRouter = router({
           inclusions: original.inclusions,
           exclusions: original.exclusions,
           hidePricing: original.hidePricing,
+          showPaymentDetails: original.showPaymentDetails,
           useAutoPricing: original.useAutoPricing,
           vehicleId: original.vehicleId,
           markupPct: original.markupPct,
