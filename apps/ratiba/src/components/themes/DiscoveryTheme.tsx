@@ -490,14 +490,8 @@ const IntroductionSection = ({ data }: { data: ItineraryData }) => {
           viewport={{ once: true, margin: '-100px' }}
           transition={{ duration: 0.8 }}
         >
-          <p className="mb-8 text-xs font-light tracking-[0.3em] text-stone-400 uppercase">
+          <p className="text-xs font-light tracking-[0.3em] text-stone-400 uppercase">
             The Journey
-          </p>
-          <h2 className="mb-8 font-serif text-3xl leading-tight text-stone-800 lg:text-5xl">
-            {data.subtitle || `${data.duration} through ${data.location}`}
-          </h2>
-          <p className="mx-auto max-w-2xl text-lg leading-relaxed font-light text-stone-500 lg:text-xl">
-            {data.duration} of extraordinary moments through {data.location}
           </p>
         </motion.div>
 
@@ -600,7 +594,81 @@ const JourneyOverview = ({ data }: { data: ItineraryData }) => {
       <div className="mx-auto max-w-7xl px-6 pt-20 pb-16 lg:px-12">
         <h2 className="mb-10 font-serif text-3xl text-stone-800 lg:text-4xl">Trip Summary</h2>
 
-        <div className="overflow-x-auto">
+        {/* Mobile: stacked cards (no horizontal scroll) */}
+        <div className="space-y-4 lg:hidden">
+          {data.itinerary.map((day, idx) => {
+            const destination = day.destination || '';
+            const mealBasis = getMealBasis(day.meals);
+            const isLastDay = day.accommodation === 'Last day, no accommodation';
+
+            return (
+              <motion.div
+                key={idx}
+                initial={{ opacity: 0, y: 8 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: idx * 0.04 }}
+                className="rounded-xl border border-stone-200 bg-white p-5"
+              >
+                {/* Header: day badge + date + meals */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-stone-800 text-xs font-medium text-white">
+                      {day.day}
+                    </div>
+                    <span className="text-sm text-stone-500">{day.date}</span>
+                  </div>
+                  {mealBasis && (
+                    <span className="rounded bg-stone-800 px-2 py-0.5 text-[11px] font-semibold text-white">
+                      {mealBasis}
+                    </span>
+                  )}
+                </div>
+
+                {/* Destination */}
+                {destination && (
+                  <div className="mt-4 flex items-center gap-1.5 text-sm font-medium text-stone-700">
+                    <MapPin className="h-3.5 w-3.5 shrink-0 text-stone-400" />
+                    {destination}
+                  </div>
+                )}
+
+                {/* Activities */}
+                {day.activities.length > 0 ? (
+                  <div className="mt-3 space-y-1">
+                    {day.activities.map((act, actIdx) => (
+                      <div
+                        key={actIdx}
+                        className="flex items-baseline gap-2 text-sm text-stone-600"
+                      >
+                        <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-stone-300" />
+                        <span>{act.activity}</span>
+                        {act.time && (
+                          <span className="shrink-0 text-xs text-stone-400">{act.time}</span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="mt-3 text-sm text-stone-400">{day.title}</p>
+                )}
+
+                {/* Accommodation */}
+                {!isLastDay && day.accommodation && (
+                  <div className="mt-4 border-t border-stone-100 pt-3 text-xs">
+                    <span className="font-medium tracking-[0.1em] text-stone-400 uppercase">
+                      Stay
+                    </span>
+                    <p className="mt-1 text-sm text-stone-600">{day.accommodation}</p>
+                  </div>
+                )}
+              </motion.div>
+            );
+          })}
+        </div>
+
+        {/* Desktop: table */}
+        <div className="hidden overflow-x-auto lg:block">
           <table className="w-full min-w-[900px]">
             <thead>
               <tr className="border-b border-stone-200 text-left text-[11px] font-medium tracking-[0.15em] text-stone-400 uppercase">
@@ -818,13 +886,13 @@ const PricingSection = ({ data, onConfirm }: { data: ItineraryData; onConfirm: (
                 <div className="flex h-8 w-8 items-center justify-center rounded-full bg-stone-700">
                   <X className="h-4 w-4 text-stone-400" />
                 </div>
-                <h3 className="text-sm font-medium tracking-wide text-stone-500 uppercase">
+                <h3 className="text-sm font-medium tracking-wide text-stone-400 uppercase">
                   Not Included
                 </h3>
               </div>
               <ul className="space-y-3">
                 {data.excludedItems.map((item, i) => (
-                  <li key={i} className="pl-11 text-base leading-relaxed font-light text-stone-600">
+                  <li key={i} className="pl-11 text-base leading-relaxed font-light text-stone-400">
                     {item}
                   </li>
                 ))}
@@ -1249,7 +1317,7 @@ const Footer = ({ data, onConfirm }: { data: ItineraryData; onConfirm: () => voi
           onClick={onConfirm}
           className="group inline-flex items-center gap-3 bg-white px-10 py-5 text-base font-medium tracking-wide text-stone-900 transition-colors hover:bg-stone-100"
         >
-          Start Planning
+          Confirm &amp; Pay
           <ChevronRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
         </button>
       </motion.div>
