@@ -7,6 +7,7 @@ import { ProfileSettings } from './_components/profile-settings';
 import { BillingSettings } from './_components/billing-settings';
 import { PaymentMethodsSettings } from './_components/payment-methods-settings';
 import { createServerCaller } from '@/server/trpc/caller';
+import { reconcileOrgPlanWithPolar } from '@/lib/billing-reconcile';
 import { redirect } from 'next/navigation';
 
 interface SettingsPageProps {
@@ -29,6 +30,14 @@ export default async function SettingsPage({ searchParams }: SettingsPageProps) 
 
   if (!organization || !currentUser) {
     redirect('/login');
+  }
+
+  // Self-heal the plan tier against Polar's live state before rendering billing.
+  // Webhooks update the tier on the happy path, but a missed cancel/revoke can leave
+  // it stuck on a paid plan; reconciling here corrects the displayed plan. Best-effort:
+  // reconcile never throws, so a Polar hiccup won't break the settings page.
+  if (isAdmin) {
+    await reconcileOrgPlanWithPolar(organization.id);
   }
 
   // Determine default tab from URL param or based on admin status

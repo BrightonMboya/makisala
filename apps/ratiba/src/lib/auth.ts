@@ -10,7 +10,7 @@ import { and, eq } from 'drizzle-orm';
 import { randomBytes } from 'crypto';
 import { env } from './env';
 import { log, serializeError } from './logger';
-import type { PlanTier } from './plans-config';
+import { reconcileOrgPlanWithPolar, productIdToTier } from './billing-reconcile';
 
 // Initialize Polar client
 const polarClient = new Polar({
@@ -227,11 +227,21 @@ export const auth = betterAuth({
         webhooks({
           secret: env.POLAR_WEBHOOK_SECRET,
           onPayload: async (payload) => {
-            // Map Polar product IDs to plan tiers
-            const productToTier: Record<string, Exclude<PlanTier, 'free'>> = {
-              [env.POLAR_STARTER_PRODUCT_ID]: 'starter',
-              [env.POLAR_PRODUCT_ID]: 'pro',
-              [env.POLAR_BUSINESS_PRODUCT_ID]: 'business',
+            // Resolve the org for a subscription event via the customer's external id.
+            // The @polar-sh/better-auth plugin links each Polar customer to a better-auth
+            // user through Polar's external_id field (set to user.id), so the webhook's
+            // customer.externalId is that user id. We map user -> member -> org.
+            // (There is no 'polar' row in the account table to look up by customer id.)
+            const resolveOrgId = async (
+              externalId: string | null | undefined,
+            ): Promise<string | null> => {
+              if (!externalId) return null;
+              const [membership] = await db
+                .select({ organizationId: member.organizationId })
+                .from(member)
+                .where(eq(member.userId, externalId))
+                .limit(1);
+              return membership?.organizationId ?? null;
             };
 
             if (
@@ -239,91 +249,36 @@ export const auth = betterAuth({
               payload.type === 'subscription.updated'
             ) {
               const sub = payload.data;
-              const customerId = sub.customerId;
-              const productId = sub.productId;
-              const tier = productToTier[productId];
+              const tier = productIdToTier(sub.productId);
+              if (!tier) return;
 
-              if (!tier || !customerId) return;
+              const orgId = await resolveOrgId(sub.customer?.externalId);
+              if (!orgId) return;
 
-              // Determine if this is an active subscription
               const isActive = sub.status === 'active';
 
-              const { account: accountTable } = await import('@repo/db/schema');
-
-              // Use transaction to prevent race conditions between concurrent webhooks
-              await db.transaction(async (tx) => {
-                // Find user by Polar customer ID (stored in account table by polar plugin)
-                const [acct] = await tx
-                  .select({ userId: accountTable.userId })
-                  .from(accountTable)
-                  .where(
-                    and(
-                      eq(accountTable.providerId, 'polar'),
-                      eq(accountTable.accountId, customerId),
-                    ),
-                  )
-                  .limit(1);
-
-                if (!acct) return;
-
-                // Find user's organization via member table
-                const [membership] = await tx
-                  .select({ organizationId: member.organizationId })
-                  .from(member)
-                  .where(eq(member.userId, acct.userId))
-                  .limit(1);
-
-                if (!membership) return;
-
-                // Update organization plan
-                await tx
-                  .update(organizations)
-                  .set({
-                    planTier: isActive ? tier : 'free',
-                    polarSubscriptionId: sub.id,
-                    updatedAt: new Date(),
-                  })
-                  .where(eq(organizations.id, membership.organizationId));
-              });
+              await db
+                .update(organizations)
+                .set({
+                  planTier: isActive ? tier : 'free',
+                  polarSubscriptionId: sub.id,
+                  updatedAt: new Date(),
+                })
+                .where(eq(organizations.id, orgId));
             }
 
-            if (payload.type === 'subscription.canceled') {
-              const sub = payload.data;
-              if (sub.id) {
-                // If the subscription has a period end date, the user retains access
-                // until then. Polar will send subscription.revoked when access should end.
-                // Only downgrade immediately if there's no period end (e.g. immediate cancel).
-                const periodEnd = sub.currentPeriodEnd
-                  ? new Date(sub.currentPeriodEnd)
-                  : null;
-                const shouldDowngradeNow = !periodEnd || periodEnd <= new Date();
-
-                if (shouldDowngradeNow) {
-                  await db
-                    .update(organizations)
-                    .set({
-                      planTier: 'free',
-                      updatedAt: new Date(),
-                    })
-                    .where(eq(organizations.polarSubscriptionId, sub.id));
-                }
-                // If periodEnd is in the future, user keeps access until then.
-                // The subscription.revoked webhook will handle the final downgrade.
-              }
-            }
-
-            if (payload.type === 'subscription.revoked') {
-              const sub = payload.data;
-              // Access has been fully revoked — downgrade to free
-              if (sub.id) {
-                await db
-                  .update(organizations)
-                  .set({
-                    planTier: 'free',
-                    updatedAt: new Date(),
-                  })
-                  .where(eq(organizations.polarSubscriptionId, sub.id));
-              }
+            // For cancellation and revocation, re-derive the tier from Polar's live state
+            // instead of matching on the stored subscription id. This self-heals orgs whose
+            // polar_subscription_id was never recorded, and correctly preserves access when
+            // a scheduled cancel still has an active period or another active subscription
+            // exists. Polar still reports a cancel-at-period-end subscription as active until
+            // it actually ends, so reconcile keeps the plan until the final lapse.
+            if (
+              payload.type === 'subscription.canceled' ||
+              payload.type === 'subscription.revoked'
+            ) {
+              const orgId = await resolveOrgId(payload.data.customer?.externalId);
+              if (orgId) await reconcileOrgPlanWithPolar(orgId);
             }
           },
         }),
