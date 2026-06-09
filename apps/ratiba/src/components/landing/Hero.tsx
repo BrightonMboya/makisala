@@ -51,7 +51,7 @@ export function Hero() {
             Book a demo
           </Link>
           <Link
-            href="/proposal/tjksu"
+            href="/proposal/w7mp75"
             className="w-full rounded-[10px] border border-[rgba(38,27,7,0.2)] px-6 py-3 text-center text-sm font-[580] text-[#261B07] transition-opacity hover:opacity-70 sm:w-auto"
           >
             See a sample itinerary
