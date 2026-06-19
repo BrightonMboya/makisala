@@ -51,6 +51,12 @@ const formSchema = z.object({
 
 type FormData = z.infer<typeof formSchema>
 
+declare global {
+    interface Window {
+        fbq?: (...args: unknown[]) => void
+    }
+}
+
 type Variant = 'detailed' | 'simple'
 
 export interface LandingInquiryFormProps {
@@ -133,6 +139,9 @@ export default function LandingInquiryForm({
                 event: 'conversion',
                 send_to: conversionSendTo,
             })
+            // Meta pixel lead conversion. Reliable event-based signal fired at
+            // submit time (the /thank-you redirect is too flaky to key off of).
+            window.fbq?.('track', 'Lead')
             form.reset()
             router.push('/thank-you')
         } catch (error) {

@@ -1,4 +1,6 @@
 export const BASE_URL = 'https://makisala.com'
+// Makisala Kilimanjaro Pixel (Events Manager). Serves every (ads) landing page.
+export const META_PIXEL_ID = '958276083244377'
 export const safaris = [
     {
         title: 'GORILLA TREKKING',
