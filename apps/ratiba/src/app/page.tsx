@@ -8,12 +8,12 @@ import { Reviews } from '@/components/landing/Reviews';
 import { Footer } from '@/components/landing/Footer';
 import { motion } from 'framer-motion';
 import {
-  organizationSchema,
-  websiteSchema,
-  softwareApplicationSchema,
   faqPageSchema,
   homepageFaqs,
   jsonLd,
+  organizationSchema,
+  softwareApplicationSchema,
+  websiteSchema,
 } from '@/lib/schema';
 
 const fadeUp = {
@@ -215,13 +215,11 @@ export default function LandingPage() {
           <div className="mx-auto w-full max-w-[1100px]">
             <motion.div {...fadeUp} className="grid gap-10 md:grid-cols-[0.8fr_1.2fr]">
               <div>
-                <p className="text-sm font-[580] text-[rgba(38,27,7,0.5)]">
-                  What is Ratiba?
-                </p>
+                <p className="text-sm font-[580] text-[rgba(38,27,7,0.5)]">What is Ratiba?</p>
                 <h2 className="mt-3 text-[clamp(32px,4vw,48px)] leading-[1.1] font-[580] tracking-[-1.6px] text-[#261B07]">
                   Safari software, answered
                 </h2>
-                <p className="mt-4 max-w-md text-[rgba(38,27,7,0.7)] leading-7">
+                <p className="mt-4 max-w-md leading-7 text-[rgba(38,27,7,0.7)]">
                   Straight answers about what Ratiba is, who it is for, and how it compares.
                 </p>
               </div>
@@ -232,12 +230,21 @@ export default function LandingPage() {
                     key={faq.question}
                     className="group border-t border-[rgba(38,27,7,0.1)] last:border-b"
                   >
-                    <summary className="flex cursor-pointer items-center justify-between gap-6 py-6 [&::-webkit-details-marker]:hidden list-none">
-                      <span className="text-[clamp(17px,1.6vw,20px)] font-[580] leading-[1.3] text-[#261B07]">
+                    <summary className="flex cursor-pointer list-none items-center justify-between gap-6 py-6 [&::-webkit-details-marker]:hidden">
+                      <span className="text-[clamp(17px,1.6vw,20px)] leading-[1.3] font-[580] text-[#261B07]">
                         {faq.question}
                       </span>
                       <span className="shrink-0 text-[rgba(38,27,7,0.4)] transition-transform group-open:rotate-45">
-                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <svg
+                          width="22"
+                          height="22"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
                           <line x1="12" y1="5" x2="12" y2="19" />
                           <line x1="5" y1="12" x2="19" y2="12" />
                         </svg>
@@ -279,7 +286,7 @@ export default function LandingPage() {
                   badge: { label: 'Lookbook', color: '#E0F0FF' },
                   title: 'Zanzibar Escape',
                   subtitle: 'Zanzibar Lookbook Escape',
-                  href: '/proposal/qgzaka',
+                  href: '/proposal/589643b4-0076-4e48-8703-458602268f9f',
                   image:
                     'https://assets.makisala.com/cdn-cgi/image/quality=85,format=auto,fit=scale-down,sharpen=1/organizations/411c36e8-0808-46f4-a3b2-130a3eecc349/images/1772879807340-43ed50b7c65549688f1c879fd60ce826-800.webp',
                 },

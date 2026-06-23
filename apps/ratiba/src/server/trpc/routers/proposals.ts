@@ -132,18 +132,33 @@ export const proposalsRouter = router({
 
       if (input.search?.trim()) {
         const pattern = `%${escapeLikeQuery(input.search.trim())}%`;
-        conditions.push(
-          or(
-            sql`${proposals.name} ilike ${pattern} escape '\\'`,
-            sql`${proposals.tourTitle} ilike ${pattern} escape '\\'`,
-            sql`exists (
-              select 1
-              from ${clients}
-              where ${clients.id} = ${proposals.clientId}
-                and ${clients.name} ilike ${pattern} escape '\\'
-            )`,
-          )!,
-        );
+
+        // Match on client name via a pre-fetched id list rather than a correlated
+        // subquery. Drizzle's relational query builder (db.query.proposals.findMany
+        // below) rewrites table-qualified columns inside raw `sql` fragments to the
+        // root alias, so `clients.id` would become `proposals.id` (text) compared
+        // against `proposals.client_id` (uuid) and fail with "operator does not
+        // exist: text = uuid".
+        const matchingClients = await ctx.db
+          .select({ id: clients.id })
+          .from(clients)
+          .where(
+            and(
+              eq(clients.organizationId, ctx.orgId),
+              sql`${clients.name} ilike ${pattern} escape '\\'`,
+            ),
+          );
+        const matchingClientIds = matchingClients.map((c) => c.id);
+
+        const searchConditions = [
+          sql`${proposals.name} ilike ${pattern} escape '\\'`,
+          sql`${proposals.tourTitle} ilike ${pattern} escape '\\'`,
+        ];
+        if (matchingClientIds.length > 0) {
+          searchConditions.push(inArray(proposals.clientId, matchingClientIds));
+        }
+
+        conditions.push(or(...searchConditions)!);
       }
 
       const whereClause = and(...conditions)!;

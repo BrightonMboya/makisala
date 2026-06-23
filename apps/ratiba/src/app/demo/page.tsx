@@ -152,7 +152,7 @@ export default function DemoPage() {
                   200+ tour operators
                 </span>
                 <Link
-                  href="/proposal/tjksu"
+                  href="/proposal/w7mp75"
                   className="text-sm font-[492] tracking-[-0.14px] text-[#261B07] underline transition-opacity hover:opacity-70"
                 >
                   See a sample itinerary
