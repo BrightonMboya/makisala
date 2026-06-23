@@ -24,6 +24,23 @@ type Destination = 'Tanzania' | 'Rwanda' | 'Not sure yet'
 
 const DESTINATIONS: Destination[] = ['Tanzania', 'Rwanda', 'Not sure yet']
 
+// en-US full month names, matching the toLocaleString('en-US', { month: 'long' })
+// values used to build TRAVEL_WINDOWS. Used to parse a window back into a Date.
+const MONTHS = [
+    'January',
+    'February',
+    'March',
+    'April',
+    'May',
+    'June',
+    'July',
+    'August',
+    'September',
+    'October',
+    'November',
+    'December',
+]
+
 const TRAVEL_WINDOWS = (() => {
     const out: string[] = ['I am flexible', 'Within the next 3 months']
     const now = new Date()
@@ -98,8 +115,17 @@ export default function HeroPlanForm() {
                 travelWindow !== 'I am flexible' &&
                 travelWindow !== 'Within the next 3 months'
             ) {
-                const parsed = new Date(travelWindow + ' 01')
-                if (!isNaN(parsed.getTime())) return parsed
+                // travelWindow is always "<Month> <Year>" (e.g. "May 2027").
+                // Parse it by hand: feeding a non-standard string like
+                // "May 2027 01" to new Date() works in some engines but returns
+                // Invalid Date in stricter ones (e.g. Safari), which silently
+                // fell through to the today+60d fallback and produced wrong dates.
+                const [monthName, yearStr] = travelWindow.split(' ')
+                const monthIndex = monthName ? MONTHS.indexOf(monthName) : -1
+                const year = Number(yearStr)
+                if (monthIndex !== -1 && Number.isFinite(year)) {
+                    return new Date(year, monthIndex, 1)
+                }
             }
             return new Date(Date.now() + 60 * 24 * 60 * 60 * 1000)
         })()
