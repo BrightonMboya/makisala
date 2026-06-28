@@ -10,6 +10,7 @@ import { useToast } from '@/lib/hooks/use-toast'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { createInquiry } from '@/lib/cms-service'
+import { sendMetaLead } from '@/lib/meta-capi'
 import { usePathname, useRouter } from 'next/navigation'
 import { BASE_URL } from '@/lib/constants'
 import { sendGTMEvent } from '@next/third-parties/google'
@@ -139,9 +140,20 @@ export default function LandingInquiryForm({
                 event: 'conversion',
                 send_to: conversionSendTo,
             })
-            // Meta pixel lead conversion. Reliable event-based signal fired at
-            // submit time (the /thank-you redirect is too flaky to key off of).
-            window.fbq?.('track', 'Lead')
+            // Meta lead conversion. Fired twice with one shared eventId: the
+            // browser pixel below and the server-side Conversions API (sendMetaLead).
+            // Meta deduplicates them by event_name + eventId into a single Lead, so
+            // it still gets the conversion when the pixel is blocked. Submit-time
+            // signal: the /thank-you redirect is too flaky to key off of.
+            const eventId = crypto.randomUUID()
+            window.fbq?.('track', 'Lead', {}, { eventID: eventId })
+            void sendMetaLead({
+                eventId,
+                email: data.email,
+                phone: data.whatsapp,
+                firstName: data.fullName.trim().split(/\s+/)[0],
+                eventSourceUrl: `${BASE_URL}${pathname}`,
+            })
             form.reset()
             router.push('/thank-you')
         } catch (error) {

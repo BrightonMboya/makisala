@@ -7,6 +7,11 @@ export const env = createEnv({
         CLOUDINARY_CLOUD_NAME: z.string(),
         CLOUDINARY_API_KEY: z.string(),
         CLOUDINARY_API_SECRET: z.string(),
+        // Meta Conversions API. Optional so missing token never breaks the build;
+        // sendMetaLead() no-ops until it is set. META_TEST_EVENT_CODE is only for
+        // validating in Events Manager -> Test events, leave unset in production.
+        META_CAPI_ACCESS_TOKEN: z.string().optional(),
+        META_TEST_EVENT_CODE: z.string().optional(),
     },
 
     client: {
@@ -22,6 +27,8 @@ export const env = createEnv({
         CLOUDINARY_CLOUD_NAME: process.env.CLOUDINARY_CLOUD_NAME,
         CLOUDINARY_API_KEY: process.env.CLOUDINARY_API_KEY,
         CLOUDINARY_API_SECRET: process.env.CLOUDINARY_API_SECRET,
+        META_CAPI_ACCESS_TOKEN: process.env.META_CAPI_ACCESS_TOKEN,
+        META_TEST_EVENT_CODE: process.env.META_TEST_EVENT_CODE,
         NEXT_PUBLIC_BETTER_AUTH_URL: process.env.NEXT_PUBLIC_BETTER_AUTH_URL,
         NEXT_PUBLIC_POSTHOG_KEY: process.env.NEXT_PUBLIC_POSTHOG_KEY,
         NEXT_PUBLIC_POSTHOG_HOST: process.env.NEXT_PUBLIC_POSTHOG_HOST,
