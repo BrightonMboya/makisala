@@ -12,7 +12,6 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { createInquiry } from '@/lib/cms-service'
 import { sendMetaLead } from '@/lib/meta-capi'
 import { usePathname, useRouter } from 'next/navigation'
-import { BASE_URL } from '@/lib/constants'
 import { sendGTMEvent } from '@next/third-parties/google'
 import { useLogger } from 'next-axiom'
 import { Check } from 'lucide-react'
@@ -122,6 +121,7 @@ export default function LandingInquiryForm({
         }
         setIsPending(true)
         try {
+            const pageUrl = window.location.href
             const whatsappNote = data.whatsapp ? ` WhatsApp: ${data.whatsapp}.` : ''
             const comments = isDetailed
                 ? `${commentPrefix}Travel month: ${data.travelMonth}.${whatsappNote} ${data.comments || ''}`.trim()
@@ -134,7 +134,7 @@ export default function LandingInquiryForm({
                 numberOfTravellers: isDetailed ? (data.numberOfTravellers ?? 2) : 2,
                 startDate: new Date(),
                 comments,
-                url: `${BASE_URL}${pathname}`,
+                url: pageUrl,
             })
             sendGTMEvent({
                 event: 'conversion',
@@ -152,7 +152,7 @@ export default function LandingInquiryForm({
                 email: data.email,
                 phone: data.whatsapp,
                 firstName: data.fullName.trim().split(/\s+/)[0],
-                eventSourceUrl: `${BASE_URL}${pathname}`,
+                eventSourceUrl: pageUrl,
             })
             form.reset()
             router.push('/thank-you')
