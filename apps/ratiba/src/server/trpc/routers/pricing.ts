@@ -57,6 +57,14 @@ const computeInputSchema = z.object({
   days: z.array(dayInputSchema).min(1),
   pax: z.number().int().positive(),
   travelerCategory: z.enum(PARK_FEE_CATEGORIES).default('non_resident_adult'),
+  travelerBreakdown: z
+    .array(
+      z.object({
+        category: z.enum(PARK_FEE_CATEGORIES),
+        count: z.number().int().nonnegative(),
+      }),
+    )
+    .optional(),
   vehicleId: z.string().uuid().nullable(),
   pickupTransferId: z.string().uuid().nullable(),
   dropoffTransferId: z.string().uuid().nullable(),
@@ -150,6 +158,9 @@ export const pricingRouter = router({
       ),
       pax: input.pax,
       travelerCategory: input.travelerCategory as ParkFeeCategory,
+      travelerBreakdown: input.travelerBreakdown as
+        | { category: ParkFeeCategory; count: number }[]
+        | undefined,
       vehicleId: input.vehicleId,
       pickupTransferId: input.pickupTransferId,
       dropoffTransferId: input.dropoffTransferId,

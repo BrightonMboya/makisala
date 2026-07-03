@@ -128,6 +128,7 @@ export interface PricingInput {
   days: ItineraryDayInput[];
   pax: number;
   travelerCategory: ParkFeeCategory;
+  travelerBreakdown?: Array<{ category: ParkFeeCategory; count: number }>;
   vehicleId: string | null;
   pickupTransferId: string | null;
   dropoffTransferId: string | null;
@@ -205,6 +206,10 @@ export function resolveSeason(date: Date, seasons: SeasonBand[]): SeasonBand | n
 
 const num = (n: number) => Math.round(n * 100) / 100;
 
+function parkCategoryLabel(category: ParkFeeCategory): string {
+  return category.endsWith('_child') ? 'Children' : 'Adults';
+}
+
 function normalizeParkName(s: string): string {
   return s
     .toLowerCase()
@@ -214,10 +219,7 @@ function normalizeParkName(s: string): string {
     .trim();
 }
 
-function resolveParkIdByName(
-  destinationName: string,
-  parkFeeRates: ParkFeeRate[],
-): string | null {
+function resolveParkIdByName(destinationName: string, parkFeeRates: ParkFeeRate[]): string | null {
   const target = normalizeParkName(destinationName);
   if (!target) return null;
   for (const r of parkFeeRates) {
@@ -330,38 +332,49 @@ export function computePricing(input: PricingInput): PricingBreakdown {
     return { day, parkId };
   });
 
+  const segments =
+    input.travelerBreakdown && input.travelerBreakdown.length > 0
+      ? input.travelerBreakdown
+      : [{ category: input.travelerCategory, count: pax }];
+  const showCategory = segments.filter((s) => s.count > 0).length > 1;
+
   for (const { day, parkId } of daysWithParkId) {
     if (!parkId) continue;
     const season = resolveSeason(day.date, input.seasons);
-    // park fees: season-specific row preferred, fall back to season-less (year-round)
-    const rate =
-      input.parkFeeRates.find(
-        (r) =>
-          r.parkId === parkId &&
-          r.category === input.travelerCategory &&
-          r.seasonId === (season?.id ?? null),
-      ) ??
-      input.parkFeeRates.find(
-        (r) =>
-          r.parkId === parkId && r.category === input.travelerCategory && r.seasonId === null,
-      );
-    if (!rate) {
-      warnings.push({
-        kind: 'missing_park_fee',
+    for (const segment of segments) {
+      if (segment.count <= 0) continue;
+      // park fees: season-specific row preferred, fall back to season-less (year-round)
+      const rate =
+        input.parkFeeRates.find(
+          (r) =>
+            r.parkId === parkId &&
+            r.category === segment.category &&
+            r.seasonId === (season?.id ?? null),
+        ) ??
+        input.parkFeeRates.find(
+          (r) => r.parkId === parkId && r.category === segment.category && r.seasonId === null,
+        );
+      if (!rate) {
+        warnings.push({
+          kind: 'missing_park_fee',
+          dayNumber: day.dayNumber,
+          message: `Day ${day.dayNumber}: no park fee for category ${segment.category}`,
+        });
+        continue;
+      }
+      const parkLabel = rate.parkName?.trim() || day.destinationName?.trim() || 'Park fee';
+      const label = showCategory
+        ? `${parkLabel} (Day ${day.dayNumber}) — ${parkCategoryLabel(segment.category)}`
+        : `${parkLabel} (Day ${day.dayNumber})`;
+      lineItems.push({
+        label,
         dayNumber: day.dayNumber,
-        message: `Day ${day.dayNumber}: no park fee for category ${input.travelerCategory}`,
+        quantity: segment.count,
+        unitCost: rate.perPersonRate,
+        totalCost: num(rate.perPersonRate * segment.count),
+        source: 'park_fee',
       });
-      continue;
     }
-    const parkLabel = rate.parkName?.trim() || day.destinationName?.trim() || 'Park fee';
-    lineItems.push({
-      label: `${parkLabel} (Day ${day.dayNumber})`,
-      dayNumber: day.dayNumber,
-      quantity: pax,
-      unitCost: rate.perPersonRate,
-      totalCost: num(rate.perPersonRate * pax),
-      source: 'park_fee',
-    });
   }
 
   if (input.parkAncillaryFees.length > 0) {
@@ -403,8 +416,8 @@ export function computePricing(input: PricingInput): PricingBreakdown {
               ? `${fee.parkName || 'Park'} — ${fee.name} (${occurrences} day${occurrences === 1 ? '' : 's'})`
               : `${fee.parkName || 'Park'} — ${fee.name}`,
           dayNumber: firstEntry.day.dayNumber,
-          quantity: pax,
-          unitCost: pax > 0 ? num(totalCost / pax) : 0,
+          quantity: occurrences,
+          unitCost: fee.rate,
           totalCost,
           source: 'park_fee',
         });

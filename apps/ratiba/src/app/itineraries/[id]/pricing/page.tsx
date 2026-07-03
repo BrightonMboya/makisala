@@ -25,7 +25,7 @@ import type { PricingRow, ExtraOption } from '@/types/itinerary-types';
 import { useMemo, useState } from 'react';
 import { trpc } from '@/lib/trpc';
 import { addDays } from 'date-fns';
-import type { PricingBreakdown, WarningKind } from '@/lib/pricing-engine';
+import type { PricingBreakdown, WarningKind, ParkFeeCategory } from '@/lib/pricing-engine';
 import { deriveMealPlan } from '@/lib/pricing-engine';
 
 type LineSource = 'accommodation' | 'park_fee' | 'activity' | 'vehicle' | 'transfer';
@@ -116,6 +116,17 @@ export default function PricingPage() {
     [travelerGroups],
   );
 
+  const travelerBreakdown = useMemo(() => {
+    const counts = new Map<ParkFeeCategory, number>();
+    for (const group of travelerGroups) {
+      if (group.type === 'Baby') continue;
+      const category: ParkFeeCategory =
+        group.type === 'Child' ? 'non_resident_child' : 'non_resident_adult';
+      counts.set(category, (counts.get(category) ?? 0) + group.count);
+    }
+    return Array.from(counts, ([category, count]) => ({ category, count }));
+  }, [travelerGroups]);
+
   const dayInputs = useMemo(() => {
     if (!startDate || days.length === 0) return [];
     return days.map((d, idx) => ({
@@ -155,6 +166,7 @@ export default function PricingPage() {
       days: dayInputs,
       pax: totalPax,
       travelerCategory: 'non_resident_adult',
+      travelerBreakdown,
       vehicleId,
       pickupTransferId,
       dropoffTransferId,
