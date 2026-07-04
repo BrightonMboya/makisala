@@ -109,8 +109,8 @@ export function DayTable({
   };
 
   const handleSaveActivities = (dayId: string, newActivities: Activity[]) => {
-    setDays(
-      days.map((day) => {
+    setDays((prev) =>
+      prev.map((day) => {
         if (day.id === dayId) {
           return { ...day, activities: newActivities };
         }

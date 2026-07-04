@@ -180,9 +180,9 @@ export function CreatableAsyncCombobox({
             ) : (
               <>
                 <CommandGroup>
-                  {items.map((item) => (
+                  {items.map((item, index) => (
                     <CommandItem
-                      key={item.value}
+                      key={`${item.value}-${index}`}
                       value={item.value}
                       onSelect={() => {
                         onChange(item.value === value ? '' : item.value);

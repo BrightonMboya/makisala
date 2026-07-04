@@ -7,6 +7,7 @@ import {
   Image,
 } from '@react-pdf/renderer';
 import { format } from 'date-fns';
+import { formatActivityTiming } from '@/lib/utils';
 
 const styles = StyleSheet.create({
   page: {
@@ -325,7 +326,9 @@ export function ProposalPDF({ proposal }: ProposalPDFProps) {
               <View style={styles.activityList}>
                 {day.activities.map((activity, idx) => (
                   <View key={idx} style={styles.activity}>
-                    <Text style={styles.activityTime}>{activity.moment}</Text>
+                    <Text style={styles.activityTime}>
+                      {formatActivityTiming(undefined, activity.moment)}
+                    </Text>
                     <Text style={styles.activityName}>{activity.name}</Text>
                   </View>
                 ))}

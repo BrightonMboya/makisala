@@ -90,6 +90,7 @@ export function transformBuilderToItineraryData(params: {
 
     const activities: DayActivity[] = day.activities.map((act) => ({
       time: act.startTime ? formatTime(act.startTime) : '',
+      moment: act.moment || undefined,
       activity: capitalize(act.name),
       description: act.description || '',
       location: act.location || undefined,

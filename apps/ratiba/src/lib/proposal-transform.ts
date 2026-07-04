@@ -127,6 +127,7 @@ export function transformProposalToItineraryData(
       const translatedAct = translatedDay?.activities?.[actIdx];
       return {
         time: act.time ? formatTime(act.time) : '',
+        moment: act.moment || undefined,
         activity: capitalize(translatedAct?.name || act.name),
         description: translatedAct?.description || act.description || '',
         location: translatedAct?.location || act.location || undefined,

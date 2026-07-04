@@ -12,6 +12,7 @@ import {
   MarkerTooltip,
 } from '@repo/ui/map';
 import type { ItineraryData } from '@/types/itinerary-types';
+import { formatActivityTiming } from '@/lib/utils';
 import { trpc } from '@/lib/trpc';
 import { PaymentInstructions, type PaymentMethod } from '@/components/proposal/PaymentInstructions';
 
@@ -496,7 +497,14 @@ export default function MinimalisticTheme({ data, onHeroImageChange, onDayImageC
                                   }
                                 };
 
-                                const transitionText = getTransitionText(activity.time, idx === 0);
+                                // Use the first moment (e.g. "Morning" from
+                                // "Morning, Afternoon") to shape the narrative.
+                                const primaryMoment =
+                                  (activity.moment || '').split(',')[0]?.trim() || '';
+                                const transitionText = getTransitionText(
+                                  primaryMoment,
+                                  idx === 0,
+                                );
 
                                 return (
                                   <div key={idx} className="relative">
@@ -511,9 +519,11 @@ export default function MinimalisticTheme({ data, onHeroImageChange, onDayImageC
                                         <h4 className="text-lg font-medium text-stone-800">
                                           {activity.activity}
                                         </h4>
-                                        <span className="rounded-full bg-stone-100 px-2.5 py-0.5 text-[10px] font-medium tracking-wide text-stone-500">
-                                          {activity.time}
-                                        </span>
+                                        {(activity.moment || activity.time) && (
+                                          <span className="rounded-full bg-stone-100 px-2.5 py-0.5 text-[10px] font-medium tracking-wide text-stone-500">
+                                            {formatActivityTiming(activity.time, activity.moment)}
+                                          </span>
+                                        )}
                                       </div>
                                       {/* Description */}
                                       {activity.description && (

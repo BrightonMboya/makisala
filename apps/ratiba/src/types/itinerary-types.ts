@@ -6,7 +6,9 @@ export type BuilderActivity = {
   libraryId?: string | null;
   name: string;
   location: string;
-  moment: 'Morning' | 'Afternoon' | 'Evening' | 'Half Day' | 'Full Day' | 'Night';
+  // One or more moments, stored comma-separated e.g. "Morning" or "Morning, Afternoon".
+  // Canonical values: Morning, Afternoon, Evening, Half Day, Full Day, Night.
+  moment: string;
   startTime?: string | null; // Optional exact time e.g. "08:00", "14:30"
   isOptional: boolean;
   description?: string;
@@ -168,6 +170,7 @@ export type BuilderContextType = {
 // ========== THEME TYPES (for rendering) ==========
 export interface DayActivity {
   time: string;
+  moment?: string; // One or more moments, comma-separated e.g. "Morning, Afternoon"
   activity: string;
   description: string;
   location?: string;

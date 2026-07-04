@@ -17,6 +17,7 @@ import {
 import Image from 'next/image';
 import { Map, MapMarker, MapRoute, MarkerContent, MarkerTooltip } from '@repo/ui/map';
 import type { ItineraryData } from '@/types/itinerary-types';
+import { formatActivityTiming } from '@/lib/utils';
 import { ConfirmProposalModal } from '@/components/proposal/ConfirmProposalModal';
 
 // --- TRIP MAP COMPONENT ---
@@ -403,7 +404,11 @@ export default function KuduTheme({ data, onHeroImageChange, onDayImageChange }:
                         <span className="text-sm font-bold tracking-wider uppercase">
                           {act.activity}
                         </span>
-                        <span className="text-[10px] text-slate-400 uppercase">{act.time}</span>
+                        {(act.time || act.moment) && (
+                          <span className="text-[10px] text-slate-400 uppercase">
+                            {formatActivityTiming(act.time, act.moment)}
+                          </span>
+                        )}
                       </div>
                       {act.description && (
                         <p className="text-sm leading-relaxed text-slate-500">{act.description}</p>

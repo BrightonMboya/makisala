@@ -11,6 +11,7 @@ import {
   MarkerTooltip,
 } from '@repo/ui/map';
 import type { ItineraryData } from '@/types/itinerary-types';
+import { formatActivityTiming } from '@/lib/utils';
 import { ConfirmProposalModal } from '@/components/proposal/ConfirmProposalModal';
 
 function TripMap({ data }: { data: ItineraryData['mapData'] }) {
@@ -443,9 +444,11 @@ export default function SafariPortalTheme({ data }: { data: ItineraryData }) {
                           {day.activities.map((act, i) => (
                             <div key={i} className="space-y-2">
                               <div className="flex items-center gap-3">
-                                <span className="rounded bg-stone-100 px-2 py-1 text-xs font-semibold text-stone-600">
-                                  {act.time}
-                                </span>
+                                {(act.time || act.moment) && (
+                                  <span className="rounded bg-stone-100 px-2 py-1 text-xs font-semibold text-stone-600">
+                                    {formatActivityTiming(act.time, act.moment)}
+                                  </span>
+                                )}
                                 <h5 className="font-semibold text-stone-700">{act.activity}</h5>
                               </div>
                               {act.description && i > 0 && (

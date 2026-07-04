@@ -2,32 +2,32 @@ import { Button } from '@repo/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@repo/ui/dialog';
 import { Switch } from '@repo/ui/switch';
 import {
-  Plus,
-  Trash2,
-  GripVertical,
   ChevronDown,
   ChevronUp,
+  GripVertical,
   Image as ImageIcon,
+  Plus,
+  Trash2,
 } from 'lucide-react';
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { BuilderActivity as Activity } from '@/types/itinerary-types';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@repo/ui/select';
+import { MultiSelect } from '@repo/ui/multi-select';
 import { Input } from '@repo/ui/input';
 import { Textarea } from '@repo/ui/textarea';
 import { Popover, PopoverContent, PopoverTrigger } from '@repo/ui/popover';
 import { ImagePicker } from './image-picker';
 import {
+  closestCenter,
   DndContext,
   type DragEndEvent,
   KeyboardSensor,
   PointerSensor,
-  closestCenter,
   useSensor,
   useSensors,
 } from '@dnd-kit/core';
 import {
-  SortableContext,
   arrayMove,
+  SortableContext,
   sortableKeyboardCoordinates,
   useSortable,
   verticalListSortingStrategy,
@@ -38,6 +38,17 @@ import { trpc } from '@/lib/trpc';
 import { searchPlaces } from '@/lib/geocoding';
 
 const moments = ['Morning', 'Afternoon', 'Evening', 'Half Day', 'Full Day', 'Night'] as const;
+
+// `moment` is a single string field on BuilderActivity storing one or more
+// moments comma-separated (e.g. "Morning, Afternoon"). The multi-select UI
+// splits it for display and joins with ", " on change.
+const momentToArray = (moment: string): string[] =>
+  moment
+    ? moment
+        .split(',')
+        .map((m) => m.trim())
+        .filter(Boolean)
+    : [];
 
 export function ActivityModal({
   isOpen,
@@ -56,10 +67,27 @@ export function ActivityModal({
 }) {
   const [activities, setActivities] = useState<Activity[]>([]);
   const utils = trpc.useUtils();
+
+  // Moment options = the canonical set plus any custom moments already used on
+  // this day's activities, so created moments (e.g. "Early Before Breakfast")
+  // remain searchable across rows and persist when the proposal is reopened.
+  const momentOptions = useMemo(() => {
+    const set = new Set<string>(moments);
+    activities.forEach((a) => momentToArray(a.moment).forEach((m) => set.add(m)));
+    return Array.from(set).map((m) => ({ value: m, label: m }));
+  }, [activities]);
   const createActivityMutation = trpc.activities.create.useMutation();
 
   const libraryCacheRef = useRef<
-    Map<string, { name: string; locationName: string | null; latitude: number | null; longitude: number | null }>
+    Map<
+      string,
+      {
+        name: string;
+        locationName: string | null;
+        latitude: number | null;
+        longitude: number | null;
+      }
+    >
   >(new Map());
 
   const resolveActivityById = useCallback(
@@ -80,18 +108,21 @@ export function ActivityModal({
     [utils],
   );
 
-  const handleActivitySearch = useCallback(async (query: string) => {
-    const results = await utils.activities.search.fetch({ query, limit: 10 });
-    results.forEach((a) =>
-      libraryCacheRef.current.set(a.id, {
-        name: a.name,
-        locationName: null,
-        latitude: null,
-        longitude: null,
-      }),
-    );
-    return results.map((a) => ({ value: a.id, label: a.name }));
-  }, [utils]);
+  const handleActivitySearch = useCallback(
+    async (query: string) => {
+      const results = await utils.activities.search.fetch({ query, limit: 10 });
+      results.forEach((a) =>
+        libraryCacheRef.current.set(a.id, {
+          name: a.name,
+          locationName: null,
+          latitude: null,
+          longitude: null,
+        }),
+      );
+      return results.map((a) => ({ value: a.id, label: a.name }));
+    },
+    [utils],
+  );
 
   const handleActivityGetLabel = useCallback(
     async (id: string) => {
@@ -101,29 +132,39 @@ export function ActivityModal({
     [resolveActivityById],
   );
 
-  const handleActivityCreate = useCallback(async (name: string) => {
-    const activity = await createActivityMutation.mutateAsync({ name });
-    libraryCacheRef.current.set(activity.id, {
-      name: activity.name,
-      locationName: null,
-      latitude: null,
-      longitude: null,
-    });
-    return { value: activity.id, label: activity.name };
-  }, [createActivityMutation]);
+  const handleActivityCreate = useCallback(
+    async (name: string) => {
+      const activity = await createActivityMutation.mutateAsync({ name });
+      libraryCacheRef.current.set(activity.id, {
+        name: activity.name,
+        locationName: null,
+        latitude: null,
+        longitude: null,
+      });
+      return { value: activity.id, label: activity.name };
+    },
+    [createActivityMutation],
+  );
 
   // Location search handler — Photon autocomplete
-  const handleLocationSearch = useCallback(async (query: string) => {
-    if (query.length < 2) return [];
-    const results = await searchPlaces(query, countries);
-    return results.map((r) => ({ value: r.name, label: r.displayName }));
-  }, [countries]);
+  const handleLocationSearch = useCallback(
+    async (query: string) => {
+      if (query.length < 2) return [];
+      const results = await searchPlaces(query, countries);
+      return results.map((r) => ({ value: r.name, label: r.displayName }));
+    },
+    [countries],
+  );
 
+  const initialActivitiesRef = useRef(initialActivities);
+  initialActivitiesRef.current = initialActivities;
+  const loadedDayRef = useRef<string | null>(null);
   useEffect(() => {
-    if (isOpen) {
-      setActivities(initialActivities);
+    if (isOpen && loadedDayRef.current !== dayId) {
+      setActivities(initialActivitiesRef.current);
+      loadedDayRef.current = dayId;
     }
-  }, [isOpen, initialActivities]);
+  }, [isOpen, dayId]);
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -154,19 +195,17 @@ export function ActivityModal({
       description: '',
       imageUrl: '',
     };
-    setActivities([...activities, newActivity]);
+    setActivities((prev) => [...prev, newActivity]);
   };
 
   const handleUpdateActivity = (id: string, field: keyof Activity, value: any) => {
-    setActivities(
-      activities.map((activity) =>
-        activity.id === id ? { ...activity, [field]: value } : activity,
-      ),
+    setActivities((prev) =>
+      prev.map((activity) => (activity.id === id ? { ...activity, [field]: value } : activity)),
     );
   };
 
   const handleDeleteActivity = (id: string) => {
-    setActivities(activities.filter((activity) => activity.id !== id));
+    setActivities((prev) => prev.filter((activity) => activity.id !== id));
   };
 
   const handleSave = () => {
@@ -206,6 +245,7 @@ export function ActivityModal({
                   <SortableActivityRow
                     key={activity.id}
                     activity={activity}
+                    momentOptions={momentOptions}
                     onUpdate={handleUpdateActivity}
                     onDelete={handleDeleteActivity}
                     onActivitySearch={handleActivitySearch}
@@ -245,6 +285,7 @@ export function ActivityModal({
 
 function SortableActivityRow({
   activity,
+  momentOptions,
   onUpdate,
   onDelete,
   onActivitySearch,
@@ -254,14 +295,13 @@ function SortableActivityRow({
   onLocationSearch,
 }: {
   activity: Activity;
+  momentOptions: { value: string; label: string }[];
   onUpdate: (id: string, field: keyof Activity, value: any) => void;
   onDelete: (id: string) => void;
   onActivitySearch: (query: string) => Promise<{ value: string; label: string }[]>;
   onActivityCreate: (name: string) => Promise<{ value: string; label: string } | null>;
   onActivityGetLabel: (id: string) => Promise<string | null>;
-  onActivityResolve: (
-    id: string,
-  ) => Promise<{
+  onActivityResolve: (id: string) => Promise<{
     name: string;
     locationName: string | null;
     latitude: number | null;
@@ -347,21 +387,15 @@ function SortableActivityRow({
           />
         </div>
         <div className="col-span-2">
-          <Select
-            value={activity.moment}
-            onValueChange={(val) => onUpdate(activity.id, 'moment', val)}
-          >
-            <SelectTrigger className="h-9 border-stone-200">
-              <SelectValue placeholder="Moment" />
-            </SelectTrigger>
-            <SelectContent>
-              {moments.map((moment) => (
-                <SelectItem key={moment} value={moment}>
-                  {moment}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <MultiSelect
+            options={momentOptions}
+            selected={momentToArray(activity.moment)}
+            onChange={(vals) => onUpdate(activity.id, 'moment', vals.join(', '))}
+            placeholder="Moment"
+            className="border-stone-200"
+            creatable
+            createLabel="Add moment"
+          />
         </div>
         <div className="col-span-1">
           <Input

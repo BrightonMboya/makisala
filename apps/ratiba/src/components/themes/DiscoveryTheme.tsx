@@ -12,18 +12,13 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
-  Clock,
   Coffee,
   Compass,
   Footprints,
   MapPin,
-  Moon,
   Mountain,
   Plane,
   Star,
-  Sun,
-  Sunrise,
-  Sunset,
   Tent,
   Trees,
   UtensilsCrossed,
@@ -41,7 +36,7 @@ import {
   MarkerTooltip,
 } from '@repo/ui/map';
 import type { ItineraryData } from '@/types/itinerary-types';
-import { capitalize, cn } from '@/lib/utils';
+import { capitalize, cn, formatActivityTiming } from '@/lib/utils';
 import { trpc } from '@/lib/trpc';
 import { PaymentInstructions, type PaymentMethod } from '@/components/proposal/PaymentInstructions';
 
@@ -296,34 +291,6 @@ function JourneyMap({ data, className }: { data: ItineraryData['mapData']; class
 // ============================================================================
 // UTILITY FUNCTIONS
 // ============================================================================
-function getTimeOfDay(time: string): string {
-  if (!time) return 'Morning';
-  const moments = ['Morning', 'Afternoon', 'Evening', 'Half Day', 'Full Day', 'Night'];
-  if (moments.includes(time)) return time;
-  const hour = parseInt(time.split(':')[0] || '12', 10);
-  if (hour >= 5 && hour < 12) return 'Morning';
-  if (hour >= 12 && hour < 17) return 'Afternoon';
-  if (hour >= 17 && hour < 21) return 'Evening';
-  return 'Night';
-}
-
-function TimeIcon({ time, className }: { time: string; className?: string }) {
-  const moment = getTimeOfDay(time);
-  const props = { className: cn('w-4 h-4', className) };
-  switch (moment) {
-    case 'Morning':
-      return <Sunrise {...props} />;
-    case 'Afternoon':
-      return <Sun {...props} />;
-    case 'Evening':
-      return <Sunset {...props} />;
-    case 'Night':
-      return <Moon {...props} />;
-    default:
-      return <Clock {...props} />;
-  }
-}
-
 function getActivityIcon(activityName: string) {
   const name = activityName.toLowerCase();
   if (name.includes('game drive') || name.includes('safari')) return Binoculars;
@@ -644,8 +611,10 @@ const JourneyOverview = ({ data }: { data: ItineraryData }) => {
                       >
                         <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-stone-300" />
                         <span>{act.activity}</span>
-                        {act.time && (
-                          <span className="shrink-0 text-xs text-stone-400">{act.time}</span>
+                        {(act.time || act.moment) && (
+                          <span className="shrink-0 text-xs text-stone-400">
+                            {formatActivityTiming(act.time, act.moment)}
+                          </span>
                         )}
                       </div>
                     ))}
@@ -732,9 +701,9 @@ const JourneyOverview = ({ data }: { data: ItineraryData }) => {
                             >
                               <span className="h-1 w-1 mt-1.5 shrink-0 rounded-full bg-stone-300" />
                               <span>{act.activity}</span>
-                              {act.time && (
+                              {(act.time || act.moment) && (
                                 <span className="shrink-0 text-xs text-stone-400">
-                                  {act.time}
+                                  {formatActivityTiming(act.time, act.moment)}
                                 </span>
                               )}
                             </div>
@@ -1103,10 +1072,9 @@ const DaySection = ({
                       <div className="min-w-0 flex-1 border-l-2 border-transparent pb-2 pl-0 transition-colors group-hover:border-stone-300">
                         {/* Time label */}
                         <div className="mb-2 flex items-center gap-3">
-                          {activity.time && (
+                          {(activity.time || activity.moment) && (
                             <span className="inline-flex items-center gap-1.5 text-xs font-medium tracking-[0.15em] text-stone-400 uppercase">
-                              <TimeIcon time={activity.time} className="h-3.5 w-3.5" />
-                              {activity.time}
+                              {formatActivityTiming(activity.time, activity.moment)}
                             </span>
                           )}
                           {activity.location && (
