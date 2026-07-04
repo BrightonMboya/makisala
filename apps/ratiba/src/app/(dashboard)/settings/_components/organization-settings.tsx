@@ -33,6 +33,14 @@ function readFileAsDataURL(file: File): Promise<string> {
 
 const schema = z.object({
   name: z.string().min(1, 'Organization name is required'),
+  slug: z
+    .string()
+    .min(2, 'Slug must be at least 2 characters')
+    .max(63, 'Slug must be under 63 characters')
+    .regex(
+      /^[a-z0-9]+(?:-[a-z0-9]+)*$/,
+      'Use lowercase letters, numbers and single hyphens only',
+    ),
   logoUrl: z.string().url('Must be a valid URL').or(z.literal('')),
   aboutDescription: z.string().max(2000, 'Description must be under 2000 characters').optional(),
   paymentTerms: z.string().max(5000, 'Terms must be under 5000 characters').optional(),
@@ -44,6 +52,7 @@ interface Props {
   organization: {
     id: string;
     name: string;
+    slug: string;
     logoUrl: string | null;
     aboutDescription: string | null;
     paymentTerms: string | null;
@@ -61,6 +70,7 @@ export function OrganizationSettings({ organization }: Props) {
     resolver: zodResolver(schema),
     defaultValues: {
       name: organization.name,
+      slug: organization.slug,
       logoUrl: organization.logoUrl || '',
       aboutDescription: organization.aboutDescription || '',
       paymentTerms: organization.paymentTerms || '',
@@ -73,6 +83,10 @@ export function OrganizationSettings({ organization }: Props) {
       toast({ title: 'Organization settings updated' });
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to update settings';
+      // Surface a taken slug inline on the field, not just as a toast.
+      if (/slug is already taken/i.test(message)) {
+        form.setError('slug', { type: 'manual', message });
+      }
       toast({ title: message, variant: 'destructive' });
     }
   }
@@ -95,6 +109,31 @@ export function OrganizationSettings({ organization }: Props) {
                   <FormControl>
                     <Input {...field} />
                   </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="slug"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Slug</FormLabel>
+                  <FormControl>
+                    <Input
+                      {...field}
+                      onChange={(e) => field.onChange(e.target.value.toLowerCase().trim())}
+                      placeholder="your-agency"
+                    />
+                  </FormControl>
+                  <p className="text-xs text-gray-500">
+                    Used to send client emails from{' '}
+                    <span className="font-medium text-gray-700">
+                      {field.value || 'your-agency'}@ratiba.io
+                    </span>
+                    . Must be unique.
+                  </p>
                   <FormMessage />
                 </FormItem>
               )}

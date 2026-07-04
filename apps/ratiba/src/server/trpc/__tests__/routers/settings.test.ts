@@ -68,6 +68,38 @@ describe('settings router', () => {
         caller.settings.updateOrg({ notificationEmail: 'not-an-email' }),
       ).rejects.toThrow();
     });
+
+    test('updates a unique slug successfully', async () => {
+      const { ctx, db } = createAdminContext();
+      const caller = createCaller(ctx);
+
+      // No other org owns the slug.
+      db._results.set('select.organizations', []);
+      db._results.set('update', { success: true });
+
+      const result = await caller.settings.updateOrg({ slug: 'new-agency' });
+      expect(result).toEqual({ success: true });
+    });
+
+    test('rejects a slug already taken by another org', async () => {
+      const { ctx, db } = createAdminContext();
+      const caller = createCaller(ctx);
+
+      db._results.set('select.organizations', [{ id: 'other-org' }]);
+
+      await expect(
+        caller.settings.updateOrg({ slug: 'taken-slug' }),
+      ).rejects.toMatchObject({ code: 'CONFLICT' });
+    });
+
+    test('validates slug format', async () => {
+      const { ctx } = createAdminContext();
+      const caller = createCaller(ctx);
+
+      await expect(
+        caller.settings.updateOrg({ slug: 'Not A Valid Slug!' }),
+      ).rejects.toThrow();
+    });
   });
 
   describe('uploadLogo', () => {

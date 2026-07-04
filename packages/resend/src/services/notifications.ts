@@ -1,5 +1,6 @@
 import { resend } from '../client';
 import { env } from '../env';
+import { orgFromAddress, platformFromAddress } from '../from';
 import { renderCommentNotificationEmail } from '../templates/comment-notification';
 import { renderProposalShareEmail } from '../templates/proposal-share';
 import { renderProposalAcceptanceEmail } from '../templates/proposal-acceptance';
@@ -45,6 +46,8 @@ export interface CommentNotificationData {
     author: string;
   };
   recipientEmail?: string;
+  orgSlug?: string;
+  orgName?: string;
 }
 
 /**
@@ -162,8 +165,7 @@ export async function sendCommentNotificationEmail(
       parentComment: data.parentComment,
     });
 
-    // Determine the from email address
-    const fromEmail = env.RESEND_FROM_EMAIL || 'notifications@makisala.com';
+    const fromEmail = orgFromAddress({ name: data.orgName, slug: data.orgSlug });
 
     // Send the email
     const subject = data.isReply
@@ -204,6 +206,8 @@ export interface ProposalShareData {
   startDate?: string;
   duration?: string;
   message?: string;
+  orgSlug?: string;
+  replyToEmail?: string;
 }
 
 /**
@@ -223,13 +227,14 @@ export async function sendProposalShareEmail(
       message: data.message,
     });
 
-    const fromEmail = env.RESEND_FROM_EMAIL || 'notifications@makisala.com';
+    const fromEmail = orgFromAddress({ name: data.agencyName, slug: data.orgSlug });
 
     const result = await resend.emails.send({
       from: fromEmail,
       to: data.clientEmail,
       subject: `Your Travel Proposal: ${data.proposalTitle}`,
       html,
+      ...(data.replyToEmail ? { replyTo: data.replyToEmail } : {}),
     });
 
     if (result.error) {
@@ -260,6 +265,7 @@ export interface ProposalAcceptanceData {
   duration?: string;
   totalPrice?: string;
   recipientEmail: string;
+  orgSlug?: string;
 }
 
 /**
@@ -291,13 +297,14 @@ export async function sendProposalAcceptanceEmail(
       acceptedAt,
     });
 
-    const fromEmail = env.RESEND_FROM_EMAIL || 'notifications@makisala.com';
+    const fromEmail = orgFromAddress({ name: data.agencyName, slug: data.orgSlug });
 
     const result = await resend.emails.send({
       from: fromEmail,
       to: data.recipientEmail,
       subject: `Proposal Accepted: ${data.proposalTitle} - ${data.clientName}`,
       html,
+      ...(data.clientEmail ? { replyTo: data.clientEmail } : {}),
     });
 
     if (result.error) {
@@ -343,7 +350,7 @@ export async function sendTeamInvitationEmail(
       expiresAt: data.expiresAt,
     });
 
-    const fromEmail = env.RESEND_FROM_EMAIL || 'notifications@makisala.com';
+    const fromEmail = platformFromAddress();
 
     const result = await resend.emails.send({
       from: fromEmail,
@@ -388,7 +395,7 @@ export async function sendEmailVerificationEmail(
       verificationUrl: data.verificationUrl,
     });
 
-    const fromEmail = env.RESEND_FROM_EMAIL || 'notifications@makisala.com';
+    const fromEmail = platformFromAddress();
 
     const result = await resend.emails.send({
       from: fromEmail,
@@ -452,7 +459,7 @@ export async function sendNoteMentionEmail(
       mentionedAt,
     });
 
-    const fromEmail = env.RESEND_FROM_EMAIL || 'notifications@makisala.com';
+    const fromEmail = platformFromAddress();
 
     const result = await resend.emails.send({
       from: fromEmail,
@@ -515,7 +522,7 @@ export async function sendInquiryNotificationEmail(
       pageUrl: data.pageUrl,
     });
 
-    const fromEmail = env.RESEND_FROM_EMAIL || 'notifications@makisala.com';
+    const fromEmail = platformFromAddress();
 
     const result = await resend.emails.send({
       from: fromEmail,
@@ -562,7 +569,7 @@ export async function sendDemoRequestEmail(
       role: data.role,
     });
 
-    const fromEmail = env.RESEND_FROM_EMAIL || 'notifications@makisala.com';
+    const fromEmail = platformFromAddress();
 
     const result = await resend.emails.send({
       from: fromEmail,
@@ -612,7 +619,7 @@ export async function sendPaymentDetailsChangeRequestEmail(
       reason: data.reason,
     });
 
-    const fromEmail = env.RESEND_FROM_EMAIL || 'notifications@makisala.com';
+    const fromEmail = platformFromAddress();
 
     const result = await resend.emails.send({
       from: fromEmail,

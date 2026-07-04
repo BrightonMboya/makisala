@@ -2,3 +2,4 @@ export { sendCommentNotificationEmail, sendProposalShareEmail, sendProposalAccep
 export type { CommentNotificationData, ProposalShareData, ProposalAcceptanceData, TeamInvitationData, EmailVerificationData, NoteMentionData, InquiryNotificationData, DemoRequestData, PaymentChangeRequestData } from './services/notifications';
 export { env } from './env';
 export { resend } from './client';
+export { orgFromAddress, platformFromAddress, type OrgSender } from './from';

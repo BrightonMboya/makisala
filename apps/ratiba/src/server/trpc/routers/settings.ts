@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { organizations, user, member, invitation } from '@repo/db/schema';
-import { and, desc, eq, inArray } from 'drizzle-orm';
+import { and, desc, eq, inArray, ne } from 'drizzle-orm';
 import { headers } from 'next/headers';
 import { TRPCError } from '@trpc/server';
 import { router, protectedProcedure, adminProcedure, publicProcedure } from '../init';
@@ -24,6 +24,15 @@ export const settingsRouter = router({
     .input(
       z.object({
         name: z.string().max(255).optional(),
+        slug: z
+          .string()
+          .min(2, 'Slug must be at least 2 characters')
+          .max(63)
+          .regex(
+            /^[a-z0-9]+(?:-[a-z0-9]+)*$/,
+            'Use lowercase letters, numbers and single hyphens only',
+          )
+          .optional(),
         logoUrl: z.string().max(500).optional(),
         notificationEmail: z.string().email().max(255).optional(),
         aboutDescription: z.string().max(5000).optional(),
@@ -31,10 +40,40 @@ export const settingsRouter = router({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      await ctx.db
-        .update(organizations)
-        .set({ ...input, updatedAt: new Date() })
-        .where(eq(organizations.id, ctx.orgId));
+      // Reject a slug already used by another org up front so the user gets a
+      // clear message instead of an opaque unique-constraint error.
+      if (input.slug) {
+        const [taken] = await ctx.db
+          .select({ id: organizations.id })
+          .from(organizations)
+          .where(and(eq(organizations.slug, input.slug), ne(organizations.id, ctx.orgId)))
+          .limit(1);
+        if (taken) {
+          throw new TRPCError({
+            code: 'CONFLICT',
+            message: 'That slug is already taken. Please choose another.',
+          });
+        }
+      }
+
+      try {
+        await ctx.db
+          .update(organizations)
+          .set({ ...input, updatedAt: new Date() })
+          .where(eq(organizations.id, ctx.orgId));
+      } catch (err) {
+        // Backstop for the race where two orgs claim the same slug between the
+        // check above and this write; the DB unique constraint catches it.
+        const code = (err as { cause?: { code?: string }; code?: string })?.cause?.code
+          ?? (err as { code?: string })?.code;
+        if (code === '23505') {
+          throw new TRPCError({
+            code: 'CONFLICT',
+            message: 'That slug is already taken. Please choose another.',
+          });
+        }
+        throw err;
+      }
       return { success: true };
     }),
 

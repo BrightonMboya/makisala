@@ -19,7 +19,8 @@ RESEND_API_KEY=re_xxxxxxxxxxxxx
 # Email address to receive notifications
 NOTIFICATION_EMAIL=your-team@example.com
 
-# Optional: From email address (defaults to notifications@makisala.com)
+# Required: verified sender for this app. Also the domain used to build
+# per-org sender addresses (org-slug@<this-domain>).
 RESEND_FROM_EMAIL=notifications@yourdomain.com
 
 # Optional: Base URL for generating proposal links (defaults to http://localhost:3000)

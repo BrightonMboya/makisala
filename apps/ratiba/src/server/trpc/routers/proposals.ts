@@ -702,6 +702,8 @@ export const proposalsRouter = router({
         startDate,
         duration,
         message: input.message,
+        orgSlug: proposal.organization?.slug,
+        replyToEmail: proposal.organization?.notificationEmail ?? undefined,
       });
 
       if (!result.success) {
@@ -770,6 +772,7 @@ export const proposalsRouter = router({
         duration,
         totalPrice,
         recipientEmail: proposal.organization.notificationEmail,
+        orgSlug: proposal.organization.slug,
       });
 
       if (!result.success) {

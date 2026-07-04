@@ -3,7 +3,7 @@ import { withAxiom, type AxiomRequest } from 'next-axiom';
 import { db, member } from '@repo/db';
 import { proposals } from '@repo/db/schema';
 import { and, eq } from 'drizzle-orm';
-import { resend } from '@repo/resend';
+import { resend, orgFromAddress } from '@repo/resend';
 import { auth } from '@/lib/auth';
 import { headers } from 'next/headers';
 import { env } from '@/lib/env';
@@ -91,14 +91,18 @@ export const POST = withAxiom(async (request: AxiomRequest) => {
       isTest,
     });
 
-    // Send email
-    const fromEmail = env.RESEND_FROM_EMAIL;
+    const fromEmail = orgFromAddress({
+      name: proposal.organization?.name,
+      slug: proposal.organization?.slug,
+    });
+    const replyToEmail = proposal.organization?.notificationEmail ?? undefined;
 
     const result = await resend.emails.send({
       from: fromEmail,
       to: recipientEmail,
       subject: subject || `Your Travel Proposal: ${proposal.tourTitle || proposal.name}`,
       html,
+      ...(replyToEmail ? { replyTo: replyToEmail } : {}),
     });
 
     if (result.error) {

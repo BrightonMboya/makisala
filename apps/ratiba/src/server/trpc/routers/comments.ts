@@ -84,7 +84,7 @@ export const commentsRouter = router({
           const proposalData = await ctx.db.query.proposals.findFirst({
             where: eq(proposals.id, input.proposalId),
             columns: { id: true, name: true, tourTitle: true },
-            with: { organization: { columns: { notificationEmail: true } } },
+            with: { organization: { columns: { notificationEmail: true, slug: true, name: true } } },
           });
 
           if (proposalData?.organization?.notificationEmail) {
@@ -95,6 +95,8 @@ export const commentsRouter = router({
               commentContent: input.content,
               commentAuthor: input.authorName,
               recipientEmail: proposalData.organization.notificationEmail,
+              orgSlug: proposalData.organization.slug,
+              orgName: proposalData.organization.name,
               commentPosition: {
                 posX: input.posX,
                 posY: input.posY,
@@ -148,7 +150,7 @@ export const commentsRouter = router({
             with: {
               proposal: {
                 columns: { id: true, name: true, tourTitle: true },
-                with: { organization: { columns: { notificationEmail: true } } },
+                with: { organization: { columns: { notificationEmail: true, slug: true, name: true } } },
               },
             },
           });
@@ -161,6 +163,8 @@ export const commentsRouter = router({
               commentContent: input.content,
               commentAuthor: input.authorName,
               recipientEmail: comment.proposal.organization.notificationEmail,
+              orgSlug: comment.proposal.organization.slug,
+              orgName: comment.proposal.organization.name,
               isReply: true,
               parentComment: {
                 content: comment.content,
