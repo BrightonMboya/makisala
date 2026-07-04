@@ -148,7 +148,8 @@ describe('accommodations router', () => {
       const { ctx, db } = createProtectedContext();
       const caller = createCaller(ctx);
 
-      db._results.set('insert', [{ id: 'new-acc', name: 'New Lodge' }]);
+      // create() runs inside ctx.db.transaction, so the insert routes through the tx.insert key
+      db._results.set('tx.insert', [{ id: 'new-acc', name: 'New Lodge' }]);
 
       const result = await caller.accommodations.create({ name: 'New Lodge' });
       expect(result).toEqual({ id: 'new-acc' });

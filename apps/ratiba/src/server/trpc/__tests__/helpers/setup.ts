@@ -103,6 +103,13 @@ mock.module('@repo/resend', () => ({
   sendTeamInvitationEmail: () => Promise.resolve({ success: true }),
   sendEmailVerificationEmail: () => Promise.resolve({ success: true }),
   sendNoteMentionEmail: () => Promise.resolve({ success: true }),
+  sendInquiryNotificationEmail: () => Promise.resolve({ success: true }),
+  sendDemoRequestEmail: () => Promise.resolve({ success: true }),
+  sendPaymentDetailsChangeRequestEmail: () => Promise.resolve({ success: true }),
+  env: {},
+  resend: {},
+  orgFromAddress: () => 'noreply@test.com',
+  platformFromAddress: () => 'noreply@test.com',
 }));
 
 // ── @repo/db ── (only the db export used by init.ts)
