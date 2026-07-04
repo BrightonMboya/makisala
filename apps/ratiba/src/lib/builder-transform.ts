@@ -14,7 +14,13 @@ import type {
   TripOverview,
 } from '@/types/itinerary-types';
 import { capitalize } from '@/lib/utils';
-import { calculatePricing, formatDuration, transportModeLabels } from '@/lib/transform-utils';
+import {
+  calculatePricing,
+  formatDuration,
+  formatTransferLocation,
+  isTransferActivity,
+  transportModeLabels,
+} from '@/lib/transform-utils';
 
 /** Convert "08:00" or "14:30" to "8:00 AM" / "2:30 PM" */
 function formatTime(time: string): string {
@@ -93,7 +99,9 @@ export function transformBuilderToItineraryData(params: {
       moment: act.moment || undefined,
       activity: capitalize(act.name),
       description: act.description || '',
-      location: act.location || undefined,
+      location: isTransferActivity(act.name)
+        ? formatTransferLocation(act.fromLocation, act.toLocation) || undefined
+        : act.location || undefined,
     }));
 
     const destinationName = day.destinationName ? capitalize(day.destinationName) : '';

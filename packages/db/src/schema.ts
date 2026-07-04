@@ -808,6 +808,10 @@ export const proposalActivities = pgTable('proposal_activities', {
   name: text('name').notNull(),
   description: text('description'),
   location: text('location'),
+  // For transfer-type activities (name contains "transfer") the single location
+  // is replaced by an origin/destination pair. Null for regular activities.
+  fromLocation: text('from_location'),
+  toLocation: text('to_location'),
   moment: text('moment').notNull(), // 'Morning', 'Afternoon', 'Evening', 'Half Day', 'Full Day', 'Night'
   time: text('time'), // Exact start time e.g. "08:00", "14:30"
   isOptional: boolean('is_optional').default(false).notNull(),

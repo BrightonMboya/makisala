@@ -59,6 +59,8 @@ interface BuilderActivity {
   name: string;
   description?: string | null;
   location?: string | null;
+  fromLocation?: string | null;
+  toLocation?: string | null;
   moment?: string | null;
   startTime?: string | null;
   time?: string | null;
@@ -228,7 +230,7 @@ export const proposalsRouter = router({
                 },
               },
               activities: {
-                columns: { name: true, description: true, location: true, moment: true, time: true, isOptional: true, imageUrl: true },
+                columns: { name: true, description: true, location: true, fromLocation: true, toLocation: true, moment: true, time: true, isOptional: true, imageUrl: true },
               },
               meals: true,
               transportation: {
@@ -307,7 +309,7 @@ export const proposalsRouter = router({
                 },
               },
               meals: { columns: { breakfast: true, lunch: true, dinner: true } },
-              activities: { columns: { id: true, activityLibraryId: true, name: true, description: true, location: true, moment: true, time: true, isOptional: true, imageUrl: true } },
+              activities: { columns: { id: true, activityLibraryId: true, name: true, description: true, location: true, fromLocation: true, toLocation: true, moment: true, time: true, isOptional: true, imageUrl: true } },
               transportation: {
                 columns: {
                   id: true,
@@ -558,6 +560,8 @@ export const proposalsRouter = router({
                 name: activity.name,
                 description: activity.description || null,
                 location: activity.location || null,
+                fromLocation: activity.fromLocation || null,
+                toLocation: activity.toLocation || null,
                 moment: activity.moment || 'Full Day',
                 time: activity.startTime || null,
                 isOptional: activity.isOptional || false,
@@ -928,6 +932,8 @@ export const proposalsRouter = router({
               name: activity.name,
               description: activity.description,
               location: activity.location,
+              fromLocation: activity.fromLocation,
+              toLocation: activity.toLocation,
               moment: activity.moment,
               time: activity.time || null,
               isOptional: activity.isOptional,

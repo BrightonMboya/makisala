@@ -14,7 +14,13 @@ import type {
 import type { Proposal } from '@repo/db/schema';
 import { getPublicUrl } from '@/lib/storage';
 import { capitalize } from '@/lib/utils';
-import { calculatePricing, formatDuration, transportModeLabels } from '@/lib/transform-utils';
+import {
+  calculatePricing,
+  formatDuration,
+  formatTransferLocation,
+  isTransferActivity,
+  transportModeLabels,
+} from '@/lib/transform-utils';
 
 /** Convert "08:00" or "14:30" to "8:00 AM" / "2:30 PM" */
 function formatTime(time: string): string {
@@ -52,6 +58,8 @@ type ProposalDay = {
     name: string;
     description: string | null;
     location: string | null;
+    fromLocation?: string | null;
+    toLocation?: string | null;
     moment: string;
     time?: string | null;
     imageUrl: string | null;
@@ -130,7 +138,9 @@ export function transformProposalToItineraryData(
         moment: act.moment || undefined,
         activity: capitalize(translatedAct?.name || act.name),
         description: translatedAct?.description || act.description || '',
-        location: translatedAct?.location || act.location || undefined,
+        location: isTransferActivity(act.name)
+          ? formatTransferLocation(act.fromLocation, act.toLocation) || undefined
+          : translatedAct?.location || act.location || undefined,
       };
     });
 

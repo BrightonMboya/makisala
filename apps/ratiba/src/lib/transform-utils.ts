@@ -15,6 +15,30 @@ export const transportModeLabels: Record<TransportModeType, string> = {
   flight_bush: 'Bush/Charter Flight',
 };
 
+/**
+ * An activity is treated as a road/air transfer when its name mentions
+ * "transfer" (case-insensitive). Transfers show From/To fields instead of a
+ * single location. The transport mode lives in the activity name itself
+ * (e.g. "Transfer by road", "Guided game-drive transfer").
+ */
+export function isTransferActivity(name: string | null | undefined): boolean {
+  return !!name && /transfer/i.test(name);
+}
+
+/**
+ * Collapse a transfer activity's origin/destination into one display string
+ * (e.g. "Arusha Airport → Gombe Hotel") for rendering as the activity location.
+ */
+export function formatTransferLocation(
+  from: string | null | undefined,
+  to: string | null | undefined,
+): string | null {
+  const f = from?.trim();
+  const t = to?.trim();
+  if (f && t) return `${f} → ${t}`;
+  return f || t || null;
+}
+
 export function formatDuration(minutes: number | null): string | null {
   if (!minutes) return null;
   const hours = Math.floor(minutes / 60);

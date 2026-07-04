@@ -659,6 +659,8 @@ function BuilderLayoutInner({ children }: { children: React.ReactNode }) {
             name: act.name,
             description: act.description,
             location: act.location,
+            fromLocation: act.fromLocation ?? undefined,
+            toLocation: act.toLocation ?? undefined,
             moment: act.moment,
             startTime: act.time || null,
             isOptional: act.isOptional,

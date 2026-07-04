@@ -36,6 +36,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { CreatableAsyncCombobox } from './creatable-async-combobox';
 import { trpc } from '@/lib/trpc';
 import { searchPlaces } from '@/lib/geocoding';
+import { isTransferActivity } from '@/lib/transform-utils';
 
 const moments = ['Morning', 'Afternoon', 'Evening', 'Half Day', 'Full Day', 'Night'] as const;
 
@@ -315,6 +316,10 @@ function SortableActivityRow({
 
   const [isExpanded, setIsExpanded] = useState(!!activity.description || !!activity.imageUrl);
 
+  // When the activity name mentions "transfer", swap the single location field
+  // for a From/To pair (e.g. "Transfer by road from Arusha Airport to Gombe Hotel").
+  const isTransfer = isTransferActivity(activity.name);
+
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
@@ -376,15 +381,48 @@ function SortableActivityRow({
           />
         </div>
         <div className="col-span-3">
-          <CreatableAsyncCombobox
-            value={activity.location}
-            onChange={(val) => onUpdate(activity.id, 'location', val)}
-            onSearch={onLocationSearch}
-            initialLabel={activity.location || null}
-            placeholder="Select location"
-            createLabel="Use"
-            className="h-9 border-stone-200"
-          />
+          {isTransfer ? (
+            <div className="flex flex-col gap-1.5">
+              <div className="flex items-center gap-1.5">
+                <span className="w-9 shrink-0 text-[10px] font-bold tracking-wide text-stone-400 uppercase">
+                  From
+                </span>
+                <CreatableAsyncCombobox
+                  value={activity.fromLocation ?? ''}
+                  onChange={(val) => onUpdate(activity.id, 'fromLocation', val)}
+                  onSearch={onLocationSearch}
+                  initialLabel={activity.fromLocation || null}
+                  placeholder="Origin"
+                  createLabel="Use"
+                  className="h-9 min-w-0 flex-1 border-stone-200"
+                />
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="w-9 shrink-0 text-[10px] font-bold tracking-wide text-stone-400 uppercase">
+                  To
+                </span>
+                <CreatableAsyncCombobox
+                  value={activity.toLocation ?? ''}
+                  onChange={(val) => onUpdate(activity.id, 'toLocation', val)}
+                  onSearch={onLocationSearch}
+                  initialLabel={activity.toLocation || null}
+                  placeholder="Destination"
+                  createLabel="Use"
+                  className="h-9 min-w-0 flex-1 border-stone-200"
+                />
+              </div>
+            </div>
+          ) : (
+            <CreatableAsyncCombobox
+              value={activity.location}
+              onChange={(val) => onUpdate(activity.id, 'location', val)}
+              onSearch={onLocationSearch}
+              initialLabel={activity.location || null}
+              placeholder="Select location"
+              createLabel="Use"
+              className="h-9 border-stone-200"
+            />
+          )}
         </div>
         <div className="col-span-2">
           <MultiSelect

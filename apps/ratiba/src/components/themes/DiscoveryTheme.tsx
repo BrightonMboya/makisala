@@ -1070,8 +1070,13 @@ const DaySection = ({
 
                       {/* Content */}
                       <div className="min-w-0 flex-1 border-l-2 border-transparent pb-2 pl-0 transition-colors group-hover:border-stone-300">
-                        {/* Time label */}
-                        <div className="mb-2 flex items-center gap-3">
+                        {/* Activity name */}
+                        <h4 className="mb-2 font-serif text-2xl font-medium text-stone-800">
+                          {activity.activity}
+                        </h4>
+
+                        {/* Time + location meta */}
+                        <div className="mb-3 flex items-center gap-3">
                           {(activity.time || activity.moment) && (
                             <span className="inline-flex items-center gap-1.5 text-xs font-medium tracking-[0.15em] text-stone-400 uppercase">
                               {formatActivityTiming(activity.time, activity.moment)}
@@ -1087,11 +1092,6 @@ const DaySection = ({
                             </>
                           )}
                         </div>
-
-                        {/* Activity name */}
-                        <h4 className="mb-3 font-serif text-2xl text-stone-800">
-                          {activity.activity}
-                        </h4>
 
                         {/* Description */}
                         {activity.description && (

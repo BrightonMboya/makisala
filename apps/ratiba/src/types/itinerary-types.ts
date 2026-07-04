@@ -6,6 +6,10 @@ export type BuilderActivity = {
   libraryId?: string | null;
   name: string;
   location: string;
+  // Transfer-type activities (name contains "transfer") use from/to instead of
+  // `location`. Empty for regular activities.
+  fromLocation?: string;
+  toLocation?: string;
   // One or more moments, stored comma-separated e.g. "Morning" or "Morning, Afternoon".
   // Canonical values: Morning, Afternoon, Evening, Half Day, Full Day, Night.
   moment: string;
