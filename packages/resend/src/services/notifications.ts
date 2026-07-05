@@ -330,6 +330,7 @@ export interface InvoiceShareData {
   clientEmail: string;
   clientName: string;
   agencyName: string;
+  orgSlug?: string | null;
   invoiceNumber: string;
   invoiceTitle?: string;
   amountDisplay: string;
@@ -361,7 +362,7 @@ export async function sendInvoiceShareEmail(
       message: data.message,
     });
 
-    const fromEmail = env.RESEND_FROM_EMAIL || 'notifications@makisala.com';
+    const fromEmail = orgFromAddress({ name: data.agencyName, slug: data.orgSlug });
 
     const result = await resend.emails.send({
       from: fromEmail,

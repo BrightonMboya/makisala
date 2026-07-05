@@ -18,7 +18,9 @@ export function buildLineItemsFromProposal(proposal: ProposalSeed): InvoiceLineI
   for (const row of proposal.pricingRows ?? []) {
     if (!row || row.count <= 0) continue;
     items.push({
-      id: row.id,
+      // Namespace the source id: pricingRows and extras can share raw ids (e.g. "1"),
+      // and invoice line-item ids must be unique across the merged list.
+      id: `row-${row.id}`,
       name: row.type || 'Traveler',
       quantity: row.count,
       unitPriceCents: Math.round((row.unitPrice || 0) * 100),
@@ -28,7 +30,7 @@ export function buildLineItemsFromProposal(proposal: ProposalSeed): InvoiceLineI
   for (const extra of proposal.extras ?? []) {
     if (!extra?.selected) continue;
     items.push({
-      id: extra.id,
+      id: `extra-${extra.id}`,
       name: extra.name || 'Extra',
       quantity: 1,
       unitPriceCents: Math.round((extra.price || 0) * 100),

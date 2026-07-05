@@ -22,8 +22,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { token } = await params;
   const invoice = await getCachedInvoice(token);
   if (!invoice) return { title: 'Invoice not found' };
-  const agency =
-    (invoice.fromDetails as InvoicePartyDetails | null)?.name ?? 'Ratiba';
+  const agency = (invoice.fromDetails as InvoicePartyDetails | null)?.name ?? 'Ratiba';
   return { title: `Invoice ${invoice.number} — ${agency}` };
 }
 
@@ -48,6 +47,43 @@ function formatDate(value: string | null | undefined) {
   }
 }
 
+function MetaRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-center gap-1.5">
+      <span className="w-[76px] font-mono text-[11px] tracking-wide text-[#878787] uppercase">
+        {label}
+      </span>
+      <span className="font-mono text-[11px] text-[#878787]">:</span>
+      <span className="font-mono text-[11px] text-neutral-950">{value}</span>
+    </div>
+  );
+}
+
+function Party({
+  heading,
+  details,
+  fallbackName,
+}: {
+  heading: string;
+  details: InvoicePartyDetails | null | undefined;
+  fallbackName?: string;
+}) {
+  const name = details?.name || fallbackName || '';
+  return (
+    <div>
+      <div className="mb-2 font-mono text-[11px] tracking-wide text-[#878787] uppercase">
+        {heading}
+      </div>
+      <div className="font-mono text-[11px] leading-[18px] text-neutral-950">
+        {name ? <div>{name}</div> : null}
+        {details?.email ? <div>{details.email}</div> : null}
+        {details?.phone ? <div>{details.phone}</div> : null}
+        {details?.address ? <div className="whitespace-pre-line">{details.address}</div> : null}
+      </div>
+    </div>
+  );
+}
+
 export default async function PublicInvoicePage({ params }: Props) {
   const { token } = await params;
   const invoice = await getCachedInvoice(token);
@@ -58,109 +94,78 @@ export default async function PublicInvoicePage({ params }: Props) {
   const lineItems: InvoiceLineItem[] = invoice.lineItems ?? [];
   const agencyName = from?.name ?? invoice.organization?.name ?? 'Travel Agency';
   const logoUrl = from?.logoUrl ?? invoice.organization?.logoUrl ?? null;
+  const paymentTerms = invoice.organization?.paymentTerms ?? null;
   const isDraft = !invoice.sentAt;
 
   return (
-    <div className="min-h-screen bg-stone-50 py-10 font-sans text-stone-900">
+    <div className="min-h-screen bg-stone-50 py-10 font-sans text-neutral-950">
       <div className="mx-auto max-w-3xl px-4">
         {isDraft ? (
-          <div className="mb-4 rounded-md border border-amber-200 bg-amber-50 px-4 py-2 text-xs font-medium text-amber-800">
+          <div className="mb-4 rounded-md border border-amber-200 bg-amber-50 px-4 py-2 font-mono text-[11px] font-medium tracking-wide text-amber-800 uppercase">
             Draft preview. This invoice has not been sent yet.
           </div>
         ) : null}
 
-        <div className="mb-6 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            {logoUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={logoUrl} alt={agencyName} className="h-10 w-auto object-contain" />
-            ) : null}
-            <div className="font-serif text-xl font-bold text-green-800">{agencyName}</div>
-          </div>
+        <div className="mb-4 flex justify-end">
           <a
             href={`/invoice/${token}/pdf`}
             target="_blank"
             rel="noreferrer"
-            className="inline-flex items-center gap-2 rounded-md bg-green-700 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-green-800"
+            className="inline-flex items-center gap-2 rounded-md bg-stone-900 px-4 py-2 font-mono text-[11px] font-medium tracking-wide text-white uppercase transition-colors hover:bg-stone-700"
           >
             Download PDF
           </a>
         </div>
 
-        <article className="overflow-hidden rounded-lg border border-stone-200 bg-white shadow-sm">
-          <header className="flex items-start justify-between border-b-2 border-green-700 px-8 py-6">
-            <div>
-              <p className="text-xs font-medium uppercase tracking-wide text-stone-500">Invoice</p>
-              <h1 className="mt-1 font-serif text-3xl font-bold text-green-800">
-                {invoice.number}
-              </h1>
-              {invoice.title ? (
-                <p className="mt-2 text-base text-stone-700">{invoice.title}</p>
-              ) : null}
-            </div>
-            <div className="text-right text-sm">
-              <div>
-                <span className="text-stone-500">Issue date</span>
-                <div className="font-semibold">{formatDate(invoice.issueDate)}</div>
-              </div>
+        <article className="overflow-hidden rounded-lg border border-stone-200 bg-white p-10 shadow-sm">
+          <header className="flex items-start justify-between gap-5">
+            <div className="flex flex-col gap-1.5">
+              <MetaRow label="Invoice no" value={invoice.number} />
+              {invoice.title ? <MetaRow label="Description" value={invoice.title} /> : null}
+              <MetaRow label="Issue date" value={formatDate(invoice.issueDate)} />
               {invoice.dueDate ? (
-                <div className="mt-2">
-                  <span className="text-stone-500">Due date</span>
-                  <div className="font-semibold">{formatDate(invoice.dueDate)}</div>
-                </div>
+                <MetaRow label="Due date" value={formatDate(invoice.dueDate)} />
               ) : null}
             </div>
+            {logoUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={logoUrl} alt={agencyName} className="h-14 w-14 object-contain" />
+            ) : null}
           </header>
 
-          <div className="grid grid-cols-1 gap-6 px-8 py-6 md:grid-cols-2">
-            <div>
-              <h2 className="mb-2 text-xs font-bold uppercase tracking-wide text-stone-500">
-                From
-              </h2>
-              <div className="text-sm leading-relaxed">
-                <div className="font-semibold">{from?.name ?? agencyName}</div>
-                {from?.email ? <div>{from.email}</div> : null}
-                {from?.phone ? <div>{from.phone}</div> : null}
-                {from?.address ? <div className="whitespace-pre-line">{from.address}</div> : null}
-              </div>
-            </div>
-            <div>
-              <h2 className="mb-2 text-xs font-bold uppercase tracking-wide text-stone-500">
-                Bill to
-              </h2>
-              <div className="text-sm leading-relaxed">
-                <div className="font-semibold">{to?.name ?? 'Guest'}</div>
-                {to?.email ? <div>{to.email}</div> : null}
-                {to?.phone ? <div>{to.phone}</div> : null}
-                {to?.address ? <div className="whitespace-pre-line">{to.address}</div> : null}
-              </div>
-            </div>
+          <div className="mt-8 grid grid-cols-2 gap-6">
+            <Party heading="From" details={from} fallbackName={agencyName} />
+            <Party heading="Bill to" details={to} />
           </div>
 
-          <div className="border-t border-stone-200 px-8 py-6">
-            <table className="w-full text-sm">
+          <div className="mt-10">
+            <table className="w-full">
               <thead>
-                <tr className="border-b-2 border-green-700 text-left text-xs uppercase tracking-wide text-stone-500">
-                  <th className="py-2 font-semibold">Description</th>
-                  <th className="py-2 text-right font-semibold">Qty</th>
-                  <th className="py-2 text-right font-semibold">Unit price</th>
-                  <th className="py-2 text-right font-semibold">Total</th>
+                <tr className="text-left font-mono text-[11px] tracking-wide text-[#878787] uppercase">
+                  <th className="pb-2 font-normal">Description</th>
+                  <th className="pb-2 text-right font-normal">Qty</th>
+                  <th className="pb-2 text-right font-normal">Unit price</th>
+                  <th className="pb-2 text-right font-normal">Total</th>
                 </tr>
               </thead>
               <tbody>
-                {lineItems.map((item) => (
-                  <tr key={item.id} className="border-b border-stone-100">
-                    <td className="py-3">
-                      <div className="font-medium">{item.name}</div>
+                {lineItems.map((item, index) => (
+                  <tr key={`${item.id}-${index}`} className="align-top">
+                    <td className="py-1.5 pr-4">
+                      <div className="font-mono text-[11px] text-neutral-950">{item.name}</div>
                       {item.description ? (
-                        <div className="text-xs text-stone-500">{item.description}</div>
+                        <div className="font-mono text-[11px] text-[#878787]">
+                          {item.description}
+                        </div>
                       ) : null}
                     </td>
-                    <td className="py-3 text-right font-medium">{item.quantity}</td>
-                    <td className="py-3 text-right">
+                    <td className="py-1.5 text-right font-mono text-[11px] text-neutral-950">
+                      {item.quantity}
+                    </td>
+                    <td className="py-1.5 text-right font-mono text-[11px] text-neutral-950">
                       {formatMoney(item.unitPriceCents, invoice.currency)}
                     </td>
-                    <td className="py-3 text-right font-medium">
+                    <td className="py-1.5 text-right font-mono text-[11px] text-neutral-950">
                       {formatMoney(item.quantity * item.unitPriceCents, invoice.currency)}
                     </td>
                   </tr>
@@ -168,43 +173,67 @@ export default async function PublicInvoicePage({ params }: Props) {
               </tbody>
             </table>
 
-            <div className="ml-auto mt-6 w-full max-w-sm text-sm">
-              <div className="flex justify-between py-1">
-                <span className="text-stone-600">Subtotal</span>
-                <span className="font-medium">
-                  {formatMoney(invoice.subtotalCents, invoice.currency)}
-                </span>
-              </div>
-              {invoice.taxRatePct ? (
-                <div className="flex justify-between py-1">
-                  <span className="text-stone-600">Tax ({invoice.taxRatePct}%)</span>
-                  <span className="font-medium">
-                    {formatMoney(invoice.taxCents, invoice.currency)}
+            <div className="mt-6 flex justify-end">
+              <div className="w-[240px]">
+                <div className="flex items-center justify-between py-1">
+                  <span className="font-mono text-[11px] tracking-wide text-[#878787] uppercase">
+                    Subtotal
+                  </span>
+                  <span className="font-mono text-[11px] text-[#878787]">
+                    {formatMoney(invoice.subtotalCents, invoice.currency)}
                   </span>
                 </div>
-              ) : null}
-              <div className="mt-2 flex justify-between border-t-2 border-green-700 pt-2">
-                <span className="font-serif text-base font-bold text-green-800">Total due</span>
-                <span className="font-serif text-lg font-bold text-green-800">
-                  {formatMoney(invoice.totalCents, invoice.currency)}
-                </span>
+                {invoice.taxRatePct ? (
+                  <div className="flex items-center justify-between py-1">
+                    <span className="font-mono text-[11px] tracking-wide text-[#878787] uppercase">
+                      Tax ({invoice.taxRatePct}%)
+                    </span>
+                    <span className="font-mono text-[11px] text-[#878787]">
+                      {formatMoney(invoice.taxCents, invoice.currency)}
+                    </span>
+                  </div>
+                ) : null}
+                <div className="mt-2 flex items-center justify-between border-t border-stone-200 pt-3">
+                  <span className="font-mono text-[11px] tracking-wide text-[#878787] uppercase">
+                    Total
+                  </span>
+                  <span className="font-mono text-[21px] font-medium text-neutral-950">
+                    {formatMoney(invoice.totalCents, invoice.currency)}
+                  </span>
+                </div>
               </div>
             </div>
           </div>
 
-          {invoice.notes ? (
-            <div className="border-t border-stone-200 px-8 py-6">
-              <h2 className="mb-2 text-xs font-bold uppercase tracking-wide text-stone-500">
-                Notes
-              </h2>
-              <p className="whitespace-pre-line text-sm text-stone-700">{invoice.notes}</p>
+          {paymentTerms || invoice.notes ? (
+            <div className="mt-10 grid grid-cols-2 gap-6">
+              <div>
+                {paymentTerms ? (
+                  <>
+                    <div className="mb-2 font-mono text-[11px] tracking-wide text-[#878787] uppercase">
+                      Payment details
+                    </div>
+                    <p className="font-mono text-[11px] leading-[18px] whitespace-pre-line text-neutral-950">
+                      {paymentTerms}
+                    </p>
+                  </>
+                ) : null}
+              </div>
+              <div>
+                {invoice.notes ? (
+                  <>
+                    <div className="mb-2 font-mono text-[11px] tracking-wide text-[#878787] uppercase">
+                      Note
+                    </div>
+                    <p className="font-mono text-[11px] leading-[18px] whitespace-pre-line text-neutral-950">
+                      {invoice.notes}
+                    </p>
+                  </>
+                ) : null}
+              </div>
             </div>
           ) : null}
         </article>
-
-        <p className="mt-6 text-center text-xs text-stone-500">
-          Questions? Reply to the email this invoice arrived in.
-        </p>
       </div>
     </div>
   );

@@ -3,204 +3,160 @@ import { renderToBuffer } from '@react-pdf/renderer';
 import { format } from 'date-fns';
 import type { Invoice, InvoiceLineItem, InvoicePartyDetails } from '@repo/db/schema';
 
+const MUTED = '#878787';
+const TEXT = '#0a0a0a';
+const BORDER = '#e5e5e5';
+
 const styles = StyleSheet.create({
   page: {
-    padding: 40,
-    fontFamily: 'Helvetica',
-    fontSize: 10,
-    color: '#1c1917',
+    paddingVertical: 48,
+    paddingHorizontal: 44,
+    fontFamily: 'Courier',
+    fontSize: 9,
+    color: TEXT,
+    backgroundColor: '#ffffff',
   },
+  // header: meta on the left, logo on the right
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 30,
-    paddingBottom: 20,
-    borderBottomWidth: 2,
-    borderBottomColor: '#15803d',
+    marginBottom: 32,
   },
-  brand: {
+  metaCol: {
     flexDirection: 'column',
+    gap: 5,
   },
-  brandLogo: {
-    width: 120,
-    height: 40,
-    objectFit: 'contain',
-    marginBottom: 8,
+  metaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
-  brandName: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#15803d',
+  metaLabel: {
+    fontSize: 8,
+    color: MUTED,
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
+    width: 60,
   },
-  brandLine: {
+  metaSep: {
+    fontSize: 8,
+    color: MUTED,
+    marginRight: 6,
+  },
+  metaValue: {
     fontSize: 9,
-    color: '#57534e',
-    marginTop: 2,
+    color: TEXT,
   },
-  invoiceMeta: {
+  logo: {
+    width: 56,
+    height: 56,
+    objectFit: 'contain',
+  },
+  brandWordmark: {
+    fontSize: 13,
+    color: TEXT,
     textAlign: 'right',
   },
-  invoiceTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#15803d',
-    marginBottom: 4,
-  },
-  invoiceLabel: {
-    fontSize: 9,
-    color: '#78716c',
-    marginTop: 6,
-  },
-  invoiceValue: {
-    fontSize: 11,
-    fontWeight: 'bold',
-    color: '#1c1917',
-  },
+  // parties
   partyGrid: {
     flexDirection: 'row',
     gap: 24,
-    marginBottom: 28,
+    marginBottom: 32,
   },
   partyCol: {
     flex: 1,
   },
-  partyHeading: {
-    fontSize: 9,
-    fontWeight: 'bold',
-    color: '#78716c',
+  label: {
+    fontSize: 8,
+    color: MUTED,
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    marginBottom: 6,
-  },
-  partyName: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    marginBottom: 2,
+    letterSpacing: 0.4,
+    marginBottom: 8,
   },
   partyLine: {
-    fontSize: 10,
-    color: '#57534e',
-    marginBottom: 2,
-  },
-  sectionTitle: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    color: '#15803d',
-    marginBottom: 10,
-    paddingBottom: 4,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e7e5e4',
-  },
-  table: {
-    marginBottom: 16,
-  },
-  tableHeader: {
-    flexDirection: 'row',
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: '#15803d',
-  },
-  tableHeaderCell: {
     fontSize: 9,
-    fontWeight: 'bold',
-    color: '#78716c',
-    textTransform: 'uppercase',
-    letterSpacing: 0.3,
-  },
-  tableRow: {
-    flexDirection: 'row',
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f5f5f4',
-  },
-  cellDesc: {
-    flex: 4,
-    paddingRight: 8,
-  },
-  cellQty: {
-    flex: 1,
-    textAlign: 'right',
-  },
-  cellPrice: {
-    flex: 1.2,
-    textAlign: 'right',
-  },
-  cellTotal: {
-    flex: 1.3,
-    textAlign: 'right',
-  },
-  lineItemName: {
-    fontSize: 10,
-    fontWeight: 'bold',
-  },
-  lineItemDesc: {
-    fontSize: 9,
-    color: '#78716c',
-    marginTop: 2,
-  },
-  totalsBox: {
-    marginLeft: 'auto',
-    width: '45%',
-    marginTop: 4,
-  },
-  totalsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingVertical: 4,
-  },
-  totalsLabel: {
-    fontSize: 10,
-    color: '#57534e',
-  },
-  totalsValue: {
-    fontSize: 10,
-    fontWeight: 'bold',
-  },
-  grandRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 6,
-    paddingTop: 8,
-    borderTopWidth: 2,
-    borderTopColor: '#15803d',
-  },
-  grandLabel: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    color: '#15803d',
-  },
-  grandValue: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: '#15803d',
-  },
-  notesBlock: {
-    marginTop: 30,
-    paddingTop: 16,
-    borderTopWidth: 1,
-    borderTopColor: '#e7e5e4',
-  },
-  notesHeading: {
-    fontSize: 9,
-    fontWeight: 'bold',
-    color: '#78716c',
-    textTransform: 'uppercase',
-    marginBottom: 6,
-  },
-  notesBody: {
-    fontSize: 10,
-    color: '#57534e',
+    color: TEXT,
     lineHeight: 1.5,
   },
-  footer: {
-    position: 'absolute',
-    bottom: 30,
-    left: 40,
-    right: 40,
-    textAlign: 'center',
+  // line items
+  itemsHeader: {
+    flexDirection: 'row',
+    marginBottom: 10,
+  },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    paddingVertical: 6,
+  },
+  cellDesc: { flex: 4, paddingRight: 8 },
+  cellQty: { flex: 1, textAlign: 'right' },
+  cellPrice: { flex: 2, textAlign: 'right' },
+  cellTotal: { flex: 1.6, textAlign: 'right' },
+  headCell: {
     fontSize: 8,
-    color: '#a8a29e',
+    color: MUTED,
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
+  },
+  itemName: {
+    fontSize: 9,
+    color: TEXT,
+  },
+  itemDesc: {
+    fontSize: 8,
+    color: MUTED,
+    marginTop: 2,
+  },
+  cellText: {
+    fontSize: 9,
+    color: TEXT,
+  },
+  // summary
+  summaryWrap: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    marginTop: 24,
+    marginBottom: 32,
+  },
+  summary: {
+    width: 220,
+  },
+  summaryRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 3,
+  },
+  summaryValueMuted: {
+    fontSize: 9,
+    color: MUTED,
+  },
+  totalRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 8,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: BORDER,
+  },
+  totalValue: {
+    fontSize: 17,
+    color: TEXT,
+  },
+  // footer blocks (payment details / note)
+  footerGrid: {
+    flexDirection: 'row',
+    gap: 24,
+    marginTop: 'auto',
+  },
+  footerCol: {
+    flex: 1,
+  },
+  footerBody: {
+    fontSize: 9,
+    color: TEXT,
+    lineHeight: 1.6,
   },
 });
 
@@ -226,6 +182,16 @@ function formatDate(value: string | null | undefined): string {
   }
 }
 
+function MetaRow({ label, value }: { label: string; value: string }) {
+  return (
+    <View style={styles.metaRow}>
+      <Text style={styles.metaLabel}>{label}</Text>
+      <Text style={styles.metaSep}>:</Text>
+      <Text style={styles.metaValue}>{value}</Text>
+    </View>
+  );
+}
+
 interface PartyProps {
   heading: string;
   details: InvoicePartyDetails | null | undefined;
@@ -236,8 +202,8 @@ function Party({ heading, details, fallbackName }: PartyProps) {
   const name = details?.name || fallbackName || '';
   return (
     <View style={styles.partyCol}>
-      <Text style={styles.partyHeading}>{heading}</Text>
-      {name ? <Text style={styles.partyName}>{name}</Text> : null}
+      <Text style={styles.label}>{heading}</Text>
+      {name ? <Text style={styles.partyLine}>{name}</Text> : null}
       {details?.email ? <Text style={styles.partyLine}>{details.email}</Text> : null}
       {details?.phone ? <Text style={styles.partyLine}>{details.phone}</Text> : null}
       {details?.address ? <Text style={styles.partyLine}>{details.address}</Text> : null}
@@ -248,44 +214,34 @@ function Party({ heading, details, fallbackName }: PartyProps) {
 interface InvoicePdfProps {
   invoice: Invoice;
   paymentTerms?: string | null;
+  /** Pre-resolved PNG/JPG logo as a data URI. @react-pdf can't render webp, so
+   *  renderInvoicePdf converts the org logo up front. Falls back to a text wordmark. */
+  logoSrc?: string | null;
 }
 
-export function InvoicePdfDocument({ invoice, paymentTerms }: InvoicePdfProps) {
+export function InvoicePdfDocument({ invoice, paymentTerms, logoSrc }: InvoicePdfProps) {
   const lineItems: InvoiceLineItem[] = invoice.lineItems || [];
   const from = invoice.fromDetails as InvoicePartyDetails | null;
   const to = invoice.toDetails as InvoicePartyDetails | null;
-  const logoUrl = from?.logoUrl ?? null;
   const brandName = from?.name ?? 'Invoice';
 
   return (
     <Document>
       <Page size="A4" style={styles.page}>
         <View style={styles.header}>
-          <View style={styles.brand}>
-            {logoUrl ? <Image src={logoUrl} style={styles.brandLogo} /> : null}
-            <Text style={styles.brandName}>{brandName}</Text>
-            {from?.email ? <Text style={styles.brandLine}>{from.email}</Text> : null}
-            {from?.phone ? <Text style={styles.brandLine}>{from.phone}</Text> : null}
-          </View>
-          <View style={styles.invoiceMeta}>
-            <Text style={styles.invoiceTitle}>INVOICE</Text>
-            <Text style={styles.invoiceLabel}>Invoice number</Text>
-            <Text style={styles.invoiceValue}>{invoice.number}</Text>
-            {invoice.title ? (
-              <>
-                <Text style={styles.invoiceLabel}>Description</Text>
-                <Text style={styles.invoiceValue}>{invoice.title}</Text>
-              </>
-            ) : null}
-            <Text style={styles.invoiceLabel}>Issue date</Text>
-            <Text style={styles.invoiceValue}>{formatDate(invoice.issueDate)}</Text>
+          <View style={styles.metaCol}>
+            <MetaRow label="Invoice no" value={invoice.number} />
+            {invoice.title ? <MetaRow label="Description" value={invoice.title} /> : null}
+            <MetaRow label="Issue date" value={formatDate(invoice.issueDate)} />
             {invoice.dueDate ? (
-              <>
-                <Text style={styles.invoiceLabel}>Due date</Text>
-                <Text style={styles.invoiceValue}>{formatDate(invoice.dueDate)}</Text>
-              </>
+              <MetaRow label="Due date" value={formatDate(invoice.dueDate)} />
             ) : null}
           </View>
+          {logoSrc ? (
+            <Image src={logoSrc} style={styles.logo} />
+          ) : (
+            <Text style={styles.brandWordmark}>{brandName}</Text>
+          )}
         </View>
 
         <View style={styles.partyGrid}>
@@ -293,84 +249,115 @@ export function InvoicePdfDocument({ invoice, paymentTerms }: InvoicePdfProps) {
           <Party heading="Bill to" details={to} />
         </View>
 
-        <Text style={styles.sectionTitle}>Line items</Text>
-        <View style={styles.table}>
-          <View style={styles.tableHeader}>
-            <Text style={[styles.tableHeaderCell, styles.cellDesc]}>Description</Text>
-            <Text style={[styles.tableHeaderCell, styles.cellQty]}>Qty</Text>
-            <Text style={[styles.tableHeaderCell, styles.cellPrice]}>Unit price</Text>
-            <Text style={[styles.tableHeaderCell, styles.cellTotal]}>Total</Text>
-          </View>
-          {lineItems.map((item) => {
-            const lineTotal = item.quantity * item.unitPriceCents;
-            return (
-              <View key={item.id} style={styles.tableRow}>
-                <View style={styles.cellDesc}>
-                  <Text style={styles.lineItemName}>{item.name}</Text>
-                  {item.description ? (
-                    <Text style={styles.lineItemDesc}>{item.description}</Text>
-                  ) : null}
-                </View>
-                <Text style={[styles.cellQty, styles.lineItemName]}>{item.quantity}</Text>
-                <Text style={styles.cellPrice}>
-                  {formatMoney(item.unitPriceCents, invoice.currency)}
-                </Text>
-                <Text style={[styles.cellTotal, styles.lineItemName]}>
-                  {formatMoney(lineTotal, invoice.currency)}
-                </Text>
-              </View>
-            );
-          })}
+        <View style={styles.itemsHeader}>
+          <Text style={[styles.headCell, styles.cellDesc]}>Description</Text>
+          <Text style={[styles.headCell, styles.cellQty]}>Qty</Text>
+          <Text style={[styles.headCell, styles.cellPrice]}>Unit price</Text>
+          <Text style={[styles.headCell, styles.cellTotal]}>Total</Text>
         </View>
-
-        <View style={styles.totalsBox}>
-          <View style={styles.totalsRow}>
-            <Text style={styles.totalsLabel}>Subtotal</Text>
-            <Text style={styles.totalsValue}>
-              {formatMoney(invoice.subtotalCents, invoice.currency)}
-            </Text>
-          </View>
-          {invoice.taxRatePct ? (
-            <View style={styles.totalsRow}>
-              <Text style={styles.totalsLabel}>Tax ({invoice.taxRatePct}%)</Text>
-              <Text style={styles.totalsValue}>
-                {formatMoney(invoice.taxCents, invoice.currency)}
+        {lineItems.map((item, index) => {
+          const lineTotal = item.quantity * item.unitPriceCents;
+          return (
+            <View key={`${item.id}-${index}`} style={styles.row}>
+              <View style={styles.cellDesc}>
+                <Text style={styles.itemName}>{item.name}</Text>
+                {item.description ? (
+                  <Text style={styles.itemDesc}>{item.description}</Text>
+                ) : null}
+              </View>
+              <Text style={[styles.cellText, styles.cellQty]}>{item.quantity}</Text>
+              <Text style={[styles.cellText, styles.cellPrice]}>
+                {formatMoney(item.unitPriceCents, invoice.currency)}
+              </Text>
+              <Text style={[styles.cellText, styles.cellTotal]}>
+                {formatMoney(lineTotal, invoice.currency)}
               </Text>
             </View>
-          ) : null}
-          <View style={styles.grandRow}>
-            <Text style={styles.grandLabel}>Total due</Text>
-            <Text style={styles.grandValue}>
-              {formatMoney(invoice.totalCents, invoice.currency)}
-            </Text>
+          );
+        })}
+
+        <View style={styles.summaryWrap}>
+          <View style={styles.summary}>
+            <View style={styles.summaryRow}>
+              <Text style={styles.label}>Subtotal</Text>
+              <Text style={styles.summaryValueMuted}>
+                {formatMoney(invoice.subtotalCents, invoice.currency)}
+              </Text>
+            </View>
+            {invoice.taxRatePct ? (
+              <View style={styles.summaryRow}>
+                <Text style={styles.label}>Tax ({invoice.taxRatePct}%)</Text>
+                <Text style={styles.summaryValueMuted}>
+                  {formatMoney(invoice.taxCents, invoice.currency)}
+                </Text>
+              </View>
+            ) : null}
+            <View style={styles.totalRow}>
+              <Text style={styles.label}>Total</Text>
+              <Text style={styles.totalValue}>
+                {formatMoney(invoice.totalCents, invoice.currency)}
+              </Text>
+            </View>
           </View>
         </View>
 
-        {invoice.notes ? (
-          <View style={styles.notesBlock}>
-            <Text style={styles.notesHeading}>Notes</Text>
-            <Text style={styles.notesBody}>{invoice.notes}</Text>
+        <View style={styles.footerGrid}>
+          <View style={styles.footerCol}>
+            {paymentTerms ? (
+              <>
+                <Text style={styles.label}>Payment details</Text>
+                <Text style={styles.footerBody}>{paymentTerms}</Text>
+              </>
+            ) : null}
           </View>
-        ) : null}
-
-        {paymentTerms ? (
-          <View style={styles.notesBlock}>
-            <Text style={styles.notesHeading}>Payment details</Text>
-            <Text style={styles.notesBody}>{paymentTerms}</Text>
+          <View style={styles.footerCol}>
+            {invoice.notes ? (
+              <>
+                <Text style={styles.label}>Note</Text>
+                <Text style={styles.footerBody}>{invoice.notes}</Text>
+              </>
+            ) : null}
           </View>
-        ) : null}
-
-        <Text style={styles.footer} fixed>
-          {invoice.number} · {brandName}
-        </Text>
+        </View>
       </Page>
     </Document>
   );
+}
+
+/**
+ * @react-pdf/renderer only supports PNG/JPG raster images, not webp (the format
+ * org logos are stored in). Fetch the logo and convert it to a PNG data URI so it
+ * renders in the PDF. Returns null on any failure so the document falls back to a
+ * text wordmark.
+ */
+async function resolveLogoPng(url: string | null | undefined): Promise<string | null> {
+  if (!url) return null;
+  try {
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    const input = Buffer.from(await res.arrayBuffer());
+    const { default: sharp } = await import('sharp');
+    const png = await sharp(input)
+      .resize(224, 224, { fit: 'inside', withoutEnlargement: true })
+      .png()
+      .toBuffer();
+    return `data:image/png;base64,${png.toString('base64')}`;
+  } catch {
+    return null;
+  }
 }
 
 export async function renderInvoicePdf(
   invoice: Invoice,
   options: { paymentTerms?: string | null } = {},
 ): Promise<Buffer> {
-  return renderToBuffer(<InvoicePdfDocument invoice={invoice} paymentTerms={options.paymentTerms} />);
+  const from = invoice.fromDetails as InvoicePartyDetails | null;
+  const logoSrc = await resolveLogoPng(from?.logoUrl);
+  return renderToBuffer(
+    <InvoicePdfDocument
+      invoice={invoice}
+      paymentTerms={options.paymentTerms}
+      logoSrc={logoSrc}
+    />,
+  );
 }

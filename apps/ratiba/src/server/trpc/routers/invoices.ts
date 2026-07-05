@@ -97,7 +97,6 @@ export const invoicesRouter = router({
       const fromDetails: InvoicePartyDetails = {
         name: proposal.organization?.name ?? null,
         email: proposal.organization?.notificationEmail ?? null,
-        address: proposal.organization?.aboutDescription ?? null,
         logoUrl: proposal.organization?.logoUrl ?? null,
       };
       const toDetails: InvoicePartyDetails = {
@@ -231,7 +230,7 @@ export const invoicesRouter = router({
 
       const organization = await ctx.db.query.organizations.findFirst({
         where: (org, { eq: eqOp }) => eqOp(org.id, ctx.orgId),
-        columns: { name: true, paymentTerms: true, notificationEmail: true },
+        columns: { name: true, slug: true, paymentTerms: true, notificationEmail: true },
       });
 
       const recipient =
@@ -275,6 +274,7 @@ export const invoicesRouter = router({
         clientEmail: recipient,
         clientName: (existing.toDetails as InvoicePartyDetails | null)?.name ?? 'Guest',
         agencyName: organization?.name ?? 'Your Travel Agency',
+        orgSlug: organization?.slug ?? null,
         invoiceNumber: existing.number,
         invoiceTitle: existing.title ?? undefined,
         amountDisplay,
@@ -311,7 +311,7 @@ export const invoicesRouter = router({
       const invoice = await ctx.db.query.invoices.findFirst({
         where: eq(invoices.shareToken, input.token),
         with: {
-          organization: { columns: { name: true, logoUrl: true } },
+          organization: { columns: { name: true, logoUrl: true, paymentTerms: true } },
         },
       });
       if (!invoice) {

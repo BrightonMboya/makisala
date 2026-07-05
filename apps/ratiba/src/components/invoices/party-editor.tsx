@@ -1,6 +1,7 @@
 'use client';
 
 import { cn } from '@/lib/utils';
+import { useEffect, useRef, useState } from 'react';
 import { Controller, useFormContext } from 'react-hook-form';
 import { Label } from './label-input';
 import type { InvoicePartyDetails } from '@repo/db/schema';
@@ -21,27 +22,71 @@ export function PartyEditor({ name, label, placeholder, readOnly }: PartyEditorP
       <Controller
         control={control}
         name={name}
-        render={({ field }) => {
-          const value = (field.value as InvoicePartyDetails | null) ?? {};
-          const asText = partyToText(value);
-          return (
-            <textarea
-              className={cn(
-                'min-h-[90px] w-full resize-none border-none bg-transparent p-0 text-[11px] leading-[18px] text-foreground outline-none focus:ring-0',
-                'placeholder:text-[#878787]',
-                !asText &&
-                  !readOnly &&
-                  'bg-[repeating-linear-gradient(-60deg,#DBDBDB,#DBDBDB_1px,transparent_1px,transparent_5px)] dark:bg-[repeating-linear-gradient(-60deg,#2C2C2C,#2C2C2C_1px,transparent_1px,transparent_5px)]',
-              )}
-              value={asText}
-              placeholder={placeholder}
-              readOnly={readOnly}
-              onChange={(e) => field.onChange(textToParty(e.target.value, value))}
-            />
-          );
-        }}
+        render={({ field }) => (
+          <PartyTextarea
+            value={field.value as InvoicePartyDetails | null}
+            onChange={field.onChange}
+            placeholder={placeholder}
+            readOnly={readOnly}
+          />
+        )}
       />
     </div>
+  );
+}
+
+/**
+ * Keeps the raw textarea text in local state so keystrokes (Enter, blank lines)
+ * survive. The structured value is parsed on change for storage, but we never let
+ * the lossy value -> text round-trip clobber what the user is typing: we only
+ * re-seed from the form value when it changes from *outside* this component
+ * (e.g. switching invoices / form reset).
+ */
+function PartyTextarea({
+  value,
+  onChange,
+  placeholder,
+  readOnly,
+}: {
+  value: InvoicePartyDetails | null;
+  onChange: (next: InvoicePartyDetails) => void;
+  placeholder?: string;
+  readOnly?: boolean;
+}) {
+  const [text, setText] = useState(() => partyToText(value));
+  // What the current form value formats back to. If an incoming value differs from
+  // this, the change came from outside (not our own onChange) and we adopt it.
+  const emittedRef = useRef(text);
+
+  const incoming = partyToText(value);
+  useEffect(() => {
+    if (incoming !== emittedRef.current) {
+      emittedRef.current = incoming;
+      setText(incoming);
+    }
+  }, [incoming]);
+
+  const handleChange = (raw: string) => {
+    setText(raw);
+    const parsed = textToParty(raw, value ?? {});
+    emittedRef.current = partyToText(parsed);
+    onChange(parsed);
+  };
+
+  return (
+    <textarea
+      className={cn(
+        'min-h-[90px] w-full resize-none border-none bg-transparent p-0 text-[11px] leading-[18px] text-foreground outline-none focus:ring-0',
+        'placeholder:text-[#878787]',
+        !text &&
+          !readOnly &&
+          'bg-[repeating-linear-gradient(-60deg,#DBDBDB,#DBDBDB_1px,transparent_1px,transparent_5px)] dark:bg-[repeating-linear-gradient(-60deg,#2C2C2C,#2C2C2C_1px,transparent_1px,transparent_5px)]',
+      )}
+      value={text}
+      placeholder={placeholder}
+      readOnly={readOnly}
+      onChange={(e) => handleChange(e.target.value)}
+    />
   );
 }
 
