@@ -22,14 +22,31 @@ export function PartyEditor({ name, label, placeholder, readOnly }: PartyEditorP
       <Controller
         control={control}
         name={name}
-        render={({ field }) => (
-          <PartyTextarea
-            value={field.value as InvoicePartyDetails | null}
-            onChange={field.onChange}
-            placeholder={placeholder}
-            readOnly={readOnly}
-          />
-        )}
+        render={({ field }) => {
+          const party = field.value as InvoicePartyDetails | null;
+          return (
+            <div className="flex flex-col gap-1.5">
+              <PartyTextarea
+                value={party}
+                onChange={field.onChange}
+                placeholder={placeholder}
+                readOnly={readOnly}
+              />
+              <input
+                className={cn(
+                  'w-full border-none bg-transparent p-0 text-[11px] leading-[18px] text-foreground outline-none focus:ring-0',
+                  'placeholder:text-[#878787]',
+                )}
+                value={party?.taxId ?? ''}
+                placeholder="Tax ID / VAT (optional)"
+                readOnly={readOnly}
+                onChange={(e) =>
+                  field.onChange({ ...(party ?? {}), taxId: e.target.value || null })
+                }
+              />
+            </div>
+          );
+        }}
       />
     </div>
   );

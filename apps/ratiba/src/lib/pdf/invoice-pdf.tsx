@@ -1,11 +1,18 @@
 import { Document, Page, Text, View, StyleSheet, Image } from '@react-pdf/renderer';
 import { renderToBuffer } from '@react-pdf/renderer';
 import { format } from 'date-fns';
-import type { Invoice, InvoiceLineItem, InvoicePartyDetails } from '@repo/db/schema';
+import type {
+  Invoice,
+  InvoiceLineItem,
+  InvoicePartyDetails,
+  InvoicePaymentMethod,
+} from '@repo/db/schema';
+import { lineTotalCents } from '@/lib/invoices/seed-from-proposal';
 
 const MUTED = '#878787';
 const TEXT = '#0a0a0a';
 const BORDER = '#e5e5e5';
+const GREEN = '#15803d';
 
 const styles = StyleSheet.create({
   page: {
@@ -144,14 +151,52 @@ const styles = StyleSheet.create({
     fontSize: 17,
     color: TEXT,
   },
-  // footer blocks (payment details / note)
-  footerGrid: {
-    flexDirection: 'row',
-    gap: 24,
-    marginTop: 'auto',
+  balanceValue: {
+    fontSize: 9,
+    color: TEXT,
   },
-  footerCol: {
-    flex: 1,
+  paidBadge: {
+    alignSelf: 'flex-start',
+    marginBottom: 6,
+    paddingVertical: 3,
+    paddingHorizontal: 8,
+    borderRadius: 3,
+    backgroundColor: GREEN,
+  },
+  paidBadgeText: {
+    fontSize: 8,
+    color: '#ffffff',
+    textTransform: 'uppercase',
+    letterSpacing: 0.6,
+  },
+  // how to pay (payout methods)
+  payWrap: {
+    marginTop: 28,
+  },
+  payMethod: {
+    marginTop: 10,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: BORDER,
+  },
+  payLabel: {
+    fontSize: 9,
+    color: TEXT,
+  },
+  payBody: {
+    fontSize: 9,
+    color: MUTED,
+    lineHeight: 1.5,
+    marginTop: 3,
+  },
+  payLink: {
+    fontSize: 9,
+    color: GREEN,
+    marginTop: 3,
+  },
+  // note block
+  notesBlock: {
+    marginTop: 24,
   },
   footerBody: {
     fontSize: 9,
@@ -207,19 +252,50 @@ function Party({ heading, details, fallbackName }: PartyProps) {
       {details?.email ? <Text style={styles.partyLine}>{details.email}</Text> : null}
       {details?.phone ? <Text style={styles.partyLine}>{details.phone}</Text> : null}
       {details?.address ? <Text style={styles.partyLine}>{details.address}</Text> : null}
+      {details?.taxId ? (
+        <Text style={styles.partyLine}>Tax ID: {details.taxId}</Text>
+      ) : null}
+    </View>
+  );
+}
+
+const LINK_TYPES: InvoicePaymentMethod['type'][] = ['pesapal', 'stripe', 'paypal'];
+
+function PaymentMethods({ methods }: { methods: InvoicePaymentMethod[] }) {
+  if (!methods || methods.length === 0) return null;
+  return (
+    <View style={styles.payWrap} wrap={false}>
+      <Text style={styles.label}>How to pay</Text>
+      {methods.map((method, index) => {
+        const showLink = !!method.url;
+        const linkPrefix = LINK_TYPES.includes(method.type) ? 'Pay online: ' : '';
+        return (
+          <View key={index} style={styles.payMethod}>
+            <Text style={styles.payLabel}>{method.label}</Text>
+            {method.instructions ? (
+              <Text style={styles.payBody}>{method.instructions}</Text>
+            ) : null}
+            {showLink ? (
+              <Text style={styles.payLink}>
+                {linkPrefix}
+                {method.url}
+              </Text>
+            ) : null}
+          </View>
+        );
+      })}
     </View>
   );
 }
 
 interface InvoicePdfProps {
   invoice: Invoice;
-  paymentTerms?: string | null;
   /** Pre-resolved PNG/JPG logo as a data URI. @react-pdf can't render webp, so
    *  renderInvoicePdf converts the org logo up front. Falls back to a text wordmark. */
   logoSrc?: string | null;
 }
 
-export function InvoicePdfDocument({ invoice, paymentTerms, logoSrc }: InvoicePdfProps) {
+export function InvoicePdfDocument({ invoice, logoSrc }: InvoicePdfProps) {
   const lineItems: InvoiceLineItem[] = invoice.lineItems || [];
   const from = invoice.fromDetails as InvoicePartyDetails | null;
   const to = invoice.toDetails as InvoicePartyDetails | null;
@@ -256,7 +332,7 @@ export function InvoicePdfDocument({ invoice, paymentTerms, logoSrc }: InvoicePd
           <Text style={[styles.headCell, styles.cellTotal]}>Total</Text>
         </View>
         {lineItems.map((item, index) => {
-          const lineTotal = item.quantity * item.unitPriceCents;
+          const lineTotal = lineTotalCents(item);
           return (
             <View key={`${item.id}-${index}`} style={styles.row}>
               <View style={styles.cellDesc}>
@@ -298,27 +374,40 @@ export function InvoicePdfDocument({ invoice, paymentTerms, logoSrc }: InvoicePd
                 {formatMoney(invoice.totalCents, invoice.currency)}
               </Text>
             </View>
+            {invoice.amountPaidCents > 0 && invoice.amountPaidCents < invoice.totalCents ? (
+              <>
+                <View style={styles.summaryRow}>
+                  <Text style={styles.label}>Amount paid</Text>
+                  <Text style={styles.summaryValueMuted}>
+                    -{formatMoney(invoice.amountPaidCents, invoice.currency)}
+                  </Text>
+                </View>
+                <View style={styles.summaryRow}>
+                  <Text style={styles.label}>Balance due</Text>
+                  <Text style={styles.balanceValue}>
+                    {formatMoney(invoice.totalCents - invoice.amountPaidCents, invoice.currency)}
+                  </Text>
+                </View>
+              </>
+            ) : null}
+            {invoice.status === 'paid' ? (
+              <View style={{ marginTop: 10 }}>
+                <View style={styles.paidBadge}>
+                  <Text style={styles.paidBadgeText}>Paid in full</Text>
+                </View>
+              </View>
+            ) : null}
           </View>
         </View>
 
-        <View style={styles.footerGrid}>
-          <View style={styles.footerCol}>
-            {paymentTerms ? (
-              <>
-                <Text style={styles.label}>Payment details</Text>
-                <Text style={styles.footerBody}>{paymentTerms}</Text>
-              </>
-            ) : null}
+        <PaymentMethods methods={invoice.paymentMethods ?? []} />
+
+        {invoice.notes ? (
+          <View style={styles.notesBlock}>
+            <Text style={styles.label}>Note</Text>
+            <Text style={styles.footerBody}>{invoice.notes}</Text>
           </View>
-          <View style={styles.footerCol}>
-            {invoice.notes ? (
-              <>
-                <Text style={styles.label}>Note</Text>
-                <Text style={styles.footerBody}>{invoice.notes}</Text>
-              </>
-            ) : null}
-          </View>
-        </View>
+        ) : null}
       </Page>
     </Document>
   );
@@ -347,17 +436,8 @@ async function resolveLogoPng(url: string | null | undefined): Promise<string | 
   }
 }
 
-export async function renderInvoicePdf(
-  invoice: Invoice,
-  options: { paymentTerms?: string | null } = {},
-): Promise<Buffer> {
+export async function renderInvoicePdf(invoice: Invoice): Promise<Buffer> {
   const from = invoice.fromDetails as InvoicePartyDetails | null;
   const logoSrc = await resolveLogoPng(from?.logoUrl);
-  return renderToBuffer(
-    <InvoicePdfDocument
-      invoice={invoice}
-      paymentTerms={options.paymentTerms}
-      logoSrc={logoSrc}
-    />,
-  );
+  return renderToBuffer(<InvoicePdfDocument invoice={invoice} logoSrc={logoSrc} />);
 }

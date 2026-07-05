@@ -44,6 +44,9 @@ const schema = z.object({
   logoUrl: z.string().url('Must be a valid URL').or(z.literal('')),
   aboutDescription: z.string().max(2000, 'Description must be under 2000 characters').optional(),
   paymentTerms: z.string().max(5000, 'Terms must be under 5000 characters').optional(),
+  address: z.string().max(1000, 'Address must be under 1000 characters').optional(),
+  phone: z.string().max(64, 'Phone must be under 64 characters').optional(),
+  taxId: z.string().max(64, 'Tax ID must be under 64 characters').optional(),
 });
 
 type FormValues = z.infer<typeof schema>;
@@ -56,6 +59,9 @@ interface Props {
     logoUrl: string | null;
     aboutDescription: string | null;
     paymentTerms: string | null;
+    address: string | null;
+    phone: string | null;
+    taxId: string | null;
   };
 }
 
@@ -74,6 +80,9 @@ export function OrganizationSettings({ organization }: Props) {
       logoUrl: organization.logoUrl || '',
       aboutDescription: organization.aboutDescription || '',
       paymentTerms: organization.paymentTerms || '',
+      address: organization.address || '',
+      phone: organization.phone || '',
+      taxId: organization.taxId || '',
     },
   });
 
@@ -243,6 +252,57 @@ export function OrganizationSettings({ organization }: Props) {
                 </FormItem>
               )}
             />
+
+            <FormField
+              control={form.control}
+              name="address"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Business Address</FormLabel>
+                  <FormControl>
+                    <Textarea
+                      {...field}
+                      rows={3}
+                      placeholder="Street, city, country. Appears in the 'From' block on your invoices."
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+              <FormField
+                control={form.control}
+                name="phone"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Business Phone</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder="+255 ..." />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="taxId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Tax ID / VAT Number</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder="TIN / VAT registration number" />
+                    </FormControl>
+                    <p className="text-xs text-gray-500">
+                      Shown on invoices as your tax registration. Required for a valid VAT invoice.
+                    </p>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
 
             <FormField
               control={form.control}

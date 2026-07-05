@@ -34,7 +34,6 @@ export default function InvoicesForProposalPage() {
   const utils = trpc.useUtils();
   const { data: invoices, isLoading } = trpc.invoices.listForProposal.useQuery({ proposalId });
   const { data: proposal } = trpc.proposals.getById.useQuery({ id: proposalId });
-  const { data: org } = trpc.settings.getOrg.useQuery();
 
   const openInvoice = (invoiceId: string) => {
     const next = new URLSearchParams(searchParams.toString());
@@ -127,7 +126,6 @@ export default function InvoicesForProposalPage() {
                 </thead>
                 <tbody>
                   {invoices.map((invoice) => {
-                    const sent = !!invoice.sentAt;
                     return (
                       <tr
                         key={invoice.id}
@@ -145,7 +143,14 @@ export default function InvoicesForProposalPage() {
                           )}
                         </td>
                         <td className="px-4 py-3">
-                          <StatusPill sent={sent} />
+                          <StatusPill
+                            status={invoice.status}
+                            overdue={
+                              invoice.status === 'sent' &&
+                              !!invoice.dueDate &&
+                              new Date(invoice.dueDate) < new Date()
+                            }
+                          />
                         </td>
                         <td className="px-4 py-3 font-mono text-[11px] text-[#878787]">
                           {formatDate(invoice.issueDate)}
@@ -190,25 +195,33 @@ export default function InvoicesForProposalPage() {
         </div>
       </div>
 
-      <InvoiceSheet proposalId={proposalId} paymentTerms={org?.paymentTerms ?? null} />
+      <InvoiceSheet proposalId={proposalId} />
     </div>
   );
 }
 
-function StatusPill({ sent }: { sent: boolean }) {
+type InvoiceStatus = 'draft' | 'sent' | 'paid' | 'void';
+
+function StatusPill({ status, overdue }: { status: InvoiceStatus; overdue?: boolean }) {
+  const variant =
+    overdue && status === 'sent'
+      ? { label: 'Overdue', dot: 'bg-red-500', pill: 'bg-red-500/10 text-red-600' }
+      : {
+          draft: { label: 'Draft', dot: 'bg-[#878787]', pill: 'bg-[#878787]/10 text-[#878787]' },
+          sent: { label: 'Sent', dot: 'bg-amber-500', pill: 'bg-amber-500/10 text-amber-600' },
+          paid: { label: 'Paid', dot: 'bg-[#15803d]', pill: 'bg-[#15803d]/10 text-[#15803d]' },
+          void: { label: 'Void', dot: 'bg-[#878787]', pill: 'bg-[#878787]/10 text-[#878787]' },
+        }[status];
+
   return (
     <span
       className={cn(
         'inline-flex items-center gap-1 rounded-full px-2 py-0.5 font-mono text-[10px] uppercase tracking-wide',
-        sent
-          ? 'bg-[#15803d]/10 text-[#15803d]'
-          : 'bg-[#878787]/10 text-[#878787]',
+        variant.pill,
       )}
     >
-      <span
-        className={cn('h-1.5 w-1.5 rounded-full', sent ? 'bg-[#15803d]' : 'bg-[#878787]')}
-      />
-      {sent ? 'Sent' : 'Draft'}
+      <span className={cn('h-1.5 w-1.5 rounded-full', variant.dot)} />
+      {variant.label}
     </span>
   );
 }

@@ -8,6 +8,10 @@ import { sendInvoiceShareEmail } from '@repo/resend';
 import { router, protectedProcedure, publicProcedure } from '../init';
 import { getNextInvoiceNumber } from '@/lib/invoices/numbering';
 import { buildLineItemsFromProposal, computeTotals } from '@/lib/invoices/seed-from-proposal';
+import {
+  getOrgPaymentMethodSnapshot,
+  resolveInvoicePaymentMethods,
+} from '@/lib/invoices/payment-methods';
 import { renderInvoicePdf } from '@/lib/pdf/invoice-pdf';
 import { uploadPdfToStorage } from '@/lib/storage';
 import { env } from '@/lib/env';
@@ -26,6 +30,7 @@ const partySchema = z
     email: z.string().max(255).nullish(),
     phone: z.string().max(64).nullish(),
     address: z.string().max(1000).nullish(),
+    taxId: z.string().max(64).nullish(),
     logoUrl: z.string().max(2000).nullish(),
   })
   .nullish();
@@ -97,6 +102,9 @@ export const invoicesRouter = router({
       const fromDetails: InvoicePartyDetails = {
         name: proposal.organization?.name ?? null,
         email: proposal.organization?.notificationEmail ?? null,
+        phone: proposal.organization?.phone ?? null,
+        address: proposal.organization?.address ?? null,
+        taxId: proposal.organization?.taxId ?? null,
         logoUrl: proposal.organization?.logoUrl ?? null,
       };
       const toDetails: InvoicePartyDetails = {
@@ -108,6 +116,7 @@ export const invoicesRouter = router({
       const id = randomUUID();
       const number = await getNextInvoiceNumber(ctx.orgId);
       const shareToken = randomBytes(24).toString('base64url');
+      const paymentMethodSnapshot = await getOrgPaymentMethodSnapshot(ctx.db, ctx.orgId);
 
       const [created] = await ctx.db
         .insert(invoices)
@@ -126,6 +135,7 @@ export const invoicesRouter = router({
           totalCents,
           fromDetails,
           toDetails,
+          paymentMethods: paymentMethodSnapshot,
           dueDate: input.dueDate ?? null,
           shareToken,
         })
@@ -230,7 +240,7 @@ export const invoicesRouter = router({
 
       const organization = await ctx.db.query.organizations.findFirst({
         where: (org, { eq: eqOp }) => eqOp(org.id, ctx.orgId),
-        columns: { name: true, slug: true, paymentTerms: true, notificationEmail: true },
+        columns: { name: true, slug: true, notificationEmail: true },
       });
 
       const recipient =
@@ -244,10 +254,11 @@ export const invoicesRouter = router({
         });
       }
 
-      const invoiceForRender: Invoice = existing;
-      const pdfBuffer = await renderInvoicePdf(invoiceForRender, {
-        paymentTerms: organization?.paymentTerms ?? null,
-      });
+      // Refresh the payout-method snapshot at send time so the frozen invoice
+      // captures the operator's current details, then render the PDF from it.
+      const paymentMethodSnapshot = await getOrgPaymentMethodSnapshot(ctx.db, ctx.orgId);
+      const invoiceForRender: Invoice = { ...existing, paymentMethods: paymentMethodSnapshot };
+      const pdfBuffer = await renderInvoicePdf(invoiceForRender);
 
       const pdfKey = `invoices/${ctx.orgId}/${existing.id}.pdf`;
       await uploadPdfToStorage({ file: pdfBuffer, key: pdfKey });
@@ -298,7 +309,46 @@ export const invoicesRouter = router({
       const sentAt = new Date().toISOString();
       const [updated] = await ctx.db
         .update(invoices)
-        .set({ sentAt, pdfKey, shareToken, updatedAt: sentAt })
+        .set({
+          sentAt,
+          status: 'sent',
+          pdfKey,
+          shareToken,
+          paymentMethods: paymentMethodSnapshot,
+          updatedAt: sentAt,
+        })
+        .where(eq(invoices.id, existing.id))
+        .returning();
+
+      return updated;
+    }),
+
+  setPaid: protectedProcedure
+    .input(z.object({ id: z.string(), paid: z.boolean() }))
+    .mutation(async ({ ctx, input }) => {
+      const existing = await loadOwnedInvoice(ctx, input.id);
+
+      const now = new Date().toISOString();
+      const [updated] = await ctx.db
+        .update(invoices)
+        .set(
+          input.paid
+            ? {
+                status: 'paid',
+                paidAt: now,
+                amountPaidCents: existing.totalCents,
+                updatedAt: now,
+              }
+            : {
+                // Reverting a paid invoice returns it to "sent" if it was emailed,
+                // otherwise back to "draft" (e.g. an offline/POS payment recorded
+                // before the invoice was ever sent). Clears the payment record.
+                status: existing.sentAt ? 'sent' : 'draft',
+                paidAt: null,
+                amountPaidCents: 0,
+                updatedAt: now,
+              },
+        )
         .where(eq(invoices.id, existing.id))
         .returning();
 
@@ -311,12 +361,13 @@ export const invoicesRouter = router({
       const invoice = await ctx.db.query.invoices.findFirst({
         where: eq(invoices.shareToken, input.token),
         with: {
-          organization: { columns: { name: true, logoUrl: true, paymentTerms: true } },
+          organization: { columns: { name: true, logoUrl: true } },
         },
       });
       if (!invoice) {
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Invoice not found' });
       }
-      return invoice;
+      const resolvedMethods = await resolveInvoicePaymentMethods(ctx.db, invoice);
+      return { ...invoice, paymentMethods: resolvedMethods };
     }),
 });

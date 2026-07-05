@@ -184,6 +184,11 @@ export const organizations = pgTable(
     aboutDescription: text('about_description'),
     paymentTerms: text('payment_terms'),
     notificationEmail: text('notification_email'),
+    // Business identity for invoices: the operator's postal address, phone, and
+    // tax registration (TIN / VAT) that appear in the invoice "From" block.
+    address: text('address'),
+    phone: text('phone'),
+    taxId: text('tax_id'),
     // When set, payment methods are locked and cannot be edited by the org admin.
     // Unlocking is a privileged, out-of-band operation by the Ratiba team (security
     // control against payout-detail tampering).
@@ -1185,8 +1190,26 @@ export interface InvoicePartyDetails {
   email?: string | null;
   phone?: string | null;
   address?: string | null;
+  /** Seller/buyer tax identifier (TIN / VAT number). Required for a compliant tax invoice. */
+  taxId?: string | null;
   logoUrl?: string | null;
 }
+
+/** Snapshot of an operator payout method, frozen onto the invoice so a sent
+ *  invoice's "how to pay" details never change even if the org later edits them. */
+export interface InvoicePaymentMethod {
+  type: 'bank_transfer' | 'pesapal' | 'stripe' | 'paypal' | 'other';
+  label: string;
+  instructions?: string | null;
+  url?: string | null;
+}
+
+export const InvoiceStatus = pgEnum('invoice_status', [
+  'draft',
+  'sent',
+  'paid',
+  'void',
+]);
 
 export const invoices = pgTable(
   'invoices',
@@ -1209,12 +1232,21 @@ export const invoices = pgTable(
     lineItems: json('line_items').$type<InvoiceLineItem[]>().default([]).notNull(),
     fromDetails: json('from_details').$type<InvoicePartyDetails>(),
     toDetails: json('to_details').$type<InvoicePartyDetails>(),
+    // Snapshot of the org's payout methods at create/send time, frozen so a sent
+    // invoice's payment instructions stay stable even if the org edits them later.
+    paymentMethods: json('payment_methods')
+      .$type<InvoicePaymentMethod[]>()
+      .default([])
+      .notNull(),
+    status: InvoiceStatus('status').default('draft').notNull(),
+    amountPaidCents: integer('amount_paid_cents').default(0).notNull(),
     notes: text('notes'),
     issueDate: timestamp('issue_date', { precision: 3, mode: 'string' })
       .default(sql`CURRENT_TIMESTAMP`)
       .notNull(),
     dueDate: timestamp('due_date', { precision: 3, mode: 'string' }),
     sentAt: timestamp('sent_at', { precision: 3, mode: 'string' }),
+    paidAt: timestamp('paid_at', { precision: 3, mode: 'string' }),
     pdfKey: text('pdf_key'),
     shareToken: text('share_token').unique(),
     createdAt: timestamp('created_at', { precision: 3, mode: 'string' })

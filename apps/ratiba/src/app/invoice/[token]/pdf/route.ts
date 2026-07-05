@@ -1,9 +1,10 @@
 import { NextResponse } from 'next/server';
 import { db } from '@repo/db';
-import { invoices, organizations } from '@repo/db/schema';
+import { invoices } from '@repo/db/schema';
 import { eq } from 'drizzle-orm';
 import { getSignedDownloadUrl } from '@/lib/storage';
 import { renderInvoicePdf } from '@/lib/pdf/invoice-pdf';
+import { resolveInvoicePaymentMethods } from '@/lib/invoices/payment-methods';
 
 type Params = { params: Promise<{ token: string }> };
 
@@ -26,14 +27,10 @@ export async function GET(_req: Request, { params }: Params) {
     return NextResponse.redirect(url, 302);
   }
 
-  const org = await db.query.organizations.findFirst({
-    where: eq(organizations.id, invoice.organizationId),
-    columns: { paymentTerms: true },
-  });
-
-  const buffer = await renderInvoicePdf(invoice, {
-    paymentTerms: org?.paymentTerms ?? null,
-  });
+  // Draft/unsent: render live so the operator's current payout methods show even
+  // if this invoice predates snapshotting. Sent invoices are served frozen above.
+  const paymentMethods = await resolveInvoicePaymentMethods(db, invoice);
+  const buffer = await renderInvoicePdf({ ...invoice, paymentMethods });
 
   return new NextResponse(buffer as unknown as BodyInit, {
     status: 200,

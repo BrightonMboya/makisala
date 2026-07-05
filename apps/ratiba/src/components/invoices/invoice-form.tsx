@@ -2,7 +2,7 @@
 
 import { Button } from '@repo/ui/button';
 import { toast } from '@repo/ui/toast';
-import { Download, ExternalLink, Loader2, Send } from 'lucide-react';
+import { Check, Download, ExternalLink, Loader2, Send } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { FormProvider, useForm, useWatch } from 'react-hook-form';
 import { useDebounceValue } from 'usehooks-ts';
@@ -41,11 +41,10 @@ function buildDefaults(invoice: Invoice): InvoiceFormValues {
 interface InvoiceFormProps {
   invoice: Invoice;
   proposalId: string;
-  paymentTerms?: string | null;
   onSent?: () => void;
 }
 
-export function InvoiceForm({ invoice, proposalId, paymentTerms, onSent }: InvoiceFormProps) {
+export function InvoiceForm({ invoice, proposalId, onSent }: InvoiceFormProps) {
   const form = useForm<InvoiceFormValues>({
     defaultValues: buildDefaults(invoice),
   });
@@ -93,6 +92,27 @@ export function InvoiceForm({ invoice, proposalId, paymentTerms, onSent }: Invoi
     },
   });
 
+  const setPaidMutation = trpc.invoices.setPaid.useMutation({
+    onSuccess: (updated) => {
+      void utils.invoices.getById.invalidate({ id: invoice.id });
+      void utils.invoices.listForProposal.invalidate({ proposalId });
+      toast({
+        title: updated?.status === 'paid' ? 'Marked as paid' : 'Marked as unpaid',
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: 'Could not update payment status',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+
+  // A sent OR paid invoice is locked: its amounts are settled and should no
+  // longer be edited (an offline/POS payment can lock a never-sent draft).
+  const locked = !!invoice.sentAt || invoice.status === 'paid';
+
   return (
     <FormProvider {...form}>
       <form
@@ -105,7 +125,7 @@ export function InvoiceForm({ invoice, proposalId, paymentTerms, onSent }: Invoi
       >
         <AutoSaveBridge
           invoiceId={invoice.id}
-          sent={!!invoice.sentAt}
+          sent={locked}
           onChange={(values) => {
             updateMutation.mutate({
               id: invoice.id,
@@ -132,35 +152,29 @@ export function InvoiceForm({ invoice, proposalId, paymentTerms, onSent }: Invoi
             </div>
 
             <div className="mt-8 mb-4 grid grid-cols-2 gap-6">
-              <PartyEditor name="fromDetails" label="From" readOnly={!!invoice.sentAt} />
+              <PartyEditor name="fromDetails" label="From" readOnly={locked} />
               <PartyEditor
                 name="toDetails"
                 label="Bill to"
                 placeholder="Client name\nclient@example.com"
-                readOnly={!!invoice.sentAt}
+                readOnly={locked}
               />
             </div>
 
             <div className="mt-6">
-              <LineItems readOnly={!!invoice.sentAt} />
+              <LineItems readOnly={locked} />
             </div>
 
             <div className="mt-12 mb-8 flex justify-end">
               <Summary />
             </div>
 
-            <div className="mt-auto grid grid-cols-2 gap-6 pb-4">
-              <NoteBlock
-                name="__paymentTerms"
-                label="Payment details"
-                value={paymentTerms ?? ''}
-                placeholder="Set payment terms in Settings to include bank details here."
-              />
+            <div className="mt-auto pb-4">
               <NoteBlock
                 name="notes"
                 label="Note"
                 placeholder="Add a note for your client..."
-                readOnly={!!invoice.sentAt}
+                readOnly={locked}
               />
             </div>
           </div>
@@ -170,9 +184,16 @@ export function InvoiceForm({ invoice, proposalId, paymentTerms, onSent }: Invoi
           invoice={invoice}
           isSaving={isSaving}
           isSending={sendMutation.isPending}
+          isTogglingPaid={setPaidMutation.isPending}
           onSend={() =>
             sendMutation.mutate({
               id: invoice.id,
+            })
+          }
+          onTogglePaid={() =>
+            setPaidMutation.mutate({
+              id: invoice.id,
+              paid: invoice.status !== 'paid',
             })
           }
         />
@@ -218,18 +239,27 @@ function FooterBar({
   invoice,
   isSaving,
   isSending,
+  isTogglingPaid,
   onSend,
+  onTogglePaid,
 }: {
   invoice: Invoice;
   isSaving: boolean;
   isSending: boolean;
+  isTogglingPaid: boolean;
   onSend: () => void;
+  onTogglePaid: () => void;
 }) {
   const sent = !!invoice.sentAt;
+  const paid = invoice.status === 'paid';
   return (
     <div className="flex items-center justify-between border-t border-border bg-background px-6 py-4">
       <div className="flex items-center gap-2 text-[11px] text-[#878787]">
-        {sent ? (
+        {paid ? (
+          <span className="inline-flex items-center gap-1 font-mono uppercase tracking-wide text-[#15803d]">
+            <Check className="h-3 w-3" /> Paid
+          </span>
+        ) : sent ? (
           <span className="inline-flex items-center gap-1 font-mono uppercase tracking-wide">
             <Send className="h-3 w-3" /> Sent
           </span>
@@ -265,18 +295,71 @@ function FooterBar({
             </a>
           </>
         ) : null}
-        {!sent ? (
+        {paid ? (
           <Button
             type="button"
             size="sm"
-            className="gap-2 bg-foreground text-background hover:bg-foreground/90"
-            onClick={onSend}
-            disabled={isSending || isSaving}
+            variant="outline"
+            className="gap-2"
+            onClick={onTogglePaid}
+            disabled={isTogglingPaid}
           >
-            {isSending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-            Send invoice
+            {isTogglingPaid ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Check className="h-4 w-4" />
+            )}
+            Mark as unpaid
           </Button>
-        ) : null}
+        ) : sent ? (
+          <Button
+            type="button"
+            size="sm"
+            className="gap-2 bg-[#15803d] text-white hover:bg-[#15803d]/90"
+            onClick={onTogglePaid}
+            disabled={isTogglingPaid}
+          >
+            {isTogglingPaid ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Check className="h-4 w-4" />
+            )}
+            Mark as paid
+          </Button>
+        ) : (
+          <>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="gap-2"
+              onClick={onTogglePaid}
+              disabled={isTogglingPaid || isSaving}
+              title="Record a payment made offline (e.g. card, POS, cash) without sending the invoice"
+            >
+              {isTogglingPaid ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Check className="h-4 w-4" />
+              )}
+              Mark as paid
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              className="gap-2 bg-foreground text-background hover:bg-foreground/90"
+              onClick={onSend}
+              disabled={isSending || isSaving}
+            >
+              {isSending ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Send className="h-4 w-4" />
+              )}
+              Send invoice
+            </Button>
+          </>
+        )}
       </div>
     </div>
   );

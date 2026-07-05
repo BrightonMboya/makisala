@@ -3,7 +3,12 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { format } from 'date-fns';
 import { createServerCaller } from '@/server/trpc/caller';
-import type { InvoiceLineItem, InvoicePartyDetails } from '@repo/db/schema';
+import type {
+  InvoiceLineItem,
+  InvoicePartyDetails,
+  InvoicePaymentMethod,
+} from '@repo/db/schema';
+import { lineTotalCents } from '@/lib/invoices/seed-from-proposal';
 
 type Props = {
   params: Promise<{ token: string }>;
@@ -79,6 +84,7 @@ function Party({
         {details?.email ? <div>{details.email}</div> : null}
         {details?.phone ? <div>{details.phone}</div> : null}
         {details?.address ? <div className="whitespace-pre-line">{details.address}</div> : null}
+        {details?.taxId ? <div>Tax ID: {details.taxId}</div> : null}
       </div>
     </div>
   );
@@ -92,10 +98,13 @@ export default async function PublicInvoicePage({ params }: Props) {
   const from = invoice.fromDetails as InvoicePartyDetails | null;
   const to = invoice.toDetails as InvoicePartyDetails | null;
   const lineItems: InvoiceLineItem[] = invoice.lineItems ?? [];
+  const paymentMethods: InvoicePaymentMethod[] = invoice.paymentMethods ?? [];
   const agencyName = from?.name ?? invoice.organization?.name ?? 'Travel Agency';
   const logoUrl = from?.logoUrl ?? invoice.organization?.logoUrl ?? null;
-  const paymentTerms = invoice.organization?.paymentTerms ?? null;
   const isDraft = !invoice.sentAt;
+  const isPaid = invoice.status === 'paid';
+  const partiallyPaid =
+    invoice.amountPaidCents > 0 && invoice.amountPaidCents < invoice.totalCents;
 
   return (
     <div className="min-h-screen bg-stone-50 py-10 font-sans text-neutral-950">
@@ -103,6 +112,10 @@ export default async function PublicInvoicePage({ params }: Props) {
         {isDraft ? (
           <div className="mb-4 rounded-md border border-amber-200 bg-amber-50 px-4 py-2 font-mono text-[11px] font-medium tracking-wide text-amber-800 uppercase">
             Draft preview. This invoice has not been sent yet.
+          </div>
+        ) : isPaid ? (
+          <div className="mb-4 rounded-md border border-[#15803d]/30 bg-[#15803d]/10 px-4 py-2 font-mono text-[11px] font-medium tracking-wide text-[#15803d] uppercase">
+            Paid in full. Thank you.
           </div>
         ) : null}
 
@@ -166,7 +179,7 @@ export default async function PublicInvoicePage({ params }: Props) {
                       {formatMoney(item.unitPriceCents, invoice.currency)}
                     </td>
                     <td className="py-1.5 text-right font-mono text-[11px] text-neutral-950">
-                      {formatMoney(item.quantity * item.unitPriceCents, invoice.currency)}
+                      {formatMoney(lineTotalCents(item), invoice.currency)}
                     </td>
                   </tr>
                 ))}
@@ -201,36 +214,98 @@ export default async function PublicInvoicePage({ params }: Props) {
                     {formatMoney(invoice.totalCents, invoice.currency)}
                   </span>
                 </div>
+                {partiallyPaid ? (
+                  <>
+                    <div className="flex items-center justify-between py-1 pt-3">
+                      <span className="font-mono text-[11px] tracking-wide text-[#878787] uppercase">
+                        Amount paid
+                      </span>
+                      <span className="font-mono text-[11px] text-[#878787]">
+                        -{formatMoney(invoice.amountPaidCents, invoice.currency)}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between py-1">
+                      <span className="font-mono text-[11px] tracking-wide text-[#878787] uppercase">
+                        Balance due
+                      </span>
+                      <span className="font-mono text-[11px] font-medium text-neutral-950">
+                        {formatMoney(
+                          invoice.totalCents - invoice.amountPaidCents,
+                          invoice.currency,
+                        )}
+                      </span>
+                    </div>
+                  </>
+                ) : null}
+                {isPaid ? (
+                  <div className="mt-3 flex justify-end">
+                    <span className="rounded bg-[#15803d] px-2 py-1 font-mono text-[10px] tracking-wide text-white uppercase">
+                      Paid in full
+                    </span>
+                  </div>
+                ) : null}
               </div>
             </div>
           </div>
 
-          {paymentTerms || invoice.notes ? (
-            <div className="mt-10 grid grid-cols-2 gap-6">
-              <div>
-                {paymentTerms ? (
-                  <>
-                    <div className="mb-2 font-mono text-[11px] tracking-wide text-[#878787] uppercase">
-                      Payment details
-                    </div>
-                    <p className="font-mono text-[11px] leading-[18px] whitespace-pre-line text-neutral-950">
-                      {paymentTerms}
-                    </p>
-                  </>
-                ) : null}
+          {!isPaid && paymentMethods.length > 0 ? (
+            <div className="mt-10 border-t border-stone-200 pt-6">
+              <div className="mb-3 font-mono text-[11px] tracking-wide text-[#878787] uppercase">
+                How to pay
               </div>
-              <div>
-                {invoice.notes ? (
-                  <>
-                    <div className="mb-2 font-mono text-[11px] tracking-wide text-[#878787] uppercase">
-                      Note
+              <div className="grid gap-3 sm:grid-cols-2">
+                {paymentMethods.map((method, index) => {
+                  const isLink =
+                    (['pesapal', 'stripe', 'paypal'] as InvoicePaymentMethod['type'][]).includes(
+                      method.type,
+                    ) && method.url;
+                  return (
+                    <div
+                      key={index}
+                      className="rounded-md border border-stone-200 bg-stone-50 p-4"
+                    >
+                      <p className="font-mono text-[11px] font-medium text-neutral-950">
+                        {method.label}
+                      </p>
+                      {method.instructions ? (
+                        <p className="mt-2 font-mono text-[11px] leading-[18px] whitespace-pre-line text-[#878787]">
+                          {method.instructions}
+                        </p>
+                      ) : null}
+                      {isLink ? (
+                        <a
+                          href={method.url!}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="mt-3 inline-flex items-center rounded bg-stone-900 px-3 py-1.5 font-mono text-[11px] tracking-wide text-white uppercase transition-colors hover:bg-stone-700"
+                        >
+                          Pay with {method.label}
+                        </a>
+                      ) : method.url ? (
+                        <a
+                          href={method.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="mt-2 inline-block font-mono text-[11px] text-neutral-950 underline"
+                        >
+                          {method.url}
+                        </a>
+                      ) : null}
                     </div>
-                    <p className="font-mono text-[11px] leading-[18px] whitespace-pre-line text-neutral-950">
-                      {invoice.notes}
-                    </p>
-                  </>
-                ) : null}
+                  );
+                })}
               </div>
+            </div>
+          ) : null}
+
+          {invoice.notes ? (
+            <div className="mt-10">
+              <div className="mb-2 font-mono text-[11px] tracking-wide text-[#878787] uppercase">
+                Note
+              </div>
+              <p className="font-mono text-[11px] leading-[18px] whitespace-pre-line text-neutral-950">
+                {invoice.notes}
+              </p>
             </div>
           ) : null}
         </article>

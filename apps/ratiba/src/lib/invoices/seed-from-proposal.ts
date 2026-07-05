@@ -40,14 +40,21 @@ export function buildLineItemsFromProposal(proposal: ProposalSeed): InvoiceLineI
   return items;
 }
 
+/**
+ * Cents for a single line, rounded to a whole cent. Quantities can be fractional
+ * (e.g. 2.5 nights), so the product must be rounded before it lands in an integer
+ * cents column or gets summed. Use this everywhere a line total is computed so the
+ * editor, PDF, web view, and stored subtotal always agree.
+ */
+export function lineTotalCents(item: Pick<InvoiceLineItem, 'quantity' | 'unitPriceCents'>): number {
+  return Math.round(item.quantity * item.unitPriceCents);
+}
+
 export function computeTotals(
   lineItems: InvoiceLineItem[],
   taxRatePct: number | null | undefined,
 ) {
-  const subtotalCents = lineItems.reduce(
-    (sum, item) => sum + item.quantity * item.unitPriceCents,
-    0,
-  );
+  const subtotalCents = lineItems.reduce((sum, item) => sum + lineTotalCents(item), 0);
   const taxCents = taxRatePct ? Math.round((subtotalCents * taxRatePct) / 100) : 0;
   const totalCents = subtotalCents + taxCents;
   return { subtotalCents, taxCents, totalCents };

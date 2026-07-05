@@ -37,6 +37,9 @@ export const settingsRouter = router({
         notificationEmail: z.string().email().max(255).optional(),
         aboutDescription: z.string().max(5000).optional(),
         paymentTerms: z.string().max(10000).optional(),
+        address: z.string().max(1000).optional(),
+        phone: z.string().max(64).optional(),
+        taxId: z.string().max(64).optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {

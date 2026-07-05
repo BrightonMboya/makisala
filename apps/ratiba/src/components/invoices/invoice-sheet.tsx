@@ -7,13 +7,7 @@ import { useCallback } from 'react';
 import { trpc } from '@/lib/trpc';
 import { InvoiceForm } from './invoice-form';
 
-export function InvoiceSheet({
-  proposalId,
-  paymentTerms,
-}: {
-  proposalId: string;
-  paymentTerms?: string | null;
-}) {
+export function InvoiceSheet({ proposalId }: { proposalId: string }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const invoiceId = searchParams.get('invoiceId');
@@ -42,7 +36,6 @@ export function InvoiceSheet({
             key={invoiceId}
             invoiceId={invoiceId}
             proposalId={proposalId}
-            paymentTerms={paymentTerms}
             onSent={() => handleOpenChange(false)}
           />
         ) : null}
@@ -54,12 +47,10 @@ export function InvoiceSheet({
 function SheetBody({
   invoiceId,
   proposalId,
-  paymentTerms,
   onSent,
 }: {
   invoiceId: string;
   proposalId: string;
-  paymentTerms?: string | null;
   onSent: () => void;
 }) {
   const { data: invoice, isLoading } = trpc.invoices.getById.useQuery({ id: invoiceId });
@@ -72,12 +63,5 @@ function SheetBody({
     );
   }
 
-  return (
-    <InvoiceForm
-      invoice={invoice}
-      proposalId={proposalId}
-      paymentTerms={paymentTerms}
-      onSent={onSent}
-    />
-  );
+  return <InvoiceForm invoice={invoice} proposalId={proposalId} onSent={onSent} />;
 }
