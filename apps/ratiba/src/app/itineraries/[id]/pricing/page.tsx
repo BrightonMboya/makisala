@@ -15,11 +15,23 @@ import {
   Car,
   Plane,
   Sparkles,
+  Check,
+  ChevronsUpDown,
+  Loader2,
 } from 'lucide-react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
-import { Combobox } from '@repo/ui/combobox';
-import { commonExtras } from '@/lib/data/itinerary-data';
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+  CommandSeparator,
+} from '@repo/ui/command';
+import { Popover, PopoverContent, PopoverTrigger } from '@repo/ui/popover';
+import { cn } from '@/lib/utils';
 import { useBuilder } from '@/components/itinerary-builder/builder-context';
 import type { PricingRow, ExtraOption } from '@/types/itinerary-types';
 import { useMemo, useState } from 'react';
@@ -348,12 +360,9 @@ export default function PricingPage() {
                 />
               </div>
               <div className="col-span-7">
-                <Combobox
-                  items={commonExtras}
+                <ExtraNameCombobox
                   value={extra.name}
                   onChange={(val) => handleUpdateExtra(extra.id, 'name', val)}
-                  placeholder="Select or type option"
-                  className="border-stone-200 bg-stone-50 shadow-none"
                 />
               </div>
               <div className="col-span-4 flex items-center gap-3">
@@ -853,6 +862,131 @@ function WarningsList({ warnings }: { warnings: PricingBreakdown['warnings'] }) 
         })}
       </ul>
     </div>
+  );
+}
+
+// --- Optional-extra name picker -------------------------------------------
+
+// Searchable, creatable picker backed by the org's extra_library catalog.
+// The catalog is tiny, so it's fetched once (shared/cached across all rows via
+// react-query) and filtered locally — no per-keystroke network round trips.
+// The itinerary stores just the extra's name, so the value IS the name.
+function ExtraNameCombobox({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (val: string) => void;
+}) {
+  const utils = trpc.useUtils();
+  const { data: catalog = [] } = trpc.extras.list.useQuery(undefined, {
+    staleTime: 5 * 60 * 1000,
+  });
+  const createExtra = trpc.extras.create.useMutation();
+
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState('');
+  const [creating, setCreating] = useState(false);
+
+  const q = search.trim();
+  const filtered = useMemo(() => {
+    if (!q) return catalog;
+    const lower = q.toLowerCase();
+    return catalog.filter((e) => e.name.toLowerCase().includes(lower));
+  }, [catalog, q]);
+  const showCreate =
+    q.length > 0 && !catalog.some((e) => e.name.toLowerCase() === q.toLowerCase());
+
+  const select = (name: string) => {
+    onChange(name);
+    setOpen(false);
+    setSearch('');
+  };
+
+  const handleCreate = async () => {
+    if (!q || creating) return;
+    setCreating(true);
+    try {
+      const created = await createExtra.mutateAsync({ name: q });
+      utils.extras.list.invalidate();
+      select(created.name);
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  return (
+    <Popover
+      open={open}
+      onOpenChange={(o) => {
+        setOpen(o);
+        if (!o) setSearch('');
+      }}
+      modal={false}
+    >
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          role="combobox"
+          aria-expanded={open}
+          className="w-full justify-between border-stone-200 bg-stone-50 font-normal shadow-none"
+        >
+          <span className={cn('truncate', !value && 'text-stone-400')}>
+            {value || 'Select or type option'}
+          </span>
+          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+        <Command shouldFilter={false}>
+          <CommandInput
+            placeholder="Search or add option..."
+            value={search}
+            onValueChange={setSearch}
+          />
+          <CommandList>
+            {filtered.length === 0 && !showCreate && (
+              <CommandEmpty>No options yet. Type to add one.</CommandEmpty>
+            )}
+            {filtered.length > 0 && (
+              <CommandGroup>
+                {filtered.map((e) => (
+                  <CommandItem key={e.id} value={e.name} onSelect={() => select(e.name)}>
+                    <Check
+                      className={cn(
+                        'mr-2 h-4 w-4',
+                        value === e.name ? 'opacity-100' : 'opacity-0',
+                      )}
+                    />
+                    {e.name}
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            )}
+            {showCreate && (
+              <>
+                {filtered.length > 0 && <CommandSeparator />}
+                <CommandGroup>
+                  <CommandItem
+                    value={`__create__${q}`}
+                    onSelect={handleCreate}
+                    disabled={creating}
+                    className="text-green-600"
+                  >
+                    {creating ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <Plus className="mr-2 h-4 w-4" />
+                    )}
+                    Add &ldquo;{q}&rdquo;
+                  </CommandItem>
+                </CommandGroup>
+              </>
+            )}
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
   );
 }
 

@@ -5,12 +5,3 @@ export const airports = [
   { value: 'dar', label: 'Julius Nyerere International Airport (DAR)' },
   { value: 'ebb', label: 'Entebbe International Airport (EBB)' },
 ];
-
-export const commonExtras = [
-  { value: 'Airport Transfer', label: 'Airport Transfer' },
-  { value: 'Pre-tour Accommodation', label: 'Pre-tour Accommodation' },
-  { value: 'Post-tour Accommodation', label: 'Post-tour Accommodation' },
-  { value: 'Visa Fee', label: 'Visa Fee' },
-  { value: 'Travel Insurance', label: 'Travel Insurance' },
-  { value: 'Gorilla Permit', label: 'Gorilla Permit' },
-];

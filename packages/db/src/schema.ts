@@ -1176,6 +1176,36 @@ export const activityLibraryRelations = relations(activityLibrary, ({ one, many 
   rates: many(activityRates),
 }));
 
+// A per-organization catalog of optional-extra names (airport transfer, visa fee,
+// gorilla permit, …) that operators pick from on the pricing page. Global rows
+// (isGlobal = true, organizationId = null) are shared defaults; org rows are private.
+export const extraLibrary = pgTable(
+  'extra_library',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    name: text('name').notNull(),
+    organizationId: uuid('organization_id').references(() => organizations.id, {
+      onDelete: 'cascade',
+    }),
+    isGlobal: boolean('is_global').default(false).notNull(),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+  },
+  (t) => [
+    // One row per (org, name) so create-on-the-fly can upsert in a single round trip.
+    uniqueIndex('extra_library_org_name_unique').on(t.organizationId, t.name),
+  ],
+);
+
+export const extraLibraryRelations = relations(extraLibrary, ({ one }) => ({
+  organization: one(organizations, {
+    fields: [extraLibrary.organizationId],
+    references: [organizations.id],
+  }),
+}));
+
+export type ExtraLibraryItem = typeof extraLibrary.$inferSelect;
+export type NewExtraLibraryItem = typeof extraLibrary.$inferInsert;
+
 // ---------- INVOICES ----------
 export interface InvoiceLineItem {
   id: string;
