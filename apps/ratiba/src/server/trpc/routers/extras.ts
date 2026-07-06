@@ -1,21 +1,45 @@
 import { z } from 'zod';
 import { extraLibrary } from '@repo/db/schema';
-import { eq, or } from 'drizzle-orm';
+import { and, eq, ilike, or } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
-import { router, protectedProcedure } from '../init';
+import { router, protectedProcedure, escapeLikeQuery } from '../init';
 
 // Per-organization catalog of optional-extra names shown on the pricing page.
-// Global rows (seeded defaults) plus the org's own custom entries. The catalog
-// is tiny, so the client fetches it whole once and filters locally rather than
-// hitting the DB per keystroke.
+// Global rows (seeded defaults) plus the org's own custom entries. Searched
+// server-side with a limit so a large catalog never ships in full to the
+// client — mirrors the activities router.
 export const extrasRouter = router({
-  list: protectedProcedure.query(async ({ ctx }) => {
-    return ctx.db
-      .select({ id: extraLibrary.id, name: extraLibrary.name })
-      .from(extraLibrary)
-      .where(or(eq(extraLibrary.isGlobal, true), eq(extraLibrary.organizationId, ctx.orgId)))
-      .orderBy(extraLibrary.name);
-  }),
+  search: protectedProcedure
+    .input(
+      z.object({
+        query: z.string().default(''),
+        limit: z.number().int().positive().max(100).default(10),
+      }),
+    )
+    .query(async ({ ctx, input }) => {
+      const conditions = or(
+        eq(extraLibrary.isGlobal, true),
+        eq(extraLibrary.organizationId, ctx.orgId),
+      );
+
+      const trimmed = input.query.trim();
+
+      if (!trimmed) {
+        return ctx.db
+          .select({ id: extraLibrary.id, name: extraLibrary.name })
+          .from(extraLibrary)
+          .where(conditions)
+          .orderBy(extraLibrary.name)
+          .limit(input.limit);
+      }
+
+      return ctx.db
+        .select({ id: extraLibrary.id, name: extraLibrary.name })
+        .from(extraLibrary)
+        .where(and(conditions, ilike(extraLibrary.name, `%${escapeLikeQuery(trimmed)}%`)))
+        .orderBy(extraLibrary.name)
+        .limit(input.limit);
+    }),
 
   create: protectedProcedure
     .input(z.object({ name: z.string().min(1).max(255) }))

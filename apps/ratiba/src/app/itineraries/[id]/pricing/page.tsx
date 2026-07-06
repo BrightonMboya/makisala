@@ -35,6 +35,7 @@ import { cn } from '@/lib/utils';
 import { useBuilder } from '@/components/itinerary-builder/builder-context';
 import type { PricingRow, ExtraOption } from '@/types/itinerary-types';
 import { useMemo, useState } from 'react';
+import { useDebounce } from '@repo/ui/use-debounce';
 import { trpc } from '@/lib/trpc';
 import { addDays } from 'date-fns';
 import type { PricingBreakdown, WarningKind, ParkFeeCategory } from '@/lib/pricing-engine';
@@ -868,9 +869,9 @@ function WarningsList({ warnings }: { warnings: PricingBreakdown['warnings'] }) 
 // --- Optional-extra name picker -------------------------------------------
 
 // Searchable, creatable picker backed by the org's extra_library catalog.
-// The catalog is tiny, so it's fetched once (shared/cached across all rows via
-// react-query) and filtered locally — no per-keystroke network round trips.
-// The itinerary stores just the extra's name, so the value IS the name.
+// Search runs server-side (debounced, limited) so a large catalog never ships
+// in full to the client. The itinerary stores just the extra's name, so the
+// value IS the name.
 function ExtraNameCombobox({
   value,
   onChange,
@@ -879,9 +880,6 @@ function ExtraNameCombobox({
   onChange: (val: string) => void;
 }) {
   const utils = trpc.useUtils();
-  const { data: catalog = [] } = trpc.extras.list.useQuery(undefined, {
-    staleTime: 5 * 60 * 1000,
-  });
   const createExtra = trpc.extras.create.useMutation();
 
   const [open, setOpen] = useState(false);
@@ -889,13 +887,18 @@ function ExtraNameCombobox({
   const [creating, setCreating] = useState(false);
 
   const q = search.trim();
-  const filtered = useMemo(() => {
-    if (!q) return catalog;
-    const lower = q.toLowerCase();
-    return catalog.filter((e) => e.name.toLowerCase().includes(lower));
-  }, [catalog, q]);
+  const debouncedQuery = useDebounce(q, 300);
+  const { data: results = [], isFetching } = trpc.extras.search.useQuery(
+    { query: debouncedQuery, limit: 10 },
+    { enabled: open, placeholderData: (prev) => prev, staleTime: 60 * 1000 },
+  );
+
+  // A debounce is in flight, or the server round trip hasn't landed yet.
+  const isPending = q !== debouncedQuery || isFetching;
   const showCreate =
-    q.length > 0 && !catalog.some((e) => e.name.toLowerCase() === q.toLowerCase());
+    q.length > 0 &&
+    !isPending &&
+    !results.some((e) => e.name.toLowerCase() === q.toLowerCase());
 
   const select = (name: string) => {
     onChange(name);
@@ -908,7 +911,7 @@ function ExtraNameCombobox({
     setCreating(true);
     try {
       const created = await createExtra.mutateAsync({ name: q });
-      utils.extras.list.invalidate();
+      utils.extras.search.invalidate();
       select(created.name);
     } finally {
       setCreating(false);
@@ -945,12 +948,14 @@ function ExtraNameCombobox({
             onValueChange={setSearch}
           />
           <CommandList>
-            {filtered.length === 0 && !showCreate && (
-              <CommandEmpty>No options yet. Type to add one.</CommandEmpty>
+            {results.length === 0 && !showCreate && (
+              <CommandEmpty>
+                {isPending ? 'Searching…' : 'No options yet. Type to add one.'}
+              </CommandEmpty>
             )}
-            {filtered.length > 0 && (
+            {results.length > 0 && (
               <CommandGroup>
-                {filtered.map((e) => (
+                {results.map((e) => (
                   <CommandItem key={e.id} value={e.name} onSelect={() => select(e.name)}>
                     <Check
                       className={cn(
@@ -965,7 +970,7 @@ function ExtraNameCombobox({
             )}
             {showCreate && (
               <>
-                {filtered.length > 0 && <CommandSeparator />}
+                {results.length > 0 && <CommandSeparator />}
                 <CommandGroup>
                   <CommandItem
                     value={`__create__${q}`}
