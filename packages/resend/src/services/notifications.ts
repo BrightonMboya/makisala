@@ -12,6 +12,8 @@ import { renderInquiryNotificationEmail } from '../templates/inquiry-notificatio
 import { renderDemoRequestNotificationEmail } from '../templates/demo-request-notification';
 import { renderPaymentChangeRequestEmail } from '../templates/payment-change-request';
 import { renderNewDestinationNotificationEmail } from '../templates/new-destination-notification';
+import { renderPortalAccessEmail } from '../templates/portal-access';
+import { renderPortalSubmissionEmail } from '../templates/portal-submission';
 
 export interface CommentNotificationData {
   proposalId: string;
@@ -760,6 +762,109 @@ export async function sendPaymentDetailsChangeRequestEmail(
       };
     }
 
+    return { success: true };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error occurred',
+    };
+  }
+}
+
+export interface PortalAccessData {
+  clientEmail: string;
+  orgName: string;
+  orgSlug?: string | null;
+  tripName: string;
+  code: string;
+  magicLink: string;
+  replyTo?: string;
+}
+
+/**
+ * Sends a client-portal access email: a magic link plus a 6-digit fallback code
+ * the lead traveler uses to unlock their trip's traveler-details form.
+ */
+export async function sendPortalAccessEmail(
+  data: PortalAccessData,
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const html = renderPortalAccessEmail({
+      orgName: data.orgName,
+      tripName: data.tripName,
+      code: data.code,
+      magicLink: data.magicLink,
+    });
+
+    const result = await resend.emails.send({
+      from: orgFromAddress({ name: data.orgName, slug: data.orgSlug }),
+      to: data.clientEmail,
+      subject: `Your access code for ${data.tripName}`,
+      html,
+      replyTo: data.replyTo,
+    });
+
+    if (result.error) {
+      return { success: false, error: result.error.message || 'Failed to send email' };
+    }
+    return { success: true };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error occurred',
+    };
+  }
+}
+
+export interface PortalSubmissionData {
+  recipientEmail: string;
+  orgName: string;
+  orgSlug?: string | null;
+  tripName: string;
+  leadEmail?: string;
+  travelerCount: number;
+  portalUrl: string;
+  replyTo?: string;
+}
+
+/**
+ * Notifies the tour operator when the lead traveler submits their party's
+ * details through a client portal. Sent to the org's notification email.
+ */
+export async function sendPortalSubmissionEmail(
+  data: PortalSubmissionData,
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const submittedAt = new Date().toLocaleString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      timeZoneName: 'short',
+    });
+
+    const html = renderPortalSubmissionEmail({
+      orgName: data.orgName,
+      tripName: data.tripName,
+      leadEmail: data.leadEmail,
+      travelerCount: data.travelerCount,
+      portalUrl: data.portalUrl,
+      submittedAt,
+    });
+
+    const result = await resend.emails.send({
+      from: orgFromAddress({ name: data.orgName, slug: data.orgSlug }),
+      to: data.recipientEmail,
+      subject: `Traveler details submitted for ${data.tripName}`,
+      html,
+      ...(data.replyTo ? { replyTo: data.replyTo } : {}),
+    });
+
+    if (result.error) {
+      return { success: false, error: result.error.message || 'Failed to send email' };
+    }
     return { success: true };
   } catch (error) {
     return {

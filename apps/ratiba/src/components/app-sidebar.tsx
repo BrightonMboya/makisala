@@ -5,6 +5,8 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useState } from 'react';
 import {
   Calculator,
+  ClipboardList,
+  FileText,
   LayoutDashboard,
   Library,
   LogOut,
@@ -90,6 +92,12 @@ export function AppSidebar({ serverData }: { serverData?: SidebarServerData | nu
       label: 'Clients',
       href: '/clients',
       active: pathname?.startsWith('/clients'),
+    },
+    {
+      icon: ClipboardList,
+      label: 'Client Portals',
+      href: '/portals',
+      active: pathname?.startsWith('/portals'),
     },
     {
       icon: Calculator,

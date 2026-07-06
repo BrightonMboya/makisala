@@ -21,6 +21,7 @@ import { rateCardsRouter } from './routers/rateCards';
 import { pricingRouter } from './routers/pricing';
 import { paymentMethodsRouter } from './routers/paymentMethods';
 import { emailsRouter } from './routers/emails';
+import { portalsRouter } from './routers/portals';
 export const appRouter = router({
   clients: clientsRouter,
   nationalParks: nationalParksRouter,
@@ -44,6 +45,7 @@ export const appRouter = router({
   pricing: pricingRouter,
   paymentMethods: paymentMethodsRouter,
   emails: emailsRouter,
+  portals: portalsRouter,
 });
 
 export type AppRouter = typeof appRouter;

@@ -1877,3 +1877,198 @@ export type TransferRate = typeof transferRates.$inferSelect;
 export type NewTransferRate = typeof transferRates.$inferInsert;
 export type PricingSettings = typeof pricingSettings.$inferSelect;
 export type NewPricingSettings = typeof pricingSettings.$inferInsert;
+
+// ---------- CLIENT / TRIP PORTALS ----------
+// After a booking is paid the operator needs each traveler's passport details,
+// dietary needs and logistics. Rather than chasing a group over email, the
+// operator creates one portal per trip and shares a single unguessable link.
+// The lead traveler opens it (no login) and fills in everyone in their party;
+// the operator sees it all consolidated in the dashboard.
+export const ClientPortalStatus = pgEnum('client_portal_status', [
+  'pending', // link created, nothing filled in yet
+  'in_progress', // at least one traveler added
+  'submitted', // lead traveler marked the intake complete
+]);
+
+export const clientPortals = pgTable(
+  'client_portals',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    organizationId: uuid('organization_id')
+      .notNull()
+      .references(() => organizations.id, { onDelete: 'cascade' }),
+    // Optional link to the booking this portal collects details for. When set,
+    // trip name and lead client are seeded from it.
+    proposalId: text('proposal_id').references(() => proposals.id, {
+      onDelete: 'set null',
+    }),
+    clientId: uuid('client_id').references(() => clients.id, { onDelete: 'set null' }),
+    tripName: text('trip_name').notNull(),
+    welcomeMessage: text('welcome_message'),
+    shareToken: text('share_token').notNull().unique(),
+    // Email of the lead traveler authorized to unlock this portal. Access is
+    // gated behind a magic-link/OTP verification of this address.
+    leadEmail: text('lead_email'),
+    status: ClientPortalStatus('status').default('pending').notNull(),
+    dueDate: timestamp('due_date', { precision: 3, mode: 'string' }),
+    // Hard expiry: after this the link stops working entirely.
+    expiresAt: timestamp('expires_at', { precision: 3, mode: 'string' }),
+    submittedAt: timestamp('submitted_at', { precision: 3, mode: 'string' }),
+    createdAt: timestamp('created_at', { precision: 3, mode: 'string' })
+      .default(sql`CURRENT_TIMESTAMP`)
+      .notNull(),
+    updatedAt: timestamp('updated_at', { precision: 3, mode: 'string' })
+      .default(sql`CURRENT_TIMESTAMP`)
+      .notNull(),
+  },
+  (table) => [
+    index('client_portals_org_idx').on(table.organizationId),
+    index('client_portals_proposal_idx').on(table.proposalId),
+  ],
+);
+
+export const portalTravelers = pgTable(
+  'portal_travelers',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    portalId: uuid('portal_id')
+      .notNull()
+      .references(() => clientPortals.id, { onDelete: 'cascade' }),
+    // Denormalized for simple org-scoped reads / safety without a join.
+    organizationId: uuid('organization_id')
+      .notNull()
+      .references(() => organizations.id, { onDelete: 'cascade' }),
+    isLead: boolean('is_lead').default(false).notNull(),
+    position: integer('position').default(0).notNull(),
+    // Passport / identity
+    fullName: text('full_name').notNull(),
+    nationality: text('nationality'),
+    dateOfBirth: text('date_of_birth'),
+    gender: text('gender'),
+    passportNumber: text('passport_number'),
+    passportIssuingCountry: text('passport_issuing_country'),
+    passportExpiry: text('passport_expiry'),
+    // Preferences & health
+    dietaryPreferences: text('dietary_preferences'),
+    allergies: text('allergies'),
+    medicalNotes: text('medical_notes'),
+    // Emergency contact
+    emergencyContactName: text('emergency_contact_name'),
+    emergencyContactPhone: text('emergency_contact_phone'),
+    // Logistics
+    arrivalDetails: text('arrival_details'),
+    specialRequests: text('special_requests'),
+    // Passport scan, stored AES-256-GCM encrypted in R2. Key is unguessable;
+    // bytes are ciphertext so a bucket leak does not expose the document.
+    passportScanKey: text('passport_scan_key'),
+    passportScanName: text('passport_scan_name'),
+    passportScanMime: text('passport_scan_mime'),
+    createdAt: timestamp('created_at', { precision: 3, mode: 'string' })
+      .default(sql`CURRENT_TIMESTAMP`)
+      .notNull(),
+    updatedAt: timestamp('updated_at', { precision: 3, mode: 'string' })
+      .default(sql`CURRENT_TIMESTAMP`)
+      .notNull(),
+  },
+  (table) => [index('portal_travelers_portal_idx').on(table.portalId)],
+);
+
+// One-time verification challenges (magic link + 6-digit code) issued when a
+// traveler requests access. Codes/tokens are stored hashed, never in plaintext.
+export const portalVerifications = pgTable(
+  'portal_verifications',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    portalId: uuid('portal_id')
+      .notNull()
+      .references(() => clientPortals.id, { onDelete: 'cascade' }),
+    email: text('email').notNull(),
+    codeHash: text('code_hash').notNull(),
+    linkTokenHash: text('link_token_hash').notNull(),
+    attempts: integer('attempts').default(0).notNull(),
+    consumedAt: timestamp('consumed_at', { precision: 3, mode: 'string' }),
+    expiresAt: timestamp('expires_at', { precision: 3, mode: 'string' }).notNull(),
+    createdAt: timestamp('created_at', { precision: 3, mode: 'string' })
+      .default(sql`CURRENT_TIMESTAMP`)
+      .notNull(),
+  },
+  (table) => [
+    index('portal_verifications_portal_idx').on(table.portalId),
+    index('portal_verifications_link_idx').on(table.linkTokenHash),
+  ],
+);
+
+// Active traveler sessions. Cookie holds an opaque token; we store only its
+// hash. DB-backed so the operator can revoke (regenerate link deletes these).
+export const portalSessions = pgTable(
+  'portal_sessions',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    portalId: uuid('portal_id')
+      .notNull()
+      .references(() => clientPortals.id, { onDelete: 'cascade' }),
+    email: text('email').notNull(),
+    tokenHash: text('token_hash').notNull().unique(),
+    ip: text('ip'),
+    userAgent: text('user_agent'),
+    lastSeenAt: timestamp('last_seen_at', { precision: 3, mode: 'string' }),
+    expiresAt: timestamp('expires_at', { precision: 3, mode: 'string' }).notNull(),
+    createdAt: timestamp('created_at', { precision: 3, mode: 'string' })
+      .default(sql`CURRENT_TIMESTAMP`)
+      .notNull(),
+  },
+  (table) => [
+    index('portal_sessions_portal_idx').on(table.portalId),
+    index('portal_sessions_token_idx').on(table.tokenHash),
+  ],
+);
+
+// Audit trail: who requested/verified/submitted, when, from where.
+export const portalAccessEvents = pgTable(
+  'portal_access_events',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    portalId: uuid('portal_id')
+      .notNull()
+      .references(() => clientPortals.id, { onDelete: 'cascade' }),
+    email: text('email'),
+    event: text('event').notNull(), // code_requested | verified | failed | submitted | scan_uploaded
+    ip: text('ip'),
+    userAgent: text('user_agent'),
+    createdAt: timestamp('created_at', { precision: 3, mode: 'string' })
+      .default(sql`CURRENT_TIMESTAMP`)
+      .notNull(),
+  },
+  (table) => [index('portal_access_events_portal_idx').on(table.portalId)],
+);
+
+export const clientPortalsRelations = relations(clientPortals, ({ one, many }) => ({
+  organization: one(organizations, {
+    fields: [clientPortals.organizationId],
+    references: [organizations.id],
+  }),
+  proposal: one(proposals, {
+    fields: [clientPortals.proposalId],
+    references: [proposals.id],
+  }),
+  client: one(clients, {
+    fields: [clientPortals.clientId],
+    references: [clients.id],
+  }),
+  travelers: many(portalTravelers),
+}));
+
+export const portalTravelersRelations = relations(portalTravelers, ({ one }) => ({
+  portal: one(clientPortals, {
+    fields: [portalTravelers.portalId],
+    references: [clientPortals.id],
+  }),
+}));
+
+export type ClientPortal = typeof clientPortals.$inferSelect;
+export type NewClientPortal = typeof clientPortals.$inferInsert;
+export type PortalTraveler = typeof portalTravelers.$inferSelect;
+export type NewPortalTraveler = typeof portalTravelers.$inferInsert;
+export type PortalVerification = typeof portalVerifications.$inferSelect;
+export type PortalSession = typeof portalSessions.$inferSelect;
+export type PortalAccessEvent = typeof portalAccessEvents.$inferSelect;

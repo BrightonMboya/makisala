@@ -22,6 +22,10 @@ export const env = createEnv({
     // Email (must be configured per deployment)
     RESEND_FROM_EMAIL: z.email(),
 
+    // Client-portal PII encryption (AES-256-GCM). 32-byte key, base64 or hex.
+    // Encrypts passport/health fields and passport scans at rest.
+    PORTAL_ENCRYPTION_KEY: z.string().min(32),
+
     // Google OAuth
     GOOGLE_CLIENT_ID: z.string().min(1),
     GOOGLE_CLIENT_SECRET: z.string().min(1),
@@ -75,6 +79,7 @@ export const env = createEnv({
     CLOUDINARY_API_KEY: process.env.CLOUDINARY_API_KEY,
     CLOUDINARY_API_SECRET: process.env.CLOUDINARY_API_SECRET,
     RESEND_FROM_EMAIL: process.env.RESEND_FROM_EMAIL,
+    PORTAL_ENCRYPTION_KEY: process.env.PORTAL_ENCRYPTION_KEY,
     GROQ_API_KEY: process.env.GROQ_API_KEY,
     GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
     GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET,
