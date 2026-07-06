@@ -36,6 +36,10 @@ export const env = createEnv({
     POLAR_BUSINESS_PRODUCT_ID: z.string().min(1),
     POLAR_WEBHOOK_SECRET: z.string().min(1),
     POLAR_SERVER_MODE: z.enum(['sandbox', 'production']).default('sandbox'),
+
+    // Shared secret Vercel Cron sends as `Authorization: Bearer <CRON_SECRET>`.
+    // Optional so local dev boots without it; the cron route rejects when unset.
+    CRON_SECRET: z.string().min(1).optional(),
   },
 
   client: {
@@ -66,6 +70,7 @@ export const env = createEnv({
     POLAR_BUSINESS_PRODUCT_ID: process.env.POLAR_BUSINESS_PRODUCT_ID,
     POLAR_WEBHOOK_SECRET: process.env.POLAR_WEBHOOK_SECRET,
     POLAR_SERVER_MODE: process.env.POLAR_SERVER_MODE,
+    CRON_SECRET: process.env.CRON_SECRET,
 
     // Client
     NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,

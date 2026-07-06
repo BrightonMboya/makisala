@@ -703,6 +703,7 @@ export const ProposalStatus = pgEnum('proposal_status', [
   'awaiting_payment',
   'paid',
   'booked',
+  'completed',
   'cancelled',
 ]);
 

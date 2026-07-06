@@ -15,6 +15,7 @@ export const PROPOSAL_STATUSES: ProposalStatus[] = [
   'awaiting_payment',
   'paid',
   'booked',
+  'completed',
   'cancelled',
 ];
 
@@ -24,6 +25,7 @@ export const proposalStatusConfig: Record<ProposalStatus, StatusConfig> = {
   awaiting_payment: { label: 'Awaiting Payment', bg: 'bg-yellow-100', text: 'text-yellow-800', dot: 'bg-yellow-500' },
   paid: { label: 'Paid', bg: 'bg-blue-100', text: 'text-blue-800', dot: 'bg-blue-500' },
   booked: { label: 'Booked', bg: 'bg-emerald-100', text: 'text-emerald-800', dot: 'bg-emerald-500' },
+  completed: { label: 'Completed', bg: 'bg-teal-100', text: 'text-teal-800', dot: 'bg-teal-500' },
   cancelled: { label: 'Cancelled', bg: 'bg-red-100', text: 'text-red-800', dot: 'bg-red-500' },
 };
 

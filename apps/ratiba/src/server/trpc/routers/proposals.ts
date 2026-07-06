@@ -106,7 +106,7 @@ export const proposalsRouter = router({
         page: z.number().int().min(1).default(1),
         pageSize: z.number().int().min(1).max(100).default(20),
         status: z
-          .enum(['draft', 'shared', 'awaiting_payment', 'paid', 'booked', 'cancelled'])
+          .enum(['draft', 'shared', 'awaiting_payment', 'paid', 'booked', 'completed', 'cancelled'])
           .optional(),
         search: z.string().optional(),
       }),
@@ -344,7 +344,7 @@ export const proposalsRouter = router({
         id: z.string(),
         name: z.string(),
         data: z.record(z.string(), z.unknown()),
-        status: z.enum(['draft', 'shared', 'awaiting_payment', 'paid', 'booked', 'cancelled']).optional(),
+        status: z.enum(['draft', 'shared', 'awaiting_payment', 'paid', 'booked', 'completed', 'cancelled']).optional(),
         tourId: z.string(),
       }),
     )
@@ -814,7 +814,7 @@ export const proposalsRouter = router({
     .input(
       z.object({
         proposalId: z.string(),
-        status: z.enum(['draft', 'shared', 'awaiting_payment', 'paid', 'booked', 'cancelled']),
+        status: z.enum(['draft', 'shared', 'awaiting_payment', 'paid', 'booked', 'completed', 'cancelled']),
       }),
     )
     .mutation(async ({ ctx, input }) => {
