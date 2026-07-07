@@ -548,12 +548,15 @@ const IntroductionSection = ({ data }: { data: ItineraryData }) => {
 /** Derive meal basis code from meals string */
 function getMealBasis(meals: string): string {
   if (!meals || meals === 'None') return '';
-  if (meals.includes('Breakfast') && meals.includes('Lunch') && meals.includes('Dinner'))
-    return 'FB';
-  if (meals.includes('Breakfast') && meals.includes('Dinner')) return 'HB';
-  if (meals.includes('Breakfast') && meals.includes('Lunch')) return 'BB+L';
-  if (meals.includes('Breakfast')) return 'BB';
-  return '';
+  const b = meals.includes('Breakfast');
+  const l = meals.includes('Lunch');
+  const d = meals.includes('Dinner');
+  if (b && l && d) return 'FB';
+  if (b && d && !l) return 'HB';
+  if (b && l && !d) return 'BB+L';
+  if (b && !l && !d) return 'BB';
+  // Combinations without breakfast (e.g. lunch only, dinner only, lunch+dinner)
+  return [l && 'L', d && 'D'].filter(Boolean).join('+');
 }
 
 const JourneyOverview = ({ data }: { data: ItineraryData }) => {
