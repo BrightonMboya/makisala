@@ -1,11 +1,12 @@
 'use client';
 
 import React, { useMemo, useRef } from 'react';
-import { motion, useScroll, useTransform } from 'framer-motion';
+import { AnimatePresence, motion, useScroll, useTransform } from 'framer-motion';
 import {
   ArrowRight,
   Car,
   CheckCircle2,
+  ChevronLeft,
   ChevronRight,
   Home,
   MapPin,
@@ -137,12 +138,14 @@ function TripMap({ data }: { data: ItineraryData['mapData'] }) {
 const NarrativeSection = ({
   children,
   imageUrl,
+  imageUrls,
   imageRight = true,
   isPricing = false,
   onImageChange,
 }: {
   children: React.ReactNode;
   imageUrl?: string;
+  imageUrls?: string[];
   imageRight?: boolean;
   isPricing?: boolean;
   onImageChange?: () => void;
@@ -157,6 +160,24 @@ const NarrativeSection = ({
   // Subtle parallax - just slight vertical movement, no aggressive scaling
   const y = useTransform(scrollYProgress, [0, 1], ['-3%', '3%']);
   const scale = useTransform(scrollYProgress, [0, 1], [1.02, 1.06]);
+
+  // Collect all available images (multiple images auto-rotate)
+  const images = imageUrls && imageUrls.length > 0 ? imageUrls : imageUrl ? [imageUrl] : [];
+
+  // Auto-advance through images with a slow crossfade, pausing on hover
+  const [currentIndex, setCurrentIndex] = React.useState(0);
+  React.useEffect(() => {
+    if (images.length <= 1 || isImageHovered) return;
+    const timer = setInterval(() => {
+      setCurrentIndex((prev) => (prev + 1) % images.length);
+    }, 5000);
+    return () => clearInterval(timer);
+  }, [images.length, isImageHovered]);
+
+  const currentImage = images[currentIndex] ?? images[0] ?? '';
+
+  const goToPrev = () => setCurrentIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1));
+  const goToNext = () => setCurrentIndex((prev) => (prev + 1) % images.length);
 
   return (
     <section
@@ -183,20 +204,31 @@ const NarrativeSection = ({
           </div>
 
           <div
-            className={`relative h-full w-full overflow-hidden lg:w-1/2 ${imageRight ? 'order-2' : 'order-1'}`}
+            className={`group relative h-full w-full overflow-hidden lg:w-1/2 ${imageRight ? 'order-2' : 'order-1'}`}
             onMouseEnter={() => onImageChange && setIsImageHovered(true)}
             onMouseLeave={() => setIsImageHovered(false)}
           >
             {/* Image container with subtle parallax */}
             <motion.div style={{ y, scale }} className="absolute inset-0 -top-[4%] h-[108%] w-full">
-              {imageUrl ? (
-                <Image
-                  src={imageUrl}
-                  alt="Background Visual"
-                  fill
-                  className="object-cover object-center"
-                  sizes="50vw"
-                />
+              {currentImage ? (
+                <AnimatePresence>
+                  <motion.div
+                    key={currentIndex}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 1.2, ease: 'easeInOut' }}
+                    className="absolute inset-0"
+                  >
+                    <Image
+                      src={currentImage}
+                      alt="Background Visual"
+                      fill
+                      className="object-cover object-center"
+                      sizes="50vw"
+                    />
+                  </motion.div>
+                </AnimatePresence>
               ) : (
                 <div className="h-full w-full bg-stone-200" />
               )}
@@ -204,6 +236,32 @@ const NarrativeSection = ({
 
             {/* Subtle gradient overlay for depth */}
             <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-black/5 via-transparent to-black/10" />
+
+            {/* Prev/Next arrows */}
+            {images.length > 1 && (
+              <>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    goToPrev();
+                  }}
+                  aria-label="Previous image"
+                  className="absolute top-1/2 left-5 z-40 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/30 bg-black/20 text-white opacity-0 backdrop-blur-md transition-all duration-300 group-hover:opacity-100 hover:bg-black/40"
+                >
+                  <ChevronLeft className="h-5 w-5" />
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    goToNext();
+                  }}
+                  aria-label="Next image"
+                  className="absolute top-1/2 right-5 z-40 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/30 bg-black/20 text-white opacity-0 backdrop-blur-md transition-all duration-300 group-hover:opacity-100 hover:bg-black/40"
+                >
+                  <ChevronRight className="h-5 w-5" />
+                </button>
+              </>
+            )}
 
             {/* Edit overlay */}
             {onImageChange && (
@@ -355,12 +413,18 @@ export default function KuduTheme({ data, onHeroImageChange, onDayImageChange }:
         const previousDay = index > 0 ? itinerary[index - 1] : null;
         const isSameAccommodation = previousDay?.accommodation === day.accommodation;
 
-        // Determine the best image for this day section
-        // Priority: Custom preview image > Accommodation image > Hero fallback
-        const dayImage =
-          day.previewImage ||
-          accommodationDetails?.image ||
-          heroImage;
+        // Determine the images for this day section. Multiple images auto-rotate.
+        // Priority: Custom preview image, then all accommodation images, then hero fallback.
+        const dayImages: string[] = [];
+        if (day.previewImage) dayImages.push(day.previewImage);
+        if (accommodationDetails?.images && accommodationDetails.images.length > 0) {
+          for (const img of accommodationDetails.images) {
+            if (!dayImages.includes(img)) dayImages.push(img);
+          }
+        } else if (accommodationDetails?.image && !dayImages.includes(accommodationDetails.image)) {
+          dayImages.push(accommodationDetails.image);
+        }
+        if (dayImages.length === 0) dayImages.push(heroImage);
 
         // Alternating layout
         const isRight = index % 2 === 0;
@@ -368,7 +432,7 @@ export default function KuduTheme({ data, onHeroImageChange, onDayImageChange }:
         return (
           <NarrativeSection
             key={day.day}
-            imageUrl={dayImage}
+            imageUrls={dayImages}
             imageRight={!isRight}
             onImageChange={
               onDayImageChange

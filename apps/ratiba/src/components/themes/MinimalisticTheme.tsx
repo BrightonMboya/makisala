@@ -3,6 +3,7 @@
 import React, { useMemo, useState } from 'react';
 import Image from 'next/image';
 import { AnimatePresence, motion } from 'framer-motion';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import {
   AnimatedRouteMarker,
   Map,
@@ -15,6 +16,76 @@ import type { ItineraryData } from '@/types/itinerary-types';
 import { formatActivityTiming } from '@/lib/utils';
 import { trpc } from '@/lib/trpc';
 import { PaymentInstructions, type PaymentMethod } from '@/components/proposal/PaymentInstructions';
+
+// Auto-rotating image that slowly crossfades through multiple images.
+// Falls back to a single static image when only one is provided.
+function AutoRotatingImage({
+  images,
+  alt,
+  sizes,
+}: {
+  images: string[];
+  alt: string;
+  sizes?: string;
+}) {
+  const [currentIndex, setCurrentIndex] = useState(0);
+
+  React.useEffect(() => {
+    if (images.length <= 1) return;
+    const timer = setInterval(() => {
+      setCurrentIndex((prev) => (prev + 1) % images.length);
+    }, 5000);
+    return () => clearInterval(timer);
+  }, [images.length]);
+
+  if (images.length === 0) return null;
+  const currentImage = images[currentIndex] ?? images[0] ?? '';
+
+  const goToPrev = () => setCurrentIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1));
+  const goToNext = () => setCurrentIndex((prev) => (prev + 1) % images.length);
+
+  return (
+    <>
+      <AnimatePresence>
+        <motion.div
+          key={currentIndex}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 1.2, ease: 'easeInOut' }}
+          className="absolute inset-0"
+        >
+          <Image src={currentImage} alt={alt} fill sizes={sizes} className="object-cover" />
+        </motion.div>
+      </AnimatePresence>
+
+      {images.length > 1 && (
+        <>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              goToPrev();
+            }}
+            aria-label="Previous image"
+            className="absolute top-1/2 left-4 z-40 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-white/30 bg-black/20 text-white opacity-0 backdrop-blur-md transition-all duration-300 group-hover:opacity-100 hover:bg-black/40"
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              goToNext();
+            }}
+            aria-label="Next image"
+            className="absolute top-1/2 right-4 z-40 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-white/30 bg-black/20 text-white opacity-0 backdrop-blur-md transition-all duration-300 group-hover:opacity-100 hover:bg-black/40"
+          >
+            <ChevronRight className="h-4 w-4" />
+          </button>
+        </>
+      )}
+    </>
+  );
+}
 
 function TripMap({ data }: { data: ItineraryData['mapData'] }) {
   const { locations, startLocation, endLocation } = data;
@@ -362,6 +433,21 @@ export default function MinimalisticTheme({ data, onHeroImageChange, onDayImageC
                   const isSameAccommodation = previousDay?.accommodation === day.accommodation;
                   const shouldHideAccommodation = isSameAccommodation && dayIndex > 0;
 
+                  // Collect all available images for this stay. Multiple images auto-rotate.
+                  // Priority: custom preview image, then all accommodation images, then main image.
+                  const accommodationImages: string[] = [];
+                  if (day.previewImage) accommodationImages.push(day.previewImage);
+                  if (accommodationDetails?.images && accommodationDetails.images.length > 0) {
+                    for (const img of accommodationDetails.images) {
+                      if (!accommodationImages.includes(img)) accommodationImages.push(img);
+                    }
+                  } else if (
+                    accommodationDetails?.image &&
+                    !accommodationImages.includes(accommodationDetails.image)
+                  ) {
+                    accommodationImages.push(accommodationDetails.image);
+                  }
+
                   return (
                     <div key={day.day} className="group">
                       <div className="flex flex-col gap-8 md:flex-row md:gap-16">
@@ -392,15 +478,13 @@ export default function MinimalisticTheme({ data, onHeroImageChange, onDayImageC
                           {!shouldHideAccommodation && accommodation && accommodationDetails && (
                             <div className="mt-8">
                               <div
-                                className="relative h-64 w-full overflow-hidden rounded-2xl"
+                                className="group relative h-64 w-full overflow-hidden rounded-2xl"
                                 onMouseEnter={() => onDayImageChange && setHoveredDayImage(day.day)}
                                 onMouseLeave={() => setHoveredDayImage(null)}
                               >
-                                <Image
-                                  src={day.previewImage || accommodationDetails.image}
+                                <AutoRotatingImage
+                                  images={accommodationImages}
                                   alt={accommodationDetails.name}
-                                  fill
-                                  className="object-cover"
                                 />
                                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
                                 <div className="absolute bottom-6 left-6 max-w-2xl text-balance">
