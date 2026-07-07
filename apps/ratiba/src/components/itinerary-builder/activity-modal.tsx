@@ -43,7 +43,7 @@ const moments = ['Morning', 'Afternoon', 'Evening', 'Half Day', 'Full Day', 'Nig
 // `moment` is a single string field on BuilderActivity storing one or more
 // moments comma-separated (e.g. "Morning, Afternoon"). The multi-select UI
 // splits it for display and joins with ", " on change.
-const momentToArray = (moment: string): string[] =>
+export const momentToArray = (moment: string): string[] =>
   moment
     ? moment
         .split(',')
@@ -58,6 +58,7 @@ export function ActivityModal({
   initialActivities,
   onSave,
   countries,
+  knownMoments,
 }: {
   isOpen: boolean;
   onClose: () => void;
@@ -65,18 +66,48 @@ export function ActivityModal({
   initialActivities: Activity[];
   onSave: (activities: Activity[]) => void;
   countries?: string[];
+  // Custom moments used anywhere in the itinerary, so a moment created on one
+  // day (e.g. "Before Lunch") stays available in the dropdown on every day.
+  knownMoments?: string[];
 }) {
   const [activities, setActivities] = useState<Activity[]>([]);
   const utils = trpc.useUtils();
 
-  // Moment options = the canonical set plus any custom moments already used on
-  // this day's activities, so created moments (e.g. "Early Before Breakfast")
-  // remain searchable across rows and persist when the proposal is reopened.
+  // Org-wide custom moments, persisted so a moment created on any itinerary
+  // (e.g. "Before Lunch", "Sundowner") is available on every itinerary.
+  const { data: orgMoments } = trpc.moments.list.useQuery();
+  const createMomentMutation = trpc.moments.create.useMutation();
+
+  // Moment options = the canonical set, plus the org's saved custom moments,
+  // plus any moment already used on this itinerary's days (knownMoments) or on
+  // this day's activities. Union keeps created moments searchable everywhere.
   const momentOptions = useMemo(() => {
     const set = new Set<string>(moments);
+    orgMoments?.forEach((m) => set.add(m.name));
+    knownMoments?.forEach((m) => set.add(m));
     activities.forEach((a) => momentToArray(a.moment).forEach((m) => set.add(m)));
     return Array.from(set).map((m) => ({ value: m, label: m }));
-  }, [activities]);
+  }, [activities, knownMoments, orgMoments]);
+
+  // Persist a moment org-wide the first time it's used. Canonical moments are
+  // built in and never stored; anything else is upserted (unique on org+name),
+  // then the list is refreshed so it shows up on other days/itineraries.
+  const canonicalMoments = useMemo(() => new Set<string>(moments), []);
+  const persistNewMoments = useCallback(
+    (vals: string[]) => {
+      const existing = new Set(orgMoments?.map((m) => m.name) ?? []);
+      vals
+        .map((v) => v.trim())
+        .filter((v) => v && !canonicalMoments.has(v) && !existing.has(v))
+        .forEach((name) => {
+          createMomentMutation.mutate(
+            { name },
+            { onSuccess: () => utils.moments.list.invalidate() },
+          );
+        });
+    },
+    [orgMoments, canonicalMoments, createMomentMutation, utils],
+  );
   const createActivityMutation = trpc.activities.create.useMutation();
 
   const libraryCacheRef = useRef<
@@ -200,6 +231,10 @@ export function ActivityModal({
   };
 
   const handleUpdateActivity = (id: string, field: keyof Activity, value: any) => {
+    // Save any brand-new moment org-wide as soon as it's picked.
+    if (field === 'moment' && typeof value === 'string') {
+      persistNewMoments(momentToArray(value));
+    }
     setActivities((prev) =>
       prev.map((activity) => (activity.id === id ? { ...activity, [field]: value } : activity)),
     );

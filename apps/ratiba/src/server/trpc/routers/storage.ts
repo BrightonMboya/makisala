@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { accommodations } from '@repo/db/schema';
+import { accommodations, nationalParks } from '@repo/db/schema';
 import { ilike, inArray } from 'drizzle-orm';
 import { router, protectedProcedure, escapeLikeQuery } from '../init';
 import { listStorageFolders, listStorageImages } from '@/lib/storage';
@@ -7,6 +7,7 @@ import { listStorageFolders, listStorageImages } from '@/lib/storage';
 const STORAGE_BUCKET = 'r2';
 const ACCOMMODATIONS_BUCKET = 'accommodations';
 const ACCOMMODATIONS_FOLDER = 'accommodations';
+const NATIONAL_PARKS_FOLDER = 'national-parks';
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export const storageRouter = router({
@@ -83,6 +84,22 @@ export const storageRouter = router({
         name: acc.id,
         path: `${ACCOMMODATIONS_FOLDER}/${acc.id}`,
         displayName: acc.name,
+      }));
+    }),
+
+  searchNationalParkFolders: protectedProcedure
+    .input(z.object({ query: z.string().min(2) }))
+    .query(async ({ ctx, input }) => {
+      const results = await ctx.db
+        .select({ id: nationalParks.id, name: nationalParks.name })
+        .from(nationalParks)
+        .where(ilike(nationalParks.name, `%${escapeLikeQuery(input.query)}%`))
+        .limit(20);
+
+      return results.map((park) => ({
+        name: park.id,
+        path: `${NATIONAL_PARKS_FOLDER}/${park.id}`,
+        displayName: park.name,
       }));
     }),
 });

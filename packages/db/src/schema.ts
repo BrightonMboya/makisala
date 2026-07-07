@@ -1204,6 +1204,36 @@ export const extraLibraryRelations = relations(extraLibrary, ({ one }) => ({
   }),
 }));
 
+// A per-organization catalog of custom itinerary "moments" (time-of-day slots
+// like "Before Lunch", "Sundowner") that operators add on the fly in the
+// activity builder. The canonical moments (Morning, Afternoon, …) live in the
+// client; this table only stores an org's custom additions so they persist and
+// stay available across every itinerary. Global rows (isGlobal = true,
+// organizationId = null) are shared defaults; org rows are private.
+export const momentLibrary = pgTable(
+  'moment_library',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    name: text('name').notNull(),
+    organizationId: uuid('organization_id').references(() => organizations.id, {
+      onDelete: 'cascade',
+    }),
+    isGlobal: boolean('is_global').default(false).notNull(),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+  },
+  (t) => [
+    // One row per (org, name) so create-on-the-fly can upsert in a single round trip.
+    uniqueIndex('moment_library_org_name_unique').on(t.organizationId, t.name),
+  ],
+);
+
+export const momentLibraryRelations = relations(momentLibrary, ({ one }) => ({
+  organization: one(organizations, {
+    fields: [momentLibrary.organizationId],
+    references: [organizations.id],
+  }),
+}));
+
 export type ExtraLibraryItem = typeof extraLibrary.$inferSelect;
 export type NewExtraLibraryItem = typeof extraLibrary.$inferInsert;
 

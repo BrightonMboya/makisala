@@ -37,7 +37,7 @@ import {
   X,
 } from 'lucide-react';
 import React, { useCallback, useMemo, useRef, useState } from 'react';
-import { ActivityModal } from './activity-modal';
+import { ActivityModal, momentToArray } from './activity-modal';
 import { AsyncCombobox } from './async-combobox';
 import { CreatableAsyncCombobox } from './creatable-async-combobox';
 import { Textarea } from '@repo/ui/textarea';
@@ -187,6 +187,16 @@ export function DayTable({
 
   const selectedDay = days.find((d) => d.id === selectedDayId);
 
+  // Every custom moment used across the whole itinerary, so a moment added on
+  // one day stays available in the activity dropdown on every other day.
+  const knownMoments = useMemo(() => {
+    const set = new Set<string>();
+    days.forEach((day) =>
+      day.activities.forEach((a) => momentToArray(a.moment).forEach((m) => set.add(m))),
+    );
+    return Array.from(set);
+  }, [days]);
+
   return (
     <div className="rounded-lg border bg-white shadow-sm">
       {/* Table Header */}
@@ -254,6 +264,7 @@ export function DayTable({
           initialActivities={selectedDay.activities}
           onSave={(activities) => handleSaveActivities(selectedDay.id, activities)}
           countries={countries}
+          knownMoments={knownMoments}
         />
       )}
     </div>
