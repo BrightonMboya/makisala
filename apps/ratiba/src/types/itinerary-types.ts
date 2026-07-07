@@ -267,6 +267,12 @@ export interface ItineraryData {
       unitPrice: number;
       lineTotal: number;
     }[];
+    // Optional add-ons shown separately from (and NOT included in) the main
+    // safari total. price is a preformatted display string (e.g. "$50").
+    extras?: {
+      label: string;
+      price: string;
+    }[];
   };
   includedItems: string[];
   excludedItems: string[];

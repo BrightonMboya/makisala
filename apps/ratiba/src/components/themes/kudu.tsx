@@ -579,6 +579,24 @@ export default function KuduTheme({ data, onHeroImageChange, onDayImageChange }:
                   ))}
                 </div>
               )}
+              {pricing.extras && pricing.extras.length > 0 && (
+                <div className="mt-4 border-t border-white/10 pt-4">
+                  <p className="mb-3 text-[10px] font-bold tracking-[0.4em] text-emerald-500 uppercase">
+                    Optional Add-ons
+                  </p>
+                  <div className="space-y-2">
+                    {pricing.extras.map((extra, i) => (
+                      <div
+                        key={i}
+                        className="flex items-center justify-between text-xs text-white/70"
+                      >
+                        <span className="tracking-wider uppercase">{extra.label}</span>
+                        <span className="text-white/60">+{extra.price}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Map Preview */}

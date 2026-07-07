@@ -808,6 +808,24 @@ const PricingSection = ({ data, onConfirm }: { data: ItineraryData; onConfirm: (
               ))}
             </div>
           )}
+          {data.pricing.extras && data.pricing.extras.length > 0 && (
+            <div className="mb-8 max-w-md border-t border-stone-700 pt-4">
+              <p className="mb-3 text-xs font-light tracking-[0.3em] text-stone-500 uppercase">
+                Optional Add-ons
+              </p>
+              <div className="space-y-2">
+                {data.pricing.extras.map((extra, i) => (
+                  <div
+                    key={i}
+                    className="flex items-center justify-between text-sm font-light text-stone-300"
+                  >
+                    <span>{extra.label}</span>
+                    <span className="text-stone-400">+{extra.price}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
           <p className="max-w-md text-base leading-relaxed font-light text-stone-400">
             A comprehensive journey including accommodations, expert guides, and unforgettable
             experiences.

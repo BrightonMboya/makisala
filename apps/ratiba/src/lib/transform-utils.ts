@@ -53,34 +53,32 @@ export function calculatePricing(
   extras: ExtraOption[],
   travelerGroups: TravelerGroup[],
 ): ItineraryData['pricing'] {
-  const totalPrice =
-    pricingRows.reduce((acc, row) => acc + row.unitPrice * row.count, 0) +
-    extras.filter((e) => e.selected).reduce((acc, e) => acc + e.price, 0);
+  // Extras are NOT rolled into the main safari total. They are surfaced
+  // separately as optional add-ons the client can choose to add on top.
+  const totalPrice = pricingRows.reduce((acc, row) => acc + row.unitPrice * row.count, 0);
 
   const totalTravelers = travelerGroups.reduce((acc, g) => acc + g.count, 0);
   const perPerson = totalTravelers > 0 ? totalPrice / totalTravelers : 0;
 
-  const breakdown = [
-    ...pricingRows.map((row) => ({
-      label: row.type,
-      quantity: row.count,
-      unitPrice: row.unitPrice,
-      lineTotal: row.unitPrice * row.count,
-    })),
-    ...extras
-      .filter((e) => e.selected)
-      .map((e) => ({
-        label: e.name,
-        quantity: 1,
-        unitPrice: e.price,
-        lineTotal: e.price,
-      })),
-  ];
+  const breakdown = pricingRows.map((row) => ({
+    label: row.type,
+    quantity: row.count,
+    unitPrice: row.unitPrice,
+    lineTotal: row.unitPrice * row.count,
+  }));
+
+  const optionalExtras = extras
+    .filter((e) => e.name.trim())
+    .map((e) => ({
+      label: e.name,
+      price: `$${Math.round(e.price).toLocaleString()}`,
+    }));
 
   return {
     total: `$${Math.round(totalPrice).toLocaleString()}`,
     perPerson: `$${Math.round(perPerson).toLocaleString()}`,
     currency: 'USD',
     breakdown: breakdown.length > 0 ? breakdown : undefined,
+    extras: optionalExtras.length > 0 ? optionalExtras : undefined,
   };
 }

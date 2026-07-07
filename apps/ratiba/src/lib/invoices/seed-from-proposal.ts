@@ -28,7 +28,7 @@ export function buildLineItemsFromProposal(proposal: ProposalSeed): InvoiceLineI
   }
 
   for (const extra of proposal.extras ?? []) {
-    if (!extra?.selected) continue;
+    if (!extra?.name?.trim()) continue;
     items.push({
       id: `extra-${extra.id}`,
       name: extra.name || 'Extra',

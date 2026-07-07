@@ -704,6 +704,26 @@ export default function MinimalisticTheme({ data, onHeroImageChange, onDayImageC
                           <span>{data.pricing.perPerson}</span>
                         </div>
                       </div>
+                      {data.pricing.extras && data.pricing.extras.length > 0 && (
+                        <div className="mt-6 border-t border-stone-100 pt-6">
+                          <h4 className="mb-4 text-[10px] font-bold tracking-[0.2em] text-stone-400 uppercase">
+                            Optional Add-ons
+                          </h4>
+                          <ul className="space-y-3">
+                            {data.pricing.extras.map((extra, i) => (
+                              <li
+                                key={i}
+                                className="flex items-baseline justify-between gap-4 text-sm text-stone-600"
+                              >
+                                <span>{extra.label}</span>
+                                <span className="whitespace-nowrap text-stone-400">
+                                  +{extra.price}
+                                </span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
                     </div>
 
                     <div className="mb-10 space-y-8">

@@ -110,7 +110,9 @@ export default function PricingPage() {
         id: Math.random().toString(36).substr(2, 9),
         name: '',
         price: 0,
-        selected: false,
+        // Any extra that's added is shown as an optional add-on. There's no
+        // separate "select" step; a non-empty name is what makes it appear.
+        selected: true,
       },
     ]);
   };
@@ -214,14 +216,18 @@ export default function PricingPage() {
     (acc, row) => acc + row.count * row.unitPrice,
     0,
   );
-  const extrasTotal = extras.filter((e) => e.selected).reduce((acc, e) => acc + e.price, 0);
+  const extrasTotal = extras
+    .filter((e) => e.name.trim())
+    .reduce((acc, e) => acc + e.price, 0);
   const autoSellTotal = computeQuery.data?.sellTotal ?? 0;
   const tripTotal: number | null = useAutoPricing
     ? computeQuery.data
       ? autoSellTotal
       : null
     : manualRowsTotal;
-  const grandTotal = tripTotal == null ? null : tripTotal + extrasTotal;
+  // The safari total stands on its own. Optional extras are shown separately
+  // as add-ons and are NOT summed into the quote total.
+  const grandTotal = tripTotal;
 
   return (
     <div className="mx-auto max-w-7xl space-y-8 px-6 pb-20">
@@ -231,16 +237,24 @@ export default function PricingPage() {
           <h2 className="font-serif text-3xl font-bold text-stone-900">Pricing & Inclusions</h2>
           <p className="mt-1 text-stone-500">Manage trip costs and optional add-ons.</p>
         </div>
-        <div className="flex items-center gap-4 rounded-lg border border-stone-200 bg-white px-4 py-2 text-sm shadow-sm">
-          <span className="font-bold text-stone-700">Total Quote Value:</span>
-          {grandTotal == null ? (
-            <span className="flex items-center gap-2 text-sm font-medium text-stone-400">
-              <Calculator className="h-3.5 w-3.5 animate-pulse" />
-              Computing…
-            </span>
-          ) : (
-            <span className="text-xl font-bold text-green-700">
-              $ {grandTotal.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+        <div className="flex flex-col items-end gap-1 rounded-lg border border-stone-200 bg-white px-4 py-2 text-sm shadow-sm">
+          <div className="flex items-center gap-4">
+            <span className="font-bold text-stone-700">Total Quote Value:</span>
+            {grandTotal == null ? (
+              <span className="flex items-center gap-2 text-sm font-medium text-stone-400">
+                <Calculator className="h-3.5 w-3.5 animate-pulse" />
+                Computing…
+              </span>
+            ) : (
+              <span className="text-xl font-bold text-green-700">
+                $ {grandTotal.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+              </span>
+            )}
+          </div>
+          {extrasTotal > 0 && (
+            <span className="text-xs font-medium text-stone-500">
+              + $
+              {extrasTotal.toLocaleString('en-US', { minimumFractionDigits: 2 })} in optional add-ons
             </span>
           )}
         </div>
@@ -345,22 +359,14 @@ export default function PricingPage() {
         </div>
 
         <div className="grid grid-cols-12 gap-4 border-b border-stone-100 bg-stone-50/30 px-6 py-3 text-xs font-bold tracking-wide text-stone-500 uppercase">
-          <div className="col-span-1 text-center">Select</div>
-          <div className="col-span-7">Option Details</div>
+          <div className="col-span-8">Option Details</div>
           <div className="col-span-4">Price</div>
         </div>
 
         <div className="space-y-3 p-6">
           {extras.map((extra) => (
             <div key={extra.id} className="grid grid-cols-12 items-center gap-4">
-              <div className="col-span-1 flex justify-center">
-                <Checkbox
-                  checked={extra.selected}
-                  onCheckedChange={(checked) => handleUpdateExtra(extra.id, 'selected', checked)}
-                  className="border-stone-300 data-[state=checked]:border-green-600 data-[state=checked]:bg-green-600"
-                />
-              </div>
-              <div className="col-span-7">
+              <div className="col-span-8">
                 <ExtraNameCombobox
                   value={extra.name}
                   onChange={(val) => handleUpdateExtra(extra.id, 'name', val)}

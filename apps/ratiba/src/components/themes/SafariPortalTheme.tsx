@@ -595,6 +595,25 @@ export default function SafariPortalTheme({ data }: { data: ItineraryData }) {
                   </div>
                 </div>
 
+                {data.pricing.extras && data.pricing.extras.length > 0 && (
+                  <div className="space-y-4">
+                    <h4 className="text-[10px] font-bold tracking-[0.3em] text-stone-400 uppercase">
+                      Optional Add-ons
+                    </h4>
+                    <div className="grid grid-cols-1 gap-3">
+                      {data.pricing.extras.map((extra, i) => (
+                        <div
+                          key={i}
+                          className="flex items-center justify-between gap-4 text-sm text-stone-300"
+                        >
+                          <span>{extra.label}</span>
+                          <span className="whitespace-nowrap text-stone-400">+{extra.price}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 <div className="space-y-4">
                   <h4 className="text-[10px] font-bold tracking-[0.3em] text-stone-400 uppercase">
                     What's Included
