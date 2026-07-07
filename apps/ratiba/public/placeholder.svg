@@ -1,0 +1,17 @@
+<svg width="800" height="600" viewBox="0 0 800 600" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="No image">
+  <rect width="800" height="600" fill="#f5f5f4"/>
+  <rect width="800" height="600" fill="url(#g)"/>
+  <g stroke="#a8a29e" stroke-width="6" stroke-linejoin="round" stroke-linecap="round" fill="none" opacity="0.7">
+    <circle cx="560" cy="200" r="42"/>
+    <path d="M120 430 L300 250 L430 380 L520 300 L680 430 Z" fill="#e7e5e4"/>
+    <path d="M120 430 L300 250 L430 380 L520 300 L680 430" />
+  </g>
+  <path d="M120 430 H680" stroke="#a8a29e" stroke-width="6" stroke-linecap="round" opacity="0.7"/>
+  <text x="400" y="510" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="30" fill="#78716c" opacity="0.9">No image yet</text>
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="0" y2="600" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#fafaf9"/>
+      <stop offset="1" stop-color="#e7e5e4"/>
+    </linearGradient>
+  </defs>
+</svg>

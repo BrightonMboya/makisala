@@ -3,9 +3,10 @@ import {
   tours,
   itineraryDays,
   itineraryAccommodations,
+  tourPackages,
   pages,
 } from '@repo/db/schema';
-import { eq, inArray, isNull } from 'drizzle-orm';
+import { eq, inArray, isNull, sql } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
 import { router, protectedProcedure, publicProcedure } from '../init';
 
@@ -91,6 +92,93 @@ export const toursRouter = router({
         })),
         selectedTheme: 'minimalistic',
       };
+    }),
+
+  create: protectedProcedure
+    .input(
+      z.object({
+        tourName: z.string().min(2).max(255),
+        overview: z.string().min(1).max(5000),
+        pricing: z.string(),
+        country: z.string().min(2),
+        tags: z.array(z.string().max(100)).max(20),
+        img_url: z.string().optional(),
+        number_of_days: z.number().min(1),
+        itineraries: z
+          .array(
+            z.object({
+              dayNumber: z.number(),
+              title: z.string().max(255),
+              overview: z.string().max(5000).optional(),
+              national_park_id: z.string().optional(),
+              accommodation_id: z.string().optional(),
+            }),
+          )
+          .max(60)
+          .optional(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const { itineraries, ...tourData } = input;
+
+      // When no image is provided, snapshot a random scenic hero image scoped
+      // to the tour's country from the marketing tour_packages catalog. Chosen
+      // once at creation and stored, so it stays stable across renders.
+      let img_url = tourData.img_url || '';
+      if (!img_url) {
+        const [pkg] = await ctx.db
+          .select({ url: tourPackages.hero_image_url })
+          .from(tourPackages)
+          .where(sql`lower(${tourPackages.country}) = ${tourData.country.toLowerCase()}`)
+          .orderBy(sql`random()`)
+          .limit(1);
+        img_url = pkg?.url ?? '';
+      }
+
+      const result = await ctx.db.transaction(async (tx) => {
+        const newTourResult = await tx
+          .insert(tours)
+          .values({
+            ...tourData,
+            img_url,
+            activities: [],
+            topFeatures: [],
+            organizationId: ctx.orgId,
+          })
+          .returning({ id: tours.id });
+
+        const newTour = newTourResult[0];
+        if (!newTour) {
+          throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: 'Failed to create tour' });
+        }
+
+        if (itineraries && itineraries.length > 0) {
+          for (const day of itineraries) {
+            const newDayResult = await tx
+              .insert(itineraryDays)
+              .values({
+                tourId: newTour.id,
+                dayNumber: day.dayNumber,
+                dayTitle: day.title,
+                overview: day.overview || null,
+                national_park_id: day.national_park_id || null,
+              })
+              .returning({ id: itineraryDays.id });
+
+            const newDay = newDayResult[0];
+            if (day.accommodation_id && newDay) {
+              await tx.insert(itineraryAccommodations).values({
+                itineraryDayId: newDay.id,
+                accommodationId: day.accommodation_id,
+              });
+            }
+          }
+        }
+
+        return { tourId: newTour.id };
+      });
+
+      return { success: true, tourId: result.tourId };
     }),
 
   update: protectedProcedure
