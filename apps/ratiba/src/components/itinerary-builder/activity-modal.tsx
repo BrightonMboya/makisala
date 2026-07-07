@@ -215,14 +215,14 @@ export function ActivityModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[1000px]">
+      <DialogContent className="flex max-h-[90vh] flex-col sm:max-w-[1000px]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-1 text-xl font-bold">
             Activities Day {dayId}
             <span className="text-green-500">.</span>
           </DialogTitle>
         </DialogHeader>
-        <div className="py-4">
+        <div className="-mx-6 flex-1 overflow-y-auto px-6 py-4">
           <div className="mb-4 grid grid-cols-12 gap-4 border-b pb-2 text-xs font-bold text-gray-500">
             <div className="col-span-1 text-center">Order</div>
             <div className="col-span-3">Activity Type</div>
