@@ -22,6 +22,20 @@ import { checkFeatureAccess, getOrgPlan, ALLOWED_THEMES_BY_TIER } from '@/lib/pl
 import { deriveMealPlan } from '@/lib/pricing-engine';
 import { env } from '@/lib/env';
 
+/**
+ * Pin a start date to noon UTC before storing so the calendar day can't drift.
+ *
+ * Clients serialize picked dates via `toLocalISOString` (noon UTC already), but
+ * this strips any stray time-of-day and guarantees a consistent stored value
+ * regardless of the write path. Uses UTC fields since the server runs in UTC.
+ */
+function normalizeStartDate(value: string | Date): string {
+  const d = new Date(value);
+  return new Date(
+    Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), 12, 0, 0, 0),
+  ).toISOString();
+}
+
 interface BuilderData {
   selectedTheme?: string;
   tourId?: string;
@@ -388,7 +402,7 @@ export const proposalsRouter = router({
         tourType: builderData.tourType || null,
         theme: validatedTheme,
         heroImage: builderData.heroImage || null,
-        startDate: builderData.startDate ? new Date(builderData.startDate).toISOString() : null,
+        startDate: builderData.startDate ? normalizeStartDate(builderData.startDate) : null,
         startCity: builderData.startCity || null,
         startCityLat: builderData.startCityLat || null,
         startCityLng: builderData.startCityLng || null,

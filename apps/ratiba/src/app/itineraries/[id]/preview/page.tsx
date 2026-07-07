@@ -11,14 +11,7 @@ import DiscoveryTheme from '@/components/themes/DiscoveryTheme';
 import { trpc } from '@/lib/trpc';
 import { toast } from '@repo/ui/toast';
 import { useEffect, useMemo, useState } from 'react';
-
-/** Convert a Date to a timezone-safe ISO string preserving the local date */
-function toLocalISOString(date: Date): string {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, '0');
-  const d = String(date.getDate()).padStart(2, '0');
-  return `${y}-${m}-${d}T12:00:00.000Z`;
-}
+import { toLocalISOString } from '@/lib/date-utils';
 import { useParams, useRouter } from 'next/navigation';
 import { transformBuilderToItineraryData } from '@/lib/builder-transform';
 import { useMutation } from '@tanstack/react-query';

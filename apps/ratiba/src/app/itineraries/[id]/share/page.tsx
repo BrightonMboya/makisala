@@ -23,6 +23,7 @@ import { toast } from '@repo/ui/toast';
 import { useMutation } from '@tanstack/react-query';
 import { trpc } from '@/lib/trpc';
 import { staleTimes } from '@/lib/query-keys';
+import { toLocalISOString } from '@/lib/date-utils';
 import Link from 'next/link';
 
 const LANGUAGES = [
@@ -149,7 +150,7 @@ export default function SharePage() {
 
       const proposalData = {
         days,
-        startDate,
+        startDate: startDate ? toLocalISOString(startDate) : null,
         travelerGroups,
         tourType,
         pricingRows,

@@ -22,14 +22,7 @@ import { useClientData, useProposalData } from '@/lib/hooks/use-proposal-data';
 import { SessionProvider } from '@/components/session-context';
 import { buildGeoValue } from '@/lib/geocoding';
 import { PlanProvider } from '@/components/plan-context';
-
-/** Convert a Date to a timezone-safe ISO string preserving the local date */
-function toLocalISOString(date: Date): string {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, '0');
-  const d = String(date.getDate()).padStart(2, '0');
-  return `${y}-${m}-${d}T12:00:00.000Z`;
-}
+import { toLocalISOString } from '@/lib/date-utils';
 
 function InlineEditableTitle({
   value,
