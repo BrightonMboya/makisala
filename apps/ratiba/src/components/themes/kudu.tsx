@@ -20,6 +20,7 @@ import { Map, MapMarker, MapRoute, MarkerContent, MarkerTooltip } from '@repo/ui
 import type { ItineraryData } from '@/types/itinerary-types';
 import { formatActivityTiming } from '@/lib/utils';
 import { ConfirmProposalModal } from '@/components/proposal/ConfirmProposalModal';
+import { AccommodationAlternativesBlock } from '@/components/themes/AccommodationAlternativesBlock';
 
 // --- TRIP MAP COMPONENT ---
 function TripMap({ data }: { data: ItineraryData['mapData'] }) {
@@ -566,6 +567,9 @@ export default function KuduTheme({ data, onHeroImageChange, onDayImageChange }:
                 <p className="pl-5 text-xs leading-relaxed text-slate-500">
                   {accommodationDetails.description}
                 </p>
+              )}
+              {!isSameAccommodation && (
+                <AccommodationAlternativesBlock alternatives={day.accommodationAlternatives} />
               )}
             </div>
           </NarrativeSection>

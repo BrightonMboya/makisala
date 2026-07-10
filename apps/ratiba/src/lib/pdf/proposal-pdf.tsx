@@ -140,6 +140,34 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: 'bold',
   },
+  altBlock: {
+    marginTop: 6,
+    paddingTop: 6,
+    borderTopWidth: 1,
+    borderTopColor: '#e5e7eb',
+  },
+  altLabel: {
+    fontSize: 7,
+    color: '#999',
+    textTransform: 'uppercase',
+    marginBottom: 3,
+  },
+  altRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 2,
+  },
+  altName: {
+    fontSize: 9,
+    color: '#444',
+    flex: 1,
+    paddingRight: 6,
+  },
+  altPrice: {
+    fontSize: 9,
+    fontWeight: 'bold',
+    color: '#15803d',
+  },
   meals: {
     marginTop: 8,
     fontSize: 9,
@@ -242,6 +270,12 @@ interface ProposalPDFProps {
         moment: string;
       }>;
       accommodation?: string;
+      accommodationAlternatives?: Array<{
+        name: string;
+        rooms?: string;
+        meals?: string;
+        priceLabel?: string;
+      }>;
       meals?: {
         breakfast: boolean;
         lunch: boolean;
@@ -346,6 +380,22 @@ export function ProposalPDF({ proposal }: ProposalPDFProps) {
               <View style={styles.accommodation}>
                 <Text style={styles.accommodationLabel}>Accommodation</Text>
                 <Text style={styles.accommodationName}>{day.accommodation}</Text>
+                {day.accommodationAlternatives && day.accommodationAlternatives.length > 0 && (
+                  <View style={styles.altBlock}>
+                    <Text style={styles.altLabel}>Alternative Accommodation</Text>
+                    {day.accommodationAlternatives.map((alt, i) => (
+                      <View key={i} style={styles.altRow}>
+                        <Text style={styles.altName}>
+                          {alt.name}
+                          {[alt.rooms, alt.meals].filter(Boolean).length > 0
+                            ? ` — ${[alt.rooms, alt.meals].filter(Boolean).join(' · ')}`
+                            : ''}
+                        </Text>
+                        {alt.priceLabel && <Text style={styles.altPrice}>{alt.priceLabel}</Text>}
+                      </View>
+                    ))}
+                  </View>
+                )}
               </View>
             )}
 

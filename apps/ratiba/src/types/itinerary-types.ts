@@ -29,6 +29,29 @@ export type RoomAllocation = {
   pax: number;
 };
 
+// An alternative accommodation offered for a night: a lodge the client can pick
+// instead of the primary one, with its own room mix and board basis. The lodge,
+// rooms, and meals are configured in the day-by-day step; the price delta is set
+// in the pricing step. `additionalPrice` is signed relative to the primary:
+// negative = cheaper, positive = upgrade, 0/null = same price.
+export type AccommodationAlternative = {
+  id: string;
+  accommodation: string | null; // accommodation id (UUID)
+  accommodationName?: string | null; // cached name to avoid re-fetching
+  rooms?: RoomAllocation[];
+  meals?: { breakfast: boolean; lunch: boolean; dinner: boolean };
+  mealOptions?: string[];
+  // Resolved public image URLs for this lodge. Not stored in the builder JSON;
+  // injected server-side (see proposals.getById) so the client proposal can show
+  // the alternative's photos. In the builder preview they come from the
+  // accommodations lookup map instead.
+  images?: string[] | null;
+  // --- Pricing (set on the pricing step) ---
+  additionalPrice?: number | null;
+  priceUnitLabel?: string | null; // free text, e.g. "per person / per night"
+  hideInQuote?: boolean; // keep it in the builder but omit from the client quote
+};
+
 export type BuilderDay = {
   id: string;
   dayNumber: number;
@@ -38,6 +61,8 @@ export type BuilderDay = {
   // Used by the pricing engine to pick the right hotel rate rows. Room type
   // varies per allocation; the board basis is derived from the meals toggles.
   rooms?: RoomAllocation[];
+  // Alternative lodges offered for this night (see AccommodationAlternative).
+  alternatives?: AccommodationAlternative[];
   destination: string | null;
   destinationName?: string | null; // Cached display name (for non-park destinations)
   destinationLat?: number | null;
@@ -185,6 +210,16 @@ export interface DayActivity {
   location?: string;
 }
 
+// A rendered alternative accommodation for the client-facing proposal. The
+// price delta is preformatted for display (e.g. "−$200 per person / per night").
+export interface ThemeAccommodationAlternative {
+  name: string;
+  rooms?: string; // e.g. "1x Double Room"
+  meals?: string; // e.g. "Breakfast, Dinner"
+  priceLabel?: string; // signed delta, already formatted; omitted when no price set
+  images?: string[]; // lodge photos, shown in a lightbox when the client taps the alternative
+}
+
 export interface Day {
   day: number;
   date: string;
@@ -193,6 +228,7 @@ export interface Day {
   destination?: string; // Destination display name
   activities: DayActivity[];
   accommodation: string;
+  accommodationAlternatives?: ThemeAccommodationAlternative[];
   meals: string;
   mealOptions?: string[];
   previewImage?: string; // Custom image for theme preview

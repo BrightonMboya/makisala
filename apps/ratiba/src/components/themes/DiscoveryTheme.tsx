@@ -39,6 +39,7 @@ import type { ItineraryData } from '@/types/itinerary-types';
 import { capitalize, cn, formatActivityTiming } from '@/lib/utils';
 import { trpc } from '@/lib/trpc';
 import { PaymentInstructions, type PaymentMethod } from '@/components/proposal/PaymentInstructions';
+import { AccommodationAlternativesBlock } from '@/components/themes/AccommodationAlternativesBlock';
 
 function joinList(items: string[]): string {
   if (items.length <= 2) return items.join(' & ');
@@ -1284,6 +1285,8 @@ const DaySection = ({
                     </>
                   )}
                 </div>
+
+                <AccommodationAlternativesBlock alternatives={day.accommodationAlternatives} />
               </div>
             </div>
           </div>

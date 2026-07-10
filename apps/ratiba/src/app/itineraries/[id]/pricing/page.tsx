@@ -24,7 +24,13 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import { useBuilder } from '@/components/itinerary-builder/builder-context';
-import type { ExtraOption, ExtraPriceUnit, PricingRow } from '@/types/itinerary-types';
+import type {
+  AccommodationAlternative,
+  BuilderDay,
+  ExtraOption,
+  ExtraPriceUnit,
+  PricingRow,
+} from '@/types/itinerary-types';
 import { useMemo, useState } from 'react';
 import { useDebounce } from '@repo/ui/use-debounce';
 import { trpc } from '@/lib/trpc';
@@ -68,6 +74,7 @@ export default function PricingPage() {
     dropoffTransferId,
     setDropoffTransferId,
     days,
+    setDays,
     travelerGroups,
     startDate,
   } = useBuilder();
@@ -328,6 +335,9 @@ export default function PricingPage() {
         </div>
       </div>
 
+      {/* Accommodation Alternatives — only shown when at least one day has them */}
+      <AccommodationAlternativesSection days={days} setDays={setDays} />
+
       {/* Extras Section */}
       <div className="rounded-xl border border-stone-200 bg-white shadow-sm">
         <div className="rounded-t-xl border-b border-stone-100 bg-stone-50/50 px-6 py-4">
@@ -485,6 +495,131 @@ export default function PricingPage() {
             Next: Preview & Edit <ArrowRight className="ml-2 h-4 w-4" />
           </Button>
         </Link>
+      </div>
+    </div>
+  );
+}
+
+// --- Accommodation alternatives -------------------------------------------
+
+const titleCaseWords = (s: string) =>
+  s
+    .split(/\s+/)
+    .map((w) => (w ? w[0]!.toUpperCase() + w.slice(1) : ''))
+    .join(' ');
+
+function roomSummary(rooms: AccommodationAlternative['rooms']): string {
+  if (!rooms || rooms.length === 0) return 'Rooms not set';
+  return rooms
+    .map((r) => `${r.roomType ? titleCaseWords(r.roomType) : 'Room'}${r.pax ? ` · ${r.pax} pax` : ''}`)
+    .join(', ');
+}
+
+function mealSummary(meals: AccommodationAlternative['meals']): string {
+  if (!meals) return 'Room only';
+  const parts = [
+    meals.breakfast ? 'Breakfast' : null,
+    meals.lunch ? 'Lunch' : null,
+    meals.dinner ? 'Dinner' : null,
+  ].filter(Boolean);
+  return parts.length > 0 ? parts.join(', ') : 'Room only';
+}
+
+function AccommodationAlternativesSection({
+  days,
+  setDays,
+}: {
+  days: BuilderDay[];
+  setDays: React.Dispatch<React.SetStateAction<BuilderDay[]>>;
+}) {
+  // Flatten every alternative across days, keeping its day for context.
+  const rows = days.flatMap((day) =>
+    (day.alternatives ?? []).map((alt) => ({ day, alt })),
+  );
+
+  if (rows.length === 0) return null;
+
+  const updateAlt = (
+    dayId: string,
+    altId: string,
+    patch: Partial<AccommodationAlternative>,
+  ) => {
+    setDays((prev) =>
+      prev.map((d) =>
+        d.id === dayId
+          ? {
+              ...d,
+              alternatives: (d.alternatives ?? []).map((a) =>
+                a.id === altId ? { ...a, ...patch } : a,
+              ),
+            }
+          : d,
+      ),
+    );
+  };
+
+  return (
+    <div className="rounded-xl border border-stone-200 bg-white shadow-sm">
+      <div className="rounded-t-xl border-b border-stone-100 bg-stone-50/50 px-6 py-4">
+        <h3 className="flex items-center gap-2 font-bold text-stone-800">
+          <Building className="h-4 w-4 text-stone-500" />
+          Accommodation Alternatives
+        </h3>
+        <p className="mt-1 text-xs text-stone-500">
+          Set how much each alternative changes the price. Use a negative number for a cheaper
+          option (e.g. -200) or a positive one for an upgrade. Leave blank to keep it at the same
+          price.
+        </p>
+      </div>
+
+      <div className="hidden grid-cols-12 gap-4 border-b border-stone-100 bg-stone-50/30 px-6 py-3 text-xs font-bold tracking-wide text-stone-500 uppercase md:grid">
+        <div className="col-span-4">Accommodation</div>
+        <div className="col-span-3">Room &amp; meal plan</div>
+        <div className="col-span-5">Additional price</div>
+      </div>
+
+      <div className="divide-y divide-stone-100">
+        {rows.map(({ day, alt }) => (
+          <div
+            key={alt.id}
+            className="grid grid-cols-1 items-start gap-4 px-6 py-4 md:grid-cols-12"
+          >
+            <div className="md:col-span-4">
+              <div className="text-xs font-semibold text-stone-400">Day {day.dayNumber}</div>
+              <div className="font-medium text-stone-800">
+                {alt.accommodationName || 'Accommodation'}
+              </div>
+            </div>
+
+            <div className="text-sm text-stone-500 md:col-span-3">
+              <div>{roomSummary(alt.rooms)}</div>
+              <div className="text-xs text-stone-400">{mealSummary(alt.meals)}</div>
+            </div>
+
+            <div className="flex items-center gap-2 md:col-span-5">
+              <div className="relative w-32">
+                <span className="absolute top-2.5 left-3 text-sm font-medium text-stone-500">$</span>
+                <Input
+                  type="number"
+                  value={alt.additionalPrice ?? ''}
+                  onChange={(e) =>
+                    updateAlt(day.id, alt.id, {
+                      additionalPrice: e.target.value === '' ? null : parseFloat(e.target.value),
+                    })
+                  }
+                  placeholder="0.00"
+                  className="border-stone-200 bg-stone-50 pl-7 shadow-none"
+                />
+              </div>
+              <Input
+                value={alt.priceUnitLabel ?? ''}
+                onChange={(e) => updateAlt(day.id, alt.id, { priceUnitLabel: e.target.value })}
+                placeholder="e.g. per person / per night"
+                className="h-9 flex-1 border-stone-200 bg-stone-50 text-sm shadow-none"
+              />
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );

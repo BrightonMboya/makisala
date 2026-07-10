@@ -10,6 +10,7 @@ import {
   member,
   clients,
   paymentMethods,
+  accommodationImages,
 } from '@repo/db/schema';
 import { and, asc, desc, eq, inArray, or, sql, count } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
@@ -21,6 +22,7 @@ import { router, protectedProcedure, adminProcedure, publicProcedure, escapeLike
 import { checkFeatureAccess, getOrgPlan, ALLOWED_THEMES_BY_TIER } from '@/lib/plans';
 import { deriveMealPlan } from '@/lib/pricing-engine';
 import { env } from '@/lib/env';
+import { getPublicUrl } from '@/lib/storage';
 
 /**
  * Pin a start date to noon UTC before storing so the calendar day can't drift.
@@ -112,6 +114,17 @@ interface BuilderDay {
   rooms?: Array<{
     roomType: string | null;
     pax: number;
+  }>;
+  alternatives?: Array<{
+    id: string;
+    accommodation: string | null;
+    accommodationName?: string | null;
+    rooms?: Array<{ roomType: string | null; pax: number }>;
+    meals?: { breakfast: boolean; lunch: boolean; dinner: boolean };
+    mealOptions?: string[];
+    additionalPrice?: number | null;
+    priceUnitLabel?: string | null;
+    hideInQuote?: boolean;
   }>;
   activities?: BuilderActivity[];
   meals?: { breakfast?: boolean; lunch?: boolean; dinner?: boolean };
@@ -236,7 +249,7 @@ export const proposalsRouter = router({
           tour: { columns: { country: true, tourName: true } },
           client: { columns: { name: true, email: true } },
           days: {
-            columns: { dayNumber: true, title: true, description: true, previewImage: true, destinationName: true, destinationLat: true, destinationLng: true },
+            columns: { dayNumber: true, title: true, description: true, previewImage: true, destinationName: true, destinationLat: true, destinationLng: true, alternatives: true },
             with: {
               nationalPark: {
                 columns: { id: true, name: true, country: true, park_overview: true, latitude: true, longitude: true },
@@ -262,7 +275,44 @@ export const proposalsRouter = router({
           },
         },
       });
-      return result ?? null;
+      if (!result) return null;
+
+      // Alternatives are stored as denormalized JSON (no join), so their lodge
+      // photos aren't part of the relational query. Batch-fetch images for every
+      // alternative accommodation and inject resolved public URLs onto each one
+      // so the client proposal can show them in a lightbox.
+      const altAccIds = Array.from(
+        new Set(
+          result.days.flatMap((day) =>
+            (day.alternatives ?? [])
+              .map((alt) => alt.accommodation)
+              .filter((id): id is string => !!id),
+          ),
+        ),
+      );
+      if (altAccIds.length > 0) {
+        const imgs = await ctx.db
+          .select({
+            accommodationId: accommodationImages.accommodationId,
+            bucket: accommodationImages.bucket,
+            key: accommodationImages.key,
+          })
+          .from(accommodationImages)
+          .where(inArray(accommodationImages.accommodationId, altAccIds));
+        const urlsByAcc = new Map<string, string[]>();
+        for (const img of imgs) {
+          const arr = urlsByAcc.get(img.accommodationId) ?? [];
+          arr.push(getPublicUrl(img.bucket, img.key));
+          urlsByAcc.set(img.accommodationId, arr);
+        }
+        for (const day of result.days) {
+          if (!day.alternatives) continue;
+          for (const alt of day.alternatives) {
+            alt.images = alt.accommodation ? urlsByAcc.get(alt.accommodation) ?? [] : [];
+          }
+        }
+      }
+      return result;
     }),
 
   getForBuilder: protectedProcedure
@@ -315,6 +365,7 @@ export const proposalsRouter = router({
               destinationLng: true,
               description: true,
               previewImage: true,
+              alternatives: true,
             },
             with: {
               accommodations: {
@@ -536,6 +587,11 @@ export const proposalsRouter = router({
               destinationName: day.destinationName || null,
               destinationLat: day.destinationLat != null ? String(day.destinationLat) : null,
               destinationLng: day.destinationLng != null ? String(day.destinationLng) : null,
+              // Denormalized alternatives blob. Drop any without a real lodge picked.
+              alternatives:
+                Array.isArray(day.alternatives) && day.alternatives.length > 0
+                  ? day.alternatives.filter((alt) => !!alt.accommodation)
+                  : null,
             })
             .returning();
 
@@ -930,6 +986,7 @@ export const proposalsRouter = router({
               destinationName: day.destinationName,
               destinationLat: day.destinationLat,
               destinationLng: day.destinationLng,
+              alternatives: day.alternatives,
             })
             .returning();
 

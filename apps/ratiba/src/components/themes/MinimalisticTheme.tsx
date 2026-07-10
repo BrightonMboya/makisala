@@ -16,6 +16,7 @@ import type { ItineraryData } from '@/types/itinerary-types';
 import { formatActivityTiming } from '@/lib/utils';
 import { trpc } from '@/lib/trpc';
 import { PaymentInstructions, type PaymentMethod } from '@/components/proposal/PaymentInstructions';
+import { AccommodationAlternativesBlock } from '@/components/themes/AccommodationAlternativesBlock';
 
 // Auto-rotating image that slowly crossfades through multiple images.
 // Falls back to a single static image when only one is provided.
@@ -721,6 +722,11 @@ export default function MinimalisticTheme({ data, onHeroImageChange, onDayImageC
                               )}
                             </div>
                           </div>
+                          {!shouldHideAccommodation && (
+                            <AccommodationAlternativesBlock
+                              alternatives={day.accommodationAlternatives}
+                            />
+                          )}
                         </div>
                       </div>
                     </div>

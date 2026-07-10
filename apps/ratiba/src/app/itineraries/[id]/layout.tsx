@@ -642,6 +642,8 @@ function BuilderLayoutInner({ children }: { children: React.ReactNode }) {
               roomType: a.roomType,
               pax: a.paxCount ?? loadedTotalPax,
             })),
+          // Denormalized alternatives blob round-trips as-is (same shape as builder).
+          alternatives: Array.isArray(day.alternatives) ? day.alternatives : [],
           description: day.description || '',
           previewImage: day.previewImage || undefined,
           meals: {

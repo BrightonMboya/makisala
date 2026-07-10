@@ -13,6 +13,7 @@ import {
 import type { ItineraryData } from '@/types/itinerary-types';
 import { formatActivityTiming } from '@/lib/utils';
 import { ConfirmProposalModal } from '@/components/proposal/ConfirmProposalModal';
+import { AccommodationAlternativesBlock } from '@/components/themes/AccommodationAlternativesBlock';
 
 function TripMap({ data }: { data: ItineraryData['mapData'] }) {
   const { locations, startLocation, endLocation } = data;
@@ -504,6 +505,11 @@ export default function SafariPortalTheme({ data }: { data: ItineraryData }) {
                               </span>
                             )}
                           </div>
+                          {!shouldHideAccommodation && (
+                            <AccommodationAlternativesBlock
+                              alternatives={day.accommodationAlternatives}
+                            />
+                          )}
                         </div>
                       )}
                     </div>

@@ -789,10 +789,31 @@ export const proposalDays = pgTable('proposal_days', {
   destinationName: text('destination_name'),
   destinationLat: numeric('destination_lat', { precision: 10, scale: 7 }),
   destinationLng: numeric('destination_lng', { precision: 10, scale: 7 }),
+  // Alternative lodges offered for this night. Stored denormalized as JSON since
+  // each carries its own room mix, board basis, and (signed) price delta and is
+  // only ever read/written as a whole alongside the day. See AlternativeAccommodation.
+  alternatives: json('alternatives').$type<AlternativeAccommodation[]>(),
   createdAt: timestamp('created_at', { precision: 3, mode: 'string' })
     .default(sql`CURRENT_TIMESTAMP`)
     .notNull(),
 });
+
+// Shape of each entry in proposalDays.alternatives. Kept identical to the
+// builder's AccommodationAlternative type so save/load is a pass-through.
+export interface AlternativeAccommodation {
+  id: string;
+  accommodation: string | null; // accommodation id (UUID)
+  accommodationName?: string | null;
+  rooms?: Array<{ roomType: string | null; pax: number }>;
+  meals?: { breakfast: boolean; lunch: boolean; dinner: boolean };
+  mealOptions?: string[];
+  additionalPrice?: number | null;
+  priceUnitLabel?: string | null;
+  hideInQuote?: boolean;
+  // Resolved public image URLs for the lodge. Not persisted (kept out of the
+  // stored JSON); injected at read time so the client proposal can show photos.
+  images?: string[] | null;
+}
 
 // ---------- PROPOSAL ACCOMMODATIONS (join table) ----------
 export const proposalAccommodations = pgTable('proposal_accommodations', {

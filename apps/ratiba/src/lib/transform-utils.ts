@@ -1,10 +1,79 @@
 import type {
+  AccommodationAlternative,
   ExtraOption,
   ItineraryData,
   PricingRow,
+  ThemeAccommodationAlternative,
   TransportModeType,
   TravelerGroup,
 } from '@/types/itinerary-types';
+
+const titleCaseWords = (s: string) =>
+  s
+    .split(/\s+/)
+    .map((w) => (w ? w[0]!.toUpperCase() + w.slice(1) : ''))
+    .join(' ');
+
+/** "Double Room · 2 pax, Single Room · 1 pax" — or null when no rooms set. */
+function roomSummaryText(rooms: AccommodationAlternative['rooms']): string | undefined {
+  if (!rooms || rooms.length === 0) return undefined;
+  const parts = rooms
+    .filter((r) => r.roomType || r.pax)
+    .map((r) => `${r.roomType ? titleCaseWords(r.roomType) : 'Room'}${r.pax ? ` · ${r.pax} pax` : ''}`);
+  return parts.length > 0 ? parts.join(', ') : undefined;
+}
+
+/** "Breakfast, Dinner" — or undefined when no board basis is set. */
+function mealSummaryText(meals: AccommodationAlternative['meals']): string | undefined {
+  if (!meals) return undefined;
+  const parts = [
+    meals.breakfast ? 'Breakfast' : null,
+    meals.lunch ? 'Lunch' : null,
+    meals.dinner ? 'Dinner' : null,
+  ].filter(Boolean);
+  return parts.length > 0 ? (parts.join(', ') as string) : undefined;
+}
+
+/** Signed, formatted price delta, e.g. "−$200 per person / per night" or "+$150". */
+function priceDeltaLabel(alt: AccommodationAlternative): string | undefined {
+  const amount = alt.additionalPrice;
+  if (amount == null || amount === 0) return undefined;
+  const sign = amount < 0 ? '−' : '+'; // real minus sign for display
+  const abs = Math.abs(amount);
+  const unit = alt.priceUnitLabel?.trim();
+  return `${sign}$${abs.toLocaleString()}${unit ? ` ${unit}` : ''}`;
+}
+
+/**
+ * Turn stored accommodation alternatives into the client-facing shape rendered
+ * by the themes and PDF. Skips alternatives flagged hide-in-quote or without a
+ * lodge. `resolve` maps an accommodation id to its display name and photos. The
+ * saved JSON usually carries the name (and, on the public proposal, injected
+ * image URLs) already, so `resolve` is only a fallback used by the live builder
+ * preview where the accommodation lookup map is on hand.
+ */
+export function toThemeAlternatives(
+  alternatives: AccommodationAlternative[] | undefined | null,
+  resolve?: (id: string) => { name?: string; images?: string[] } | undefined,
+): ThemeAccommodationAlternative[] | undefined {
+  if (!alternatives || alternatives.length === 0) return undefined;
+  const out = alternatives
+    .filter((alt) => !alt.hideInQuote && (alt.accommodation || alt.accommodationName))
+    .map((alt) => {
+      const resolved = alt.accommodation && resolve ? resolve(alt.accommodation) : undefined;
+      const name = alt.accommodationName || resolved?.name || 'Alternative lodge';
+      const images =
+        alt.images && alt.images.length > 0 ? alt.images : resolved?.images;
+      return {
+        name,
+        rooms: roomSummaryText(alt.rooms),
+        meals: mealSummaryText(alt.meals),
+        priceLabel: priceDeltaLabel(alt),
+        images: images && images.length > 0 ? images : undefined,
+      } satisfies ThemeAccommodationAlternative;
+    });
+  return out.length > 0 ? out : undefined;
+}
 
 export const transportModeLabels: Record<TransportModeType, string> = {
   road_4x4: '4WD Safari Vehicle',

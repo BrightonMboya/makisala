@@ -38,6 +38,7 @@ import {
 } from 'lucide-react';
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { ActivityModal, momentToArray } from './activity-modal';
+import { AccommodationAlternativesModal } from './accommodation-alternatives-modal';
 import { AsyncCombobox } from './async-combobox';
 import { CreatableAsyncCombobox } from './creatable-async-combobox';
 import { MealOptionsField } from './meal-options-field';
@@ -45,6 +46,7 @@ import { Textarea } from '@repo/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@repo/ui/select';
 import { Input } from '@repo/ui/input';
 import type {
+  AccommodationAlternative,
   BuilderActivity,
   BuilderDay,
   RoomAllocation,
@@ -74,6 +76,7 @@ export function DayTable({
 }) {
   const [isActivityModalOpen, setIsActivityModalOpen] = useState(false);
   const [selectedDayId, setSelectedDayId] = useState<string | null>(null);
+  const [alternativesDayId, setAlternativesDayId] = useState<string | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -119,6 +122,13 @@ export function DayTable({
       }),
     );
     setIsActivityModalOpen(false);
+  };
+
+  const handleSaveAlternatives = (dayId: string, alternatives: AccommodationAlternative[]) => {
+    setDays((prev) =>
+      prev.map((day) => (day.id === dayId ? { ...day, alternatives } : day)),
+    );
+    setAlternativesDayId(null);
   };
 
   const handleToggleMeal = (dayId: string, meal: 'breakfast' | 'lunch' | 'dinner') => {
@@ -187,6 +197,7 @@ export function DayTable({
   };
 
   const selectedDay = days.find((d) => d.id === selectedDayId);
+  const alternativesDay = days.find((d) => d.id === alternativesDayId);
 
   // Every custom moment used across the whole itinerary, so a moment added on
   // one day stays available in the activity dropdown on every other day.
@@ -219,6 +230,7 @@ export function DayTable({
                 day={day}
                 totalPax={totalPax}
                 onAddActivity={handleAddActivity}
+                onManageAlternatives={setAlternativesDayId}
                 onToggleMeal={handleToggleMeal}
                 onDelete={handleDeleteDay}
                 onDuplicate={handleDuplicateDay}
@@ -268,6 +280,18 @@ export function DayTable({
           knownMoments={knownMoments}
         />
       )}
+
+      {alternativesDay && (
+        <AccommodationAlternativesModal
+          isOpen={!!alternativesDayId}
+          onClose={() => setAlternativesDayId(null)}
+          dayNumber={alternativesDay.dayNumber}
+          primaryName={alternativesDay.accommodationName ?? null}
+          alternatives={alternativesDay.alternatives ?? []}
+          totalPax={totalPax}
+          onSave={(alternatives) => handleSaveAlternatives(alternativesDay.id, alternatives)}
+        />
+      )}
     </div>
   );
 }
@@ -276,6 +300,7 @@ function SortableDayRow({
   day,
   totalPax,
   onAddActivity,
+  onManageAlternatives,
   onToggleMeal,
   onDelete,
   onDuplicate,
@@ -285,6 +310,7 @@ function SortableDayRow({
   day: Day;
   totalPax: number;
   onAddActivity: (id: string) => void;
+  onManageAlternatives: (id: string) => void;
   onToggleMeal: (id: string, meal: 'breakfast' | 'lunch' | 'dinner') => void;
   onDelete: (id: string) => void;
   onDuplicate: (id: string) => void;
@@ -610,6 +636,28 @@ function SortableDayRow({
                     Add room type
                   </button>
                 </div>
+
+                {/* Alternative lodges for this night */}
+                <button
+                  type="button"
+                  onClick={() => onManageAlternatives(day.id)}
+                  className="flex items-center gap-1 border-t border-stone-100 pt-2 text-[11px] font-medium text-green-600 hover:text-green-700"
+                >
+                  {(day.alternatives?.length ?? 0) > 0 ? (
+                    <>
+                      <span className="rounded-full bg-green-100 px-1.5 py-0.5 text-[10px] font-bold text-green-700">
+                        {day.alternatives!.length}
+                      </span>
+                      {day.alternatives!.length === 1 ? 'Alternative' : 'Alternatives'}
+                      <span className="text-stone-400">· Manage</span>
+                    </>
+                  ) : (
+                    <>
+                      <Plus className="h-3 w-3" />
+                      Add alternative
+                    </>
+                  )}
+                </button>
               </div>
             )}
           </div>

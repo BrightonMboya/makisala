@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { withAxiom, type AxiomRequest } from 'next-axiom';
 import { renderToBuffer } from '@react-pdf/renderer';
 import { ProposalPDF } from '@/lib/pdf/proposal-pdf';
+import { toThemeAlternatives } from '@/lib/transform-utils';
 import { db, member } from '@repo/db';
 import { proposals, proposalDays, proposalActivities, proposalAccommodations, proposalMeals, accommodations, nationalParks } from '@repo/db/schema';
 import { eq, and } from 'drizzle-orm';
@@ -102,6 +103,7 @@ export const GET = withAxiom(async (
           moment: act.moment,
         })),
         accommodation: day.accommodations?.[0]?.accommodation?.name || undefined,
+        accommodationAlternatives: toThemeAlternatives(day.alternatives),
         meals: day.meals ? {
           breakfast: day.meals.breakfast,
           lunch: day.meals.lunch,

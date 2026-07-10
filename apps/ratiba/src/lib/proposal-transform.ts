@@ -1,6 +1,7 @@
 import { addDays, format } from 'date-fns';
 import type {
   Accommodation,
+  AccommodationAlternative,
   Day as ThemeDay,
   DayActivity,
   ExtraOption,
@@ -19,6 +20,7 @@ import {
   formatDuration,
   formatTransferLocation,
   isTransferActivity,
+  toThemeAlternatives,
   transportModeLabels,
 } from '@/lib/transform-utils';
 
@@ -54,6 +56,7 @@ type ProposalDay = {
       images?: Array<{ bucket: string; key: string }>;
     };
   }>;
+  alternatives?: AccommodationAlternative[] | null;
   activities?: Array<{
     name: string;
     description: string | null;
@@ -192,6 +195,9 @@ export function transformProposalToItineraryData(
         }
       : undefined;
 
+    // Stored alternatives carry their own lodge name, so no id→name resolver is needed.
+    const accommodationAlternatives = toThemeAlternatives(day.alternatives);
+
     return {
       day: day.dayNumber,
       date: dateStr,
@@ -200,6 +206,7 @@ export function transformProposalToItineraryData(
       destination: destinationName || undefined,
       activities,
       accommodation: accommodationName,
+      accommodationAlternatives,
       meals: mealsStr,
       mealOptions: Array.isArray(meals?.options) ? meals.options : [],
       previewImage: day.previewImage || undefined,
