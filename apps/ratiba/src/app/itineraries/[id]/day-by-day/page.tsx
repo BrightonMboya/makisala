@@ -10,8 +10,6 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@repo/ui/select';
 import { Combobox } from '@repo/ui/combobox';
-import { Checkbox } from '@repo/ui/checkbox';
-import { Label } from '@repo/ui/label';
 import { airports } from '@/lib/data/itinerary-data';
 import { useBuilder } from '@/components/itinerary-builder/builder-context';
 import { CreatableAsyncCombobox } from '@/components/itinerary-builder/creatable-async-combobox';
@@ -124,41 +122,41 @@ export default function DayByDayPage() {
               </label>
               <DatePicker date={startDate} setDate={setStartDate} />
             </div>
-            <div className="space-y-2">
-              <label className="text-xs font-semibold tracking-wide text-stone-500 uppercase">
-                Tour Starts In
-                {country && (
-                  <span className="ml-2 text-green-600 capitalize">({country})</span>
-                )}
-              </label>
-              <CreatableAsyncCombobox
-                value={startCity || null}
-                onChange={(v) => handleCitySelect(v, setStartCity, setStartCityCoordinates)}
-                onSearch={searchCities}
-                initialLabel={startCity || null}
-                placeholder="Search start city..."
-                createLabel="Use"
-                className="border-stone-200 bg-stone-50"
-
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-xs font-semibold tracking-wide text-stone-500 uppercase">
-                Tour Ends In
-                {country && (
-                  <span className="ml-2 text-green-600 capitalize">({country})</span>
-                )}
-              </label>
-              <CreatableAsyncCombobox
-                value={endCity || null}
-                onChange={(v) => handleCitySelect(v, setEndCity, setEndCityCoordinates)}
-                onSearch={searchCities}
-                initialLabel={endCity || null}
-                placeholder="Search end city..."
-                createLabel="Use"
-                className="border-stone-200 bg-stone-50"
-
-              />
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <label className="text-xs font-semibold tracking-wide text-stone-500 uppercase">
+                  Tour Starts In
+                  {country && (
+                    <span className="ml-2 text-green-600 capitalize">({country})</span>
+                  )}
+                </label>
+                <CreatableAsyncCombobox
+                  value={startCity || null}
+                  onChange={(v) => handleCitySelect(v, setStartCity, setStartCityCoordinates)}
+                  onSearch={searchCities}
+                  initialLabel={startCity || null}
+                  placeholder="Search start city..."
+                  createLabel="Use"
+                  className="border-stone-200 bg-stone-50"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs font-semibold tracking-wide text-stone-500 uppercase">
+                  Tour Ends In
+                  {country && (
+                    <span className="ml-2 text-green-600 capitalize">({country})</span>
+                  )}
+                </label>
+                <CreatableAsyncCombobox
+                  value={endCity || null}
+                  onChange={(v) => handleCitySelect(v, setEndCity, setEndCityCoordinates)}
+                  onSearch={searchCities}
+                  initialLabel={endCity || null}
+                  placeholder="Search end city..."
+                  createLabel="Use"
+                  className="border-stone-200 bg-stone-50"
+                />
+              </div>
             </div>
           </div>
 
@@ -188,21 +186,6 @@ export default function DayByDayPage() {
                   />
                 )}
               </div>
-            </div>
-
-            <div className="space-y-3 pt-2">
-              <Label className="flex cursor-pointer items-center gap-3 rounded-lg border border-stone-200 p-3 transition-colors hover:bg-stone-50">
-                <Checkbox id="arrange-accommodation" />
-                <span className="text-sm font-medium text-stone-700">
-                  Arrange accommodation before tour start
-                </span>
-              </Label>
-              <Label className="flex cursor-pointer items-center gap-3 rounded-lg border border-stone-200 p-3 transition-colors hover:bg-stone-50">
-                <Checkbox id="client-arrives-early" />
-                <span className="text-sm font-medium text-stone-700">
-                  Client arrives days before tour start
-                </span>
-              </Label>
             </div>
           </div>
         </div>
