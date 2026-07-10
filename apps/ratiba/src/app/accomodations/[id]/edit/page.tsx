@@ -1,5 +1,4 @@
 import Link from 'next/link'
-import { getPublicUrl } from '@/lib/storage'
 import { ArrowLeft } from 'lucide-react'
 import { Button } from '@repo/ui/button'
 import { notFound } from 'next/navigation'
@@ -28,11 +27,17 @@ export default async function EditAccomodationPage({
         notFound()
     }
 
+    // Curated (global) + this org's own images, each flagged with isOwn so the
+    // form only lets the org delete images it added.
+    const imageRows = await trpc.accommodations.listImages({ accommodationId: id })
+
     const initialData = {
         ...acc,
-        images: acc.images.map((img) => ({
-            ...img,
-            imageUrl: getPublicUrl(img.bucket, img.key),
+        images: imageRows.map((img) => ({
+            id: img.id,
+            imageUrl: img.url,
+            isOwn: img.isOwn,
+            isHidden: img.isHidden,
         })),
     }
 

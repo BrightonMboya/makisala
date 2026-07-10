@@ -12,13 +12,14 @@ import {
   paymentMethods,
   accommodationImages,
 } from '@repo/db/schema';
-import { and, asc, desc, eq, inArray, or, sql, count } from 'drizzle-orm';
+import { and, asc, desc, eq, inArray, isNull, notInArray, or, sql, count } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
 import {
   sendProposalShareEmail,
   sendProposalAcceptanceEmail,
 } from '@repo/resend';
 import { router, protectedProcedure, adminProcedure, publicProcedure, escapeLikeQuery } from '../init';
+import { getHiddenImageIds } from '../lib/hidden-images';
 import { checkFeatureAccess, getOrgPlan, ALLOWED_THEMES_BY_TIER } from '@/lib/plans';
 import { deriveMealPlan } from '@/lib/pricing-engine';
 import { env } from '@/lib/env';
@@ -259,7 +260,9 @@ export const proposalsRouter = router({
                 with: {
                   accommodation: {
                     columns: { id: true, name: true, overview: true, description: true },
-                    with: { images: { columns: { bucket: true, key: true } } },
+                    with: {
+                      images: { columns: { id: true, bucket: true, key: true, organizationId: true } },
+                    },
                   },
                 },
               },
@@ -276,6 +279,25 @@ export const proposalsRouter = router({
         },
       });
       if (!result) return null;
+
+      // Restrict every accommodation's images to what THIS proposal's org may
+      // see: curated/global images (organizationId IS NULL) plus the org's own,
+      // minus any curated image the org has hidden. Another org's private images
+      // are never shown to this proposal's traveler.
+      const propOrgId = result.organizationId;
+      const hiddenSet = new Set(propOrgId ? await getHiddenImageIds(ctx.db, propOrgId) : []);
+      for (const day of result.days) {
+        for (const da of day.accommodations) {
+          const acc = da.accommodation;
+          if (acc?.images) {
+            acc.images = acc.images.filter(
+              (img) =>
+                (img.organizationId == null || img.organizationId === propOrgId) &&
+                !hiddenSet.has(img.id),
+            );
+          }
+        }
+      }
 
       // Alternatives are stored as denormalized JSON (no join), so their lodge
       // photos aren't part of the relational query. Batch-fetch images for every
@@ -298,7 +320,18 @@ export const proposalsRouter = router({
             key: accommodationImages.key,
           })
           .from(accommodationImages)
-          .where(inArray(accommodationImages.accommodationId, altAccIds));
+          .where(
+            and(
+              inArray(accommodationImages.accommodationId, altAccIds),
+              propOrgId
+                ? or(
+                    isNull(accommodationImages.organizationId),
+                    eq(accommodationImages.organizationId, propOrgId),
+                  )
+                : isNull(accommodationImages.organizationId),
+              hiddenSet.size ? notInArray(accommodationImages.id, [...hiddenSet]) : undefined,
+            ),
+          );
         const urlsByAcc = new Map<string, string[]>();
         for (const img of imgs) {
           const arr = urlsByAcc.get(img.accommodationId) ?? [];

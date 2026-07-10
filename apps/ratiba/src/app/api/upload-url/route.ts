@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
+import { db, member } from '@repo/db';
+import { eq } from 'drizzle-orm';
 import { uploadToStorage } from '@/lib/storage';
 import { log } from '@/lib/logger';
 
@@ -19,7 +21,23 @@ function isAllowedImageUrl(url: string): boolean {
   }
 }
 
-const FOLDER_PATTERN = /^accommodations\/[a-f0-9-]+$/;
+const UUID_PATTERN = /^[a-f0-9-]{36}$/;
+
+// Resolve the caller's org from the session, falling back to their first membership.
+async function getOrganizationId(
+  session: Awaited<ReturnType<typeof auth.api.getSession>>,
+): Promise<string | null> {
+  if (!session?.user?.id) return null;
+  if (session.session?.activeOrganizationId) {
+    return session.session.activeOrganizationId as string;
+  }
+  const [membership] = await db
+    .select({ organizationId: member.organizationId })
+    .from(member)
+    .where(eq(member.userId, session.user.id))
+    .limit(1);
+  return membership?.organizationId ?? null;
+}
 
 export async function POST(req: Request) {
   const session = await auth.api.getSession({ headers: req.headers });
@@ -27,10 +45,15 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
+  const orgId = await getOrganizationId(session);
+  if (!orgId) {
+    return NextResponse.json({ error: 'No organization found' }, { status: 403 });
+  }
+
   try {
-    const { urls, folder } = (await req.json()) as {
+    const { urls, accommodationId } = (await req.json()) as {
       urls: string[];
-      folder: string;
+      accommodationId: string;
     };
 
     if (!urls?.length || urls.length > MAX_URLS) {
@@ -40,9 +63,12 @@ export async function POST(req: Request) {
       );
     }
 
-    if (!folder || !FOLDER_PATTERN.test(folder)) {
-      return NextResponse.json({ error: 'Invalid folder' }, { status: 400 });
+    if (!accommodationId || !UUID_PATTERN.test(accommodationId)) {
+      return NextResponse.json({ error: 'Invalid accommodation' }, { status: 400 });
     }
+
+    // Org-namespaced so the bucket stays tidy and self-documenting.
+    const folder = `accommodations/${accommodationId}/org/${orgId}`;
 
     const safeUrls = urls.filter(isAllowedImageUrl);
     if (safeUrls.length === 0) {

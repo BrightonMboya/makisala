@@ -177,6 +177,8 @@ describe('accommodations router', () => {
       const { ctx, db } = createProtectedContext();
       const caller = createCaller(ctx);
 
+      // Visibility guard: the lodge is global/own, so it resolves.
+      db._results.set('select', [{ id: 'acc-1' }]);
       db._results.set('update', { success: true });
       db._results.set('delete', { success: true });
 
@@ -185,6 +187,76 @@ describe('accommodations router', () => {
         name: 'Updated Lodge',
         overview: 'Updated overview',
       });
+      expect(result).toEqual({ success: true });
+    });
+
+    test('rejects editing a lodge the org cannot see', async () => {
+      const { ctx, db } = createProtectedContext();
+      const caller = createCaller(ctx);
+
+      // Visibility guard finds no matching (global or own) row -> 404.
+      db._results.set('select', []);
+
+      await expect(
+        caller.accommodations.update({ id: 'other-org-lodge', name: 'Hijack' }),
+      ).rejects.toMatchObject({ code: 'NOT_FOUND' });
+    });
+  });
+
+  describe('hideImage', () => {
+    const IMG_ID = '11111111-1111-4111-8111-111111111111';
+
+    test('requires authentication', async () => {
+      const { ctx } = createPublicContext();
+      const caller = createCaller(ctx);
+
+      await expect(caller.accommodations.hideImage({ imageId: IMG_ID })).rejects.toMatchObject({
+        code: 'UNAUTHORIZED',
+      });
+    });
+
+    test('hides a curated (global) image for the org', async () => {
+      const { ctx, db } = createProtectedContext();
+      const caller = createCaller(ctx);
+
+      // Image lookup: a curated image has organizationId null.
+      db._results.set('select', [{ id: IMG_ID, organizationId: null }]);
+
+      const result = await caller.accommodations.hideImage({ imageId: IMG_ID });
+      expect(result).toEqual({ success: true });
+    });
+
+    test('refuses to hide the org\'s own image (should be deleted instead)', async () => {
+      const { ctx, db } = createProtectedContext();
+      const caller = createCaller(ctx);
+
+      db._results.set('select', [{ id: IMG_ID, organizationId: 'org-1' }]);
+
+      await expect(caller.accommodations.hideImage({ imageId: IMG_ID })).rejects.toMatchObject({
+        code: 'BAD_REQUEST',
+      });
+    });
+
+    test('404s when the image does not exist', async () => {
+      const { ctx, db } = createProtectedContext();
+      const caller = createCaller(ctx);
+
+      db._results.set('select', []);
+
+      await expect(caller.accommodations.hideImage({ imageId: IMG_ID })).rejects.toMatchObject({
+        code: 'NOT_FOUND',
+      });
+    });
+  });
+
+  describe('unhideImage', () => {
+    const IMG_ID = '22222222-2222-4222-8222-222222222222';
+
+    test('unhides an image for the org', async () => {
+      const { ctx } = createProtectedContext();
+      const caller = createCaller(ctx);
+
+      const result = await caller.accommodations.unhideImage({ imageId: IMG_ID });
       expect(result).toEqual({ success: true });
     });
   });

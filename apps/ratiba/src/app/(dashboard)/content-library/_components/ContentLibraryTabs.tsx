@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Building2, ImageIcon } from 'lucide-react';
+import { Building2, ImageIcon, Plus } from 'lucide-react';
 import { Button } from '@repo/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@repo/ui/tabs';
 import { AccommodationSelector } from './AccommodationSelector';
@@ -14,6 +14,7 @@ interface Accommodation {
   name: string;
   url: string | null;
   imageUrl: string | null;
+  isOwn: boolean;
 }
 
 export interface OrganizationImage {
@@ -75,9 +76,19 @@ export function ContentLibraryTabs({
 
       <TabsContent value="accommodations">
         <div className="rounded-lg border bg-white p-6">
-          <div className="mb-6">
-            <h2 className="text-xl font-semibold text-gray-900">Accommodations</h2>
-            <p className="text-sm text-gray-600">Browse images from our accommodation library</p>
+          <div className="mb-6 flex items-start justify-between gap-4">
+            <div>
+              <h2 className="text-xl font-semibold text-gray-900">Accommodations</h2>
+              <p className="text-sm text-gray-600">
+                Browse the shared library or add your own lodges
+              </p>
+            </div>
+            <Button asChild>
+              <Link href="/accomodations/new">
+                <Plus className="mr-2 h-4 w-4" />
+                Add Accommodation
+              </Link>
+            </Button>
           </div>
 
           <div className="mb-6 flex items-center gap-4">

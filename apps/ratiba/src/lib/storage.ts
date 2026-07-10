@@ -94,6 +94,37 @@ export async function uploadPdfToStorage({ file, key }: UploadPdfParams): Promis
   return { bucket: env.R2_BUCKET_NAME, key };
 }
 
+export const ALLOWED_UPLOAD_CONTENT_TYPES = ALLOWED_CONTENT_TYPES;
+
+/**
+ * Presigned PUT URL so the browser can upload a file straight to R2, bypassing
+ * the serverless request-body size limit (the cause of "Payload too large" on
+ * multi-image uploads). The client PUTs the raw file to this URL.
+ */
+export async function getSignedUploadUrl({
+  key,
+  contentType,
+  expiresInSeconds = 600,
+}: {
+  key: string;
+  contentType: string;
+  expiresInSeconds?: number;
+}): Promise<{ url: string; key: string; bucket: string }> {
+  if (!ALLOWED_CONTENT_TYPES.includes(contentType as (typeof ALLOWED_CONTENT_TYPES)[number])) {
+    throw new Error(`Invalid content type: ${contentType}`);
+  }
+  const url = await getSignedUrl(
+    r2,
+    new PutObjectCommand({
+      Bucket: env.R2_BUCKET_NAME,
+      Key: key,
+      ContentType: contentType,
+    }),
+    { expiresIn: expiresInSeconds },
+  );
+  return { url, key, bucket: env.R2_BUCKET_NAME };
+}
+
 export async function getSignedDownloadUrl(
   key: string,
   options: { expiresInSeconds?: number; downloadAs?: string } = {},

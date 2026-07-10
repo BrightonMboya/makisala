@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { accommodations, nationalParks } from '@repo/db/schema';
-import { ilike, inArray } from 'drizzle-orm';
+import { and, eq, ilike, inArray, isNull, or } from 'drizzle-orm';
 import { router, protectedProcedure, escapeLikeQuery } from '../init';
 import { listStorageFolders, listStorageImages } from '@/lib/storage';
 
@@ -57,7 +57,16 @@ export const storageRouter = router({
           const accommodationData = await ctx.db
             .select({ id: accommodations.id, name: accommodations.name })
             .from(accommodations)
-            .where(inArray(accommodations.id, uuids));
+            .where(
+              and(
+                inArray(accommodations.id, uuids),
+                // Don't reveal another org's private lodge name in the folder browser.
+                or(
+                  isNull(accommodations.organizationId),
+                  eq(accommodations.organizationId, ctx.orgId),
+                ),
+              ),
+            );
 
           const nameMap = new Map(accommodationData.map((a) => [a.id, a.name]));
 
@@ -77,7 +86,15 @@ export const storageRouter = router({
       const results = await ctx.db
         .select({ id: accommodations.id, name: accommodations.name })
         .from(accommodations)
-        .where(ilike(accommodations.name, `%${escapeLikeQuery(input.query)}%`))
+        .where(
+          and(
+            ilike(accommodations.name, `%${escapeLikeQuery(input.query)}%`),
+            or(
+              isNull(accommodations.organizationId),
+              eq(accommodations.organizationId, ctx.orgId),
+            ),
+          ),
+        )
         .limit(20);
 
       return results.map((acc) => ({

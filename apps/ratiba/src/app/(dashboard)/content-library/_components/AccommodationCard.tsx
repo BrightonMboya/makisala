@@ -11,7 +11,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@repo/ui/dropdown-menu';
-import { Globe, MoreHorizontal, Eye, Link as LinkIcon } from 'lucide-react';
+import { Globe, MoreHorizontal, Eye, Edit, Link as LinkIcon } from 'lucide-react';
 import { toast } from '@repo/ui/use-toast';
 
 interface AccommodationCardProps {
@@ -20,6 +20,7 @@ interface AccommodationCardProps {
     name: string;
     url: string | null;
     imageUrl: string | null;
+    isOwn: boolean;
   };
 }
 
@@ -42,6 +43,11 @@ export function AccommodationCard({ accommodation }: AccommodationCardProps) {
     <Card className="group border-stone-200 bg-white transition-all duration-300 hover:border-green-600/30 hover:shadow-lg">
       <CardHeader className="p-0">
         <div className="relative overflow-hidden rounded-t-lg h-48 bg-stone-100">
+          {accommodation.isOwn && (
+            <span className="absolute left-2 top-2 z-10 rounded-full bg-green-700/90 px-2 py-0.5 text-xs font-medium text-white">
+              Yours
+            </span>
+          )}
           {showImage ? (
             <>
               {!imgLoaded && (
@@ -95,6 +101,12 @@ export function AccommodationCard({ accommodation }: AccommodationCardProps) {
                 <Link href={`/accomodations/${accommodation.id}`}>
                   <Eye className="mr-2 h-4 w-4" />
                   View
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link href={`/accomodations/${accommodation.id}/edit`}>
+                  <Edit className="mr-2 h-4 w-4" />
+                  {accommodation.isOwn ? 'Edit' : 'Add your photos'}
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem onClick={copyLink}>

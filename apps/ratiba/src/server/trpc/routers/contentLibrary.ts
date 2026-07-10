@@ -1,8 +1,9 @@
 import { z } from 'zod';
 import { accommodations, organizationImages } from '@repo/db/schema';
-import { and, asc, desc, eq, ilike, lt, or, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, ilike, isNull, lt, or, sql } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
 import { router, protectedProcedure, escapeLikeQuery } from '../init';
+import { getHiddenImageIds } from '../lib/hidden-images';
 import { deleteFromStorage, getPublicUrl, uploadToStorage } from '@/lib/storage';
 import { compressImage, replaceExtension } from '@/lib/image-utils';
 import { checkFeatureAccess } from '@/lib/plans';
@@ -47,12 +48,32 @@ export const contentLibraryRouter = router({
       const query = input?.query ?? '';
       const offset = (page - 1) * limit;
 
-      const filters = query ? ilike(accommodations.name, `%${escapeLikeQuery(query)}%`) : undefined;
+      // Curated/global lodges + this org's own private lodges.
+      const orgVisible = or(
+        isNull(accommodations.organizationId),
+        eq(accommodations.organizationId, ctx.orgId),
+      );
+      const filters = query
+        ? and(ilike(accommodations.name, `%${escapeLikeQuery(query)}%`), orgVisible)
+        : orgVisible;
+
+      // Images this org has hidden shouldn't be used as the card thumbnail.
+      const hiddenIds = await getHiddenImageIds(ctx.db, ctx.orgId);
 
       const [data, total] = await Promise.all([
         ctx.db.query.accommodations.findMany({
-          columns: { id: true, name: true, url: true },
-          with: { images: { columns: { bucket: true, key: true }, limit: 1 } },
+          columns: { id: true, name: true, url: true, organizationId: true },
+          with: {
+            images: {
+              columns: { bucket: true, key: true },
+              where: (img, { and: a, or: o, eq: e, isNull: n, notInArray: ni }) =>
+                a(
+                  o(n(img.organizationId), e(img.organizationId, ctx.orgId)),
+                  hiddenIds.length ? ni(img.id, hiddenIds) : undefined,
+                )!,
+              limit: 1,
+            },
+          },
           where: filters,
           limit,
           offset,
@@ -73,6 +94,8 @@ export const contentLibraryRouter = router({
             name: row.name,
             url: row.url,
             imageUrl: img ? getPublicUrl(img.bucket, img.key) : null,
+            // Own = this org's private lodge; otherwise a curated/global one.
+            isOwn: row.organizationId === ctx.orgId,
           };
         }),
         pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },

@@ -69,6 +69,25 @@ const resolveOrgId = cache(async (
   return membership.organizationId;
 });
 
+/**
+ * Resolve the caller's org from their session without requiring auth.
+ * Returns null when there is no session (e.g. public traveler / crawler),
+ * so public read procedures can show global content and only add org-owned
+ * rows when a logged-in operator is present.
+ */
+export async function resolveOptionalOrgId(ctx: Context): Promise<string | null> {
+  const session = await ctx.getSession();
+  if (!session?.user) return null;
+  try {
+    return await resolveOrgId(
+      session.user.id,
+      session.session?.activeOrganizationId as string | undefined,
+    );
+  } catch {
+    return null;
+  }
+}
+
 export const protectedProcedure = publicProcedure.use(async ({ ctx, next }) => {
   const session = await ctx.getSession();
   if (!session?.user) {

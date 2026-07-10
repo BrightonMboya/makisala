@@ -7,6 +7,7 @@ interface Accommodation {
   name: string;
   url: string | null;
   imageUrl: string | null;
+  isOwn: boolean;
 }
 
 interface AccommodationSelectorProps {

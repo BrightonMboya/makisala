@@ -6,6 +6,7 @@ import {
   numeric,
   pgEnum,
   pgTable,
+  primaryKey,
   text,
   timestamp,
   uniqueIndex,
@@ -539,24 +540,34 @@ export const itineraryDaysRelations = relations(itineraryDays, ({ one, many }) =
 }));
 
 // ---------- DEDUPED ACCOMMODATIONS (MASTER) ----------
-export const accommodations = pgTable('accommodations', {
-  id: uuid('id').defaultRandom().primaryKey(),
-  name: text('name').notNull(),
-  slug: text('slug').unique(),
-  url: text('url'), // e.g. https://www.melia.com/...
-  overview: text('overview'), // scraped accommodation overview
-  description: text('description'),
-  latitude: numeric('latitude', { precision: 10, scale: 7 }),
-  longitude: numeric('longitude', { precision: 10, scale: 7 }),
+export const accommodations = pgTable(
+  'accommodations',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    name: text('name').notNull(),
+    slug: text('slug').unique(),
+    url: text('url'), // e.g. https://www.melia.com/...
+    overview: text('overview'), // scraped accommodation overview
+    description: text('description'),
+    latitude: numeric('latitude', { precision: 10, scale: 7 }),
+    longitude: numeric('longitude', { precision: 10, scale: 7 }),
 
-  // AI-generated content (merged from accommodation_content)
-  enhancedDescription: text('enhanced_description'),
-  amenities: json('amenities').$type<{ category: string; items: string[] }[]>(),
-  roomTypes: json('room_types').$type<{ name: string; description: string; capacity?: string }[]>(),
-  locationHighlights: text('location_highlights').array(),
-  pricingInfo: text('pricing_info'),
-  country: text('country'),
-});
+    // AI-generated content (merged from accommodation_content)
+    enhancedDescription: text('enhanced_description'),
+    amenities: json('amenities').$type<{ category: string; items: string[] }[]>(),
+    roomTypes: json('room_types').$type<{ name: string; description: string; capacity?: string }[]>(),
+    locationHighlights: text('location_highlights').array(),
+    pricingInfo: text('pricing_info'),
+    country: text('country'),
+
+    // Ownership. NULL = curated/global lodge shared with every org. Non-null =
+    // a lodge one org added privately; only that org sees it in search/builder.
+    organizationId: uuid('organization_id').references(() => organizations.id, {
+      onDelete: 'cascade',
+    }),
+  },
+  (table) => [index('idx_accommodations_org').on(table.organizationId)],
+);
 
 export const accommodationsRelations = relations(accommodations, ({ many }) => ({
   images: many(accommodationImages),
@@ -573,8 +584,17 @@ export const accommodationImages = pgTable(
       .references(() => accommodations.id, { onDelete: 'cascade' }),
     bucket: text('bucket').notNull(),
     key: text('key').notNull(),
+    // Org attribution. NULL = curated/global image shared with every org.
+    // Non-null = private to that org; only visible to (and deletable by) that org.
+    organizationId: uuid('organization_id').references(() => organizations.id, {
+      onDelete: 'cascade',
+    }),
+    createdAt: timestamp('created_at').defaultNow(),
   },
-  (table) => [index('idx_accommodation_images_accommodation_id').on(table.accommodationId)],
+  (table) => [
+    index('idx_accommodation_images_accommodation_id').on(table.accommodationId),
+    index('idx_accommodation_images_org').on(table.organizationId),
+  ],
 );
 
 export const accommodationImagesRelations = relations(accommodationImages, ({ one }) => ({
@@ -583,6 +603,27 @@ export const accommodationImagesRelations = relations(accommodationImages, ({ on
     references: [accommodations.id],
   }),
 }));
+
+// ---------- PER-ORG HIDDEN CURATED IMAGES ----------
+// An org can hide a curated/global image from its own gallery + proposals
+// without deleting the shared record (which every other org still sees).
+// One row per (org, image) that org has hidden.
+export const hiddenAccommodationImages = pgTable(
+  'hidden_accommodation_images',
+  {
+    organizationId: uuid('organization_id')
+      .notNull()
+      .references(() => organizations.id, { onDelete: 'cascade' }),
+    imageId: uuid('image_id')
+      .notNull()
+      .references(() => accommodationImages.id, { onDelete: 'cascade' }),
+    createdAt: timestamp('created_at').defaultNow(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.organizationId, table.imageId] }),
+    index('idx_hidden_acc_images_org').on(table.organizationId),
+  ],
+);
 
 // ---------- JOIN: WHICH ACCOMMODATION IS USED ON WHICH DAY ----------
 export const itineraryAccommodations = pgTable('itinerary_accommodations', {
