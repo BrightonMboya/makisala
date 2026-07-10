@@ -2,6 +2,7 @@
 
 import { Button } from '@repo/ui/button';
 import { Checkbox } from '@repo/ui/checkbox';
+import { Combobox } from '@repo/ui/combobox';
 import { Input } from '@repo/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@repo/ui/select';
 import {
@@ -39,6 +40,14 @@ import type { ParkFeeCategory, PricingBreakdown, WarningKind } from '@/lib/prici
 import { deriveMealPlan } from '@/lib/pricing-engine';
 
 type LineSource = 'accommodation' | 'park_fee' | 'activity' | 'vehicle' | 'transfer';
+
+// Preset pricing units for optional extras. The combobox is creatable, so users
+// can also type any custom unit (e.g. "per night", "per vehicle").
+const EXTRA_UNIT_PRESETS = [
+  { value: 'per_person', label: 'Per person' },
+  { value: 'per_group', label: 'Per group' },
+  { value: 'free', label: 'Free' },
+];
 
 const CATEGORY_META: Record<LineSource, { label: string; icon: typeof Building }> = {
   accommodation: { label: 'Accommodation', icon: Building },
@@ -122,20 +131,61 @@ export default function PricingPage() {
     setExtras(extras.map((extra) => (extra.id === extraId ? { ...extra, [field]: value } : extra)));
   };
 
-  const handleExtraUnitChange = (extraId: string, unit: ExtraPriceUnit) => {
+  // Org catalog of custom pricing units, so a unit typed on one itinerary is
+  // suggested on every future one (like moments / extra names).
+  const utils = trpc.useUtils();
+  const { data: orgUnits = [] } = trpc.extraUnits.list.useQuery();
+  const createExtraUnit = trpc.extraUnits.create.useMutation();
+
+  // The pricing unit is edited with a creatable combobox: the presets map to the
+  // known units, and anything the user types is stored as a `custom` unit label
+  // and persisted to the org catalog for reuse.
+  const handleExtraUnitChange = (extraId: string, value: string) => {
+    const isPreset = value === 'per_person' || value === 'per_group' || value === 'free';
     setExtras(
       extras.map((extra) =>
         extra.id === extraId
           ? {
               ...extra,
-              priceUnit: unit,
-              price: unit === 'free' ? 0 : extra.price,
-              customUnitLabel: unit === 'custom' ? (extra.customUnitLabel ?? '') : undefined,
+              priceUnit: isPreset ? (value as ExtraPriceUnit) : 'custom',
+              price: value === 'free' ? 0 : extra.price,
+              customUnitLabel: isPreset ? undefined : value,
             }
           : extra,
       ),
     );
+    const custom = value.trim();
+    if (!isPreset && custom) {
+      createExtraUnit.mutate(
+        { name: custom },
+        { onSuccess: () => utils.extraUnits.list.invalidate() },
+      );
+    }
   };
+
+  // Current combobox value for an extra: the preset key, or the freeform label
+  // when it's a custom unit.
+  const extraUnitValue = (extra: ExtraOption): string =>
+    extra.priceUnit === 'custom'
+      ? (extra.customUnitLabel?.trim() ?? '')
+      : (extra.priceUnit ?? 'per_person');
+
+  // Combobox options: built-in presets, then the org's saved custom units, then
+  // any custom unit already used on this itinerary (so it shows before the
+  // catalog refetch lands). Deduped case-insensitively by label.
+  const extraUnitItems = useMemo(() => {
+    const byLabel = new Map<string, { value: string; label: string }>();
+    for (const preset of EXTRA_UNIT_PRESETS) byLabel.set(preset.label.toLowerCase(), preset);
+    const add = (label: string) => {
+      const trimmed = label.trim();
+      if (trimmed && !byLabel.has(trimmed.toLowerCase())) {
+        byLabel.set(trimmed.toLowerCase(), { value: trimmed, label: trimmed });
+      }
+    };
+    for (const u of orgUnits) add(u.name);
+    for (const e of extras) if (e.priceUnit === 'custom' && e.customUnitLabel) add(e.customUnitLabel);
+    return Array.from(byLabel.values());
+  }, [orgUnits, extras]);
 
   // --- Auto pricing engine ---
   const totalPax = useMemo(
@@ -388,33 +438,16 @@ export default function PricingPage() {
                   )}
                 </div>
                 <div className="col-span-4 flex items-start gap-2">
-                  <div className="flex-1 space-y-2">
-                    <Select
-                      value={extra.priceUnit ?? 'per_person'}
-                      onValueChange={(val) =>
-                        handleExtraUnitChange(extra.id, val as ExtraPriceUnit)
-                      }
-                    >
-                      <SelectTrigger className="border-stone-200 bg-stone-50 shadow-none">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="per_person">Per person</SelectItem>
-                        <SelectItem value="per_group">Per group</SelectItem>
-                        <SelectItem value="free">Free</SelectItem>
-                        <SelectItem value="custom">Custom…</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    {extra.priceUnit === 'custom' && (
-                      <Input
-                        value={extra.customUnitLabel ?? ''}
-                        onChange={(e) =>
-                          handleUpdateExtra(extra.id, 'customUnitLabel', e.target.value)
-                        }
-                        placeholder="e.g. per night, per vehicle"
-                        className="h-9 border-stone-200 bg-stone-50 text-sm shadow-none"
-                      />
-                    )}
+                  <div className="flex-1">
+                    <Combobox
+                      items={extraUnitItems}
+                      value={extraUnitValue(extra)}
+                      onChange={(val) => handleExtraUnitChange(extra.id, val)}
+                      placeholder="Pricing unit"
+                      className="border-stone-200 bg-stone-50 shadow-none"
+                      creatable
+                      createLabel="Add unit"
+                    />
                   </div>
                   <button
                     className="rounded-md p-2 text-stone-400 transition-colors hover:bg-red-50 hover:text-red-500"

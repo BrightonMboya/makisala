@@ -1286,6 +1286,35 @@ export const momentLibraryRelations = relations(momentLibrary, ({ one }) => ({
   }),
 }));
 
+// A per-organization catalog of custom pricing units for optional extras (e.g.
+// "per night", "per vehicle") that operators type on the fly on the pricing
+// page. The built-in units (per person / per group / free) live in the client;
+// this table stores an org's custom additions so they persist and stay
+// available across every itinerary, mirroring moment_library.
+export const extraUnitLibrary = pgTable(
+  'extra_unit_library',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    name: text('name').notNull(),
+    organizationId: uuid('organization_id').references(() => organizations.id, {
+      onDelete: 'cascade',
+    }),
+    isGlobal: boolean('is_global').default(false).notNull(),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+  },
+  (t) => [
+    // One row per (org, name) so create-on-the-fly can upsert in a single round trip.
+    uniqueIndex('extra_unit_library_org_name_unique').on(t.organizationId, t.name),
+  ],
+);
+
+export const extraUnitLibraryRelations = relations(extraUnitLibrary, ({ one }) => ({
+  organization: one(organizations, {
+    fields: [extraUnitLibrary.organizationId],
+    references: [organizations.id],
+  }),
+}));
+
 export type ExtraLibraryItem = typeof extraLibrary.$inferSelect;
 export type NewExtraLibraryItem = typeof extraLibrary.$inferInsert;
 
