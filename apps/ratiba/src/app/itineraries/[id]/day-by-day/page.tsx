@@ -1,14 +1,16 @@
 'use client';
 
 import { Button } from '@repo/ui/button';
-import { ArrowRight, CheckCircle } from 'lucide-react';
+import { ArrowRight, CheckCircle, Plus, Users, X } from 'lucide-react';
 import { DayTable } from '@/components/itinerary-builder/day-table';
 import { DatePicker } from '@repo/ui/date-picker';
+import { Input } from '@repo/ui/input';
 import React, { useCallback, useEffect, useRef } from 'react';
 import { addDays, format } from 'date-fns';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@repo/ui/select';
+import type { TravelerGroup } from '@/types/itinerary-types';
 import { Combobox } from '@repo/ui/combobox';
 import { airports } from '@/lib/data/itinerary-data';
 import { useBuilder } from '@/components/itinerary-builder/builder-context';
@@ -41,9 +43,29 @@ export default function DayByDayPage() {
     countries,
     setCountries,
     travelerGroups,
+    setTravelerGroups,
+    tourType,
+    setTourType,
   } = useBuilder();
 
   const totalPax = travelerGroups.reduce((sum, g) => sum + g.count, 0);
+
+  const updateGroup = (id: string, field: 'count' | 'type', value: any) => {
+    setTravelerGroups((groups: TravelerGroup[]) =>
+      groups.map((g) => (g.id === id ? { ...g, [field]: value } : g)),
+    );
+  };
+
+  const addGroup = () => {
+    setTravelerGroups((groups: TravelerGroup[]) => [
+      ...groups,
+      { id: Math.random().toString(36).substr(2, 9), count: 1, type: 'Adult' },
+    ]);
+  };
+
+  const removeGroup = (id: string) => {
+    setTravelerGroups((groups: TravelerGroup[]) => groups.filter((g) => g.id !== id));
+  };
 
   const searchCities = useCallback(
     async (query: string) => {
@@ -158,6 +180,60 @@ export default function DayByDayPage() {
                 />
               </div>
             </div>
+
+            <div className="space-y-2">
+              <label className="flex items-center gap-2 text-xs font-semibold tracking-wide text-stone-500 uppercase">
+                <Users className="h-4 w-4" />
+                Travelers
+                <span className="text-stone-400 normal-case">({totalPax} total)</span>
+              </label>
+              <div className="space-y-3">
+                {travelerGroups.map((group) => (
+                  <div key={group.id} className="flex items-center gap-2">
+                    <Input
+                      type="number"
+                      min={1}
+                      className="w-20 border-stone-200 bg-stone-50"
+                      value={group.count}
+                      onChange={(e) => updateGroup(group.id, 'count', parseInt(e.target.value) || 1)}
+                    />
+                    <Select
+                      value={group.type}
+                      onValueChange={(value) => updateGroup(group.id, 'type', value)}
+                    >
+                      <SelectTrigger className="flex-1 border-stone-200 bg-stone-50">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Adult">Adult</SelectItem>
+                        <SelectItem value="Senior">Senior</SelectItem>
+                        <SelectItem value="Child">Child</SelectItem>
+                        <SelectItem value="Baby">Baby</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {travelerGroups.length > 1 && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-9 w-9 text-red-500 hover:bg-red-50 hover:text-red-600"
+                        onClick={() => removeGroup(group.id)}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
+                ))}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-2 border-dashed border-stone-300 text-stone-600 hover:bg-stone-50"
+                  onClick={addGroup}
+                >
+                  <Plus className="h-3 w-3" />
+                  Add Group
+                </Button>
+              </div>
+            </div>
           </div>
 
           {/* Right Column: Transfers & Options */}
@@ -186,6 +262,22 @@ export default function DayByDayPage() {
                   />
                 )}
               </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-xs font-semibold tracking-wide text-stone-500 uppercase">
+                Tour Type
+              </label>
+              <Select value={tourType} onValueChange={setTourType}>
+                <SelectTrigger className="w-[200px] border-stone-200 bg-stone-50">
+                  <SelectValue placeholder="Select tour type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Private Tour">Private Tour</SelectItem>
+                  <SelectItem value="Group Tour">Group Tour</SelectItem>
+                  <SelectItem value="Self-drive">Self-drive</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
         </div>

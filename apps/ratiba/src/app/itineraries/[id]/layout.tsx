@@ -1,19 +1,16 @@
 'use client';
 
 import { Button } from '@repo/ui/button';
-import { Check, ChevronRight, FileText, Info, Loader2, Plus, Users, X } from 'lucide-react';
+import { Check, ChevronRight, FileText, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { useParams, usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { Popover, PopoverContent, PopoverTrigger } from '@repo/ui/popover';
-import { Input } from '@repo/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@repo/ui/select';
 import { Combobox } from '@repo/ui/combobox';
 import { BuilderProvider, useBuilder } from '@/components/itinerary-builder/builder-context';
 import { staleTimes } from '@/lib/query-keys';
 import { SidebarInset, SidebarProvider, SidebarTrigger } from '@repo/ui/sidebar';
 import { AppSidebar } from '@/components/app-sidebar';
 import { NotesPanel } from '@/components/notes-panel';
-import type { TravelerGroup } from '@/types/itinerary-types';
 import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { trpc } from '@/lib/trpc';
@@ -89,9 +86,7 @@ function Header() {
   const {
     tourId,
     tourType,
-    setTourType,
     travelerGroups,
-    setTravelerGroups,
     clientId,
     setClientId,
     tourTitle,
@@ -133,69 +128,6 @@ function Header() {
 
   const router = useRouter();
   const saveProposalMutation = trpc.proposals.save.useMutation();
-
-  // Save Draft Mutation
-  const saveDraftMutation = useMutation({
-    mutationFn: async () => {
-      if (!tourId) {
-        throw new Error(
-          'Tour ID is required to save. Please go back to dashboard and create a new proposal.',
-        );
-      }
-
-      const proposalData = {
-        days,
-        startDate: startDate ? toLocalISOString(startDate) : null,
-        travelerGroups,
-        tourType,
-        pricingRows,
-        extras,
-        clientId,
-        tourTitle,
-        startCity,
-        startCityLat: startCityCoordinates ? String(startCityCoordinates[1]) : null,
-        startCityLng: startCityCoordinates ? String(startCityCoordinates[0]) : null,
-        endCity,
-        endCityLat: endCityCoordinates ? String(endCityCoordinates[1]) : null,
-        endCityLng: endCityCoordinates ? String(endCityCoordinates[0]) : null,
-        pickupPoint,
-        transferIncluded,
-        inclusions,
-        exclusions,
-        showPaymentDetails,
-        countries,
-        selectedTheme,
-        heroImage,
-        useAutoPricing,
-        vehicleId,
-        markupPct,
-        pickupTransferRateId: pickupTransferId,
-        dropoffTransferRateId: dropoffTransferId,
-      };
-
-      return await saveProposalMutation.mutateAsync({
-        id,
-        name: tourTitle || 'Untitled Safari',
-        data: proposalData,
-        status: 'draft',
-        tourId,
-      });
-    },
-    onSuccess: () => {
-      toast({
-        title: 'Draft Saved!',
-        description: 'Your proposal has been saved as a draft.',
-      });
-    },
-    onError: (error: Error) => {
-      // Server-side logging handled by tRPC middleware
-      toast({
-        title: 'Failed to save draft',
-        description: error.message,
-        variant: 'destructive',
-      });
-    },
-  });
 
   // Publish Proposal Mutation
   const publishMutation = useMutation({
@@ -263,29 +195,6 @@ function Header() {
     },
   });
 
-  // Helper to calculate total travelers
-  const totalTravelers = travelerGroups.reduce((acc, curr) => acc + curr.count, 0);
-
-  // Helper to update a specific group
-  const updateGroup = (id: string, field: 'count' | 'type', value: any) => {
-    setTravelerGroups((groups: TravelerGroup[]) =>
-      groups.map((g) => (g.id === id ? { ...g, [field]: value } : g)),
-    );
-  };
-
-  // Helper to add a new group
-  const addGroup = () => {
-    setTravelerGroups((groups: TravelerGroup[]) => [
-      ...groups,
-      { id: Math.random().toString(36).substr(2, 9), count: 1, type: 'Adult' },
-    ]);
-  };
-
-  // Helper to remove a group
-  const removeGroup = (id: string) => {
-    setTravelerGroups((groups: TravelerGroup[]) => groups.filter((g) => g.id !== id));
-  };
-
   const steps = [
     { id: 'day-by-day', label: 'Day by Day' },
     { id: 'pricing', label: 'Pricing' },
@@ -335,100 +244,6 @@ function Header() {
         </div>
 
         <div className="flex items-center gap-6">
-          {/* Travelers Popover */}
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                variant="ghost"
-                className="gap-2 text-stone-600 hover:bg-stone-50 hover:text-stone-900"
-              >
-                <Users className="h-4 w-4" />
-                <span className="hidden font-medium sm:inline">{totalTravelers} Travelers</span>
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-80 p-4">
-              <div className="space-y-4">
-                <h4 className="font-serif font-bold text-stone-900">Travelers</h4>
-                <div className="space-y-3">
-                  {travelerGroups.map((group, index) => (
-                    <div key={group.id} className="flex items-center gap-2">
-                      <Input
-                        type="number"
-                        min={1}
-                        className="w-16"
-                        value={group.count}
-                        onChange={(e) =>
-                          updateGroup(group.id, 'count', parseInt(e.target.value) || 1)
-                        }
-                      />
-                      <Select
-                        value={group.type}
-                        onValueChange={(value) => updateGroup(group.id, 'type', value)}
-                      >
-                        <SelectTrigger className="flex-1">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Adult">Adult</SelectItem>
-                          <SelectItem value="Senior">Senior</SelectItem>
-                          <SelectItem value="Child">Child</SelectItem>
-                          <SelectItem value="Baby">Baby</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      {travelerGroups.length > 1 && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 text-red-500 hover:bg-red-50 hover:text-red-600"
-                          onClick={() => removeGroup(group.id)}
-                        >
-                          <X className="h-4 w-4" />
-                        </Button>
-                      )}
-                    </div>
-                  ))}
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="w-full gap-2 border-dashed border-stone-300 text-stone-600 hover:bg-stone-50"
-                    onClick={addGroup}
-                  >
-                    <Plus className="h-3 w-3" />
-                    Add Group
-                  </Button>
-                </div>
-              </div>
-            </PopoverContent>
-          </Popover>
-
-          {/* Tour Type Popover */}
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                variant="ghost"
-                className="gap-2 text-stone-600 hover:bg-stone-50 hover:text-stone-900"
-              >
-                <Info className="h-4 w-4" />
-                <span className="hidden font-medium sm:inline">{tourType}</span>
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-56 p-4">
-              <div className="space-y-4">
-                <h4 className="font-serif font-bold text-stone-900">Tour Type</h4>
-                <Select value={tourType} onValueChange={setTourType}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Private Tour">Private Tour</SelectItem>
-                    <SelectItem value="Group Tour">Group Tour</SelectItem>
-                    <SelectItem value="Self-drive">Self-drive</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </PopoverContent>
-          </Popover>
-
           {/* Team Notes Panel */}
           <NotesPanel proposalId={id} />
 
@@ -442,16 +257,6 @@ function Header() {
               <FileText className="h-4 w-4" />
               Invoices
             </Link>
-            <Button
-              variant="outline"
-              size="sm"
-              className="gap-2 border-stone-200 text-stone-600 hover:bg-stone-50 hover:text-stone-900"
-              onClick={() => saveDraftMutation.mutate()}
-              disabled={saveDraftMutation.isPending}
-            >
-              {saveDraftMutation.isPending && <Loader2 className="h-3 w-3 animate-spin" />}
-              {saveDraftMutation.isPending ? 'Saving...' : 'Save Draft'}
-            </Button>
             <Button
               size="sm"
               className="gap-2 border-transparent bg-green-700 text-white shadow-sm hover:bg-green-800"
