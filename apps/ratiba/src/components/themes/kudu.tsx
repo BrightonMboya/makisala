@@ -655,7 +655,10 @@ export default function KuduTheme({ data, onHeroImageChange, onDayImageChange }:
                         className="flex items-center justify-between text-xs text-white/70"
                       >
                         <span className="tracking-wider uppercase">{extra.label}</span>
-                        <span className="text-white/60">+{extra.price}</span>
+                        <span className="text-white/60">
+                          {extra.price === 'Free' ? 'Free' : `+${extra.price}`}
+                          {extra.unit ? ` ${extra.unit}` : ''}
+                        </span>
                       </div>
                     ))}
                   </div>

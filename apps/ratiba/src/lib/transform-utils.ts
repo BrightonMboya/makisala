@@ -69,10 +69,19 @@ export function calculatePricing(
 
   const optionalExtras = extras
     .filter((e) => e.name.trim())
-    .map((e) => ({
-      label: e.name,
-      price: `$${Math.round(e.price).toLocaleString()}`,
-    }));
+    .map((e) => {
+      const isFree = e.priceUnit === 'free';
+      let unit: string | undefined;
+      if (e.priceUnit === 'per_person') unit = 'per person';
+      else if (e.priceUnit === 'per_group') unit = 'per group';
+      else if (e.priceUnit === 'custom') unit = e.customUnitLabel?.trim() || undefined;
+      // Legacy extras (no priceUnit) and free ones render without a suffix.
+      return {
+        label: e.name,
+        price: isFree ? 'Free' : `$${Math.round(e.price).toLocaleString()}`,
+        unit: isFree ? undefined : unit,
+      };
+    });
 
   return {
     total: `$${Math.round(totalPrice).toLocaleString()}`,

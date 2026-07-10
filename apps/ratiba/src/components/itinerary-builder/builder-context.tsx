@@ -45,7 +45,7 @@ export function BuilderProvider({
     { id: '1', count: 2, type: 'Adult', unitPrice: 0 },
   ]);
   const [extras, setExtras] = useState<ExtraOption[]>([
-    { id: '1', name: 'Airport Transfer', price: 50, selected: false },
+    { id: '1', name: 'Airport Transfer', price: 50, priceUnit: 'per_person', selected: false },
   ]);
 
   const [inclusions, setInclusions] = useState<string[]>([

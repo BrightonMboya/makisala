@@ -79,10 +79,18 @@ export type PricingRow = {
   unitPrice: number;
 };
 
+// How an optional extra's price is applied. 'free' shows "Free" and hides the
+// amount; 'custom' shows `customUnitLabel` (e.g. "per night") next to the price.
+export type ExtraPriceUnit = 'per_person' | 'per_group' | 'free' | 'custom';
+
 export type ExtraOption = {
   id: string;
   name: string;
   price: number;
+  // Legacy proposals saved before this field exists have it undefined; those
+  // render without a unit suffix (see calculatePricing).
+  priceUnit?: ExtraPriceUnit;
+  customUnitLabel?: string;
   selected: boolean;
 };
 
@@ -268,10 +276,12 @@ export interface ItineraryData {
       lineTotal: number;
     }[];
     // Optional add-ons shown separately from (and NOT included in) the main
-    // safari total. price is a preformatted display string (e.g. "$50").
+    // safari total. price is a preformatted display string (e.g. "$50" or
+    // "Free"); unit is an optional suffix (e.g. "per person", "per night").
     extras?: {
       label: string;
       price: string;
+      unit?: string;
     }[];
   };
   includedItems: string[];

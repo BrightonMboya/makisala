@@ -820,7 +820,10 @@ const PricingSection = ({ data, onConfirm }: { data: ItineraryData; onConfirm: (
                     className="flex items-center justify-between text-sm font-light text-stone-300"
                   >
                     <span>{extra.label}</span>
-                    <span className="text-stone-400">+{extra.price}</span>
+                    <span className="text-stone-400">
+                      {extra.price === 'Free' ? 'Free' : `+${extra.price}`}
+                      {extra.unit ? ` ${extra.unit}` : ''}
+                    </span>
                   </div>
                 ))}
               </div>

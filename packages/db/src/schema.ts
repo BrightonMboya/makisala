@@ -733,7 +733,16 @@ export const proposals = pgTable('proposals', {
       Array<{ id: string; count: number; type: string; unitPrice: number }>
     >(),
   extras:
-    json('extras').$type<Array<{ id: string; name: string; price: number; selected: boolean }>>(),
+    json('extras').$type<
+      Array<{
+        id: string;
+        name: string;
+        price: number;
+        priceUnit?: 'per_person' | 'per_group' | 'free' | 'custom';
+        customUnitLabel?: string;
+        selected: boolean;
+      }>
+    >(),
   travelerGroups:
     json('traveler_groups').$type<Array<{ id: string; count: number; type: string }>>(),
   countries: text('countries').array(),

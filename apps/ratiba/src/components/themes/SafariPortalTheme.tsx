@@ -607,7 +607,10 @@ export default function SafariPortalTheme({ data }: { data: ItineraryData }) {
                           className="flex items-center justify-between gap-4 text-sm text-stone-300"
                         >
                           <span>{extra.label}</span>
-                          <span className="whitespace-nowrap text-stone-400">+{extra.price}</span>
+                          <span className="whitespace-nowrap text-stone-400">
+                            {extra.price === 'Free' ? 'Free' : `+${extra.price}`}
+                            {extra.unit ? ` ${extra.unit}` : ''}
+                          </span>
                         </div>
                       ))}
                     </div>

@@ -54,7 +54,14 @@ interface BuilderData {
   transferIncluded?: string | null;
   travelerGroups?: Array<{ id: string; count: number; type: string }> | null;
   pricingRows?: Array<{ id: string; count: number; type: string; unitPrice: number }> | null;
-  extras?: Array<{ id: string; name: string; price: number; selected: boolean }> | null;
+  extras?: Array<{
+    id: string;
+    name: string;
+    price: number;
+    priceUnit?: 'per_person' | 'per_group' | 'free' | 'custom';
+    customUnitLabel?: string;
+    selected: boolean;
+  }> | null;
   countries?: string[] | null;
   inclusions?: string[] | null;
   exclusions?: string[] | null;

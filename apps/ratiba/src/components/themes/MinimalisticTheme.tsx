@@ -801,7 +801,8 @@ export default function MinimalisticTheme({ data, onHeroImageChange, onDayImageC
                               >
                                 <span>{extra.label}</span>
                                 <span className="whitespace-nowrap text-stone-400">
-                                  +{extra.price}
+                                  {extra.price === 'Free' ? 'Free' : `+${extra.price}`}
+                                  {extra.unit ? ` ${extra.unit}` : ''}
                                 </span>
                               </li>
                             ))}
