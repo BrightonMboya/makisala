@@ -572,7 +572,6 @@ export default function SafariPortalTheme({ data }: { data: ItineraryData }) {
           </section>
 
           {/* Details (Pricing, etc) */}
-          {!data.hidePricing && (
           <section id="details" className="space-y-8 pb-24">
             <div className="rounded-3xl bg-stone-900 p-12 text-white">
               <div className="space-y-8">
@@ -679,7 +678,6 @@ export default function SafariPortalTheme({ data }: { data: ItineraryData }) {
               </footer>
             )}
           </section>
-          )}
         </div>
       </div>
 

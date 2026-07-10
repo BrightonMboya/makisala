@@ -162,10 +162,6 @@ export type BuilderContextType = {
   exclusions: string[];
   setExclusions: React.Dispatch<React.SetStateAction<string[]>>;
 
-  // Pricing visibility
-  hidePricing: boolean;
-  setHidePricing: React.Dispatch<React.SetStateAction<boolean>>;
-
   // Reveal stored payment methods to the client after they confirm the proposal
   showPaymentDetails: boolean;
   setShowPaymentDetails: React.Dispatch<React.SetStateAction<boolean>>;
@@ -261,7 +257,6 @@ export interface ItineraryData {
   itinerary: Day[];
   accommodations: Accommodation[];
   transportation?: ThemeTransportation[]; // Major transfers between destinations
-  hidePricing?: boolean;
   // When true, the confirm/pay CTAs are shown and the client sees payment
   // methods after confirming. When false, the confirm flow is hidden entirely.
   showPaymentDetails?: boolean;

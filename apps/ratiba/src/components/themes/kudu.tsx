@@ -313,7 +313,6 @@ export default function KuduTheme({ data, onHeroImageChange, onDayImageChange }:
     heroImage,
     itinerary,
     pricing,
-    hidePricing,
     showPaymentDetails,
     includedItems,
     excludedItems,
@@ -569,7 +568,7 @@ export default function KuduTheme({ data, onHeroImageChange, onDayImageChange }:
       })}
 
       {/* 4. PRICING SECTION */}
-      {!hidePricing && <NarrativeSection isPricing>
+      <NarrativeSection isPricing>
         <div className="grid w-full max-w-6xl items-start gap-16 lg:grid-cols-2">
           <div>
             <div className="mb-6 flex gap-1 text-yellow-500">
@@ -697,7 +696,7 @@ export default function KuduTheme({ data, onHeroImageChange, onDayImageChange }:
             )}
           </div>
         </div>
-      </NarrativeSection>}
+      </NarrativeSection>
 
       {/* ABOUT & PAYMENT TERMS */}
       {(organization?.aboutDescription || organization?.paymentTerms) && (

@@ -65,9 +65,6 @@ export function BuilderProvider({
     'Personal items (souvenirs, etc.)',
   ]);
 
-  // Pricing visibility
-  const [hidePricing, setHidePricing] = useState(false);
-
   // Reveal stored payment methods to the client after they confirm this proposal.
   const [showPaymentDetails, setShowPaymentDetails] = useState(false);
 
@@ -161,7 +158,6 @@ export function BuilderProvider({
       if (initialData.extras) setExtras(initialData.extras);
       if (initialData.inclusions) setInclusions(initialData.inclusions);
       if (initialData.exclusions) setExclusions(initialData.exclusions);
-      if (initialData.hidePricing != null) setHidePricing(initialData.hidePricing);
       if (initialData.showPaymentDetails != null)
         setShowPaymentDetails(initialData.showPaymentDetails);
 
@@ -258,8 +254,6 @@ export function BuilderProvider({
         setInclusions,
         exclusions,
         setExclusions,
-        hidePricing,
-        setHidePricing,
         showPaymentDetails,
         setShowPaymentDetails,
         useAutoPricing,

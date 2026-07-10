@@ -1434,7 +1434,7 @@ export default function DiscoveryTheme({
       />
       <JourneyOverview data={data} />
       <IntroductionSection data={data} />
-      {!data.hidePricing && <PricingSection data={data} onConfirm={openConfirmModal} />}
+      <PricingSection data={data} onConfirm={openConfirmModal} />
 
       {data.itinerary.map((day, index) => (
         <React.Fragment key={day.day}>

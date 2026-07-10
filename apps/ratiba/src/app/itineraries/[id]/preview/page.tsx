@@ -60,7 +60,6 @@ export default function PreviewPage() {
     transferIncluded,
     inclusions,
     exclusions,
-    hidePricing,
     showPaymentDetails,
     selectedTheme,
     setSelectedTheme,
@@ -154,7 +153,6 @@ export default function PreviewPage() {
       country: countries.length > 0
         ? countries.map((c: string) => c.charAt(0).toUpperCase() + c.slice(1).toLowerCase()).join(' & ')
         : country || undefined,
-      hidePricing,
       showPaymentDetails,
       accommodationsMap,
       organization: orgSettings ? {
@@ -182,7 +180,6 @@ export default function PreviewPage() {
     endCityCoordinates,
     tourType,
     country,
-    hidePricing,
     showPaymentDetails,
     accommodationsMap,
     orgSettings,
@@ -217,7 +214,6 @@ export default function PreviewPage() {
         transferIncluded,
         inclusions,
         exclusions,
-        hidePricing,
         showPaymentDetails,
         countries,
         selectedTheme,

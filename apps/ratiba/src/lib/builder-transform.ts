@@ -61,7 +61,6 @@ export function transformBuilderToItineraryData(params: {
       description?: string;
     }
   >;
-  hidePricing?: boolean;
   showPaymentDetails?: boolean;
   organization?: OrganizationInfo;
 }): ItineraryData {
@@ -84,7 +83,6 @@ export function transformBuilderToItineraryData(params: {
     tourType,
     country: countryParam,
     accommodationsMap,
-    hidePricing,
     showPaymentDetails,
     organization,
   } = params;
@@ -269,7 +267,6 @@ export function transformBuilderToItineraryData(params: {
     itinerary,
     accommodations: accommodationsList,
     transportation: transportation.length > 0 ? transportation : undefined,
-    hidePricing,
     showPaymentDetails,
     pricing,
     includedItems: inclusions,

@@ -65,7 +65,6 @@ interface BuilderData {
   countries?: string[] | null;
   inclusions?: string[] | null;
   exclusions?: string[] | null;
-  hidePricing?: boolean;
   showPaymentDetails?: boolean;
   useAutoPricing?: boolean | null;
   vehicleId?: string | null;
@@ -292,7 +291,6 @@ export const proposalsRouter = router({
           countries: true,
           inclusions: true,
           exclusions: true,
-          hidePricing: true,
           showPaymentDetails: true,
           useAutoPricing: true,
           vehicleId: true,
@@ -424,7 +422,6 @@ export const proposalsRouter = router({
         countries: builderData.countries || null,
         inclusions: builderData.inclusions || null,
         exclusions: builderData.exclusions || null,
-        hidePricing: builderData.hidePricing || false,
         showPaymentDetails: builderData.showPaymentDetails || false,
         useAutoPricing: builderData.useAutoPricing ?? false,
         vehicleId: builderData.vehicleId ?? null,
@@ -466,7 +463,6 @@ export const proposalsRouter = router({
             countries: proposalData.countries || null,
             inclusions: proposalData.inclusions || null,
             exclusions: proposalData.exclusions || null,
-            hidePricing: proposalData.hidePricing || false,
             showPaymentDetails: proposalData.showPaymentDetails || false,
             useAutoPricing: proposalData.useAutoPricing,
             vehicleId: proposalData.vehicleId,
@@ -502,7 +498,6 @@ export const proposalsRouter = router({
               countries: proposalData.countries || null,
               inclusions: proposalData.inclusions || null,
               exclusions: proposalData.exclusions || null,
-              hidePricing: proposalData.hidePricing || false,
               showPaymentDetails: proposalData.showPaymentDetails || false,
               useAutoPricing: proposalData.useAutoPricing,
               vehicleId: proposalData.vehicleId,
@@ -911,7 +906,6 @@ export const proposalsRouter = router({
           countries: original.countries,
           inclusions: original.inclusions,
           exclusions: original.exclusions,
-          hidePricing: original.hidePricing,
           showPaymentDetails: original.showPaymentDetails,
           useAutoPricing: original.useAutoPricing,
           vehicleId: original.vehicleId,

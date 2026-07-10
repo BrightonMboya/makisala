@@ -770,8 +770,7 @@ export default function MinimalisticTheme({ data, onHeroImageChange, onDayImageC
                   </div>
                 </div>
 
-                {!data.hidePricing && (
-                  <>
+                <>
                     <div className="mb-8 border-b border-stone-100 pb-8">
                       <h3 className="mb-6 text-sm font-medium tracking-[0.2em] text-stone-400 uppercase">
                         Pricing
@@ -845,7 +844,6 @@ export default function MinimalisticTheme({ data, onHeroImageChange, onDayImageC
                       </div>
                     )}
                   </>
-                )}
 
                 {data.showPaymentDetails && (
                   <button
