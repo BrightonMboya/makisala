@@ -1250,14 +1250,15 @@ const DaySection = ({
                     <p className="mt-1 text-sm font-medium text-stone-800">1 Night</p>
                   </div>
 
-                  {mealsArray.length > 0 && (
+                  {(mealsArray.length > 0 ||
+                    (day.mealOptions && day.mealOptions.length > 0)) && (
                     <>
                       <div className="mx-2 mt-1 h-8 w-px bg-stone-200" />
                       <div className="pl-6">
                         <p className="text-[10px] font-light tracking-[0.2em] text-stone-400 uppercase">
                           Meals
                         </p>
-                        <div className="mt-1 flex items-center gap-2">
+                        <div className="mt-1 flex flex-wrap items-center gap-2">
                           {mealsArray.map((meal, i) => (
                             <span
                               key={i}
@@ -1274,6 +1275,11 @@ const DaySection = ({
                             </span>
                           ))}
                         </div>
+                        {day.mealOptions && day.mealOptions.length > 0 && (
+                          <p className="mt-1 text-xs text-stone-500 italic">
+                            {day.mealOptions.join(', ')}
+                          </p>
+                        )}
                       </div>
                     </>
                   )}

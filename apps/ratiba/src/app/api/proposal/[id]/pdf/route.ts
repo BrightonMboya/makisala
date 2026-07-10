@@ -106,6 +106,7 @@ export const GET = withAxiom(async (
           breakfast: day.meals.breakfast,
           lunch: day.meals.lunch,
           dinner: day.meals.dinner,
+          options: Array.isArray(day.meals.options) ? day.meals.options : [],
         } : undefined,
       })),
       pricingRows: (proposal.pricingRows as any[] || []).map((row) => ({

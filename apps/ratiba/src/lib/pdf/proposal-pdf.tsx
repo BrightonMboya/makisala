@@ -246,6 +246,7 @@ interface ProposalPDFProps {
         breakfast: boolean;
         lunch: boolean;
         dinner: boolean;
+        options?: string[];
       };
     }>;
     pricingRows: Array<{
@@ -264,12 +265,18 @@ export function ProposalPDF({ proposal }: ProposalPDFProps) {
     0
   );
 
-  const formatMeals = (meals?: { breakfast: boolean; lunch: boolean; dinner: boolean }) => {
+  const formatMeals = (meals?: {
+    breakfast: boolean;
+    lunch: boolean;
+    dinner: boolean;
+    options?: string[];
+  }) => {
     if (!meals) return '';
     const included = [];
     if (meals.breakfast) included.push('Breakfast');
     if (meals.lunch) included.push('Lunch');
     if (meals.dinner) included.push('Dinner');
+    if (meals.options && meals.options.length > 0) included.push(...meals.options);
     return included.length > 0 ? `Meals: ${included.join(', ')}` : '';
   };
 
@@ -342,7 +349,7 @@ export function ProposalPDF({ proposal }: ProposalPDFProps) {
               </View>
             )}
 
-            {day.meals && (
+            {day.meals && formatMeals(day.meals) !== '' && (
               <Text style={styles.meals}>{formatMeals(day.meals)}</Text>
             )}
           </View>

@@ -48,6 +48,7 @@ export type BuilderDay = {
     lunch: boolean;
     dinner: boolean;
   };
+  mealOptions?: string[];
   title?: string; // Editable day title for timeline
   description?: string; // Narrative for the day
   accommodationImage?: string;
@@ -193,6 +194,7 @@ export interface Day {
   activities: DayActivity[];
   accommodation: string;
   meals: string;
+  mealOptions?: string[];
   previewImage?: string; // Custom image for theme preview
   transportation?: ThemeTransportation; // Transfer happening on this day
 }

@@ -40,6 +40,7 @@ import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { ActivityModal, momentToArray } from './activity-modal';
 import { AsyncCombobox } from './async-combobox';
 import { CreatableAsyncCombobox } from './creatable-async-combobox';
+import { MealOptionsField } from './meal-options-field';
 import { Textarea } from '@repo/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@repo/ui/select';
 import { Input } from '@repo/ui/input';
@@ -724,6 +725,10 @@ function SortableDayRow({
                 />
               </div>
             </div>
+            <MealOptionsField
+              value={day.mealOptions ?? []}
+              onChange={(next) => onUpdate(day.id, 'mealOptions', next)}
+            />
           </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

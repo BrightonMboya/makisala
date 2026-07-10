@@ -855,6 +855,7 @@ export const proposalMeals = pgTable('proposal_meals', {
   breakfast: boolean('breakfast').default(false).notNull(),
   lunch: boolean('lunch').default(false).notNull(),
   dinner: boolean('dinner').default(false).notNull(),
+  options: text('options').array().default(sql`ARRAY[]::text[]`).notNull(),
   createdAt: timestamp('created_at', { precision: 3, mode: 'string' })
     .default(sql`CURRENT_TIMESTAMP`)
     .notNull(),
@@ -1209,6 +1210,27 @@ export const extraLibrary = pgTable(
 export const extraLibraryRelations = relations(extraLibrary, ({ one }) => ({
   organization: one(organizations, {
     fields: [extraLibrary.organizationId],
+    references: [organizations.id],
+  }),
+}));
+
+export const mealOptionLibrary = pgTable(
+  'meal_option_library',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    name: text('name').notNull(),
+    organizationId: uuid('organization_id').references(() => organizations.id, {
+      onDelete: 'cascade',
+    }),
+    isGlobal: boolean('is_global').default(false).notNull(),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+  },
+  (t) => [uniqueIndex('meal_option_library_org_name_unique').on(t.organizationId, t.name)],
+);
+
+export const mealOptionLibraryRelations = relations(mealOptionLibrary, ({ one }) => ({
+  organization: one(organizations, {
+    fields: [mealOptionLibrary.organizationId],
     references: [organizations.id],
   }),
 }));

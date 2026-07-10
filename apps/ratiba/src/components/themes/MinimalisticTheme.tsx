@@ -714,6 +714,11 @@ export default function MinimalisticTheme({ data, onHeroImageChange, onDayImageC
                                 Dining
                               </span>
                               <span className="text-sm text-stone-600 italic">{day.meals}</span>
+                              {day.mealOptions && day.mealOptions.length > 0 && (
+                                <span className="mt-1 block text-xs text-stone-400 italic">
+                                  {day.mealOptions.join(', ')}
+                                </span>
+                              )}
                             </div>
                           </div>
                         </div>

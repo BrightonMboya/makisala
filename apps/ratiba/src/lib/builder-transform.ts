@@ -149,6 +149,7 @@ export function transformBuilderToItineraryData(params: {
       activities,
       accommodation: accommodationName,
       meals: mealsStr,
+      mealOptions: Array.isArray(day.mealOptions) ? day.mealOptions : [],
       previewImage: day.previewImage || undefined,
       transportation,
     };

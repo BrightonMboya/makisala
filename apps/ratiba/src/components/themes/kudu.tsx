@@ -552,6 +552,11 @@ export default function KuduTheme({ data, onHeroImageChange, onDayImageChange }:
                         <Utensils size={13} className="text-emerald-800" />
                         <span className="text-xs text-slate-500 italic">{day.meals}</span>
                       </div>
+                      {day.mealOptions && day.mealOptions.length > 0 && (
+                        <span className="text-[11px] text-slate-400 italic">
+                          {day.mealOptions.join(', ')}
+                        </span>
+                      )}
                     </div>
                   </>
                 )}

@@ -649,6 +649,7 @@ function BuilderLayoutInner({ children }: { children: React.ReactNode }) {
             lunch: day.meals?.lunch || false,
             dinner: day.meals?.dinner || false,
           },
+          mealOptions: Array.isArray(day.meals?.options) ? day.meals.options : [],
           activities: (day.activities || []).map((act: any) => ({
             id: act.id,
             libraryId: act.activityLibraryId ?? null,

@@ -3,6 +3,7 @@ import { clientsRouter } from './routers/clients';
 import { nationalParksRouter } from './routers/nationalParks';
 import { activitiesRouter } from './routers/activities';
 import { extrasRouter } from './routers/extras';
+import { mealOptionsRouter } from './routers/mealOptions';
 import { momentsRouter } from './routers/moments';
 import { onboardingRouter } from './routers/onboarding';
 import { accommodationsRouter } from './routers/accommodations';
@@ -23,6 +24,7 @@ export const appRouter = router({
   nationalParks: nationalParksRouter,
   activities: activitiesRouter,
   extras: extrasRouter,
+  mealOptions: mealOptionsRouter,
   moments: momentsRouter,
   onboarding: onboardingRouter,
   accommodations: accommodationsRouter,

@@ -115,6 +115,7 @@ interface BuilderDay {
   }>;
   activities?: BuilderActivity[];
   meals?: { breakfast?: boolean; lunch?: boolean; dinner?: boolean };
+  mealOptions?: string[];
   transfer?: BuilderTransfer;
 }
 
@@ -327,7 +328,7 @@ export const proposalsRouter = router({
                   accommodation: { columns: { id: true, name: true } },
                 },
               },
-              meals: { columns: { breakfast: true, lunch: true, dinner: true } },
+              meals: { columns: { breakfast: true, lunch: true, dinner: true, options: true } },
               activities: { columns: { id: true, activityLibraryId: true, name: true, description: true, location: true, fromLocation: true, toLocation: true, moment: true, time: true, isOptional: true, imageUrl: true } },
               transportation: {
                 columns: {
@@ -592,6 +593,7 @@ export const proposalsRouter = router({
               breakfast: day.meals.breakfast || false,
               lunch: day.meals.lunch || false,
               dinner: day.meals.dinner || false,
+              options: Array.isArray(day.mealOptions) ? day.mealOptions : [],
             });
           }
 
@@ -962,6 +964,7 @@ export const proposalsRouter = router({
               breakfast: day.meals.breakfast,
               lunch: day.meals.lunch,
               dinner: day.meals.dinner,
+              options: Array.isArray(day.meals.options) ? day.meals.options : [],
             });
           }
 

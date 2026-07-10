@@ -68,6 +68,7 @@ type ProposalDay = {
     breakfast: boolean;
     lunch: boolean;
     dinner: boolean;
+    options?: string[] | null;
   } | null;
   transportation?: Array<{
     id: string;
@@ -200,6 +201,7 @@ export function transformProposalToItineraryData(
       activities,
       accommodation: accommodationName,
       meals: mealsStr,
+      mealOptions: Array.isArray(meals?.options) ? meals.options : [],
       previewImage: day.previewImage || undefined,
       transportation,
     };
