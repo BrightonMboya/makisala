@@ -4,6 +4,7 @@ import { Button } from '@repo/ui/button';
 import { Input } from '@repo/ui/input';
 import { Textarea } from '@repo/ui/textarea';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@repo/ui/form';
+import { CountryDropdown } from '@repo/ui/country-dropdown';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -143,9 +144,12 @@ export function ClientForm({ client }: ClientFormProps) {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Country of Residence</FormLabel>
-                <FormControl>
-                  <Input {...field} placeholder="United States" />
-                </FormControl>
+                <CountryDropdown
+                  placeholder="Select a country"
+                  value={field.value}
+                  defaultValue={field.value}
+                  onChange={country => field.onChange(country.name)}
+                />
                 <FormMessage />
               </FormItem>
             )}

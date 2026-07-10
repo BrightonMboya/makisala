@@ -1,9 +1,10 @@
 import { createServerCaller } from '@/server/trpc/caller'
 import { Button } from '@repo/ui/button'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@repo/ui/table'
-import { Edit, Plus, Search, Mail, Phone, MapPin } from 'lucide-react'
+import { Edit, Plus, Search, Mail, Phone } from 'lucide-react'
 import Link from 'next/link'
 import { Input } from '@repo/ui/input'
+import { CountryFlag } from '@repo/ui/country-flag'
 
 export default async function ClientsPage({
   searchParams,
@@ -93,10 +94,7 @@ export default async function ClientsPage({
                     </TableCell>
                     <TableCell>
                       {client.countryOfResidence ? (
-                        <span className="flex items-center text-gray-600">
-                          <MapPin className="mr-1 h-3 w-3" />
-                          {client.countryOfResidence}
-                        </span>
+                        <CountryFlag country={client.countryOfResidence} size={18} />
                       ) : '-'}
                     </TableCell>
                     <TableCell className="text-right">
