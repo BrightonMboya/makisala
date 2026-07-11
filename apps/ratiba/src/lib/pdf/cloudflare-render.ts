@@ -5,24 +5,23 @@ import { env } from '@/lib/env';
  * Proposal-PDF render via Cloudflare Browser Rendering's REST `/pdf` quick action.
  *
  * This is the "give us a URL, get a PDF back" model: Cloudflare's managed Chrome
- * fetches the print route over the public internet and prints it. Unlike our
- * puppeteer path (generate-pdf.ts) we get NO hook to run per-page fixes, which is
- * why the print route is built to be printable-by-construction: the route map is a
- * static Mapbox raster (StaticTripMap), not WebGL, so nothing needs rasterizing
- * remotely. We still inject a best-effort priming script (force images eager +
- * scroll pass) and a settle delay so lazy `next/image` and framer-motion reveals
- * finish before capture.
+ * fetches the print route over the public internet and prints it. We get NO hook to
+ * run per-page fixes, which is why the print route is built to be printable-by-
+ * construction: the route map is a static Mapbox raster (StaticTripMap), not WebGL,
+ * so nothing needs rasterizing remotely. We still inject a best-effort priming
+ * script (force images eager + scroll pass) and a settle delay so lazy `next/image`
+ * and framer-motion reveals finish before capture.
  *
  * The target URL must be PUBLICLY reachable — Cloudflare's cloud browser cannot
  * see `localhost`. Point it at a deployed proposal print URL.
  */
 
-// Matches generate-pdf.ts: desktop-width canvas at A4 aspect (1 : 1.414).
+// Desktop-width canvas at A4 aspect (1 : 1.414), matching the print route's @page.
 const PAGE_WIDTH = 1280;
 const PAGE_HEIGHT = Math.round(PAGE_WIDTH * 1.4142); // 1810
 
 // Best-effort in-page priming. Cloudflare injects this after navigation; combined
-// with waitForTimeout below it mirrors the cheap half of primeLazyContent().
+// with waitForTimeout below it forces lazy `next/image` to load before capture.
 const PRIMING_SCRIPT = `
   document.documentElement.style.scrollBehavior = 'auto';
   document.querySelectorAll('img').forEach((img) => {
@@ -82,7 +81,7 @@ export async function renderProposalPdfViaCloudflare(
     // `load` (not `networkidle0`): analytics and other beacons keep the network from
     // ever going idle, so networkidle0 rides until the session drops (Cloudflare
     // error 5006). `load` waits for images and subresources; the settle delay below
-    // covers late lazy loads. This mirrors why generate-pdf.ts uses domcontentloaded.
+    // covers late lazy loads.
     gotoOptions: { waitUntil: 'load', timeout: 30_000 },
     addScriptTag: [{ content: PRIMING_SCRIPT }],
     waitForTimeout: opts.waitMs ?? 4_000,

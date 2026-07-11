@@ -100,8 +100,8 @@ export default async function ProposalPrintPage({ params, searchParams }: Props)
     return (
       <>
         {/* Print sizing: desktop-width "paper" at A4 aspect ratio (1 : 1.414) so
-            the PDF mirrors the on-screen desktop layout. renderProposalPdf uses
-            preferCSSPageSize so this @page rule drives pagination. */}
+            the PDF mirrors the on-screen desktop layout. The renderer prints with
+            preferCSSPageSize, so this @page rule drives pagination. */}
         <style
           dangerouslySetInnerHTML={{
             __html: `
