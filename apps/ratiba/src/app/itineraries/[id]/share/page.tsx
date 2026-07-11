@@ -24,6 +24,7 @@ import { useMutation } from '@tanstack/react-query';
 import { trpc } from '@/lib/trpc';
 import { staleTimes } from '@/lib/query-keys';
 import { toLocalISOString } from '@/lib/date-utils';
+import { parseJsonResponse } from '@/lib/parse-json-response';
 import Link from 'next/link';
 
 const LANGUAGES = [
@@ -226,9 +227,13 @@ export default function SharePage() {
         }),
       });
 
-      const result = await response.json();
+      // The email route renders a PDF via headless Chromium. If that ever pushes
+      // the serverless function past its time/memory budget, the platform kills it
+      // and returns a non-JSON error page — parseJsonResponse surfaces a readable
+      // message instead of a raw "Unexpected token ... is not valid JSON".
+      const result = await parseJsonResponse<{ success?: boolean; error?: string }>(response);
 
-      if (!result.success) {
+      if (!response.ok || !result.success) {
         throw new Error(result.error || 'Failed to send email.');
       }
 

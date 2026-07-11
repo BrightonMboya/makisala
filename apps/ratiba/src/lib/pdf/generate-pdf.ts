@@ -2,6 +2,7 @@ import 'server-only';
 import type { Browser } from 'puppeteer-core';
 import puppeteer from 'puppeteer-core';
 import { env } from '@/lib/env';
+import { withTimeout } from '@/lib/with-timeout';
 
 /**
  * Headless-Chromium proposal renderer.
@@ -93,7 +94,10 @@ async function primeLazyContent(page: import('puppeteer-core').Page): Promise<vo
 
     await new Promise<void>((resolve) => {
       let y = 0;
-      const step = window.innerHeight * 0.8;
+      // A full-viewport step at a tight interval: we've already flipped every
+      // image to eager/high-priority above, so this pass exists only to trip
+      // framer `whileInView` reveals — it doesn't need to inch down the page.
+      const step = window.innerHeight;
       const timer = setInterval(() => {
         window.scrollTo(0, y);
         y += step;
@@ -101,11 +105,11 @@ async function primeLazyContent(page: import('puppeteer-core').Page): Promise<vo
           clearInterval(timer);
           resolve();
         }
-      }, 60);
+      }, 25);
     });
     window.scrollTo(0, 0);
     // Let the last reveals settle.
-    await new Promise((r) => setTimeout(r, 400));
+    await new Promise((r) => setTimeout(r, 150));
 
     // Wait for every image to both finish loading AND decode (a loaded-but-not-
     // yet-decoded image can still capture blank). Hard cap so a broken src or a
@@ -217,7 +221,7 @@ async function rasterizeMaps(page: import('puppeteer-core').Page): Promise<void>
       // element.screenshot() scrolls the map into view, which also wakes a
       // throttled off-screen canvas; give the tiles a beat to paint a fresh frame.
       await handle.scrollIntoView().catch(() => {});
-      await page.evaluate(() => new Promise((r) => setTimeout(r, 1_200)));
+      await page.evaluate(() => new Promise((r) => setTimeout(r, 600)));
 
       const base64 = (await handle.screenshot({ encoding: 'base64', type: 'png' })) as string;
 
@@ -243,6 +247,15 @@ export type RenderProposalPdfOptions = {
   lang?: string;
 };
 
+// Overall wall-clock ceiling for a single render. Callers (e.g. the send-email
+// route) run this inside a ~60s serverless budget. If Chromium hangs — a slow
+// print page, a stuck image origin, a heavy proposal — we MUST abort well before
+// the platform hard-kills the whole function: that kill is uncatchable, skips our
+// try/catch and log flush, and returns a non-JSON error page that breaks the
+// caller. On timeout we reject cleanly so the caller can log and, since the PDF
+// is best-effort, still send the email without the attachment.
+const RENDER_BUDGET_MS = 40_000;
+
 export async function renderProposalPdf(opts: RenderProposalPdfOptions): Promise<Uint8Array> {
   const { id, theme, lang } = opts;
 
@@ -252,54 +265,62 @@ export async function renderProposalPdf(opts: RenderProposalPdfOptions): Promise
 
   const browser = await launchBrowser();
   try {
-    const page = await browser.newPage();
-    // Render with screen styles (the themes are screen-designed); pagination is
-    // still driven by the @page rule the print route sets.
-    await page.emulateMediaType('screen');
-    // `domcontentloaded` (not `networkidle0`): in dev the HMR websocket keeps a
-    // connection open so networkidle never settles, and the persistent socket can
-    // detach the navigating frame. We wait for images/fonts explicitly instead.
-    await page.goto(url.toString(), { waitUntil: 'domcontentloaded', timeout: 60_000 });
-
-    await primeLazyContent(page);
-
-    // Flatten the WebGL route map to a static image (page.pdf can't capture live
-    // WebGL). Must run after priming (which scrolls the map into view to paint).
-    await rasterizeMaps(page);
-
-    // Shrink oversized images to keep the PDF small (must run after they've loaded).
-    await downscaleImages(page);
-
-    // Belt-and-suspenders: force anything framer-motion left mid-animation into
-    // its visible end-state. We only touch inline opacity/transform that motion
-    // sets, so Tailwind-driven opacity on overlays is untouched.
-    await page.evaluate(() => {
-      document.querySelectorAll<HTMLElement>('[style]').forEach((el) => {
-        const op = el.style.opacity;
-        if (op !== '' && parseFloat(op) < 1) el.style.opacity = '1';
-        const tf = el.style.transform;
-        if (tf && /translate|scale/.test(tf)) el.style.transform = 'none';
-      });
-    });
-
-    // Wait for web fonts, then for the print page's readiness signal (best-effort).
-    await page.evaluate(async () => {
-      if (document.fonts?.ready) await document.fonts.ready;
-    });
-    await page
-      .waitForFunction(() => (window as unknown as { __PRINT_READY__?: boolean }).__PRINT_READY__ === true, {
-        timeout: 4_000,
-      })
-      .catch(() => {});
-
-    const pdf = await page.pdf({
-      printBackground: true,
-      preferCSSPageSize: true, // honor the @page size from the print route
-      margin: { top: '0', right: '0', bottom: '0', left: '0' },
-    });
-
-    return new Uint8Array(pdf);
+    return await withTimeout(renderWithBrowser(browser, url), RENDER_BUDGET_MS, 'PDF render');
   } finally {
-    await browser.close();
+    // Always tear down Chromium, including on timeout — closing the browser also
+    // rejects any page operation still pending from the aborted render, so nothing
+    // is left running to keep eating the function's budget.
+    await browser.close().catch(() => {});
   }
+}
+
+async function renderWithBrowser(browser: Browser, url: URL): Promise<Uint8Array> {
+  const page = await browser.newPage();
+  // Render with screen styles (the themes are screen-designed); pagination is
+  // still driven by the @page rule the print route sets.
+  await page.emulateMediaType('screen');
+  // `domcontentloaded` (not `networkidle0`): in dev the HMR websocket keeps a
+  // connection open so networkidle never settles, and the persistent socket can
+  // detach the navigating frame. We wait for images/fonts explicitly instead.
+  // Cap goto below the overall budget so navigation alone can't consume it.
+  await page.goto(url.toString(), { waitUntil: 'domcontentloaded', timeout: 30_000 });
+
+  await primeLazyContent(page);
+
+  // Flatten the WebGL route map to a static image (page.pdf can't capture live
+  // WebGL). Must run after priming (which scrolls the map into view to paint).
+  await rasterizeMaps(page);
+
+  // Shrink oversized images to keep the PDF small (must run after they've loaded).
+  await downscaleImages(page);
+
+  // Belt-and-suspenders: force anything framer-motion left mid-animation into
+  // its visible end-state. We only touch inline opacity/transform that motion
+  // sets, so Tailwind-driven opacity on overlays is untouched.
+  await page.evaluate(() => {
+    document.querySelectorAll<HTMLElement>('[style]').forEach((el) => {
+      const op = el.style.opacity;
+      if (op !== '' && parseFloat(op) < 1) el.style.opacity = '1';
+      const tf = el.style.transform;
+      if (tf && /translate|scale/.test(tf)) el.style.transform = 'none';
+    });
+  });
+
+  // Wait for web fonts, then for the print page's readiness signal (best-effort).
+  await page.evaluate(async () => {
+    if (document.fonts?.ready) await document.fonts.ready;
+  });
+  await page
+    .waitForFunction(() => (window as unknown as { __PRINT_READY__?: boolean }).__PRINT_READY__ === true, {
+      timeout: 4_000,
+    })
+    .catch(() => {});
+
+  const pdf = await page.pdf({
+    printBackground: true,
+    preferCSSPageSize: true, // honor the @page size from the print route
+    margin: { top: '0', right: '0', bottom: '0', left: '0' },
+  });
+
+  return new Uint8Array(pdf);
 }
