@@ -3,7 +3,7 @@ export interface CfImageOptions {
   height?: number;
   quality?: number;
   fit?: 'scale-down' | 'contain' | 'cover' | 'crop' | 'pad';
-  format?: 'auto' | 'webp' | 'avif' | 'json';
+  format?: 'auto' | 'webp' | 'avif' | 'json' | 'jpeg' | 'png' | 'baseline-jpeg';
   sharpen?: number;
   brightness?: number;
   contrast?: number;
@@ -39,7 +39,10 @@ export function printImage(imageUrl: string | undefined, width = 1600): string {
   } catch {
     return imageUrl;
   }
-  return cfImage(imageUrl, { width, quality: 82 });
+  // Force JPEG (not format=auto). Chromium's page.pdf() passes JPEG sources through
+  // as compressed DCTDecode streams, but re-embeds AVIF/WebP as near-uncompressed
+  // flate bitmaps (a capped 1600px photo balloons from ~200KB to ~2MB in the PDF).
+  return cfImage(imageUrl, { width, quality: 82, format: 'jpeg' });
 }
 
 /**
