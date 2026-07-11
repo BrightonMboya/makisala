@@ -1039,9 +1039,9 @@ const DaySection = ({
                 </div>
               </div>
               <h2 className="max-w-3xl font-serif text-4xl leading-tight text-white lg:text-5xl xl:text-6xl">
-                {day.activities.length > 0
-                  ? joinList(day.activities.map((a) => a.activity))
-                  : day.title}
+                {day.activities.length === 1
+                  ? day.activities[0].activity
+                  : day.destination || dayLocation || day.title}
               </h2>
             </motion.div>
           </div>
