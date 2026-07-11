@@ -13,7 +13,6 @@ export type Feature =
   | 'teamMembers'
   | 'allThemes'
   | 'noWatermark'
-  | 'pdfExport'
   | 'comments'
   | 'customDomains';
 
@@ -23,7 +22,6 @@ export interface PlanLimits {
   uploadImages: boolean;
   allThemes: boolean;
   noWatermark: boolean;
-  pdfExport: boolean;
   comments: boolean;
   customDomains: boolean;
 }
@@ -44,7 +42,6 @@ export const PLAN_CONFIG: Record<PlanTier, PlanConfig> = {
       uploadImages: false,
       allThemes: false,
       noWatermark: false,
-      pdfExport: false,
       comments: false,
       customDomains: false,
     },
@@ -58,7 +55,6 @@ export const PLAN_CONFIG: Record<PlanTier, PlanConfig> = {
       uploadImages: false,
       allThemes: false,
       noWatermark: false,
-      pdfExport: true,
       comments: false,
       customDomains: false,
     },
@@ -72,7 +68,6 @@ export const PLAN_CONFIG: Record<PlanTier, PlanConfig> = {
       uploadImages: true,
       allThemes: true,
       noWatermark: true,
-      pdfExport: true,
       comments: true,
       customDomains: false,
     },
@@ -86,7 +81,6 @@ export const PLAN_CONFIG: Record<PlanTier, PlanConfig> = {
       uploadImages: true,
       allThemes: true,
       noWatermark: true,
-      pdfExport: true,
       comments: true,
       customDomains: true,
     },

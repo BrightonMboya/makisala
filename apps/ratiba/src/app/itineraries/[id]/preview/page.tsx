@@ -1,7 +1,7 @@
 'use client';
 
 import { Button } from '@repo/ui/button';
-import { ArrowRight, Download, Loader2, Mail, Palette } from 'lucide-react';
+import { ArrowRight, Loader2, Mail, Palette } from 'lucide-react';
 import Link from 'next/link';
 import { useBuilder } from '@/components/itinerary-builder/builder-context';
 import { format } from 'date-fns';
@@ -269,39 +269,6 @@ export default function PreviewPage() {
     onError: (error: Error) => {
       toast({
         title: 'Failed to send email',
-        description: error.message,
-        variant: 'destructive',
-      });
-    },
-  });
-
-  // Download PDF Mutation
-  const downloadPDFMutation = useMutation({
-    mutationFn: async () => {
-      const response = await fetch(`/api/proposal/${proposalId}/pdf`);
-      if (!response.ok) {
-        throw new Error('Failed to generate PDF');
-      }
-      return response.blob();
-    },
-    onSuccess: async (blob) => {
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `${tourTitle || 'proposal'}-${proposalId}.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
-
-      toast({
-        title: 'PDF Downloaded!',
-        description: 'Your proposal PDF has been downloaded.',
-      });
-    },
-    onError: (error: Error) => {
-      toast({
-        title: 'Failed to download PDF',
         description: error.message,
         variant: 'destructive',
       });

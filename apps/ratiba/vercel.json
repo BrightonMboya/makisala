@@ -1,5 +1,11 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
+  "functions": {
+    "src/app/api/proposal/send-email/route.ts": {
+      "memory": 2048,
+      "maxDuration": 60
+    }
+  },
   "crons": [
     {
       "path": "/api/cron/complete-tours",

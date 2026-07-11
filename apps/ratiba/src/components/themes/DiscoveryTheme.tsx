@@ -40,6 +40,7 @@ import { capitalize, cn, formatActivityTiming } from '@/lib/utils';
 import { trpc } from '@/lib/trpc';
 import { PaymentInstructions, type PaymentMethod } from '@/components/proposal/PaymentInstructions';
 import { AccommodationAlternativesBlock } from '@/components/themes/AccommodationAlternativesBlock';
+import { usePrintMode } from '@/components/proposal/PrintFrame';
 
 function joinList(items: string[]): string {
   if (items.length <= 2) return items.join(' & ');
@@ -109,7 +110,7 @@ function CinematicGallery({ images, alt }: { images: string[]; alt: string }) {
           </button>
 
           {/* Progress indicators and counter */}
-          <div className="absolute right-0 bottom-0 left-0 z-10 p-6">
+          <div data-print-hide className="absolute right-0 bottom-0 left-0 z-10 p-6">
             <div className="flex items-center gap-4">
               <div className="flex gap-1.5">
                 {images.map((_, idx) => (
@@ -143,6 +144,7 @@ function CinematicGallery({ images, alt }: { images: string[]; alt: string }) {
 // ============================================================================
 function JourneyMap({ data, className }: { data: ItineraryData['mapData']; className?: string }) {
   const { locations, startLocation, endLocation } = data;
+  const isPrint = usePrintMode();
   const mapRef = useRef<any>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const [showHint, setShowHint] = useState(false);
@@ -152,8 +154,10 @@ function JourneyMap({ data, className }: { data: ItineraryData['mapData']; class
     [],
   );
 
-  // Disable scroll zoom by default, enable only when Cmd/Ctrl is held
+  // Disable scroll zoom by default, enable only when Cmd/Ctrl is held.
+  // In print there's no scrolling to intercept — the map is a static snapshot.
   useEffect(() => {
+    if (isPrint) return;
     const wrapper = wrapperRef.current;
     if (!wrapper) return;
 
@@ -181,7 +185,7 @@ function JourneyMap({ data, className }: { data: ItineraryData['mapData']; class
       wrapper.removeEventListener('wheel', handleWheel);
       if (hintTimeout.current) clearTimeout(hintTimeout.current);
     };
-  }, [isMac]);
+  }, [isMac, isPrint]);
 
   if (!locations || locations.length === 0) return null;
 
@@ -215,6 +219,8 @@ function JourneyMap({ data, className }: { data: ItineraryData['mapData']; class
         minZoom={4}
         maxZoom={12}
         scrollZoom={false}
+        // Fully static snapshot for the PDF: no drag, zoom, or scroll interaction.
+        interactive={!isPrint}
         styles={{
           light: 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json',
           dark: 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json',
@@ -274,8 +280,9 @@ function JourneyMap({ data, className }: { data: ItineraryData['mapData']; class
         )}
       </Map>
 
-      {/* Cooperative gesture hint overlay */}
+      {/* Cooperative gesture hint overlay (screen only — irrelevant in a static PDF) */}
       <div
+        data-print-hide
         className={cn(
           'pointer-events-none absolute inset-0 z-[10] flex items-center justify-center bg-black/40 transition-opacity duration-300',
           showHint ? 'opacity-100' : 'opacity-0',
@@ -330,6 +337,7 @@ const HeroSection = ({
   data: ItineraryData;
   onImageChange?: () => void;
 }) => {
+  const isPrint = usePrintMode();
   const heroRef = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({
     target: heroRef,
@@ -341,8 +349,8 @@ const HeroSection = ({
 
   return (
     <section ref={heroRef} className="relative h-screen w-full overflow-hidden">
-      {/* Parallax Background */}
-      <motion.div className="absolute inset-0" style={{ y }}>
+      {/* Parallax Background (static in the PDF — a page has no scroll to parallax against) */}
+      <motion.div className="absolute inset-0" style={isPrint ? undefined : { y }}>
         <Image src={data.heroImage} alt="Hero" fill className="object-cover" priority />
       </motion.div>
 
@@ -370,7 +378,7 @@ const HeroSection = ({
 
       <motion.div
         className="relative z-10 flex h-full flex-col justify-end px-8 pb-24 lg:px-16 lg:pb-32 xl:px-24"
-        style={{ opacity }}
+        style={isPrint ? undefined : { opacity }}
       >
         <div className="max-w-5xl">
           {data.clientName && (
@@ -427,6 +435,7 @@ const HeroSection = ({
 
       {/* Scroll indicator */}
       <motion.div
+        data-print-hide
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 1.2 }}

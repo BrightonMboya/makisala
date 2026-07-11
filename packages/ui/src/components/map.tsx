@@ -125,6 +125,13 @@ const Map = forwardRef<MapRef, MapProps>(function Map(
         container: containerRef.current,
         style: initialStyle,
         renderWorldCopies: false,
+        // Keep the WebGL drawing buffer around after each frame is composited.
+        // Without this, the GPU clears the buffer post-composite and any readback
+        // of the canvas comes back blank — which is exactly what happens when
+        // Chromium rasterizes the page for PDF export: the map prints empty while
+        // the DOM attribution overlay still shows. In MapLibre v5 this lives under
+        // canvasContextAttributes (it was a top-level option in v4). Callers can override.
+        canvasContextAttributes: { preserveDrawingBuffer: true },
         attributionControl: {
           compact: true,
         },
@@ -190,7 +197,7 @@ const Map = forwardRef<MapRef, MapProps>(function Map(
 
   if (webglFailed) {
     return (
-      <div className="relative w-full h-full">
+      <div data-print-map className="relative w-full h-full">
         {fallback ?? <DefaultMapFallback />}
       </div>
     );
@@ -198,7 +205,8 @@ const Map = forwardRef<MapRef, MapProps>(function Map(
 
   return (
     <MapContext.Provider value={contextValue}>
-      <div ref={containerRef} className="relative w-full h-full">
+      {/* data-print-map: lets the PDF renderer wait for tiles to paint before capture */}
+      <div ref={containerRef} data-print-map className="relative w-full h-full">
         {isLoading && <DefaultLoader />}
         {/* SSR-safe: children render only when map is loaded on client */}
         {mapInstance && children}

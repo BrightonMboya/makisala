@@ -2,6 +2,10 @@ import type { NextConfig } from 'next';
 import { withAxiom } from 'next-axiom';
 
 const nextConfig: NextConfig = {
+  // Keep the headless-browser stack out of the bundle. @sparticuz/chromium ships a
+  // ~50MB binary and puppeteer-core loads native bits at runtime; bundling either
+  // breaks the serverless function. They must be resolved as external node modules.
+  serverExternalPackages: ['@sparticuz/chromium', 'puppeteer-core'],
   experimental: {
     serverActions: {
       bodySizeLimit: '100mb',

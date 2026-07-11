@@ -142,7 +142,6 @@ export async function checkFeatureAccess(
     case 'uploadImages':
     case 'allThemes':
     case 'noWatermark':
-    case 'pdfExport':
     case 'comments':
     case 'customDomains': {
       if (limits[feature]) return { allowed: true };
@@ -151,7 +150,6 @@ export async function checkFeatureAccess(
         uploadImages: 'Image uploads',
         allThemes: 'Premium themes',
         noWatermark: 'Watermark removal',
-        pdfExport: 'PDF export',
         comments: 'Comments',
         customDomains: 'Custom domains',
       };

@@ -8,6 +8,23 @@ import { auth } from '@/lib/auth';
 import { headers } from 'next/headers';
 import { env } from '@/lib/env';
 import { serializeError } from '@/lib/logger';
+import { renderProposalPdf } from '@/lib/pdf/generate-pdf';
+
+// Attaching the PDF spins up headless Chromium, which requires the Node runtime
+// and a cold-start budget well beyond the platform default.
+export const runtime = 'nodejs';
+export const maxDuration = 60;
+
+// Turn a proposal title into a safe, readable PDF filename.
+function pdfFilename(title: string): string {
+  const base =
+    title
+      .replace(/[^\w\s-]/g, '')
+      .trim()
+      .replace(/\s+/g, '-')
+      .slice(0, 80) || 'proposal';
+  return `${base}.pdf`;
+}
 
 // Helper to get organization ID from session or member table
 async function getOrganizationId(session: Awaited<ReturnType<typeof auth.api.getSession>>): Promise<string | null> {
@@ -97,12 +114,31 @@ export const POST = withAxiom(async (request: AxiomRequest) => {
     });
     const replyToEmail = proposal.organization?.notificationEmail ?? undefined;
 
+    // Render a PDF copy of the proposal to attach alongside the live link. This is
+    // best-effort: a Chromium hiccup should never block the send, since the email's
+    // primary CTA is the online proposal. In that case we log and send without it.
+    const proposalTitle = proposal.tourTitle || proposal.name;
+    let pdfAttachment: { filename: string; content: Buffer } | undefined;
+    try {
+      const pdf = await renderProposalPdf({
+        id: proposalId,
+        lang: (proposal as { language?: string }).language || undefined,
+      });
+      pdfAttachment = { filename: pdfFilename(proposalTitle), content: Buffer.from(pdf) };
+    } catch (error) {
+      request.log.error('Failed to render proposal PDF for email attachment; sending without it', {
+        proposalId,
+        error: serializeError(error),
+      });
+    }
+
     const result = await resend.emails.send({
       from: fromEmail,
       to: recipientEmail,
-      subject: subject || `Your Travel Proposal: ${proposal.tourTitle || proposal.name}`,
+      subject: subject || `Your Travel Proposal: ${proposalTitle}`,
       html,
       ...(replyToEmail ? { replyTo: replyToEmail } : {}),
+      ...(pdfAttachment ? { attachments: [pdfAttachment] } : {}),
     });
 
     if (result.error) {
