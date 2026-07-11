@@ -40,6 +40,8 @@ import { capitalize, cn, formatActivityTiming } from '@/lib/utils';
 import { trpc } from '@/lib/trpc';
 import { PaymentInstructions, type PaymentMethod } from '@/components/proposal/PaymentInstructions';
 import { AccommodationAlternativesBlock } from '@/components/themes/AccommodationAlternativesBlock';
+import { StaticTripMap } from '@/components/themes/StaticTripMap';
+import { useForPrint, usePrintImage } from '@/components/themes/print-context';
 import { usePrintMode } from '@/components/proposal/PrintFrame';
 
 function joinList(items: string[]): string {
@@ -51,6 +53,7 @@ function joinList(items: string[]): string {
 // CINEMATIC IMAGE GALLERY
 // ============================================================================
 function CinematicGallery({ images, alt }: { images: string[]; alt: string }) {
+  const pdfAsset = usePrintImage();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
 
@@ -89,7 +92,7 @@ function CinematicGallery({ images, alt }: { images: string[]; alt: string }) {
           transition={{ duration: 0.5 }}
           className="absolute inset-0"
         >
-          <Image src={currentImage} alt={alt} fill className="object-cover" />
+          <Image src={pdfAsset(currentImage)} alt={alt} fill className="object-cover" />
         </motion.div>
       </AnimatePresence>
 
@@ -338,6 +341,7 @@ const HeroSection = ({
   onImageChange?: () => void;
 }) => {
   const isPrint = usePrintMode();
+  const pdfAsset = usePrintImage();
   const heroRef = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({
     target: heroRef,
@@ -351,7 +355,7 @@ const HeroSection = ({
     <section ref={heroRef} className="relative h-screen w-full overflow-hidden">
       {/* Parallax Background (static in the PDF — a page has no scroll to parallax against) */}
       <motion.div className="absolute inset-0" style={isPrint ? undefined : { y }}>
-        <Image src={data.heroImage} alt="Hero" fill className="object-cover" priority />
+        <Image src={pdfAsset(data.heroImage)} alt="Hero" fill className="object-cover" priority />
       </motion.div>
 
       {/* Cinematic Overlays */}
@@ -570,6 +574,7 @@ function getMealBasis(meals: string): string {
 }
 
 const JourneyOverview = ({ data }: { data: ItineraryData }) => {
+  const forPrint = useForPrint();
   return (
     <section className="bg-[#faf9f7]">
       <div className="mx-auto max-w-7xl px-6 pt-20 pb-16 lg:px-12">
@@ -771,7 +776,7 @@ const JourneyOverview = ({ data }: { data: ItineraryData }) => {
 
       {/* Map */}
       <div className="relative h-[50vh] lg:h-[600px]">
-        <JourneyMap data={data.mapData} />
+        {forPrint ? <StaticTripMap data={data.mapData} /> : <JourneyMap data={data.mapData} />}
         <div className="absolute top-8 left-8 max-w-xs rounded-2xl bg-white/95 p-6 shadow-xl backdrop-blur-sm">
           <p className="mb-2 text-xs font-light tracking-[0.2em] text-stone-400 uppercase">
             Your Route
@@ -929,6 +934,7 @@ const DaySection = ({
   hoveredDayImage: number | null;
   setHoveredDayImage: (day: number | null) => void;
 }) => {
+  const pdfAsset = usePrintImage();
   const accommodationDetails = data.accommodations.find((a) => a.name === day.accommodation);
 
   // Derive location from activity locations, falling back to day.destination
@@ -966,7 +972,7 @@ const DaySection = ({
         onMouseLeave={() => setHoveredDayImage(null)}
       >
         <Image
-          src={destinationImage}
+          src={pdfAsset(destinationImage)}
           alt={dayLocation || day.title}
           fill
           className="object-cover"

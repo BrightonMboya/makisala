@@ -21,6 +21,8 @@ import type { ItineraryData } from '@/types/itinerary-types';
 import { formatActivityTiming } from '@/lib/utils';
 import { ConfirmProposalModal } from '@/components/proposal/ConfirmProposalModal';
 import { AccommodationAlternativesBlock } from '@/components/themes/AccommodationAlternativesBlock';
+import { StaticTripMap } from '@/components/themes/StaticTripMap';
+import { useForPrint, usePrintImage } from '@/components/themes/print-context';
 
 // --- TRIP MAP COMPONENT ---
 function TripMap({ data }: { data: ItineraryData['mapData'] }) {
@@ -326,11 +328,15 @@ export default function KuduTheme({ data, onHeroImageChange, onDayImageChange }:
 
   const [showConfirm, setShowConfirm] = React.useState(false);
 
+  // Print surface: swap the WebGL route map for a static raster and size-cap images.
+  const forPrint = useForPrint();
+  const pdfAsset = usePrintImage();
+
   return (
     <div className="h-screen snap-y snap-mandatory overflow-y-scroll scroll-smooth bg-[#F4F4F1] selection:bg-emerald-800 selection:text-white">
       {/* 1. INTRODUCTION: HERO */}
       <NarrativeSection
-        imageUrl={heroImage}
+        imageUrl={pdfAsset(heroImage)}
         onImageChange={
           onHeroImageChange
             ? () => {
@@ -432,7 +438,7 @@ export default function KuduTheme({ data, onHeroImageChange, onDayImageChange }:
         return (
           <NarrativeSection
             key={day.day}
-            imageUrls={dayImages}
+            imageUrls={dayImages.map((u) => pdfAsset(u))}
             imageRight={!isRight}
             onImageChange={
               onDayImageChange
@@ -677,7 +683,7 @@ export default function KuduTheme({ data, onHeroImageChange, onDayImageChange }:
             {/* Map Preview */}
             {mapData && mapData.locations && mapData.locations.length > 0 && (
               <div className="mb-6 h-40 overflow-hidden rounded">
-                <TripMap data={mapData} />
+                {forPrint ? <StaticTripMap data={mapData} /> : <TripMap data={mapData} />}
               </div>
             )}
 
@@ -709,7 +715,7 @@ export default function KuduTheme({ data, onHeroImageChange, onDayImageChange }:
 
       {/* ABOUT & PAYMENT TERMS */}
       {(organization?.aboutDescription || organization?.paymentTerms) && (
-        <NarrativeSection imageUrl={heroImage} imageRight={true}>
+        <NarrativeSection imageUrl={pdfAsset(heroImage)} imageRight={true}>
           <div className="max-h-[80vh] overflow-y-auto pr-2">
             {organization.aboutDescription && (
               <div className="mb-10">

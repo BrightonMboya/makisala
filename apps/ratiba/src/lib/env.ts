@@ -40,12 +40,26 @@ export const env = createEnv({
     // Shared secret Vercel Cron sends as `Authorization: Bearer <CRON_SECRET>`.
     // Optional so local dev boots without it; the cron route rejects when unset.
     CRON_SECRET: z.string().min(1).optional(),
+
+    // Cloudflare Browser Rendering (proposal-PDF render experiment). Runs on the
+    // same Cloudflare account as R2, so it reuses R2_ACCOUNT_ID; only the token
+    // (scoped to Browser Rendering) is new. Optional so the app boots without it;
+    // the render/benchmark path errors when unset.
+    CLOUDFLARE_BROWSER_RENDERING_TOKEN: z.string().min(1).optional(),
+    // Guards the dev-only /api/dev/pdf-benchmark route in production. When unset,
+    // the route is only reachable in non-production builds.
+    PDF_BENCHMARK_KEY: z.string().min(1).optional(),
   },
 
   client: {
     NEXT_PUBLIC_APP_URL: z.url(),
     NEXT_PUBLIC_AXIOM_DATASET: z.string().optional(),
     NEXT_PUBLIC_AXIOM_TOKEN: z.string().optional(),
+    // Mapbox access token for the print-surface static route map. Public by design
+    // (baked into the print page's <img> URL), so URL-restrict it to the app's
+    // domain in the Mapbox dashboard. Optional so the app boots without it; the
+    // static map falls back to a plain marker list when unset.
+    NEXT_PUBLIC_MAPBOX_TOKEN: z.string().min(1).optional(),
   },
 
   runtimeEnv: {
@@ -71,11 +85,14 @@ export const env = createEnv({
     POLAR_WEBHOOK_SECRET: process.env.POLAR_WEBHOOK_SECRET,
     POLAR_SERVER_MODE: process.env.POLAR_SERVER_MODE,
     CRON_SECRET: process.env.CRON_SECRET,
+    CLOUDFLARE_BROWSER_RENDERING_TOKEN: process.env.CLOUDFLARE_BROWSER_RENDERING_TOKEN,
+    PDF_BENCHMARK_KEY: process.env.PDF_BENCHMARK_KEY,
 
     // Client
     NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
     NEXT_PUBLIC_AXIOM_DATASET: process.env.NEXT_PUBLIC_AXIOM_DATASET,
     NEXT_PUBLIC_AXIOM_TOKEN: process.env.NEXT_PUBLIC_AXIOM_TOKEN,
+    NEXT_PUBLIC_MAPBOX_TOKEN: process.env.NEXT_PUBLIC_MAPBOX_TOKEN,
   },
 
   emptyStringAsUndefined: true,

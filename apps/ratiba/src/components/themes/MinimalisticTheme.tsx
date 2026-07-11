@@ -17,6 +17,8 @@ import { formatActivityTiming } from '@/lib/utils';
 import { trpc } from '@/lib/trpc';
 import { PaymentInstructions, type PaymentMethod } from '@/components/proposal/PaymentInstructions';
 import { AccommodationAlternativesBlock } from '@/components/themes/AccommodationAlternativesBlock';
+import { StaticTripMap } from '@/components/themes/StaticTripMap';
+import { useForPrint, usePrintImage } from '@/components/themes/print-context';
 
 // Auto-rotating image that slowly crossfades through multiple images.
 // Falls back to a single static image when only one is provided.
@@ -229,6 +231,9 @@ interface MinimalisticThemeProps {
 }
 
 export default function MinimalisticTheme({ data, onHeroImageChange, onDayImageChange }: MinimalisticThemeProps) {
+  // Print surface: swap the WebGL route map for a static raster and size-cap images.
+  const forPrint = useForPrint();
+  const pdfAsset = usePrintImage();
   const [isHeroHovered, setIsHeroHovered] = React.useState(false);
   const [hoveredDayImage, setHoveredDayImage] = React.useState<number | null>(null);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
@@ -267,7 +272,7 @@ export default function MinimalisticTheme({ data, onHeroImageChange, onDayImageC
         onMouseLeave={() => setIsHeroHovered(false)}
       >
         <Image
-          src={data.heroImage}
+          src={pdfAsset(data.heroImage)}
           alt={data.title}
           fill
           className="animate-reveal scale-105 object-cover"
@@ -484,7 +489,7 @@ export default function MinimalisticTheme({ data, onHeroImageChange, onDayImageC
                                 onMouseLeave={() => setHoveredDayImage(null)}
                               >
                                 <AutoRotatingImage
-                                  images={accommodationImages}
+                                  images={accommodationImages.map((u) => pdfAsset(u))}
                                   alt={accommodationDetails.name}
                                 />
                                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
@@ -744,7 +749,11 @@ export default function MinimalisticTheme({ data, onHeroImageChange, onDayImageC
               {/* Proposal Sidebar */}
               <div className="rounded-3xl border border-stone-100 bg-white p-10 shadow-sm">
                 <div className="mb-10">
-                  <TripMap data={data.mapData} />
+                  {forPrint ? (
+                    <StaticTripMap data={data.mapData} />
+                  ) : (
+                    <TripMap data={data.mapData} />
+                  )}
                 </div>
 
                 <div className="mb-8 border-b border-stone-100 pb-8">

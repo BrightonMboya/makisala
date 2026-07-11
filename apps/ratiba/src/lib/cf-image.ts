@@ -26,6 +26,42 @@ export interface CfImageOptions {
  *   quality: 85,
  * })
  */
+/**
+ * Print-surface image preset. Caps images for the proposal PDF (max 1600px, the
+ * old downscaleImages target) via Cloudflare Image Resizing. Proposal images live
+ * on our CF zone; anything not on it (a rare unchanged default) passes through
+ * rather than getting a broken /cdn-cgi/image URL.
+ */
+export function printImage(imageUrl: string | undefined, width = 1600): string {
+  if (!imageUrl) return '';
+  try {
+    if (!new URL(imageUrl).hostname.endsWith('makisala.com')) return imageUrl;
+  } catch {
+    return imageUrl;
+  }
+  return cfImage(imageUrl, { width, quality: 82 });
+}
+
+/**
+ * Strip an existing Cloudflare Image Resizing prefix so cfImage is idempotent.
+ * `https://h/cdn-cgi/image/<opts>/<source>` -> the original `<source>` URL.
+ * Wrapping an already-wrapped URL yields a nested path that 404s, and some stored
+ * URLs (via getPublicUrl) already carry the prefix.
+ */
+function stripCfImagePrefix(imageUrl: string): string {
+  const marker = '/cdn-cgi/image/';
+  const idx = imageUrl.indexOf(marker);
+  if (idx === -1) return imageUrl;
+  const origin = imageUrl.slice(0, idx);
+  const rest = imageUrl.slice(idx + marker.length); // "<opts>/<source...>"
+  const slash = rest.indexOf('/');
+  if (slash === -1) return imageUrl;
+  const source = rest.slice(slash + 1);
+  // The source segment can itself be a full URL (remote origin) or a same-host path.
+  if (/^https?:\/\//i.test(source)) return source;
+  return `${origin}/${source}`;
+}
+
 export function cfImage(imageUrl: string, options: CfImageOptions = {}): string {
   const {
     width,
@@ -54,13 +90,15 @@ export function cfImage(imageUrl: string, options: CfImageOptions = {}): string 
   const paramString = params.join(',');
 
   try {
-    const url = new URL(imageUrl);
+    // Idempotent: unwrap any existing prefix so we never nest /cdn-cgi/image/.
+    const source = stripCfImagePrefix(imageUrl);
+    const url = new URL(source);
     const pathname = url.pathname.toLowerCase();
 
     // Some R2 assets are stored as AVIF and may fail through Image Resizing.
     // Serve AVIF files directly from the bucket URL instead.
     if (pathname.endsWith('.avif')) {
-      return imageUrl;
+      return source;
     }
 
     return `${url.origin}/cdn-cgi/image/${paramString}${url.pathname}`;

@@ -6,6 +6,7 @@ import SafariPortalTheme from '@/components/themes/SafariPortalTheme';
 import KuduTheme from '@/components/themes/kudu';
 import DiscoveryTheme from '@/components/themes/DiscoveryTheme';
 import { PrintFrame } from '@/components/proposal/PrintFrame';
+import { PrintProvider } from '@/components/themes/print-context';
 import { createServerCaller } from '@/server/trpc/caller';
 import { transformProposalToItineraryData } from '@/lib/proposal-transform';
 import type { ThemeType } from '@/types/itinerary-types';
@@ -207,15 +208,17 @@ export default async function ProposalPrintPage({ params, searchParams }: Props)
         />
         <div data-print-root data-print-theme={theme}>
           <PrintFrame>
-            {theme === 'safari-portal' ? (
-              <SafariPortalTheme data={data} />
-            ) : theme === 'kudu' ? (
-              <KuduTheme data={data} />
-            ) : theme === 'discovery' ? (
-              <DiscoveryTheme data={data} />
-            ) : (
-              <MinimalisticTheme data={data} />
-            )}
+            <PrintProvider>
+              {theme === 'safari-portal' ? (
+                <SafariPortalTheme data={data} />
+              ) : theme === 'kudu' ? (
+                <KuduTheme data={data} />
+              ) : theme === 'discovery' ? (
+                <DiscoveryTheme data={data} />
+              ) : (
+                <MinimalisticTheme data={data} />
+              )}
+            </PrintProvider>
           </PrintFrame>
         </div>
       </>
