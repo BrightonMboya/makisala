@@ -196,13 +196,6 @@ export default async function ProposalPrintPage({ params, searchParams }: Props)
               [data-print-theme="minimalistic"] aside {
                 margin-top: 4rem;
               }
-              /* The map is aspect-square (would be ~1200px tall at full width):
-                 make it a sensible full-width banner instead. */
-              [data-print-theme="minimalistic"] [class*="aspect-square"]:has([data-print-map]) {
-                aspect-ratio: auto !important;
-                height: 460px !important;
-                width: 100% !important;
-              }
             `,
           }}
         />

@@ -9,9 +9,15 @@ import { headers } from 'next/headers';
 import { env } from '@/lib/env';
 import { serializeError } from '@/lib/logger';
 import { renderProposalPdf } from '@/lib/pdf/generate-pdf';
+import {
+  renderProposalPdfViaCloudflare,
+  isCloudflareRenderConfigured,
+} from '@/lib/pdf/cloudflare-render';
 
-// Attaching the PDF spins up headless Chromium, which requires the Node runtime
-// and a cold-start budget well beyond the platform default.
+// In production we render the PDF on Cloudflare Browser Rendering (an HTTP call,
+// no in-lambda Chromium), which is why the platform default runtime is fine. The
+// nodejs runtime + longer budget is kept for the local-dev fallback path, which
+// still spins up headless Chromium via @sparticuz/chromium.
 export const runtime = 'nodejs';
 export const maxDuration = 60;
 
@@ -115,15 +121,33 @@ export const POST = withAxiom(async (request: AxiomRequest) => {
     const replyToEmail = proposal.organization?.notificationEmail ?? undefined;
 
     // Render a PDF copy of the proposal to attach alongside the live link. This is
-    // best-effort: a Chromium hiccup should never block the send, since the email's
+    // best-effort: a render hiccup should never block the send, since the email's
     // primary CTA is the online proposal. In that case we log and send without it.
+    //
+    // Prefer Cloudflare Browser Rendering: it renders the public print URL off-box,
+    // so we avoid the in-lambda Chromium cold start / 40s render budget that was
+    // timing this out. We do NOT chain the puppeteer fallback when CF is configured:
+    // CF-fail + puppeteer-fail could exceed maxDuration, so a CF failure just sends
+    // without the attachment. The @sparticuz path stays for local dev (no CF token).
     const proposalTitle = proposal.tourTitle || proposal.name;
+    const lang = (proposal as { language?: string }).language;
     let pdfAttachment: { filename: string; content: Buffer } | undefined;
     try {
-      const pdf = await renderProposalPdf({
-        id: proposalId,
-        lang: (proposal as { language?: string }).language || undefined,
-      });
+      let pdf: Uint8Array;
+      if (isCloudflareRenderConfigured()) {
+        // Cloudflare caches the rendered PDF by full URL, so key it on the proposal's
+        // updatedAt: an unchanged proposal reuses the cache (near-instant), an edited
+        // one gets a fresh URL and re-renders. Without this a re-send after an edit
+        // could attach a stale PDF.
+        const params = new URLSearchParams();
+        if (lang && lang !== 'en') params.set('lang', lang);
+        if (proposal.updatedAt) params.set('v', String(new Date(proposal.updatedAt).getTime()));
+        const qs = params.toString();
+        const printUrl = `${env.NEXT_PUBLIC_APP_URL}/proposal/${proposalId}/print${qs ? `?${qs}` : ''}`;
+        ({ pdf } = await renderProposalPdfViaCloudflare(printUrl));
+      } else {
+        pdf = await renderProposalPdf({ id: proposalId, lang: lang || undefined });
+      }
       pdfAttachment = { filename: pdfFilename(proposalTitle), content: Buffer.from(pdf) };
     } catch (error) {
       request.log.error('Failed to render proposal PDF for email attachment; sending without it', {

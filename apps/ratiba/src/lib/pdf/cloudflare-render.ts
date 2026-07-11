@@ -6,14 +6,12 @@ import { env } from '@/lib/env';
  *
  * This is the "give us a URL, get a PDF back" model: Cloudflare's managed Chrome
  * fetches the print route over the public internet and prints it. Unlike our
- * puppeteer path (generate-pdf.ts) we get NO hook to run per-page fixes, so the
- * two known-hard cases still apply here:
- *   - WebGL MapLibre maps print blank (page.pdf can't rasterize live WebGL, and
- *     there's no element-screenshot step we can inject remotely).
- *   - framer-motion reveals can capture mid-animation.
- * We inject a best-effort priming script (force images eager + scroll pass) and a
- * settle delay to give lazy `next/image` its best shot, but this is a measurement
- * experiment, not yet a production replacement.
+ * puppeteer path (generate-pdf.ts) we get NO hook to run per-page fixes, which is
+ * why the print route is built to be printable-by-construction: the route map is a
+ * static Mapbox raster (StaticTripMap), not WebGL, so nothing needs rasterizing
+ * remotely. We still inject a best-effort priming script (force images eager +
+ * scroll pass) and a settle delay so lazy `next/image` and framer-motion reveals
+ * finish before capture.
  *
  * The target URL must be PUBLICLY reachable — Cloudflare's cloud browser cannot
  * see `localhost`. Point it at a deployed proposal print URL.
@@ -81,11 +79,10 @@ export async function renderProposalPdfViaCloudflare(
     // The themes are screen-designed; pagination comes from the @page rule.
     emulateMediaType: 'screen',
     viewport: { width: PAGE_WIDTH, height: PAGE_HEIGHT },
-    // `load` (not `networkidle0`): the print page has a live MapLibre map streaming
-    // tiles plus analytics, so the network never goes idle and networkidle0 rides
-    // until the session drops (Cloudflare error 5006). `load` waits for images and
-    // subresources; the settle delay below covers late lazy loads. This mirrors why
-    // generate-pdf.ts uses domcontentloaded over networkidle0.
+    // `load` (not `networkidle0`): analytics and other beacons keep the network from
+    // ever going idle, so networkidle0 rides until the session drops (Cloudflare
+    // error 5006). `load` waits for images and subresources; the settle delay below
+    // covers late lazy loads. This mirrors why generate-pdf.ts uses domcontentloaded.
     gotoOptions: { waitUntil: 'load', timeout: 30_000 },
     addScriptTag: [{ content: PRIMING_SCRIPT }],
     waitForTimeout: opts.waitMs ?? 4_000,

@@ -27,8 +27,11 @@ export interface CfImageOptions {
  * })
  */
 /**
- * Print-surface image preset. Caps images for the proposal PDF (max 1600px, the
- * old downscaleImages target) via Cloudflare Image Resizing. Proposal images live
+ * Print-surface image preset. Caps images for the proposal PDF (max 1600px) via
+ * Cloudflare Image Resizing. Note: Cloudflare Browser Rendering's Chrome rasterizes
+ * any object-fit-cropped image into an uncompressed RGB bitmap, so on that render
+ * path the PDF size scales with pixel dimensions (not JPEG quality) and lowering
+ * this width is the lever to shrink it. Proposal images live
  * on our CF zone; anything not on it (a rare unchanged default) passes through
  * rather than getting a broken /cdn-cgi/image URL.
  */

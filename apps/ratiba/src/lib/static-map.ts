@@ -3,7 +3,7 @@
  *
  * The interactive route map (packages/ui map.tsx) is MapLibre/WebGL, which prints
  * blank because page.pdf() and URL->PDF engines can't rasterize a live GL canvas.
- * For print we swap in a baked raster basemap (MapTiler static maps) and draw the
+ * For print we swap in a baked raster basemap (Mapbox static images) and draw the
  * route line + numbered pins ourselves as an SVG/HTML overlay. Basemap and overlay
  * must share ONE projection or the pins drift off their points, so all of it flows
  * through the center/zoom computed here.

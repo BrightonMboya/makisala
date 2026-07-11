@@ -7,7 +7,7 @@ import {
 import type { ItineraryData } from '@/types/itinerary-types';
 
 /**
- * Print-only route map. Renders a baked MapTiler basemap with the route line and
+ * Print-only route map. Renders a baked Mapbox basemap with the route line and
  * numbered pins drawn as an overlay, so it prints identically in every engine
  * (unlike the WebGL TripMap, which prints blank). Visuals mirror TripMap's pins.
  *
@@ -15,9 +15,9 @@ import type { ItineraryData } from '@/types/itinerary-types';
  * the overlay is positioned in percentages, so it scales with the rendered width.
  */
 
-// Logical canvas at 8:3 banner aspect. MapTiler renders this at @2x (2048x768),
-// which stays under its 2048px/side static-map limit and is crisp at print DPI.
-// The overlay is percentage-based, so only the aspect ratio has to match the box.
+// Logical canvas at 8:3 banner aspect. Mapbox renders this at @2x (2048x768); the
+// logical 1024x384 stays under Mapbox's 1280px/side static-image limit and is crisp
+// at print DPI. The overlay is percentage-based, so only the aspect has to match.
 const MAP_W = 1024;
 const MAP_H = 384;
 
