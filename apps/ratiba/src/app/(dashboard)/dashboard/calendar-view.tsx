@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { IlamyCalendar } from '@ilamy/calendar';
 import { useRouter } from 'next/navigation';
 import { format } from 'date-fns';
@@ -12,19 +12,33 @@ import {
   DropdownMenuTrigger,
 } from '@repo/ui/dropdown-menu';
 import { useDebounce } from '@repo/ui/use-debounce';
+import { keepPreviousData } from '@tanstack/react-query';
 import { Check, Filter, Search } from 'lucide-react';
 import { trpc } from '@/lib/trpc';
 import { staleTimes } from '@/lib/query-keys';
 import { getStatusConfig, PROPOSAL_STATUSES, type ProposalStatus } from '@/lib/proposal-status';
 import type { AppRouter } from '@/server/trpc/router';
 import type { inferRouterOutputs } from '@trpc/server';
+import { monthWindow, type CalendarWindow } from './calendar-window';
 
 type CalendarTrips = inferRouterOutputs<AppRouter>['proposals']['listForCalendar'];
-type Trip = CalendarTrips[number];
+type SearchResult = {
+  id: string;
+  title: string;
+  client: string | null;
+  status: ProposalStatus;
+  startDate: string;
+};
 
 const MAX_RESULTS = 8;
 
-export function CalendarView({ initialTrips }: { initialTrips: CalendarTrips }) {
+export function CalendarView({
+  initialTrips,
+  initialRange,
+}: {
+  initialTrips: CalendarTrips;
+  initialRange: CalendarWindow;
+}) {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
   const debouncedQuery = useDebounce(searchQuery, 200);
@@ -34,10 +48,20 @@ export function CalendarView({ initialTrips }: { initialTrips: CalendarTrips }) 
   // `seq` bumps on every selection so re-picking the same trip (after manually
   // navigating away) still forces the calendar to remount and jump back.
   const [focus, setFocus] = useState<{ id: string; startDate: string; seq: number } | null>(null);
+  // The visible calendar window, so we only load trips in view rather than every
+  // proposal the org ever created. Updated as the user navigates the calendar.
+  const [range, setRange] = useState<CalendarWindow>(initialRange);
 
+  // `keepPreviousData` keeps the current month's trips on screen while the next
+  // window loads, so navigating never flashes an empty calendar.
   const { data = [] } = trpc.proposals.listForCalendar.useQuery(
-    { filter: 'all' },
-    { staleTime: staleTimes.proposals, initialData: initialTrips },
+    { filter: 'all', ...range },
+    {
+      staleTime: staleTimes.proposals,
+      placeholderData: keepPreviousData,
+      // Seed only matches the initial window; other windows fetch fresh.
+      initialData: range === initialRange ? initialTrips : undefined,
+    },
   );
 
   const statusTrips = statusFilter ? data.filter((t) => t.status === statusFilter) : data;
@@ -69,25 +93,59 @@ export function CalendarView({ initialTrips }: { initialTrips: CalendarTrips }) 
     };
   });
 
-  // Search results: matches by proposal name or client, soonest first so trips
-  // that share a name are ordered by date and stay disambiguated by the date
-  // shown on each row.
-  const query = debouncedQuery.trim().toLowerCase();
-  const results = query
-    ? statusTrips
-        .filter((t) => `${t.title} ${t.client ?? ''}`.toLowerCase().includes(query))
+  const searchTerm = debouncedQuery.trim();
+  const showResults = searchOpen && searchTerm.length > 0;
+
+  // Search spans every proposal, not just the loaded window, so you can find and
+  // jump to a trip in any month. Runs server-side so it stays fast as the
+  // proposal history grows.
+  const { data: searchData } = trpc.proposals.listForDashboard.useQuery(
+    { filter: 'all', search: searchTerm, status: statusFilter, page: 1, pageSize: MAX_RESULTS },
+    { enabled: showResults, staleTime: staleTimes.proposals, placeholderData: keepPreviousData },
+  );
+
+  // Matches ordered soonest-first so trips that share a name stay disambiguated
+  // by the date shown on each row.
+  const results: SearchResult[] = showResults
+    ? (searchData?.items ?? [])
+        .filter((t): t is typeof t & { startDate: string } => Boolean(t.startDate))
+        .map((t) => ({
+          id: t.id,
+          title: t.tourTitle || t.name,
+          client: t.client?.name ?? null,
+          status: t.status,
+          startDate: t.startDate,
+        }))
         .sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime())
-        .slice(0, MAX_RESULTS)
     : [];
-  const showResults = searchOpen && query.length > 0;
 
   // The calendar reads `initialDate` on mount only, so we remount it via `key`
   // to jump to the focused trip's month.
   const focusDate = focus ? new Date(focus.startDate) : undefined;
   const calendarKey = focus ? `focus-${focus.id}-${focus.seq}` : 'default';
 
-  const selectTrip = (t: Trip) => {
+  // The calendar library measures its container after mount and paints its grid
+  // only then, leaving the body blank on first render. Overlay a spinner until
+  // it has had a layout+paint pass. Re-run on every remount (calendarKey change).
+  const [ready, setReady] = useState(false);
+  useEffect(() => {
+    setReady(false);
+    let inner = 0;
+    const outer = requestAnimationFrame(() => {
+      inner = requestAnimationFrame(() => setReady(true));
+    });
+    return () => {
+      cancelAnimationFrame(outer);
+      cancelAnimationFrame(inner);
+    };
+  }, [calendarKey]);
+
+  const selectTrip = (t: Pick<SearchResult, 'id' | 'startDate'>) => {
     setFocus((prev) => ({ id: t.id, startDate: t.startDate, seq: (prev?.seq ?? 0) + 1 }));
+    // Move the window to the selected trip's month. The calendar remounts to jump
+    // there, but that doesn't fire onDateChange, so we set the window here to load
+    // that month's trips (which includes the one we're jumping to).
+    setRange(monthWindow(new Date(t.startDate)));
     setSearchQuery('');
     setSearchOpen(false);
   };
@@ -191,7 +249,12 @@ export function CalendarView({ initialTrips }: { initialTrips: CalendarTrips }) 
         </DropdownMenu>
       </div>
 
-      <div className="flex-1 rounded-lg border border-stone-200 bg-white p-4">
+      <div className="relative flex-1 rounded-lg border border-stone-200 bg-white p-4">
+        {!ready && (
+          <div className="absolute inset-0 z-10 flex items-center justify-center rounded-lg bg-white">
+            <div className="h-8 w-8 animate-spin rounded-full border-4 border-green-600 border-t-transparent" />
+          </div>
+        )}
         <IlamyCalendar
           key={calendarKey}
           initialDate={focusDate}
@@ -202,6 +265,9 @@ export function CalendarView({ initialTrips }: { initialTrips: CalendarTrips }) 
           hideExportButton
           dayMaxEvents={4}
           onEventClick={(e) => router.push(`/itineraries/${e.id}/day-by-day`)}
+          onDateChange={(_date, r) =>
+            setRange({ rangeStart: r.start.toISOString(), rangeEnd: r.end.toISOString() })
+          }
         />
       </div>
     </div>

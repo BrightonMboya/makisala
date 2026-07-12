@@ -142,3 +142,12 @@
 @utility animate-marquee {
     animation: marquee 20s linear infinite;
 }
+
+/*
+ * The ilamy calendar header ships a built-in "+ New" create-event button with no
+ * prop to disable it. We drive proposal creation from elsewhere, so hide it. It's
+ * the only header button labelled "New".
+ */
+[data-testid='calendar-header'] button[aria-label='New'] {
+    display: none;
+}

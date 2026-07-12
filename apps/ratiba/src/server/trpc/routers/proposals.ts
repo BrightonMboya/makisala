@@ -13,7 +13,7 @@ import {
   accommodationImages,
 } from '@repo/db/schema';
 import { recordSentEmail } from '@repo/db';
-import { and, asc, desc, eq, inArray, isNull, isNotNull, notInArray, or, sql, count } from 'drizzle-orm';
+import { and, asc, desc, eq, gte, inArray, isNull, isNotNull, lte, notInArray, or, sql, count } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
 import {
   sendProposalShareEmail,
@@ -247,6 +247,10 @@ export const proposalsRouter = router({
       z
         .object({
           filter: z.enum(['mine', 'all']).default('all'),
+          // Visible calendar window. When set, only trips overlapping it are
+          // returned so the payload stays bounded as the proposal count grows.
+          rangeStart: z.string().datetime().optional(),
+          rangeEnd: z.string().datetime().optional(),
         })
         .default({ filter: 'all' }),
     )
@@ -255,6 +259,18 @@ export const proposalsRouter = router({
         eq(proposals.organizationId, ctx.orgId),
         isNotNull(proposals.startDate),
       ];
+
+      if (input.rangeStart && input.rangeEnd) {
+        // A trip occupies [startDate, startDate + duration). We don't have the
+        // duration in this table, so widen the lower bound by a generous buffer
+        // to still include trips that began before the window but run into it.
+        const BUFFER_DAYS = 45;
+        const lowerBound = new Date(
+          new Date(input.rangeStart).getTime() - BUFFER_DAYS * 24 * 60 * 60 * 1000,
+        ).toISOString();
+        conditions.push(gte(proposals.startDate, lowerBound));
+        conditions.push(lte(proposals.startDate, input.rangeEnd));
+      }
 
       if (input.filter === 'mine') {
         const assignedRows = await ctx.db
