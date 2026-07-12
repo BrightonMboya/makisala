@@ -8,7 +8,7 @@ import { auth } from '@/lib/auth';
 import { headers } from 'next/headers';
 import { env } from '@/lib/env';
 import { serializeError } from '@/lib/logger';
-import { renderProposalPdf } from '@/lib/pdf/proposal-pdf';
+import { getOrRenderProposalPdf } from '@/lib/pdf/proposal-pdf';
 
 // The PDF is rendered on Cloudflare Browser Rendering (an off-box HTTP call, no
 // in-lambda Chromium), so we just wait on the response; maxDuration covers that
@@ -111,7 +111,9 @@ export const POST = withAxiom(async (request: AxiomRequest) => {
     const lang = (proposal as { language?: string }).language;
     let pdfAttachment: { filename: string; content: Buffer } | undefined;
     try {
-      const { filename, pdf } = await renderProposalPdf({
+      // Reuses the R2-cached copy when the share page prewarmed it, so a send
+      // right after publishing is near-instant instead of a fresh ~15s render.
+      const { filename, pdf } = await getOrRenderProposalPdf({
         id: proposalId,
         title: proposalTitle,
         language: lang,

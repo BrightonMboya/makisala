@@ -1,6 +1,7 @@
 import 'server-only';
 import { env } from '@/lib/env';
 import { renderProposalPdfViaCloudflare } from './cloudflare-render';
+import { getPdfObject, putPdfObject } from '@/lib/storage';
 
 /** Turn a proposal title into a safe, readable PDF filename. */
 export function proposalPdfFilename(title: string): string {
@@ -48,4 +49,71 @@ export async function renderProposalPdf(
   const printUrl = buildProposalPrintUrl(target);
   const { pdf } = await renderProposalPdfViaCloudflare(printUrl);
   return { filename: proposalPdfFilename(target.title), pdf };
+}
+
+// --- Cached render (Option B) -------------------------------------------------
+// A rendered PDF is ~15s of Cloudflare work, so we cache it in R2 and reuse it.
+// Key is stable per (proposal, language) — one object, overwritten in place, so
+// edits never accumulate stale copies. The proposal's updatedAt is stored as a
+// `version` metadata tag; a stored object whose version differs from the current
+// proposal is stale and gets re-rendered. Language lives in the key (not the
+// version) so switching languages doesn't discard the other language's PDF.
+
+/** Content version tag for a proposal: its updatedAt in epoch ms, or '0'. */
+function proposalVersion(updatedAt: ProposalPrintTarget['updatedAt']): string {
+  return updatedAt ? String(new Date(updatedAt).getTime()) : '0';
+}
+
+/** Stable R2 key for a proposal's PDF in a given language. */
+function proposalPdfKey(id: string, language?: string | null): string {
+  return `proposals/${id}/${language || 'en'}.pdf`;
+}
+
+export type ProposalPdfResult = {
+  filename: string;
+  pdf: Uint8Array;
+  /** Where the bytes came from: an R2 cache hit, or a fresh Cloudflare render. */
+  source: 'r2' | 'rendered';
+  /** Render wall-clock in ms (0 on an R2 hit). */
+  renderMs: number;
+};
+
+/**
+ * Return the proposal PDF, serving a fresh R2 copy when one exists for the current
+ * version and re-rendering (then caching) otherwise. R2 read/write failures never
+ * block the result: a read error falls through to a render, a write error is
+ * swallowed after the bytes are already in hand.
+ */
+export async function getOrRenderProposalPdf(
+  target: ProposalPrintTarget & { title: string },
+): Promise<ProposalPdfResult> {
+  const version = proposalVersion(target.updatedAt);
+  const key = proposalPdfKey(target.id, target.language);
+
+  try {
+    const stored = await getPdfObject(key);
+    if (stored && stored.metadata.version === version) {
+      return {
+        filename: stored.metadata.filename || proposalPdfFilename(target.title),
+        pdf: stored.body,
+        source: 'r2',
+        renderMs: 0,
+      };
+    }
+  } catch {
+    // R2 read hiccup — treat as a miss and render fresh.
+  }
+
+  const started = performance.now();
+  const { filename, pdf } = await renderProposalPdf(target);
+  const renderMs = Math.round(performance.now() - started);
+
+  // Cache for next time. Best-effort: never fail the response over a write error.
+  try {
+    await putPdfObject({ key, file: pdf, metadata: { version, filename } });
+  } catch {
+    // ignore
+  }
+
+  return { filename, pdf, source: 'rendered', renderMs };
 }

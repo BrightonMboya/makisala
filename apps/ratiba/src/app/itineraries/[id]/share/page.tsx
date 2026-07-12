@@ -18,7 +18,7 @@ import {
 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@repo/ui/select';
 import { useBuilder } from '@/components/itinerary-builder/builder-context';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import { toast } from '@repo/ui/toast';
 import { useMutation } from '@tanstack/react-query';
@@ -265,12 +265,33 @@ export default function SharePage() {
     });
   };
 
+  // Warm the PDF cache in the background so Download / Send is near-instant when the
+  // operator clicks. Fire-and-forget: the ~15s render runs server-side (and caches to
+  // R2) while they review the page. Errors are ignored; the click path still renders
+  // on demand if the warm-up hasn't finished or failed.
+  const firePrewarm = useCallback(() => {
+    fetch(`/api/proposal/${proposalId}/pdf/prewarm`, { method: 'POST' }).catch(() => {});
+  }, [proposalId]);
+
+  // Prewarm once, as soon as the proposal is published (its updatedAt has settled
+  // server-side, so the warmed copy matches what a later click will request).
+  const prewarmedRef = useRef(false);
+  useEffect(() => {
+    if (isProposalSaved && !prewarmedRef.current) {
+      prewarmedRef.current = true;
+      firePrewarm();
+    }
+  }, [isProposalSaved, firePrewarm]);
+
   // Download the proposal PDF so the operator can send it directly (email, WhatsApp, etc).
   // Same render pipeline as the email attachment, streamed back as a file. We fetch it as
   // a blob (rather than navigating) so errors surface as a toast and the button can show
   // a spinner while Cloudflare renders.
   const downloadPdfMutation = useMutation({
     mutationFn: async () => {
+      // Client stopwatch = the latency the operator actually feels (network + server
+      // + R2-hit-or-render). X-PDF-Source tells us which path served it.
+      const startedAt = performance.now();
       const response = await fetch(`/api/proposal/${proposalId}/pdf`);
       if (!response.ok) {
         const result = await parseJsonResponse<{ error?: string }>(response).catch(
@@ -282,6 +303,8 @@ export default function SharePage() {
       const disposition = response.headers.get('Content-Disposition') || '';
       const match = disposition.match(/filename="?([^"]+)"?/);
       const filename = match?.[1] || `${tourTitle || 'proposal'}.pdf`;
+      const source = response.headers.get('X-PDF-Source'); // 'r2' | 'rendered'
+      const feltMs = Math.round(performance.now() - startedAt);
 
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -291,6 +314,12 @@ export default function SharePage() {
       link.click();
       link.remove();
       URL.revokeObjectURL(url);
+
+      return { feltMs, source };
+    },
+    onSuccess: ({ feltMs, source }) => {
+      // Lightweight instrumentation so before/after latency is visible without analytics.
+      console.info(`[pdf] downloaded in ${feltMs}ms (source: ${source ?? 'unknown'})`);
     },
     onError: (error: Error) => {
       toast({
@@ -304,13 +333,16 @@ export default function SharePage() {
   const handleLanguageChange = (language: string) => {
     setSelectedLanguage(language);
     if (language === 'en') {
-      resetLanguageMutation.mutate({ proposalId });
+      // Re-warm the cache for the new language once the reset lands (it changes the
+      // proposal's content + version, so the previous warm-up no longer applies).
+      resetLanguageMutation.mutate({ proposalId }, { onSuccess: firePrewarm });
       return;
     }
     translateMutation.mutate(
       { proposalId, language },
       {
         onSuccess: () => {
+          firePrewarm();
           const langLabel = LANGUAGES.find((l) => l.code === language)?.label || language;
           toast({
             title: 'Proposal Translated',

@@ -97,6 +97,55 @@ export async function uploadPdfToStorage({ file, key }: UploadPdfParams): Promis
 export const ALLOWED_UPLOAD_CONTENT_TYPES = ALLOWED_CONTENT_TYPES;
 
 /**
+ * Store a PDF at `key` with user metadata (e.g. a version tag). Overwrites any
+ * existing object at the same key atomically, so a stable per-proposal key never
+ * accumulates stale copies. Metadata values must be ASCII (R2/S3 restriction).
+ */
+export async function putPdfObject({
+  key,
+  file,
+  metadata,
+}: {
+  key: string;
+  file: Buffer | Uint8Array;
+  metadata?: Record<string, string>;
+}): Promise<void> {
+  await r2.send(
+    new PutObjectCommand({
+      Bucket: env.R2_BUCKET_NAME,
+      Key: key,
+      Body: file,
+      ContentType: 'application/pdf',
+      Metadata: metadata,
+    }),
+  );
+}
+
+/**
+ * Fetch a stored PDF and its user metadata. Returns null when the object doesn't
+ * exist; other errors (network, auth) propagate so callers can decide whether to
+ * treat them as a cache miss.
+ */
+export async function getPdfObject(
+  key: string,
+): Promise<{ body: Uint8Array; metadata: Record<string, string> } | null> {
+  try {
+    const res = await r2.send(
+      new GetObjectCommand({ Bucket: env.R2_BUCKET_NAME, Key: key }),
+    );
+    if (!res.Body) return null;
+    const body = await res.Body.transformToByteArray();
+    return { body, metadata: res.Metadata ?? {} };
+  } catch (error) {
+    const status = (error as { $metadata?: { httpStatusCode?: number } })?.$metadata
+      ?.httpStatusCode;
+    const name = (error as { name?: string })?.name;
+    if (status === 404 || name === 'NoSuchKey' || name === 'NotFound') return null;
+    throw error;
+  }
+}
+
+/**
  * Presigned PUT URL so the browser can upload a file straight to R2, bypassing
  * the serverless request-body size limit (the cause of "Payload too large" on
  * multi-image uploads). The client PUTs the raw file to this URL.

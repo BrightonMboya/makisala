@@ -8,12 +8,10 @@ import { log, serializeError } from '@/lib/logger';
 import { getOrRenderProposalPdf } from '@/lib/pdf/proposal-pdf';
 import { isCloudflareRenderConfigured } from '@/lib/pdf/cloudflare-render';
 
-// The PDF is rendered off-box on Cloudflare Browser Rendering, so we just wait on
-// the round trip; maxDuration covers it.
+// Renders off-box on Cloudflare; maxDuration covers the round trip.
 export const maxDuration = 60;
 
-// Resolve the caller's organization from the session, falling back to their first
-// membership. Mirrors the send-email route.
+// Mirrors the download route's org resolution.
 async function getOrganizationId(
   session: Awaited<ReturnType<typeof auth.api.getSession>>,
 ): Promise<string | null> {
@@ -33,13 +31,17 @@ async function getOrganizationId(
 }
 
 /**
- * Download the proposal as a PDF so the operator can send it directly (email,
- * WhatsApp, etc). Same render pipeline that attaches the PDF to the client email,
- * streamed back as an attachment instead.
+ * Warm the proposal PDF cache ahead of a Download / Send click.
  *
- *   GET /api/proposal/<id>/pdf
+ * The share page fires this (fire-and-forget) once the proposal is published, so
+ * the ~15s Cloudflare render happens while the operator reviews the page. By the
+ * time they click, getOrRenderProposalPdf finds a fresh R2 copy and returns it
+ * near-instantly. Rendering here is the same cache-populating call the download
+ * uses, so a prewarm + a click never render twice for an unchanged proposal.
+ *
+ *   POST /api/proposal/<id>/pdf/prewarm
  */
-export async function GET(
+export async function POST(
   _request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
@@ -52,7 +54,6 @@ export async function GET(
 
     const { id: proposalId } = await params;
 
-    // Scope the lookup to the caller's org so one operator can't pull another's proposal.
     const proposal = await db.query.proposals.findFirst({
       where: and(eq(proposals.id, proposalId), eq(proposals.organizationId, orgId)),
     });
@@ -62,39 +63,24 @@ export async function GET(
     }
 
     if (!isCloudflareRenderConfigured()) {
-      return NextResponse.json(
-        { success: false, error: 'PDF rendering is not configured' },
-        { status: 503 },
-      );
+      // Not an error the caller should act on — prewarming is best-effort.
+      return NextResponse.json({ success: false, skipped: true });
     }
 
     const title = proposal.tourTitle || proposal.name;
     const lang = (proposal as { language?: string }).language;
 
-    // Serve a cached R2 copy when the proposal is unchanged since it was last
-    // rendered (near-instant); otherwise render fresh and cache it.
-    const { filename, pdf, source, renderMs } = await getOrRenderProposalPdf({
+    const { source, renderMs } = await getOrRenderProposalPdf({
       id: proposalId,
       title,
       language: lang,
       updatedAt: proposal.updatedAt,
     });
 
-    return new NextResponse(pdf as unknown as BodyInit, {
-      status: 200,
-      headers: {
-        'Content-Type': 'application/pdf',
-        'Content-Disposition': `attachment; filename="${filename}"`,
-        'Content-Length': String(pdf.byteLength),
-        'Cache-Control': 'no-store',
-        // Observability: read these in the Network tab to see hit-vs-render + timing.
-        'X-PDF-Source': source,
-        'X-Render-Ms': String(renderMs),
-      },
-    });
+    return NextResponse.json({ success: true, source, renderMs });
   } catch (error) {
-    log.error('Error generating proposal PDF for download', { error: serializeError(error) });
+    log.error('Error prewarming proposal PDF', { error: serializeError(error) });
     await log.flush();
-    return NextResponse.json({ success: false, error: 'Failed to generate PDF' }, { status: 500 });
+    return NextResponse.json({ success: false, error: 'Failed to prewarm PDF' }, { status: 500 });
   }
 }
