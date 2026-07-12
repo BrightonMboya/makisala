@@ -6,15 +6,7 @@ export const dynamic = 'force-dynamic';
 export default async function DashboardPage() {
   const trpc = await createServerCaller();
 
-  const [proposals, isAdmin] = await Promise.all([
-    trpc.proposals.listForDashboard({ filter: 'mine', page: 1, pageSize: 20 }),
-    trpc.settings.checkAdmin(),
-  ]);
+  const trips = await trpc.proposals.listForCalendar({ filter: 'all' });
 
-  return (
-    <DashboardView
-      initialProposals={proposals}
-      initialIsAdmin={isAdmin}
-    />
-  );
+  return <DashboardView initialTrips={trips} />;
 }

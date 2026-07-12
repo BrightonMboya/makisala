@@ -64,5 +64,4 @@ export const staleTimes = {
   organizationImages: 60 * 1000, // 1 minute
   comments: 30 * 1000, // 30 seconds
   notes: 30 * 1000, // 30 seconds
-  dashboardData: 60 * 1000, // 1 minute
 } as const;

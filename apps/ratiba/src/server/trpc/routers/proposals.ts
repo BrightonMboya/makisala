@@ -13,7 +13,7 @@ import {
   accommodationImages,
 } from '@repo/db/schema';
 import { recordSentEmail } from '@repo/db';
-import { and, asc, desc, eq, inArray, isNull, notInArray, or, sql, count } from 'drizzle-orm';
+import { and, asc, desc, eq, inArray, isNull, isNotNull, notInArray, or, sql, count } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
 import {
   sendProposalShareEmail,
@@ -237,6 +237,70 @@ export const proposalsRouter = router({
       const totalPages = Math.ceil(totalCount / input.pageSize);
 
       return { items, totalCount, page: input.page, pageSize: input.pageSize, totalPages };
+    }),
+
+  // Lightweight feed for the dashboard calendar view: every scheduled trip in
+  // the org (startDate set), with its duration derived from the day count so we
+  // can render a multi-day bar. No pagination; a calendar wants the full range.
+  listForCalendar: protectedProcedure
+    .input(
+      z
+        .object({
+          filter: z.enum(['mine', 'all']).default('all'),
+        })
+        .default({ filter: 'all' }),
+    )
+    .query(async ({ ctx, input }) => {
+      const conditions = [
+        eq(proposals.organizationId, ctx.orgId),
+        isNotNull(proposals.startDate),
+      ];
+
+      if (input.filter === 'mine') {
+        const assignedRows = await ctx.db
+          .select({ proposalId: proposalAssignments.proposalId })
+          .from(proposalAssignments)
+          .where(eq(proposalAssignments.userId, ctx.user.id));
+        const assignedIds = assignedRows.map((r) => r.proposalId);
+        if (assignedIds.length === 0) return [];
+        conditions.push(inArray(proposals.id, assignedIds));
+      }
+
+      const rows = await ctx.db.query.proposals.findMany({
+        where: and(...conditions)!,
+        columns: {
+          id: true,
+          name: true,
+          tourTitle: true,
+          status: true,
+          startDate: true,
+        },
+        with: {
+          client: { columns: { name: true } },
+        },
+      });
+
+      // Derive each trip's duration from a grouped COUNT rather than loading
+      // every day row: the calendar only needs the tally, not the day contents.
+      const dayCounts = new Map<string, number>();
+      if (rows.length > 0) {
+        const counts = await ctx.db
+          .select({ proposalId: proposalDays.proposalId, n: count() })
+          .from(proposalDays)
+          .where(inArray(proposalDays.proposalId, rows.map((p) => p.id)))
+          .groupBy(proposalDays.proposalId);
+        for (const c of counts) dayCounts.set(c.proposalId, c.n);
+      }
+
+      return rows.map((p) => ({
+        id: p.id,
+        title: p.tourTitle || p.name,
+        client: p.client?.name ?? null,
+        status: p.status,
+        startDate: p.startDate!,
+        // Inclusive day count; a trip always spans at least one day.
+        numberOfDays: Math.max(dayCounts.get(p.id) ?? 0, 1),
+      }));
     }),
 
   getById: publicProcedure
