@@ -11,6 +11,7 @@ import { renderNoteMentionEmail } from '../templates/note-mention';
 import { renderInquiryNotificationEmail } from '../templates/inquiry-notification';
 import { renderDemoRequestNotificationEmail } from '../templates/demo-request-notification';
 import { renderPaymentChangeRequestEmail } from '../templates/payment-change-request';
+import { renderNewDestinationNotificationEmail } from '../templates/new-destination-notification';
 
 export interface CommentNotificationData {
   proposalId: string;
@@ -648,6 +649,58 @@ export async function sendDemoRequestEmail(
       subject: `New Demo Request from ${data.fullName} — ${data.company}`,
       html,
       replyTo: data.email,
+    });
+
+    if (result.error) {
+      return {
+        success: false,
+        error: result.error.message || 'Failed to send email',
+      };
+    }
+
+    return { success: true };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error occurred',
+    };
+  }
+}
+
+export interface NewDestinationData {
+  destinationName: string;
+  addedByName: string | null;
+  addedByEmail: string | null;
+  organizationId: string | null;
+  latitude: number | null;
+  longitude: number | null;
+}
+
+/**
+ * Notifies the team when an operator adds a destination that isn't in the
+ * curated catalog, so real cover images can be seeded for it later.
+ */
+export async function sendNewDestinationEmail(
+  data: NewDestinationData,
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const html = renderNewDestinationNotificationEmail({
+      destinationName: data.destinationName,
+      addedByName: data.addedByName,
+      addedByEmail: data.addedByEmail,
+      organizationId: data.organizationId,
+      latitude: data.latitude,
+      longitude: data.longitude,
+    });
+
+    const fromEmail = platformFromAddress();
+
+    const result = await resend.emails.send({
+      from: fromEmail,
+      to: 'info@makisala.com',
+      subject: `New Destination Added: ${data.destinationName}`,
+      html,
+      ...(data.addedByEmail ? { replyTo: data.addedByEmail } : {}),
     });
 
     if (result.error) {

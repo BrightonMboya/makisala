@@ -54,7 +54,7 @@ import type {
 } from '@/types/itinerary-types';
 import { addDays, format } from 'date-fns';
 import { trpc } from '@/lib/trpc';
-import { parseGeoValue } from '@/lib/geocoding';
+import { parseGeoValue, searchPlaces } from '@/lib/geocoding';
 
 type Day = BuilderDay;
 type Activity = BuilderActivity;
@@ -399,6 +399,39 @@ function SortableDayRow({
     [utils],
   );
 
+  const createDestination = trpc.nationalParks.createCustom.useMutation();
+
+  const handleDestinationCreate = useCallback(
+    async (name: string) => {
+      // Silently geocode the typed name so the new destination gets a map pin.
+      // Photon biases but never restricts, so any top hit is acceptable here.
+      let lat: number | null = null;
+      let lng: number | null = null;
+      let country: string | undefined;
+      try {
+        const [top] = await searchPlaces(name);
+        if (top) {
+          lat = top.latitude;
+          lng = top.longitude;
+          country = top.country;
+        }
+      } catch {
+        // Geocoding is best-effort; a destination with no pin is still usable.
+      }
+
+      const created = await createDestination.mutateAsync({
+        name,
+        latitude: lat ?? undefined,
+        longitude: lng ?? undefined,
+        country,
+      });
+
+      parkCache.current.set(created.id, { name: created.name, lat, lng });
+      return { value: created.id, label: created.name };
+    },
+    [createDestination],
+  );
+
   const handleGetDestinationLabel = useCallback(
     async (id: string) => {
       if (UUID_RE.test(id)) {
@@ -705,10 +738,11 @@ function SortableDayRow({
               }
             }}
             onSearch={handleDestinationSearch}
+            onCreate={handleDestinationCreate}
             onGetLabel={handleGetDestinationLabel}
             initialLabel={day.destinationName}
             placeholder="Search parks or type a destination"
-            createLabel="Use"
+            createLabel="Add"
           />
         </div>
 

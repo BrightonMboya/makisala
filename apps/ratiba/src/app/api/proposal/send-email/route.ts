@@ -8,23 +8,12 @@ import { auth } from '@/lib/auth';
 import { headers } from 'next/headers';
 import { env } from '@/lib/env';
 import { serializeError } from '@/lib/logger';
-import { renderProposalPdfViaCloudflare } from '@/lib/pdf/cloudflare-render';
+import { renderProposalPdf } from '@/lib/pdf/proposal-pdf';
 
 // The PDF is rendered on Cloudflare Browser Rendering (an off-box HTTP call, no
 // in-lambda Chromium), so we just wait on the response; maxDuration covers that
 // round trip.
 export const maxDuration = 60;
-
-// Turn a proposal title into a safe, readable PDF filename.
-function pdfFilename(title: string): string {
-  const base =
-    title
-      .replace(/[^\w\s-]/g, '')
-      .trim()
-      .replace(/\s+/g, '-')
-      .slice(0, 80) || 'proposal';
-  return `${base}.pdf`;
-}
 
 // Helper to get organization ID from session or member table
 async function getOrganizationId(session: Awaited<ReturnType<typeof auth.api.getSession>>): Promise<string | null> {
@@ -118,22 +107,17 @@ export const POST = withAxiom(async (request: AxiomRequest) => {
     // Cloudflare Browser Rendering (off-box). This is best-effort: a render hiccup
     // should never block the send, since the email's primary CTA is the online
     // proposal. On failure we log and send without the attachment.
-    //
-    // Cloudflare caches the rendered PDF by full URL, so key it on the proposal's
-    // updatedAt: an unchanged proposal reuses the cache (near-instant), an edited one
-    // gets a fresh URL and re-renders. Without this a re-send after an edit could
-    // attach a stale PDF.
     const proposalTitle = proposal.tourTitle || proposal.name;
     const lang = (proposal as { language?: string }).language;
     let pdfAttachment: { filename: string; content: Buffer } | undefined;
     try {
-      const params = new URLSearchParams();
-      if (lang && lang !== 'en') params.set('lang', lang);
-      if (proposal.updatedAt) params.set('v', String(new Date(proposal.updatedAt).getTime()));
-      const qs = params.toString();
-      const printUrl = `${env.NEXT_PUBLIC_APP_URL}/proposal/${proposalId}/print${qs ? `?${qs}` : ''}`;
-      const { pdf } = await renderProposalPdfViaCloudflare(printUrl);
-      pdfAttachment = { filename: pdfFilename(proposalTitle), content: Buffer.from(pdf) };
+      const { filename, pdf } = await renderProposalPdf({
+        id: proposalId,
+        title: proposalTitle,
+        language: lang,
+        updatedAt: proposal.updatedAt,
+      });
+      pdfAttachment = { filename, content: Buffer.from(pdf) };
     } catch (error) {
       request.log.error('Failed to render proposal PDF for email attachment; sending without it', {
         proposalId,

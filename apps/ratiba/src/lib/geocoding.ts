@@ -38,6 +38,7 @@ export interface GeocodingResult {
   displayName: string;
   latitude: number;
   longitude: number;
+  country?: string;
 }
 
 function buildDisplayName(p: PhotonFeature['properties']): string {
@@ -99,5 +100,6 @@ export async function searchPlaces(
     displayName: buildDisplayName(f.properties),
     latitude: f.geometry.coordinates[1]!,
     longitude: f.geometry.coordinates[0]!,
+    country: f.properties.country,
   }));
 }

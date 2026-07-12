@@ -14,6 +14,7 @@ import {
   Eye,
   Pencil,
   Globe,
+  Download,
 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@repo/ui/select';
 import { useBuilder } from '@/components/itinerary-builder/builder-context';
@@ -264,6 +265,42 @@ export default function SharePage() {
     });
   };
 
+  // Download the proposal PDF so the operator can send it directly (email, WhatsApp, etc).
+  // Same render pipeline as the email attachment, streamed back as a file. We fetch it as
+  // a blob (rather than navigating) so errors surface as a toast and the button can show
+  // a spinner while Cloudflare renders.
+  const downloadPdfMutation = useMutation({
+    mutationFn: async () => {
+      const response = await fetch(`/api/proposal/${proposalId}/pdf`);
+      if (!response.ok) {
+        const result = await parseJsonResponse<{ error?: string }>(response).catch(
+          () => ({}) as { error?: string },
+        );
+        throw new Error(result.error || 'Failed to generate PDF.');
+      }
+      const blob = await response.blob();
+      const disposition = response.headers.get('Content-Disposition') || '';
+      const match = disposition.match(/filename="?([^"]+)"?/);
+      const filename = match?.[1] || `${tourTitle || 'proposal'}.pdf`;
+
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Failed to download PDF',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+
   const handleLanguageChange = (language: string) => {
     setSelectedLanguage(language);
     if (language === 'en') {
@@ -350,6 +387,20 @@ export default function SharePage() {
                   Open
                 </Button>
               </a>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => downloadPdfMutation.mutate()}
+                disabled={downloadPdfMutation.isPending}
+                className="gap-1.5"
+              >
+                {downloadPdfMutation.isPending ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Download className="h-3.5 w-3.5" />
+                )}
+                {downloadPdfMutation.isPending ? 'Preparing...' : 'Download PDF'}
+              </Button>
             </div>
           )}
         </div>

@@ -689,6 +689,11 @@ export const nationalParks = pgTable('national_parks', {
   featured_stays: json('featured_stays').$type<FeaturedStay[]>(),
   testimonials: json('testimonials').$type<Testimonial[]>(),
   good_to_know: json('good_to_know').$type<GoodToKnow[]>(),
+  // 'catalog' = curated seed row; 'user' = added on the fly from the itinerary
+  // builder and awaiting image seeding. Existing rows default to 'catalog'.
+  source: text('source').notNull().default('catalog'),
+  // The user id of the operator who added a 'user' destination (null for catalog).
+  created_by: uuid('created_by'),
   createdAt: timestamp({ precision: 3, mode: 'string' })
     .default(sql`CURRENT_TIMESTAMP`)
     .notNull(),
