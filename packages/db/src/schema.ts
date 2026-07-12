@@ -1492,6 +1492,11 @@ export const emailMessages = pgTable(
     // Furthest-along status derived from webhook events (sent, delivered,
     // opened, clicked, bounced, complained, failed, delivery_delayed).
     status: text('status').default('sent').notNull(),
+    // Engagement counts: incremented on every opened/clicked event (the *At
+    // columns keep only the first occurrence). May slightly over-count on rare
+    // webhook re-deliveries.
+    openCount: integer('open_count').default(0).notNull(),
+    clickCount: integer('click_count').default(0).notNull(),
     // Per-event timestamps, each set once when its first matching event lands.
     sentAt: timestamp('sent_at', { precision: 3, mode: 'string' }),
     deliveredAt: timestamp('delivered_at', { precision: 3, mode: 'string' }),

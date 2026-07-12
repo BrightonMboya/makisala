@@ -696,9 +696,7 @@ export default function SharePage() {
       )}
 
       {/* Delivery analytics for prior sends of this proposal */}
-      <div className="mx-auto mt-6 max-w-3xl px-4 pb-28">
-        <EmailDeliveryStatus proposalId={proposalId} />
-      </div>
+      <EmailDeliveryStatus proposalId={proposalId} />
 
       {/* Bottom Action Bar */}
       <div className="fixed right-0 bottom-0 left-0 z-50 border-t bg-white p-4 shadow-lg">

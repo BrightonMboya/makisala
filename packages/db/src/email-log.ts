@@ -99,6 +99,8 @@ export async function applyResendWebhookEvent(
   const statusKey = input.type.replace('email.', '');
   const rank = STATUS_RANK[statusKey] ?? 0;
   const column = emailMessages[columnKey];
+  const isOpen = statusKey === 'opened';
+  const isClick = statusKey === 'clicked';
 
   // Normalize the event timestamp; fall back to now if missing/invalid.
   let ts: string;
@@ -109,6 +111,8 @@ export async function applyResendWebhookEvent(
     .update(emailMessages)
     .set({
       [columnKey]: sql`COALESCE(${column}, ${ts})`,
+      ...(isOpen ? { openCount: sql`${emailMessages.openCount} + 1` } : {}),
+      ...(isClick ? { clickCount: sql`${emailMessages.clickCount} + 1` } : {}),
       status: sql`CASE WHEN ${rank} >= (CASE ${emailMessages.status}
         WHEN 'sent' THEN 1
         WHEN 'delivery_delayed' THEN 2

@@ -38,11 +38,18 @@ export function EmailDeliveryStatus({ proposalId }: { proposalId: string }) {
     label: string;
     at: string | null;
     icon: typeof Check;
+    count?: number;
   }> = [
     { key: 'sent', label: 'Sent', at: message.sentAt, icon: Send },
     { key: 'delivered', label: 'Delivered', at: message.deliveredAt, icon: Check },
-    { key: 'opened', label: 'Opened', at: message.openedAt, icon: MailOpen },
-    { key: 'clicked', label: 'Clicked link', at: message.clickedAt, icon: MousePointerClick },
+    { key: 'opened', label: 'Opened', at: message.openedAt, icon: MailOpen, count: message.openCount },
+    {
+      key: 'clicked',
+      label: 'Clicked link',
+      at: message.clickedAt,
+      icon: MousePointerClick,
+      count: message.clickCount,
+    },
   ];
 
   const failure = message.bouncedAt
@@ -54,7 +61,7 @@ export function EmailDeliveryStatus({ proposalId }: { proposalId: string }) {
         : null;
 
   return (
-    <div className="rounded-lg border border-stone-200 bg-white p-4">
+    <div className="rounded-xl border border-stone-200 bg-white p-5 shadow-sm">
       <div className="mb-3 flex items-center gap-2 text-sm font-medium text-stone-700">
         <Mail className="h-4 w-4 text-green-600" />
         Delivery status
@@ -82,6 +89,11 @@ export function EmailDeliveryStatus({ proposalId }: { proposalId: string }) {
                 <span className={reached ? 'text-stone-700' : 'text-stone-400'}>
                   {step.label}
                 </span>
+                {reached && step.count && step.count > 1 && (
+                  <span className="ml-1 rounded-full bg-green-100 px-1.5 py-0.5 text-[10px] font-medium text-green-700">
+                    {step.count}×
+                  </span>
+                )}
                 {reached && step.at && (
                   <span className="ml-1 text-stone-400">{formatEventTime(step.at)}</span>
                 )}
