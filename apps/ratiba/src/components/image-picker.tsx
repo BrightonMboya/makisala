@@ -24,6 +24,12 @@ const ACCOMMODATIONS_FOLDER = 'accommodations';
 const NATIONAL_PARKS_FOLDER = 'national-parks';
 // Root folders the "browse" source searches across (accommodations + national parks).
 const BROWSE_ROOTS = [ACCOMMODATIONS_FOLDER, NATIONAL_PARKS_FOLDER];
+// Friendly breadcrumb labels for the root folders so the user can navigate back
+// to the list (e.g. "National Parks") rather than the raw folder name.
+const ROOT_LABELS: Record<string, string> = {
+  [ACCOMMODATIONS_FOLDER]: 'Accommodations',
+  [NATIONAL_PARKS_FOLDER]: 'National Parks',
+};
 
 // 'browse' searches accommodations + national parks (search -> item -> images);
 // 'organization' shows a flat grid of the org's uploaded images.
@@ -39,6 +45,69 @@ interface ImagePickerContentProps {
   isOpen?: boolean;
   /** Default tab to show */
   defaultSource?: ImageSource;
+  /**
+   * Folders to surface as a quick-access grid at the browse root (before any
+   * search). Used to show the national parks this proposal references so the
+   * user can jump straight into their images without searching.
+   */
+  suggestedFolders?: StorageFolder[];
+}
+
+/**
+ * A card in the "In this proposal" grid. Fetches the folder's images and uses
+ * the first one as the thumbnail (falling back to a mountain icon while loading
+ * or when the folder is empty). Clicking opens the folder to browse all images.
+ * Shares the same query key as the browse view, so opening the folder is instant.
+ */
+function SuggestedFolderCard({
+  folder,
+  bucket,
+  isOpen,
+  onOpen,
+}: {
+  folder: StorageFolder;
+  bucket: string;
+  isOpen: boolean;
+  onOpen: (folder: StorageFolder) => void;
+}) {
+  const utils = trpc.useUtils();
+  const { data: images = [], isLoading } = useQuery({
+    queryKey: ['storageImages', bucket, folder.path],
+    queryFn: () => utils.storage.getImages.fetch({ folder: folder.path, bucket }),
+    enabled: isOpen,
+    staleTime: staleTimes.storage,
+  });
+  const thumbnail = images[0]?.secure_url;
+
+  return (
+    <button
+      type="button"
+      className="group hover:ring-primary flex flex-col overflow-hidden rounded-lg border text-left transition-all hover:ring-2"
+      onClick={() => onOpen(folder)}
+    >
+      <div className="bg-muted relative aspect-video w-full overflow-hidden">
+        {thumbnail ? (
+          <Image
+            src={thumbnail}
+            alt={folder.displayName || folder.name}
+            fill
+            className="object-cover transition-transform group-hover:scale-105"
+          />
+        ) : (
+          <div className="flex h-full items-center justify-center">
+            {isLoading ? (
+              <Loader2 className="h-6 w-6 animate-spin text-gray-300" />
+            ) : (
+              <Mountain className="h-8 w-8 fill-emerald-500/20 text-emerald-600" />
+            )}
+          </div>
+        )}
+      </div>
+      <span className="truncate px-3 py-2 text-sm font-medium">
+        {folder.displayName || folder.name}
+      </span>
+    </button>
+  );
 }
 
 /**
@@ -51,6 +120,7 @@ export function ImagePickerContent({
   initialFolder,
   isOpen = true,
   defaultSource = 'browse',
+  suggestedFolders,
 }: ImagePickerContentProps) {
   const [activeSource, setActiveSource] = useState<ImageSource>(defaultSource);
   // Browse starts at its (virtual) root: a search prompt, no folder listing exposed.
@@ -235,25 +305,25 @@ export function ImagePickerContent({
         >
           <Home className="h-4 w-4" />
         </Button>
-        {currentPath
-          .filter((segment) => !BROWSE_ROOTS.includes(segment))
-          .map((segment, _filteredIndex) => {
-            // Find the real index in currentPath for correct breadcrumb navigation
-            const realIndex = currentPath.indexOf(segment);
-            return (
-              <div key={`${segment}-${realIndex}`} className="flex shrink-0 items-center">
-                <ChevronRight className="h-4 w-4" />
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-6 px-2"
-                  onClick={() => handleBreadcrumbClick(realIndex)}
-                >
-                  {getDisplayNameForPathSegment(segment)}
-                </Button>
-              </div>
-            );
-          })}
+        {currentPath.map((segment, index) => {
+          const isRoot = BROWSE_ROOTS.includes(segment);
+          // Clicking a root crumb (e.g. "National Parks") returns to the list,
+          // keeping the crumb visible; other crumbs slice back to themselves.
+          const label = isRoot ? ROOT_LABELS[segment] ?? segment : getDisplayNameForPathSegment(segment);
+          return (
+            <div key={`${segment}-${index}`} className="flex shrink-0 items-center">
+              <ChevronRight className="h-4 w-4" />
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 px-2"
+                onClick={() => handleBreadcrumbClick(index)}
+              >
+                {label}
+              </Button>
+            </div>
+          );
+        })}
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto">
@@ -263,12 +333,33 @@ export function ImagePickerContent({
           </div>
         ) : (
           <div className="space-y-6">
-            {/* Search prompt at browse root */}
+            {/* Browse root (no active search): show this proposal's parks as a
+                quick-access grid, or fall back to a search prompt. */}
             {atBrowseRoot && debouncedSearchQuery.length < 2 && (
-              <div className="flex h-40 flex-col items-center justify-center text-center">
-                <Search className="mb-2 h-10 w-10 text-gray-300" />
-                <p className="text-muted-foreground text-sm">Search accommodations and park images above</p>
-              </div>
+              suggestedFolders && suggestedFolders.length > 0 ? (
+                <div>
+                  <h3 className="text-muted-foreground mb-2 text-sm font-medium">In this proposal</h3>
+                  <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+                    {suggestedFolders.map((folder) => (
+                      <SuggestedFolderCard
+                        key={folder.path}
+                        folder={folder}
+                        bucket={bucket}
+                        isOpen={isOpen}
+                        onOpen={handleFolderClick}
+                      />
+                    ))}
+                  </div>
+                  <p className="text-muted-foreground mt-4 text-xs">
+                    Or search all accommodations and parks above.
+                  </p>
+                </div>
+              ) : (
+                <div className="flex h-40 flex-col items-center justify-center text-center">
+                  <Search className="mb-2 h-10 w-10 text-gray-300" />
+                  <p className="text-muted-foreground text-sm">Search accommodations and park images above</p>
+                </div>
+              )
             )}
 
             {/* Search Results or Folders */}
@@ -338,7 +429,7 @@ export function ImagePickerContent({
   );
 
   return (
-    <div className="flex h-[500px] flex-col">
+    <div className="flex h-[620px] flex-col">
       <Tabs value={activeSource} onValueChange={handleTabChange} className="flex h-full flex-col">
         <TabsList className="mb-4 grid w-full grid-cols-2">
           <TabsTrigger value="browse" className="gap-2">
@@ -409,6 +500,8 @@ interface ImagePickerProps {
   initialFolder?: string;
   /** Default tab to show */
   defaultSource?: ImageSource;
+  /** Folders to surface as a quick-access grid at the browse root (e.g. the proposal's parks). */
+  suggestedFolders?: StorageFolder[];
 }
 
 /**
@@ -421,6 +514,7 @@ export function ImagePicker({
   bucket = ACCOMMODATIONS_BUCKET,
   initialFolder,
   defaultSource = 'browse',
+  suggestedFolders,
 }: ImagePickerProps) {
   const [open, setOpen] = useState(false);
 
@@ -443,7 +537,7 @@ export function ImagePicker({
             {triggerLabel || (value ? 'Change Image' : 'Select Image')}
           </Button>
         </DialogTrigger>
-        <DialogContent className="max-w-4xl">
+        <DialogContent className="sm:max-w-6xl">
           <DialogHeader>
             <DialogTitle>Select Image</DialogTitle>
           </DialogHeader>
@@ -454,6 +548,7 @@ export function ImagePicker({
             initialFolder={initialFolder}
             isOpen={open}
             defaultSource={defaultSource}
+            suggestedFolders={suggestedFolders}
           />
         </DialogContent>
       </Dialog>

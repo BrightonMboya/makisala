@@ -18,11 +18,15 @@ import { useMutation } from '@tanstack/react-query';
 import { staleTimes } from '@/lib/query-keys';
 import { Popover, PopoverContent, PopoverTrigger } from '@repo/ui/popover';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@repo/ui/dialog';
-import { ImagePicker, ImagePickerContent } from '@/components/image-picker';
+import { ImagePickerContent } from '@/components/image-picker';
 import type { ThemeType } from '@/types/itinerary-types';
 import { usePlan } from '@/components/plan-context';
 import { ALLOWED_THEMES_BY_TIER } from '@/lib/plans-config';
 import { Lock } from 'lucide-react';
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+// R2 folder that holds each national park's images, keyed by park id.
+const NATIONAL_PARKS_FOLDER = 'national-parks';
 
 const THEME_OPTIONS: { value: ThemeType; label: string; description: string }[] = [
   {
@@ -113,6 +117,22 @@ export default function PreviewPage() {
     staleTime: staleTimes.accommodations,
   });
 
+  // All national parks (id + name) so we can resolve the proposal's day
+  // destinations to their R2 image folders, even when a day's destination was
+  // typed as free text rather than picked from the park list.
+  const { data: nationalParksData } = trpc.nationalParks.getAll.useQuery(undefined, {
+    staleTime: staleTimes.accommodations,
+  });
+
+  // The park ids that actually have an image folder in R2. Several parks have
+  // empty duplicate records (e.g. a lowercase "bwindi" slug alongside "Bwindi
+  // Impenetrable National Park"); only the one with a folder here has images, so
+  // we restrict the proposal grid to these.
+  const { data: parkFoldersData } = trpc.storage.getFolders.useQuery(
+    { parentFolder: NATIONAL_PARKS_FOLDER },
+    { staleTime: staleTimes.storage },
+  );
+
   const { data: orgSettings } = trpc.settings.getOrg.useQuery();
 
   const accommodationsMap = useMemo(() => {
@@ -130,6 +150,53 @@ export default function PreviewPage() {
     });
     return map;
   }, [accommodationsData]);
+
+  // National parks referenced by this proposal, resolved to their R2 image
+  // folders. Surfaced as a quick-access grid in the image picker so the user
+  // lands on their proposal's parks instead of an empty search box. A day links
+  // to a park either directly (destination is a park id) or by name (free-text
+  // destination that matches a park), so we resolve both.
+  const proposalParkFolders = useMemo(() => {
+    const folderIds = new Set((parkFoldersData ?? []).map((f) => f.name));
+    // Only parks that have an image folder in R2 are candidates.
+    const parks = (nationalParksData ?? []).filter((p) => folderIds.has(p.id));
+    const byId = new Map(parks.map((p) => [p.id, p]));
+    // Match on the significant tokens of the name, ignoring generic words like
+    // "national"/"park" so "Bwindi Impenetrable park" resolves to the park
+    // record named "Bwindi Impenetrable National Park".
+    const coreTokens = (s: string) =>
+      s
+        .toLowerCase()
+        .replace(/[^a-z0-9\s]/g, ' ')
+        .split(/\s+/)
+        .filter((t) => t && !['national', 'park', 'forest', 'reserve', 'conservation', 'area', 'game', 'np'].includes(t));
+    const parkCores = parks.map((p) => ({ park: p, core: coreTokens(p.name).join(' ') }));
+
+    const seen = new Set<string>();
+    const folders: { name: string; path: string; displayName: string }[] = [];
+    for (const day of days) {
+      // 1) Direct park id on the destination.
+      let park = day.destination && UUID_RE.test(day.destination) ? byId.get(day.destination) : undefined;
+      // 2) Otherwise match the destination name against the park list.
+      if (!park) {
+        const dayCore = coreTokens(day.destinationName || '').join(' ');
+        if (dayCore) {
+          park = parkCores.find(
+            ({ core }) => core && (core === dayCore || core.includes(dayCore) || dayCore.includes(core)),
+          )?.park;
+        }
+      }
+      if (park && !seen.has(park.id)) {
+        seen.add(park.id);
+        folders.push({
+          name: park.id,
+          path: `${NATIONAL_PARKS_FOLDER}/${park.id}`,
+          displayName: park.name,
+        });
+      }
+    }
+    return folders;
+  }, [days, nationalParksData, parkFoldersData]);
 
   // Transform builder data to ItineraryData format
   const itineraryData = useMemo(() => {
@@ -304,16 +371,18 @@ export default function PreviewPage() {
     <div className="relative pb-24">
       {/* Hero Image Picker Dialog */}
       <Dialog open={isHeroPickerOpen} onOpenChange={setIsHeroPickerOpen}>
-        <DialogContent className="max-w-4xl">
+        <DialogContent className="sm:max-w-6xl">
           <DialogHeader>
             <DialogTitle>Select Hero Image</DialogTitle>
           </DialogHeader>
-          <ImagePicker
+          <ImagePickerContent
             value={heroImage}
             onSelect={(url) => {
               handleHeroImageSelect(url);
               setIsHeroPickerOpen(false);
             }}
+            isOpen={isHeroPickerOpen}
+            suggestedFolders={proposalParkFolders}
           />
         </DialogContent>
       </Dialog>
@@ -323,7 +392,7 @@ export default function PreviewPage() {
         open={dayPickerOpen !== null}
         onOpenChange={(open) => !open && setDayPickerOpen(null)}
       >
-        <DialogContent className="max-w-4xl">
+        <DialogContent className="sm:max-w-6xl">
           <DialogHeader>
             <DialogTitle>
               {dayPickerOpen?.accommodationName || `Day ${dayPickerOpen?.dayNumber}`}
@@ -339,6 +408,7 @@ export default function PreviewPage() {
             }}
             initialFolder={dayPickerOpen?.accommodationName}
             isOpen={dayPickerOpen !== null}
+            suggestedFolders={proposalParkFolders}
           />
         </DialogContent>
       </Dialog>
