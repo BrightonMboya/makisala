@@ -206,6 +206,29 @@ export default function SharePage() {
     }
   }, [tourId]);
 
+  // Warm the PDF cache in the background so Download / Send is near-instant when the
+  // operator clicks. The ~15s render runs server-side (and caches to R2) while they
+  // review the page. We hold onto the in-flight promise so a click can wait on it
+  // rather than kicking off a second render (see awaitPrewarm below).
+  const prewarmPromiseRef = useRef<Promise<unknown> | null>(null);
+  const firePrewarm = useCallback(() => {
+    const p = fetch(`/api/proposal/${proposalId}/pdf/prewarm`, { method: 'POST' }).catch(
+      () => {},
+    );
+    prewarmPromiseRef.current = p;
+    return p;
+  }, [proposalId]);
+
+  // Cloudflare Browser Rendering rate-limits concurrent renders (429), so a Download/
+  // Send that fires while the prewarm is still rendering must NOT start its own render.
+  // Instead, wait for the prewarm to finish — it populates R2, so the click then serves
+  // the cached copy. If no prewarm is in flight, this resolves immediately.
+  const awaitPrewarm = useCallback(async () => {
+    if (prewarmPromiseRef.current) {
+      await prewarmPromiseRef.current;
+    }
+  }, []);
+
   // Send email mutation
   const sendEmailMutation = useMutation({
     mutationFn: async ({ isTest }: { isTest: boolean }) => {
@@ -214,6 +237,10 @@ export default function SharePage() {
       if (!targetEmail) {
         throw new Error('Please enter an email address.');
       }
+
+      // Wait out any in-flight prewarm so the email's PDF attachment reuses the cached
+      // render instead of starting a concurrent one (Cloudflare 429s on concurrency).
+      await awaitPrewarm();
 
       const response = await fetch('/api/proposal/send-email', {
         method: 'POST',
@@ -265,14 +292,6 @@ export default function SharePage() {
     });
   };
 
-  // Warm the PDF cache in the background so Download / Send is near-instant when the
-  // operator clicks. Fire-and-forget: the ~15s render runs server-side (and caches to
-  // R2) while they review the page. Errors are ignored; the click path still renders
-  // on demand if the warm-up hasn't finished or failed.
-  const firePrewarm = useCallback(() => {
-    fetch(`/api/proposal/${proposalId}/pdf/prewarm`, { method: 'POST' }).catch(() => {});
-  }, [proposalId]);
-
   // Prewarm once, as soon as the proposal is published (its updatedAt has settled
   // server-side, so the warmed copy matches what a later click will request).
   const prewarmedRef = useRef(false);
@@ -289,6 +308,10 @@ export default function SharePage() {
   // a spinner while Cloudflare renders.
   const downloadPdfMutation = useMutation({
     mutationFn: async () => {
+      // If a prewarm render is in flight, wait for it (avoids a concurrent CF render →
+      // 429). After it resolves the PDF is cached, so this download is an R2 hit.
+      await awaitPrewarm();
+
       // Client stopwatch = the latency the operator actually feels (network + server
       // + R2-hit-or-render). X-PDF-Source tells us which path served it.
       const startedAt = performance.now();
