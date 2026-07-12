@@ -20,6 +20,7 @@ import { getStatusConfig, PROPOSAL_STATUSES, type ProposalStatus } from '@/lib/p
 import type { AppRouter } from '@/server/trpc/router';
 import type { inferRouterOutputs } from '@trpc/server';
 import { monthWindow, type CalendarWindow } from './calendar-window';
+import { ProposalEventMenu, type ProposalEventData } from './proposal-event-menu';
 
 type CalendarTrips = inferRouterOutputs<AppRouter>['proposals']['listForCalendar'];
 type SearchResult = {
@@ -90,6 +91,14 @@ export function CalendarView({
       allDay: true,
       color: hex.fg,
       backgroundColor: hex.bg,
+      // Carried through to `renderEvent` so the pill's action menu knows which
+      // proposal it acts on, shows the current status as checked, and can
+      // prefill the duplicate dialog with the tour's own title.
+      data: {
+        proposalId: t.id,
+        status: t.status,
+        title: t.title,
+      } satisfies ProposalEventData,
     };
   });
 
@@ -264,7 +273,19 @@ export function CalendarView({
           disableCellClick
           hideExportButton
           dayMaxEvents={4}
+          // Clicking an event navigates to its editor. Without an `onEventClick`
+          // the library falls back to opening its own built-in "Edit Event"
+          // form, which we don't want. The pill's kebab stops propagation so its
+          // menu doesn't also trigger this navigation.
           onEventClick={(e) => router.push(`/itineraries/${e.id}/day-by-day`)}
+          renderEvent={(e) => (
+            <ProposalEventMenu
+              title={e.title}
+              color={e.color}
+              backgroundColor={e.backgroundColor}
+              data={e.data as ProposalEventData}
+            />
+          )}
           onDateChange={(_date, r) =>
             setRange({ rangeStart: r.start.toISOString(), rangeEnd: r.end.toISOString() })
           }

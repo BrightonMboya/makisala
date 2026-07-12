@@ -1040,7 +1040,20 @@ export const proposalsRouter = router({
     }),
 
   duplicate: protectedProcedure
-    .input(z.object({ proposalId: z.string() }))
+    .input(
+      z.object({
+        proposalId: z.string(),
+        // Optional overrides applied to the copy so the "duplicate" dialog can
+        // set a new client, dates and party size in one flow. Omit any field to
+        // carry over the original's value.
+        clientId: z.string().nullish(),
+        startDate: z.string().optional(),
+        travelerGroups: z
+          .array(z.object({ id: z.string(), count: z.number().int().min(1), type: z.string() }))
+          .optional(),
+        tourTitle: z.string().min(1).optional(),
+      }),
+    )
     .mutation(async ({ ctx, input }) => {
       const original = await ctx.db.query.proposals.findFirst({
         where: and(eq(proposals.id, input.proposalId), eq(proposals.organizationId, ctx.orgId)),
@@ -1068,18 +1081,36 @@ export const proposalsRouter = router({
 
       const newId = crypto.randomUUID();
 
+      // Apply the dialog's overrides, falling back to the original's values.
+      const newTourTitle = input.tourTitle ?? original.tourTitle;
+      const newName = input.tourTitle ?? `${original.name} (copy)`;
+      const newStartDate = input.startDate ? normalizeStartDate(input.startDate) : original.startDate;
+      const newTravelerGroups = input.travelerGroups ?? original.travelerGroups;
+      // When the party size changes, rebuild pricing rows to match the new
+      // groups, carrying over the original's first unit price so pricing isn't
+      // lost. Without an override, keep the original rows untouched.
+      const basePrice = original.pricingRows?.[0]?.unitPrice ?? 0;
+      const newPricingRows = input.travelerGroups
+        ? input.travelerGroups.map((g) => ({
+            id: g.id,
+            count: g.count,
+            type: g.type,
+            unitPrice: basePrice,
+          }))
+        : original.pricingRows;
+
       await ctx.db.transaction(async (tx) => {
         await tx.insert(proposals).values({
           id: newId,
-          name: `${original.name} (copy)`,
+          name: newName,
           tourId: original.tourId,
           organizationId: ctx.orgId,
-          clientId: null,
-          tourTitle: original.tourTitle,
+          clientId: input.clientId ?? null,
+          tourTitle: newTourTitle,
           tourType: original.tourType,
           theme: original.theme,
           heroImage: original.heroImage,
-          startDate: original.startDate,
+          startDate: newStartDate,
           startCity: original.startCity,
           startCityLat: original.startCityLat,
           startCityLng: original.startCityLng,
@@ -1088,8 +1119,8 @@ export const proposalsRouter = router({
           endCityLng: original.endCityLng,
           pickupPoint: original.pickupPoint,
           transferIncluded: original.transferIncluded,
-          travelerGroups: original.travelerGroups,
-          pricingRows: original.pricingRows,
+          travelerGroups: newTravelerGroups,
+          pricingRows: newPricingRows,
           extras: original.extras,
           countries: original.countries,
           inclusions: original.inclusions,
@@ -1178,5 +1209,25 @@ export const proposalsRouter = router({
       });
 
       return { success: true, newProposalId: newId };
+    }),
+
+  delete: protectedProcedure
+    .input(z.object({ proposalId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const proposal = await ctx.db.query.proposals.findFirst({
+        where: and(eq(proposals.id, input.proposalId), eq(proposals.organizationId, ctx.orgId)),
+        columns: { id: true },
+      });
+
+      if (!proposal) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Proposal not found' });
+      }
+
+      // All proposal children (days, activities, meals, transportation,
+      // assignments, invoices, ...) are declared `onDelete: 'cascade'`, so a
+      // single delete removes the whole tree.
+      await ctx.db.delete(proposals).where(eq(proposals.id, input.proposalId));
+
+      return { success: true };
     }),
 });
