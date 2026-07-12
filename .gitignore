@@ -41,4 +41,7 @@ packages/db/.env
 *.tsbuildinfo
 apps/makisala/next-env.d.ts
 
+# turborepo
+.turbo
+
 .env
