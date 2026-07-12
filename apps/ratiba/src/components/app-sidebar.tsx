@@ -5,7 +5,6 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useState } from 'react';
 import {
   Calculator,
-  FileText,
   LayoutDashboard,
   Library,
   LogOut,
@@ -79,17 +78,6 @@ export function AppSidebar({ serverData }: { serverData?: SidebarServerData | nu
       label: 'Tours',
       href: '/tours',
       active: pathname?.startsWith('/tours'),
-    },
-    {
-      icon: FileText,
-      label: 'Itineraries',
-      href: '/itineraries',
-      active:
-        pathname?.startsWith('/itineraries') &&
-        !pathname.includes('day-by-day') &&
-        !pathname.includes('pricing') &&
-        !pathname.includes('preview') &&
-        !pathname.includes('share'),
     },
     {
       icon: Library,

@@ -60,11 +60,11 @@ export default function InvoicesForProposalPage() {
       <header className="flex items-center justify-between border-b border-border bg-background px-8 py-4">
         <div className="flex items-center gap-3">
           <Link
-            href="/itineraries"
+            href="/dashboard"
             className="inline-flex items-center gap-1 text-xs text-[#878787] hover:text-foreground"
           >
             <ArrowLeft className="h-3.5 w-3.5" />
-            Itineraries
+            Dashboard
           </Link>
           <span className="text-[#878787]">/</span>
           <h2 className="font-serif text-lg font-bold text-foreground">
