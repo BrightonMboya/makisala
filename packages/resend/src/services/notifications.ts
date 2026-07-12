@@ -217,7 +217,7 @@ export interface ProposalShareData {
  */
 export async function sendProposalShareEmail(
   data: ProposalShareData,
-): Promise<{ success: boolean; error?: string }> {
+): Promise<{ success: boolean; error?: string; id?: string }> {
   try {
     const html = renderProposalShareEmail({
       clientName: data.clientName,
@@ -247,7 +247,7 @@ export async function sendProposalShareEmail(
       };
     }
 
-    return { success: true };
+    return { success: true, id: result.data?.id };
   } catch (error) {
     // Error details returned to caller for centralized logging
     return {
@@ -350,7 +350,7 @@ export interface InvoiceShareData {
  */
 export async function sendInvoiceShareEmail(
   data: InvoiceShareData,
-): Promise<{ success: boolean; error?: string }> {
+): Promise<{ success: boolean; error?: string; id?: string }> {
   try {
     const html = renderInvoiceShareEmail({
       clientName: data.clientName,
@@ -388,7 +388,7 @@ export async function sendInvoiceShareEmail(
       };
     }
 
-    return { success: true };
+    return { success: true, id: result.data?.id };
   } catch (error) {
     return {
       success: false,

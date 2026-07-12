@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { withAxiom, type AxiomRequest } from 'next-axiom';
-import { db, member } from '@repo/db';
+import { db, member, recordSentEmail } from '@repo/db';
 import { proposals } from '@repo/db/schema';
 import { and, eq } from 'drizzle-orm';
 import { resend, orgFromAddress } from '@repo/resend';
@@ -142,6 +142,27 @@ export const POST = withAxiom(async (request: AxiomRequest) => {
         { success: false, error: result.error.message || 'Failed to send email' },
         { status: 500 },
       );
+    }
+
+    // Log real sends for delivery analytics. Test emails are excluded so the
+    // timeline reflects only what the client actually received. Best-effort:
+    // a logging failure must not fail the send.
+    if (!isTest && result.data?.id) {
+      try {
+        await recordSentEmail(db, {
+          resendId: result.data.id,
+          type: 'proposal_share',
+          toEmail: recipientEmail,
+          subject: subject || `Your Travel Proposal: ${proposalTitle}`,
+          organizationId: orgId,
+          proposalId,
+        });
+      } catch (error) {
+        request.log.error('Failed to log proposal email send', {
+          proposalId,
+          error: serializeError(error),
+        });
+      }
     }
 
     return NextResponse.json({ success: true });

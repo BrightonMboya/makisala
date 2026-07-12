@@ -5,6 +5,7 @@ import { TRPCError } from '@trpc/server';
 import { invoices, proposals } from '@repo/db/schema';
 import type { Invoice, InvoiceLineItem, InvoicePartyDetails } from '@repo/db/schema';
 import { sendInvoiceShareEmail } from '@repo/resend';
+import { recordSentEmail } from '@repo/db';
 import { router, protectedProcedure, publicProcedure } from '../init';
 import { getNextInvoiceNumber } from '@/lib/invoices/numbering';
 import { buildLineItemsFromProposal, computeTotals } from '@/lib/invoices/seed-from-proposal';
@@ -304,6 +305,22 @@ export const invoicesRouter = router({
           code: 'INTERNAL_SERVER_ERROR',
           message: result.error ?? 'Failed to send invoice email',
         });
+      }
+
+      // Log the send for delivery analytics (best-effort: never block the flow).
+      if (result.id) {
+        try {
+          await recordSentEmail(ctx.db, {
+            resendId: result.id,
+            type: 'invoice_share',
+            toEmail: recipient,
+            subject: `Invoice ${existing.number} from ${organization?.name ?? 'Your Travel Agency'}`,
+            organizationId: ctx.orgId,
+            invoiceId: existing.id,
+          });
+        } catch {
+          // Analytics logging is non-critical; the email already went out.
+        }
       }
 
       const sentAt = new Date().toISOString();

@@ -1469,6 +1469,71 @@ export const invoicesRelations = relations(invoices, ({ one }) => ({
 export type Invoice = typeof invoices.$inferSelect;
 export type NewInvoice = typeof invoices.$inferInsert;
 
+// ---------- EMAIL MESSAGES (delivery analytics) ----------
+// One row per outbound client-facing email (proposal share, invoice share).
+// The row is created at send time keyed on the Resend message id, then Resend
+// webhook events stamp the delivery timeline (delivered/opened/clicked/etc).
+export const emailMessages = pgTable(
+  'email_messages',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    // Resend message id returned from resend.emails.send. Webhook events carry
+    // this as data.email_id, so it is our correlation key.
+    resendId: text('resend_id').notNull().unique(),
+    // Kind of email, e.g. 'proposal_share' | 'invoice_share'.
+    type: text('type').notNull(),
+    organizationId: uuid('organization_id').references(() => organizations.id, {
+      onDelete: 'set null',
+    }),
+    proposalId: text('proposal_id').references(() => proposals.id, { onDelete: 'cascade' }),
+    invoiceId: text('invoice_id').references(() => invoices.id, { onDelete: 'cascade' }),
+    toEmail: text('to_email').notNull(),
+    subject: text('subject'),
+    // Furthest-along status derived from webhook events (sent, delivered,
+    // opened, clicked, bounced, complained, failed, delivery_delayed).
+    status: text('status').default('sent').notNull(),
+    // Per-event timestamps, each set once when its first matching event lands.
+    sentAt: timestamp('sent_at', { precision: 3, mode: 'string' }),
+    deliveredAt: timestamp('delivered_at', { precision: 3, mode: 'string' }),
+    deliveryDelayedAt: timestamp('delivery_delayed_at', { precision: 3, mode: 'string' }),
+    openedAt: timestamp('opened_at', { precision: 3, mode: 'string' }),
+    clickedAt: timestamp('clicked_at', { precision: 3, mode: 'string' }),
+    bouncedAt: timestamp('bounced_at', { precision: 3, mode: 'string' }),
+    complainedAt: timestamp('complained_at', { precision: 3, mode: 'string' }),
+    failedAt: timestamp('failed_at', { precision: 3, mode: 'string' }),
+    lastEventAt: timestamp('last_event_at', { precision: 3, mode: 'string' }),
+    createdAt: timestamp('created_at', { precision: 3, mode: 'string' })
+      .default(sql`CURRENT_TIMESTAMP`)
+      .notNull(),
+    updatedAt: timestamp('updated_at', { precision: 3, mode: 'string' })
+      .default(sql`CURRENT_TIMESTAMP`)
+      .notNull(),
+  },
+  (table) => [
+    index('email_messages_proposal_idx').on(table.proposalId),
+    index('email_messages_invoice_idx').on(table.invoiceId),
+    index('email_messages_org_idx').on(table.organizationId),
+  ],
+);
+
+export const emailMessagesRelations = relations(emailMessages, ({ one }) => ({
+  organization: one(organizations, {
+    fields: [emailMessages.organizationId],
+    references: [organizations.id],
+  }),
+  proposal: one(proposals, {
+    fields: [emailMessages.proposalId],
+    references: [proposals.id],
+  }),
+  invoice: one(invoices, {
+    fields: [emailMessages.invoiceId],
+    references: [invoices.id],
+  }),
+}));
+
+export type EmailMessage = typeof emailMessages.$inferSelect;
+export type NewEmailMessage = typeof emailMessages.$inferInsert;
+
 // ---------- DAY CONTENT TEMPLATES ----------
 export const DayType = pgEnum('day_type', ['arrival', 'full_day', 'half_day', 'departure']);
 

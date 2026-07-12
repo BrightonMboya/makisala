@@ -3,3 +3,4 @@ export type { CommentNotificationData, ProposalShareData, ProposalAcceptanceData
 export { env } from './env';
 export { resend } from './client';
 export { orgFromAddress, platformFromAddress, type OrgSender } from './from';
+export { verifyResendWebhook, type VerifyResendWebhookInput } from './webhook';

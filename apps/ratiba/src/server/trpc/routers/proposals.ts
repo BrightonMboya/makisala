@@ -12,6 +12,7 @@ import {
   paymentMethods,
   accommodationImages,
 } from '@repo/db/schema';
+import { recordSentEmail } from '@repo/db';
 import { and, asc, desc, eq, inArray, isNull, notInArray, or, sql, count } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
 import {
@@ -819,6 +820,22 @@ export const proposalsRouter = router({
 
       if (!result.success) {
         throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: result.error });
+      }
+
+      // Log the send for delivery analytics (best-effort: never block the flow).
+      if (result.id) {
+        try {
+          await recordSentEmail(ctx.db, {
+            resendId: result.id,
+            type: 'proposal_share',
+            toEmail: proposal.client.email,
+            subject: `Your Travel Proposal: ${proposal.tourTitle || proposal.name}`,
+            organizationId: proposal.organizationId ?? null,
+            proposalId: input.proposalId,
+          });
+        } catch {
+          // Analytics logging is non-critical; the email already went out.
+        }
       }
 
       // Auto-transition status to shared

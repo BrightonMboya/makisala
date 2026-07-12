@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@repo/ui/select';
 import { useBuilder } from '@/components/itinerary-builder/builder-context';
+import { EmailDeliveryStatus } from '@/components/email-delivery-status';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import { toast } from '@repo/ui/toast';
@@ -693,6 +694,11 @@ export default function SharePage() {
           </div>
         </div>
       )}
+
+      {/* Delivery analytics for prior sends of this proposal */}
+      <div className="mx-auto mt-6 max-w-3xl px-4 pb-28">
+        <EmailDeliveryStatus proposalId={proposalId} />
+      </div>
 
       {/* Bottom Action Bar */}
       <div className="fixed right-0 bottom-0 left-0 z-50 border-t bg-white p-4 shadow-lg">

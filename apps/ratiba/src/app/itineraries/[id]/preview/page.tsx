@@ -23,6 +23,7 @@ import type { ThemeType } from '@/types/itinerary-types';
 import { usePlan } from '@/components/plan-context';
 import { ALLOWED_THEMES_BY_TIER } from '@/lib/plans-config';
 import { Lock } from 'lucide-react';
+import { EmailDeliveryStatus } from '@/components/email-delivery-status';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 // R2 folder that holds each national park's images, keyed by park id.
@@ -480,6 +481,12 @@ export default function PreviewPage() {
               </PopoverContent>
             </Popover>
           </div>
+
+          {isProposalSaved && (
+            <div className="mb-4">
+              <EmailDeliveryStatus proposalId={proposalId} />
+            </div>
+          )}
 
           <div className="flex gap-3">
             <Button variant="outline" onClick={() => router.back()}>
