@@ -29,6 +29,7 @@ import {
 import { useToast } from '@repo/ui/use-toast';
 import { trpc } from '@/lib/trpc';
 import type { RouterOutputs } from '@/lib/trpc';
+import { SCAN_ACCEPT, SCAN_MAX_BYTES, uploadPassportScan } from './scan-upload';
 
 type Traveler = RouterOutputs['portals']['getByToken']['travelers'][number];
 
@@ -113,54 +114,68 @@ export function TravelerDialog({ token, traveler, open, onOpenChange }: Traveler
   const updateMutation = trpc.portals.updateTraveler.useMutation();
   const isEditing = !!traveler;
   const fileRef = useRef<HTMLInputElement>(null);
-  const [uploading, setUploading] = useState(false);
-
-  async function handleScanUpload(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file || !traveler) return;
-    setUploading(true);
-    try {
-      const body = new FormData();
-      body.append('file', file);
-      body.append('travelerId', traveler.id);
-      const res = await fetch(`/api/portal/${token}/upload`, { method: 'POST', body });
-      const data = await res.json();
-      if (!res.ok) {
-        toast({ title: data.error ?? 'Upload failed', variant: 'destructive' });
-        return;
-      }
-      await utils.portals.getByToken.invalidate({ token });
-      toast({ title: 'Passport scan uploaded' });
-    } catch {
-      toast({ title: 'Upload failed', variant: 'destructive' });
-    } finally {
-      setUploading(false);
-      if (fileRef.current) fileRef.current.value = '';
-    }
-  }
+  // The chosen passport file is staged here and uploaded on save, so adding a
+  // traveler and attaching their passport happen in a single step.
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: emptyValues(),
   });
 
-  // Reset the form whenever the dialog opens for a different traveler.
+  // Reset the form and any staged file whenever the dialog opens for a traveler.
   useEffect(() => {
     if (open) {
       form.reset(traveler ? fromTraveler(traveler) : emptyValues());
+      setPendingFile(null);
+      if (fileRef.current) fileRef.current.value = '';
     }
   }, [open, traveler, form]);
 
+  function handlePickFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (fileRef.current) fileRef.current.value = '';
+    if (!file) return;
+    if (file.size > SCAN_MAX_BYTES) {
+      toast({ title: 'File must be under 10MB.', variant: 'destructive' });
+      return;
+    }
+    setPendingFile(file);
+  }
+
   const onSubmit = async (data: FormValues) => {
     try {
+      // Save the details first so we have a traveler id to attach the scan to.
+      let travelerId: string;
       if (isEditing) {
         await updateMutation.mutateAsync({ token, travelerId: traveler.id, ...data });
-        toast({ title: 'Traveler updated' });
+        travelerId = traveler.id;
       } else {
-        await addMutation.mutateAsync({ token, ...data });
-        toast({ title: 'Traveler added' });
+        const created = await addMutation.mutateAsync({ token, ...data });
+        travelerId = created.id;
       }
+
+      // Then upload the staged passport, if one was chosen. A scan failure must
+      // not lose the details the traveler just entered, so we surface it and
+      // still close rather than throwing the whole submit away.
+      let scanError: string | null = null;
+      if (pendingFile) {
+        try {
+          await uploadPassportScan(token, travelerId, pendingFile);
+        } catch (err) {
+          scanError = err instanceof Error ? err.message : 'Passport scan upload failed';
+        }
+      }
+
       await utils.portals.getByToken.invalidate({ token });
+      if (scanError) {
+        toast({
+          title: `Details saved, but the passport scan didn't upload: ${scanError}`,
+          variant: 'destructive',
+        });
+      } else {
+        toast({ title: isEditing ? 'Traveler updated' : 'Traveler added' });
+      }
       onOpenChange(false);
     } catch (error) {
       const message =
@@ -406,44 +421,41 @@ export function TravelerDialog({ token, traveler, open, onOpenChange }: Traveler
               )}
             />
 
-            {isEditing ? (
-              <>
-                <SectionLabel>Passport scan</SectionLabel>
-                <div className="rounded-lg border border-dashed border-stone-300 p-3">
-                  {traveler?.hasScan ? (
-                    <p className="mb-2 inline-flex items-center gap-1 text-sm font-medium text-green-700">
-                      <FileCheck2 className="h-4 w-4" />
-                      {traveler.passportScanName || 'Scan uploaded'}
-                    </p>
-                  ) : (
-                    <p className="mb-2 text-sm text-stone-500">
-                      Optional. Upload a photo or PDF of the passport photo page.
-                    </p>
-                  )}
-                  <input
-                    ref={fileRef}
-                    type="file"
-                    accept="image/jpeg,image/png,image/webp,application/pdf"
-                    className="hidden"
-                    onChange={handleScanUpload}
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    disabled={uploading}
-                    onClick={() => fileRef.current?.click()}
-                  >
-                    <Upload className="mr-1 h-4 w-4" />
-                    {uploading
-                      ? 'Uploading...'
-                      : traveler?.hasScan
-                        ? 'Replace scan'
-                        : 'Upload scan'}
-                  </Button>
-                </div>
-              </>
-            ) : null}
+            <SectionLabel>Passport scan</SectionLabel>
+            <div className="rounded-lg border border-dashed border-stone-300 p-3">
+              {pendingFile ? (
+                <p className="mb-2 inline-flex items-center gap-1 text-sm font-medium text-stone-700">
+                  <FileCheck2 className="h-4 w-4 text-green-700" />
+                  {pendingFile.name}
+                </p>
+              ) : traveler?.hasScan ? (
+                <p className="mb-2 inline-flex items-center gap-1 text-sm font-medium text-green-700">
+                  <FileCheck2 className="h-4 w-4" />
+                  {traveler.passportScanName || 'Scan uploaded'}
+                </p>
+              ) : (
+                <p className="mb-2 text-sm text-stone-500">
+                  Optional. Add a photo or PDF of the passport photo page. It uploads when
+                  you save.
+                </p>
+              )}
+              <input
+                ref={fileRef}
+                type="file"
+                accept={SCAN_ACCEPT}
+                className="hidden"
+                onChange={handlePickFile}
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => fileRef.current?.click()}
+              >
+                <Upload className="mr-1 h-4 w-4" />
+                {pendingFile || traveler?.hasScan ? 'Choose a different file' : 'Choose file'}
+              </Button>
+            </div>
 
             <DialogFooter className="pt-2">
               <Button

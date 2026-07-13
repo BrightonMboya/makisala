@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { format } from 'date-fns';
-import { CheckCircle2, FileCheck2, LogOut, Pencil, Plus, Trash2, UserPlus } from 'lucide-react';
+import { CheckCircle2, LogOut, Pencil, Plus, Trash2, UserPlus } from 'lucide-react';
 import { Button } from '@repo/ui/button';
 import { Badge } from '@repo/ui/badge';
 import { useToast } from '@repo/ui/use-toast';
@@ -11,6 +11,7 @@ import { TRPCClientError } from '@trpc/client';
 import { trpc } from '@/lib/trpc';
 import type { RouterOutputs } from '@/lib/trpc';
 import { TravelerDialog } from './traveler-dialog';
+import { ScanUpload } from './scan-upload';
 
 type Portal = RouterOutputs['portals']['getByToken'];
 type Traveler = Portal['travelers'][number];
@@ -217,15 +218,18 @@ export function PortalClient({ token, initial }: { token: string; initial: Porta
                   <DetailRow label="Allergies" value={t.allergies} />
                   <DetailRow label="Arrival" value={t.arrivalDetails} />
                 </div>
-                {t.hasScan ? (
-                  <p className="mt-3 inline-flex items-center gap-1 text-xs font-medium text-green-700">
-                    <FileCheck2 className="h-3.5 w-3.5" /> Passport scan uploaded
-                  </p>
-                ) : !t.passportNumber || !t.nationality ? (
+                {!t.passportNumber || !t.nationality ? (
                   <p className="mt-3 text-xs text-amber-600">
                     Passport details still needed. Tap the pencil to complete.
                   </p>
                 ) : null}
+                <ScanUpload
+                  token={token}
+                  travelerId={t.id}
+                  hasScan={!!t.hasScan}
+                  scanName={t.passportScanName}
+                  compact
+                />
               </div>
             ))}
           </div>

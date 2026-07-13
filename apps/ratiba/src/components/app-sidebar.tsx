@@ -6,7 +6,6 @@ import { useState } from 'react';
 import {
   Calculator,
   ClipboardList,
-  FileText,
   LayoutDashboard,
   Library,
   LogOut,

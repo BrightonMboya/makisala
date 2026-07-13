@@ -18,6 +18,42 @@ import { log } from '@/lib/logger';
 const MAX_BYTES = 10 * 1024 * 1024; // 10MB
 const ALLOWED = new Set(['image/jpeg', 'image/png', 'image/webp', 'application/pdf']);
 
+/**
+ * Detect the real file type from magic bytes. The declared `file.type` is
+ * client-controlled, so we never trust it alone: a mismatch means the upload is
+ * spoofed and we reject it. Only the four types we serve back are recognized.
+ */
+function sniffMime(buf: Buffer): string | null {
+  if (buf.length >= 3 && buf[0] === 0xff && buf[1] === 0xd8 && buf[2] === 0xff) {
+    return 'image/jpeg';
+  }
+  if (
+    buf.length >= 8 &&
+    buf[0] === 0x89 &&
+    buf[1] === 0x50 &&
+    buf[2] === 0x4e &&
+    buf[3] === 0x47 &&
+    buf[4] === 0x0d &&
+    buf[5] === 0x0a &&
+    buf[6] === 0x1a &&
+    buf[7] === 0x0a
+  ) {
+    return 'image/png';
+  }
+  // RIFF....WEBP
+  if (
+    buf.length >= 12 &&
+    buf.toString('ascii', 0, 4) === 'RIFF' &&
+    buf.toString('ascii', 8, 12) === 'WEBP'
+  ) {
+    return 'image/webp';
+  }
+  if (buf.length >= 5 && buf.toString('ascii', 0, 5) === '%PDF-') {
+    return 'application/pdf';
+  }
+  return null;
+}
+
 export async function POST(req: Request, ctx: { params: Promise<{ token: string }> }) {
   const { token } = await ctx.params;
   const portal = await getPortalByToken(token);
@@ -37,12 +73,6 @@ export async function POST(req: Request, ctx: { params: Promise<{ token: string 
   if (!(file instanceof File) || !travelerId) {
     return NextResponse.json({ ok: false, error: 'Missing file' }, { status: 400 });
   }
-  if (!ALLOWED.has(file.type)) {
-    return NextResponse.json(
-      { ok: false, error: 'Use a JPG, PNG or PDF.' },
-      { status: 400 },
-    );
-  }
   if (file.size > MAX_BYTES) {
     return NextResponse.json({ ok: false, error: 'File must be under 10MB.' }, { status: 400 });
   }
@@ -56,8 +86,19 @@ export async function POST(req: Request, ctx: { params: Promise<{ token: string 
     return NextResponse.json({ ok: false, error: 'Traveler not found' }, { status: 404 });
   }
 
+  const bytes = Buffer.from(await file.arrayBuffer());
+  // Authoritative type check: trust the file's actual signature, not the
+  // client-declared MIME. A spoofed upload (e.g. HTML claiming image/png) is
+  // rejected here rather than being stored and served back later.
+  const detectedMime = sniffMime(bytes);
+  if (!detectedMime || !ALLOWED.has(detectedMime)) {
+    return NextResponse.json(
+      { ok: false, error: 'Use a JPG, PNG, WebP or PDF.' },
+      { status: 400 },
+    );
+  }
+
   try {
-    const bytes = Buffer.from(await file.arrayBuffer());
     const encrypted = encryptBytes(bytes);
     const key = `portal-scans/${portal.organizationId}/${travelerId}/${generateToken(8)}.enc`;
 
@@ -81,8 +122,10 @@ export async function POST(req: Request, ctx: { params: Promise<{ token: string 
       .update(portalTravelers)
       .set({
         passportScanKey: key,
-        passportScanName: file.name.slice(0, 200),
-        passportScanMime: file.type,
+        // Strip control chars / path separators from the client-supplied name so
+        // it can't be abused when echoed into the download's Content-Disposition.
+        passportScanName: file.name.replace(/[\r\n"\\/]/g, '').slice(0, 200) || 'passport',
+        passportScanMime: detectedMime,
         updatedAt: new Date().toISOString(),
       })
       .where(eq(portalTravelers.id, travelerId));
