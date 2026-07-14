@@ -7,6 +7,7 @@ export type AssignedUser = {
 export type RequestItem = {
   id: string
   client: string
+  clientId: string | null
   travelers: number
   country: string
   title: string

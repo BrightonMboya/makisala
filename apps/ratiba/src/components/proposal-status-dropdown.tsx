@@ -72,6 +72,10 @@ export function ProposalStatusDropdown({
     },
     onSettled: () => {
       utils.proposals.listForDashboard.invalidate();
+      // Keep the grouped dashboard list and the client deal view (/clients/[id])
+      // in sync when status is changed from either place.
+      utils.proposals.listClientsForDashboard.invalidate();
+      utils.proposals.listForClient.invalidate();
     },
   });
 

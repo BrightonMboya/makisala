@@ -21,9 +21,12 @@ import { useSession } from './session-context';
 interface NewRequestDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  // When opened from a client's deal page, pre-select that client so the new
+  // proposal is attached to them without the operator re-picking it.
+  defaultClientId?: string;
 }
 
-export function NewRequestDialog({ open, onOpenChange }: NewRequestDialogProps) {
+export function NewRequestDialog({ open, onOpenChange, defaultClientId }: NewRequestDialogProps) {
   const router = useRouter();
   const { toast } = useToast();
   const utils = trpc.useUtils();
@@ -43,7 +46,7 @@ export function NewRequestDialog({ open, onOpenChange }: NewRequestDialogProps) 
   const form = useForm<RequestFormValues>({
     resolver: zodResolver(requestSchema),
     defaultValues: {
-      clientId: '',
+      clientId: defaultClientId ?? '',
       email: '',
       firstName: '',
       lastName: '',

@@ -1,22 +1,16 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { type ReactNode, useEffect, useState } from 'react';
 import { IlamyCalendar } from '@ilamy/calendar';
 import { useRouter } from 'next/navigation';
 import { format } from 'date-fns';
 import { Input } from '@repo/ui/input';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@repo/ui/dropdown-menu';
 import { useDebounce } from '@repo/ui/use-debounce';
 import { keepPreviousData } from '@tanstack/react-query';
-import { Check, Filter, Search } from 'lucide-react';
+import { Search } from 'lucide-react';
 import { trpc } from '@/lib/trpc';
 import { staleTimes } from '@/lib/query-keys';
-import { getStatusConfig, PROPOSAL_STATUSES, type ProposalStatus } from '@/lib/proposal-status';
+import { getStatusConfig, type ProposalStatus } from '@/lib/proposal-status';
 import type { AppRouter } from '@/server/trpc/router';
 import type { inferRouterOutputs } from '@trpc/server';
 import { monthWindow, type CalendarWindow } from './calendar-window';
@@ -33,18 +27,24 @@ type SearchResult = {
 
 const MAX_RESULTS = 8;
 
+// The calendar is an operational schedule: it shows only confirmed departures,
+// not the whole sales pipeline. Anything else (drafts, shared, awaiting payment)
+// lives in the list view.
+const CALENDAR_STATUSES: ProposalStatus[] = ['booked'];
+
 export function CalendarView({
   initialTrips,
   initialRange,
+  leftSlot,
 }: {
   initialTrips: CalendarTrips;
   initialRange: CalendarWindow;
+  leftSlot?: ReactNode;
 }) {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
   const debouncedQuery = useDebounce(searchQuery, 200);
   const [searchOpen, setSearchOpen] = useState(false);
-  const [statusFilter, setStatusFilter] = useState<ProposalStatus | undefined>(undefined);
   // The specific trip the calendar is focused on (chosen from search results).
   // `seq` bumps on every selection so re-picking the same trip (after manually
   // navigating away) still forces the calendar to remount and jump back.
@@ -56,7 +56,7 @@ export function CalendarView({
   // `keepPreviousData` keeps the current month's trips on screen while the next
   // window loads, so navigating never flashes an empty calendar.
   const { data = [] } = trpc.proposals.listForCalendar.useQuery(
-    { filter: 'all', ...range },
+    { filter: 'all', statuses: CALENDAR_STATUSES, ...range },
     {
       staleTime: staleTimes.proposals,
       placeholderData: keepPreviousData,
@@ -65,11 +65,9 @@ export function CalendarView({
     },
   );
 
-  const statusTrips = statusFilter ? data.filter((t) => t.status === statusFilter) : data;
-
-  // The calendar always shows every (status-filtered) trip; search is a separate
-  // "find and jump to" affordance so nothing is ever hidden by it.
-  const events = statusTrips.map((t) => {
+  // The calendar shows every booked trip; search is a separate "find and jump to"
+  // affordance so nothing is ever hidden by it.
+  const events = data.map((t) => {
     const start = new Date(t.startDate);
     // Build inclusive local-day bounds so a trip covers each of its calendar
     // days regardless of how the library treats an all-day end boundary.
@@ -108,8 +106,10 @@ export function CalendarView({
   // Search spans every proposal, not just the loaded window, so you can find and
   // jump to a trip in any month. Runs server-side so it stays fast as the
   // proposal history grows.
+  // Search stays within the calendar's scope (booked trips) so a result always
+  // maps to something the calendar can actually jump to.
   const { data: searchData } = trpc.proposals.listForDashboard.useQuery(
-    { filter: 'all', search: searchTerm, status: statusFilter, page: 1, pageSize: MAX_RESULTS },
+    { filter: 'all', search: searchTerm, status: 'booked', page: 1, pageSize: MAX_RESULTS },
     { enabled: showResults, staleTime: staleTimes.proposals, placeholderData: keepPreviousData },
   );
 
@@ -161,7 +161,8 @@ export function CalendarView({
 
   return (
     <div className="flex h-full flex-col">
-      <div className="mb-4 flex items-center justify-end gap-2">
+      <div className="mb-4 flex items-center justify-between gap-2">
+        {leftSlot ?? <div />}
         <div className="relative w-72">
           <Search className="absolute top-2.5 left-2.5 h-4 w-4 text-stone-400" />
           <Input
@@ -218,44 +219,6 @@ export function CalendarView({
             </div>
           )}
         </div>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <button
-              className={`inline-flex items-center gap-1.5 rounded-md border px-3 py-2 text-sm font-medium transition-colors ${
-                statusFilter
-                  ? `${getStatusConfig(statusFilter).bg} ${getStatusConfig(statusFilter).text} border-current/20`
-                  : 'border-stone-200 text-stone-600 hover:bg-stone-50'
-              }`}
-            >
-              <Filter className="h-3.5 w-3.5" />
-              {statusFilter ? getStatusConfig(statusFilter).label : 'All'}
-            </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem
-              onClick={() => setStatusFilter(undefined)}
-              className="flex items-center gap-2"
-            >
-              <span className="inline-block h-2 w-2 rounded-full bg-stone-400" />
-              <span className="flex-1">All</span>
-              {!statusFilter && <Check className="h-3.5 w-3.5 text-stone-500" />}
-            </DropdownMenuItem>
-            {PROPOSAL_STATUSES.map((s) => {
-              const cfg = getStatusConfig(s);
-              return (
-                <DropdownMenuItem
-                  key={s}
-                  onClick={() => setStatusFilter(s)}
-                  className="flex items-center gap-2"
-                >
-                  <span className={`inline-block h-2 w-2 rounded-full ${cfg.dot}`} />
-                  <span className="flex-1">{cfg.label}</span>
-                  {statusFilter === s && <Check className="h-3.5 w-3.5 text-stone-500" />}
-                </DropdownMenuItem>
-              );
-            })}
-          </DropdownMenuContent>
-        </DropdownMenu>
       </div>
 
       <div className="relative flex-1 rounded-lg border border-stone-200 bg-white p-4">

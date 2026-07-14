@@ -11,6 +11,7 @@ import {
   clients,
   paymentMethods,
   accommodationImages,
+  emailMessages,
 } from '@repo/db/schema';
 import { recordSentEmail } from '@repo/db';
 import { and, asc, desc, eq, gte, inArray, isNull, isNotNull, lte, notInArray, or, sql, count } from 'drizzle-orm';
@@ -22,6 +23,7 @@ import {
 import { router, protectedProcedure, adminProcedure, publicProcedure, escapeLikeQuery } from '../init';
 import { getHiddenImageIds } from '../lib/hidden-images';
 import { checkFeatureAccess, getOrgPlan, ALLOWED_THEMES_BY_TIER } from '@/lib/plans';
+import { DEFAULT_DASHBOARD_STATUSES } from '@/lib/proposal-status';
 import { deriveMealPlan } from '@/lib/pricing-engine';
 import { env } from '@/lib/env';
 import { getPublicUrl } from '@/lib/storage';
@@ -144,6 +146,11 @@ export const proposalsRouter = router({
         status: z
           .enum(['draft', 'shared', 'awaiting_payment', 'paid', 'booked', 'completed', 'cancelled'])
           .optional(),
+        statuses: z
+          .array(
+            z.enum(['draft', 'shared', 'awaiting_payment', 'paid', 'booked', 'completed', 'cancelled']),
+          )
+          .optional(),
         search: z.string().optional(),
       }),
     )
@@ -164,8 +171,11 @@ export const proposalsRouter = router({
         conditions.push(inArray(proposals.id, assignedIds));
       }
 
-      if (input.status) {
-        conditions.push(eq(proposals.status, input.status));
+      // Accept a multi-value `statuses` filter (or the legacy single `status`).
+      // No status → no filter (this feed is also used by the calendar search).
+      const statusFilter = input.statuses ?? (input.status ? [input.status] : null);
+      if (statusFilter && statusFilter.length > 0) {
+        conditions.push(inArray(proposals.status, statusFilter));
       }
 
       if (input.search?.trim()) {
@@ -239,6 +249,267 @@ export const proposalsRouter = router({
       return { items, totalCount, page: input.page, pageSize: input.pageSize, totalPages };
     }),
 
+  // The dashboard's default surface: one row per CLIENT (with a proposal count
+  // and the latest proposal's status/date for context) rather than one row per
+  // proposal, so a client with several proposals shows once. Proposals that have
+  // no client yet (fresh drafts) can't be grouped, so they surface as their own
+  // rows and navigate straight to the editor. Same mine/all + status + search
+  // filters as listForDashboard.
+  listClientsForDashboard: protectedProcedure
+    .input(
+      z.object({
+        filter: z.enum(['mine', 'all']).default('mine'),
+        page: z.number().int().min(1).default(1),
+        pageSize: z.number().int().min(1).max(100).default(20),
+        status: z
+          .enum(['draft', 'shared', 'awaiting_payment', 'paid', 'booked', 'completed', 'cancelled'])
+          .optional(),
+        statuses: z
+          .array(
+            z.enum(['draft', 'shared', 'awaiting_payment', 'paid', 'booked', 'completed', 'cancelled']),
+          )
+          .optional(),
+        search: z.string().optional(),
+      }),
+    )
+    .query(async ({ ctx, input }) => {
+      const conditions = [eq(proposals.organizationId, ctx.orgId)];
+
+      if (input.filter === 'mine') {
+        const assignedRows = await ctx.db
+          .select({ proposalId: proposalAssignments.proposalId })
+          .from(proposalAssignments)
+          .where(eq(proposalAssignments.userId, ctx.user.id));
+
+        const assignedIds = assignedRows.map((r) => r.proposalId);
+        if (assignedIds.length === 0) {
+          return { items: [], totalCount: 0, page: input.page, pageSize: input.pageSize, totalPages: 0 };
+        }
+
+        conditions.push(inArray(proposals.id, assignedIds));
+      }
+
+      // Restrict to the selected statuses, defaulting to the active pipeline so
+      // cancelled/completed trips stay hidden until explicitly requested. Accepts
+      // the legacy single `status` too. An empty array means "show none".
+      const statusFilter =
+        input.statuses ?? (input.status ? [input.status] : DEFAULT_DASHBOARD_STATUSES);
+      if (statusFilter.length === 0) {
+        return { items: [], totalCount: 0, page: input.page, pageSize: input.pageSize, totalPages: 0 };
+      }
+      conditions.push(inArray(proposals.status, statusFilter));
+
+      if (input.search?.trim()) {
+        const pattern = `%${escapeLikeQuery(input.search.trim())}%`;
+
+        const matchingClients = await ctx.db
+          .select({ id: clients.id })
+          .from(clients)
+          .where(
+            and(
+              eq(clients.organizationId, ctx.orgId),
+              sql`${clients.name} ilike ${pattern} escape '\\'`,
+            ),
+          );
+        const matchingClientIds = matchingClients.map((c) => c.id);
+
+        const searchConditions = [
+          sql`${proposals.name} ilike ${pattern} escape '\\'`,
+          sql`${proposals.tourTitle} ilike ${pattern} escape '\\'`,
+        ];
+        if (matchingClientIds.length > 0) {
+          searchConditions.push(inArray(proposals.clientId, matchingClientIds));
+        }
+
+        conditions.push(or(...searchConditions)!);
+      }
+
+      // Pull the matching proposals (light columns), newest activity first, then
+      // fold them into one row per client in JS. At the org's scale this stays
+      // cheap; if proposal volume grows this can move to a DISTINCT ON query.
+      const rows = await ctx.db.query.proposals.findMany({
+        where: and(...conditions)!,
+        orderBy: desc(proposals.updatedAt),
+        columns: {
+          id: true,
+          clientId: true,
+          name: true,
+          tourTitle: true,
+          status: true,
+          startDate: true,
+          updatedAt: true,
+          travelerGroups: true,
+        },
+        with: {
+          client: { columns: { id: true, name: true, countryOfResidence: true } },
+        },
+      });
+
+      // Total headcount across a proposal's traveler groups (adults, children, etc).
+      const sumTravelers = (groups: (typeof rows)[number]['travelerGroups']): number =>
+        (groups ?? []).reduce((total, g) => total + (g.count ?? 0), 0);
+
+      type ClientRow = {
+        kind: 'client';
+        clientId: string;
+        clientName: string;
+        country: string | null;
+        proposalCount: number;
+        // The proposal this card represents: the client's next departure (see
+        // pickFeatured). Its fields drive the card's title/status/date.
+        featuredProposalId: string;
+        featuredTitle: string;
+        featuredStatus: (typeof rows)[number]['status'];
+        featuredStartDate: string | null;
+        travelers: number;
+        emailStatus: string | null;
+        updatedAt: string;
+      };
+      type OrphanRow = {
+        kind: 'proposal';
+        proposalId: string;
+        title: string;
+        status: (typeof rows)[number]['status'];
+        startDate: string | null;
+        travelers: number;
+        emailStatus: string | null;
+        updatedAt: string;
+      };
+
+      // Group every matching proposal by client; orphans (no client) stay separate.
+      const byClient = new Map<string, typeof rows>();
+      const orphanProposals: typeof rows = [];
+      for (const p of rows) {
+        if (p.clientId && p.client) {
+          const arr = byClient.get(p.clientId);
+          if (arr) arr.push(p);
+          else byClient.set(p.clientId, [p]);
+        } else {
+          orphanProposals.push(p);
+        }
+      }
+
+      // The list surfaces upcoming departures first, so a client is represented by
+      // their next trip: the soonest proposal starting today or later. With none
+      // upcoming, fall back to their most recent past trip, then (no dates at all)
+      // the most recently edited proposal.
+      const startOfToday = (() => {
+        const d = new Date();
+        d.setUTCHours(0, 0, 0, 0);
+        return d.getTime();
+      })();
+      const ms = (v: string | null): number | null => (v ? new Date(v).getTime() : null);
+
+      const pickFeatured = (list: typeof rows): (typeof rows)[number] => {
+        const dated = list.filter((p) => p.startDate);
+        const upcoming = dated.filter((p) => ms(p.startDate)! >= startOfToday);
+        if (upcoming.length > 0) {
+          return upcoming.reduce((soonest, p) =>
+            ms(p.startDate)! < ms(soonest.startDate)! ? p : soonest,
+          );
+        }
+        if (dated.length > 0) {
+          return dated.reduce((recent, p) =>
+            ms(p.startDate)! > ms(recent.startDate)! ? p : recent,
+          );
+        }
+        // list is ordered updatedAt desc, so the first is the most recently edited.
+        return list[0]!;
+      };
+
+      const clientRows: ClientRow[] = [];
+      for (const [clientId, list] of byClient) {
+        const featured = pickFeatured(list);
+        clientRows.push({
+          kind: 'client',
+          clientId,
+          clientName: featured.client!.name,
+          country: featured.client!.countryOfResidence,
+          proposalCount: list.length,
+          featuredProposalId: featured.id,
+          featuredTitle: featured.tourTitle || featured.name,
+          featuredStatus: featured.status,
+          featuredStartDate: featured.startDate,
+          travelers: sumTravelers(featured.travelerGroups),
+          emailStatus: null,
+          updatedAt: featured.updatedAt,
+        });
+      }
+
+      const orphanRows: OrphanRow[] = orphanProposals.map((p) => ({
+        kind: 'proposal',
+        proposalId: p.id,
+        title: p.tourTitle || p.name,
+        status: p.status,
+        startDate: p.startDate,
+        travelers: sumTravelers(p.travelerGroups),
+        emailStatus: null,
+        updatedAt: p.updatedAt,
+      }));
+
+      const depDate = (it: ClientRow | OrphanRow): string | null =>
+        it.kind === 'client' ? it.featuredStartDate : it.startDate;
+      // 0 = upcoming (today or later), 1 = past, 2 = no date. Lower sorts first.
+      const depRank = (it: ClientRow | OrphanRow): number => {
+        const t = ms(depDate(it));
+        if (t === null) return 2;
+        return t >= startOfToday ? 0 : 1;
+      };
+
+      const all = [...clientRows, ...orphanRows].sort((a, b) => {
+        const ra = depRank(a);
+        const rb = depRank(b);
+        if (ra !== rb) return ra - rb;
+        if (ra === 0) return ms(depDate(a))! - ms(depDate(b))!; // soonest upcoming first
+        if (ra === 1) return ms(depDate(b))! - ms(depDate(a))!; // most recent past first
+        // No departure date: most recently edited first.
+        return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
+      });
+
+      const totalCount = all.length;
+      const totalPages = Math.ceil(totalCount / input.pageSize);
+      const start = (input.page - 1) * input.pageSize;
+      const items = all.slice(start, start + input.pageSize);
+
+      // Attach the latest email delivery status, but only for the proposals on
+      // this page so the lookup stays bounded. Each row maps to one representative
+      // proposal (a client's featured trip, or the orphan draft itself).
+      const pageProposalIds = items.map((it) =>
+        it.kind === 'client' ? it.featuredProposalId : it.proposalId,
+      );
+      if (pageProposalIds.length > 0) {
+        const emailRows = await ctx.db
+          .select({
+            proposalId: emailMessages.proposalId,
+            status: emailMessages.status,
+            sentAt: emailMessages.sentAt,
+          })
+          .from(emailMessages)
+          .where(
+            and(
+              eq(emailMessages.organizationId, ctx.orgId),
+              inArray(emailMessages.proposalId, pageProposalIds),
+            ),
+          )
+          .orderBy(desc(emailMessages.sentAt));
+
+        // Rows are newest-first, so the first status seen for a proposal is its
+        // most recent send.
+        const latestStatus = new Map<string, string>();
+        for (const e of emailRows) {
+          if (e.proposalId && !latestStatus.has(e.proposalId)) {
+            latestStatus.set(e.proposalId, e.status);
+          }
+        }
+        for (const it of items) {
+          const pid = it.kind === 'client' ? it.featuredProposalId : it.proposalId;
+          it.emailStatus = latestStatus.get(pid) ?? null;
+        }
+      }
+
+      return { items, totalCount, page: input.page, pageSize: input.pageSize, totalPages };
+    }),
+
   // Lightweight feed for the dashboard calendar view: every scheduled trip in
   // the org (startDate set), with its duration derived from the day count so we
   // can render a multi-day bar. No pagination; a calendar wants the full range.
@@ -247,6 +518,22 @@ export const proposalsRouter = router({
       z
         .object({
           filter: z.enum(['mine', 'all']).default('all'),
+          // Restrict to specific proposal statuses. The dashboard calendar passes
+          // ['booked'] so it only shows confirmed departures rather than the whole
+          // pipeline (drafts, shared, etc.).
+          statuses: z
+            .array(
+              z.enum([
+                'draft',
+                'shared',
+                'awaiting_payment',
+                'paid',
+                'booked',
+                'completed',
+                'cancelled',
+              ]),
+            )
+            .optional(),
           // Visible calendar window. When set, only trips overlapping it are
           // returned so the payload stays bounded as the proposal count grows.
           rangeStart: z.string().datetime().optional(),
@@ -259,6 +546,10 @@ export const proposalsRouter = router({
         eq(proposals.organizationId, ctx.orgId),
         isNotNull(proposals.startDate),
       ];
+
+      if (input.statuses && input.statuses.length > 0) {
+        conditions.push(inArray(proposals.status, input.statuses));
+      }
 
       if (input.rangeStart && input.rangeEnd) {
         // A trip occupies [startDate, startDate + duration). We don't have the
@@ -317,6 +608,94 @@ export const proposalsRouter = router({
         // Inclusive day count; a trip always spans at least one day.
         numberOfDays: Math.max(dayCounts.get(p.id) ?? 0, 1),
       }));
+    }),
+
+  // The "client deal" view: one client plus every proposal sent to them, most
+  // recently touched first. Powers /clients/[id], where an operator drills in
+  // from the dashboard list to see all versions of a client's trip and edit any.
+  listForClient: protectedProcedure
+    .input(z.object({ clientId: z.string() }))
+    .query(async ({ ctx, input }) => {
+      const [client] = await ctx.db
+        .select()
+        .from(clients)
+        .where(and(eq(clients.id, input.clientId), eq(clients.organizationId, ctx.orgId)))
+        .limit(1);
+
+      if (!client) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Client not found' });
+      }
+
+      const rows = await ctx.db.query.proposals.findMany({
+        where: and(
+          eq(proposals.organizationId, ctx.orgId),
+          eq(proposals.clientId, input.clientId),
+        ),
+        orderBy: desc(proposals.updatedAt),
+        columns: {
+          id: true,
+          name: true,
+          tourTitle: true,
+          status: true,
+          startDate: true,
+          createdAt: true,
+          updatedAt: true,
+          travelerGroups: true,
+        },
+      });
+
+      // Derive each proposal's duration from a grouped COUNT, same as the
+      // calendar feed, without loading every day row.
+      const dayCounts = new Map<string, number>();
+      // Latest email delivery status per proposal, so each row shows whether that
+      // specific proposal was sent/opened/etc (the precise, per-proposal signal).
+      const emailStatus = new Map<string, string>();
+      if (rows.length > 0) {
+        const proposalIds = rows.map((p) => p.id);
+        const [counts, emailRows] = await Promise.all([
+          ctx.db
+            .select({ proposalId: proposalDays.proposalId, n: count() })
+            .from(proposalDays)
+            .where(inArray(proposalDays.proposalId, proposalIds))
+            .groupBy(proposalDays.proposalId),
+          ctx.db
+            .select({
+              proposalId: emailMessages.proposalId,
+              status: emailMessages.status,
+              sentAt: emailMessages.sentAt,
+            })
+            .from(emailMessages)
+            .where(
+              and(
+                eq(emailMessages.organizationId, ctx.orgId),
+                inArray(emailMessages.proposalId, proposalIds),
+              ),
+            )
+            .orderBy(desc(emailMessages.sentAt)),
+        ]);
+        for (const c of counts) dayCounts.set(c.proposalId, c.n);
+        // Newest-first, so the first status seen for a proposal is its latest send.
+        for (const e of emailRows) {
+          if (e.proposalId && !emailStatus.has(e.proposalId)) {
+            emailStatus.set(e.proposalId, e.status);
+          }
+        }
+      }
+
+      return {
+        client,
+        proposals: rows.map((p) => ({
+          id: p.id,
+          title: p.tourTitle || p.name,
+          status: p.status,
+          startDate: p.startDate,
+          createdAt: p.createdAt,
+          updatedAt: p.updatedAt,
+          numberOfDays: Math.max(dayCounts.get(p.id) ?? 0, 1),
+          travelers: (p.travelerGroups ?? []).reduce((total, g) => total + (g.count ?? 0), 0),
+          emailStatus: emailStatus.get(p.id) ?? null,
+        })),
+      };
     }),
 
   getById: publicProcedure

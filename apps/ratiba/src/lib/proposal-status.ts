@@ -22,6 +22,17 @@ export const PROPOSAL_STATUSES: ProposalStatus[] = [
   'cancelled',
 ];
 
+// The dashboard's default status filter: the active pipeline an operator cares
+// about day to day. Completed and cancelled trips are hidden until explicitly
+// selected so the list stays focused on live work.
+export const DEFAULT_DASHBOARD_STATUSES: ProposalStatus[] = [
+  'draft',
+  'shared',
+  'awaiting_payment',
+  'paid',
+  'booked',
+];
+
 export const proposalStatusConfig: Record<ProposalStatus, StatusConfig> = {
   draft: { label: 'Draft', bg: 'bg-stone-100', text: 'text-stone-800', dot: 'bg-stone-400', hex: { fg: '#78716c', bg: '#f5f5f4' } },
   shared: { label: 'Shared', bg: 'bg-green-100', text: 'text-green-800', dot: 'bg-green-500', hex: { fg: '#16a34a', bg: '#dcfce7' } },
