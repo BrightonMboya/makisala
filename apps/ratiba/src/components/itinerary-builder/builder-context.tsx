@@ -65,9 +65,6 @@ export function BuilderProvider({
     'Personal items (souvenirs, etc.)',
   ]);
 
-  // Reveal stored payment methods to the client after they confirm this proposal.
-  const [showPaymentDetails, setShowPaymentDetails] = useState(false);
-
   // Auto-pricing (rate-card driven) — kept in builder state; persistence comes later.
   const [useAutoPricing, setUseAutoPricing] = useState(false);
   const [vehicleId, setVehicleId] = useState<string | null>(null);
@@ -158,8 +155,6 @@ export function BuilderProvider({
       if (initialData.extras) setExtras(initialData.extras);
       if (initialData.inclusions) setInclusions(initialData.inclusions);
       if (initialData.exclusions) setExclusions(initialData.exclusions);
-      if (initialData.showPaymentDetails != null)
-        setShowPaymentDetails(initialData.showPaymentDetails);
 
       // Auto-pricing fields from proposals table
       if (initialData.useAutoPricing != null) setUseAutoPricing(!!initialData.useAutoPricing);
@@ -254,8 +249,6 @@ export function BuilderProvider({
         setInclusions,
         exclusions,
         setExclusions,
-        showPaymentDetails,
-        setShowPaymentDetails,
         useAutoPricing,
         setUseAutoPricing,
         vehicleId,

@@ -14,11 +14,16 @@ import {
 } from '@repo/ui/map';
 import type { ItineraryData } from '@/types/itinerary-types';
 import { formatActivityTiming } from '@/lib/utils';
-import { trpc } from '@/lib/trpc';
-import { PaymentInstructions, type PaymentMethod } from '@/components/proposal/PaymentInstructions';
 import { AccommodationAlternativesBlock } from '@/components/themes/AccommodationAlternativesBlock';
 import { StaticTripMap } from '@/components/themes/StaticTripMap';
 import { useForPrint, usePrintImage } from '@/components/themes/print-context';
+
+// Grammatical list join ("A", "A & B", "A, B & C"). Mirrors DiscoveryTheme so
+// both surfaces derive the same day heading from the same data.
+function joinList(items: string[]): string {
+  if (items.length <= 2) return items.join(' & ');
+  return items.slice(0, -1).join(', ') + ' & ' + items[items.length - 1];
+}
 
 // Auto-rotating image that slowly crossfades through multiple images.
 // Falls back to a single static image when only one is provided.
@@ -236,32 +241,11 @@ export default function MinimalisticTheme({ data, onHeroImageChange, onDayImageC
   const pdfAsset = usePrintImage();
   const [isHeroHovered, setIsHeroHovered] = React.useState(false);
   const [hoveredDayImage, setHoveredDayImage] = React.useState<number | null>(null);
-  const [showConfirmModal, setShowConfirmModal] = useState(false);
-  const [confirmName, setConfirmName] = useState(data.clientName || '');
-  const [isConfirming, setIsConfirming] = useState(false);
-  const [confirmStatus, setConfirmStatus] = useState<'idle' | 'success' | 'error'>('idle');
-  const [confirmError, setConfirmError] = useState('');
-  const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
-
-  const confirmMutation = trpc.proposals.confirm.useMutation();
-
-  const handleConfirmProposal = async () => {
-    if (!confirmName.trim()) return;
-
-    setIsConfirming(true);
-    setConfirmError('');
-
-    try {
-      const result = await confirmMutation.mutateAsync({ proposalId: data.id, clientName: confirmName.trim() });
-      setPaymentMethods((result.paymentMethods ?? []) as PaymentMethod[]);
-      setConfirmStatus('success');
-    } catch (err: any) {
-      setConfirmStatus('error');
-      setConfirmError(err?.message || 'An unexpected error occurred');
-    } finally {
-      setIsConfirming(false);
-    }
-  };
+  // Confirm CTA target. Absolute for the PDF (a downloaded file has no origin
+  // to resolve a relative path against), relative on the web.
+  const bookingHref = forPrint
+    ? `${process.env.NEXT_PUBLIC_APP_URL ?? ''}/proposal/${data.id}/book`
+    : `/proposal/${data.id}/book`;
 
   return (
     <div className="min-h-screen bg-[#FDFCFB] font-light text-stone-800 selection:bg-stone-200">
@@ -454,6 +438,24 @@ export default function MinimalisticTheme({ data, onHeroImageChange, onDayImageC
                     accommodationImages.push(accommodationDetails.image);
                   }
 
+                  // Derive the day heading exactly like DiscoveryTheme so both
+                  // surfaces read identically: a single-activity day names the
+                  // activity, otherwise fall back destination -> activity
+                  // locations -> stored title. This keeps a stale placeholder
+                  // title (e.g. "Day 2") from surfacing when a real destination
+                  // exists.
+                  const activityLocations = [
+                    ...new Set(day.activities.map((a) => a.location).filter(Boolean)),
+                  ];
+                  const dayLocation =
+                    activityLocations.length > 0
+                      ? joinList(activityLocations as string[])
+                      : day.destination;
+                  const dayHeading =
+                    day.activities.length === 1
+                      ? day.activities[0]?.activity
+                      : day.destination || dayLocation || day.title;
+
                   return (
                     <div key={day.day} data-pdf-day className="group">
                       <div className="flex flex-col gap-8 md:flex-row md:gap-16">
@@ -470,7 +472,7 @@ export default function MinimalisticTheme({ data, onHeroImageChange, onDayImageC
                           {/* Day header with destination */}
                           <div>
                             <h3 className="font-serif text-3xl leading-tight text-stone-800 md:text-4xl">
-                              {day.title}
+                              {dayHeading}
                             </h3>
                           </div>
 
@@ -868,148 +870,17 @@ export default function MinimalisticTheme({ data, onHeroImageChange, onDayImageC
                     )}
                   </>
 
-                {data.showPaymentDetails && (
-                  <button
-                    onClick={() => setShowConfirmModal(true)}
-                    data-pdf-avoid
-                    className="w-full cursor-pointer rounded-xl bg-stone-800 px-8 py-5 text-sm font-medium tracking-[0.2em] text-white uppercase transition-colors hover:bg-stone-900"
-                  >
-                    Confirm Proposal
-                  </button>
-                )}
-
-                {/* Confirmation Modal */}
-                <AnimatePresence>
-                  {showConfirmModal && (
-                    <motion.div
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      exit={{ opacity: 0 }}
-                      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
-                      onClick={() => confirmStatus === 'idle' && setShowConfirmModal(false)}
-                    >
-                      <motion.div
-                        initial={{ opacity: 0, scale: 0.95, y: 20 }}
-                        animate={{ opacity: 1, scale: 1, y: 0 }}
-                        exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                        onClick={(e) => e.stopPropagation()}
-                        className="mx-4 w-full max-w-md rounded-2xl bg-white p-8 shadow-2xl"
-                      >
-                        {confirmStatus === 'success' ? (
-                          <div className="text-center">
-                            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
-                              <svg
-                                className="h-8 w-8 text-green-600"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                              >
-                                <path
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  strokeWidth={2}
-                                  d="M5 13l4 4L19 7"
-                                />
-                              </svg>
-                            </div>
-                            <h3 className="mb-2 font-serif text-2xl text-stone-900">
-                              Proposal Confirmed!
-                            </h3>
-                            <p className="mb-2 text-stone-600">
-                              {paymentMethods.length > 0
-                                ? 'Thank you for confirming. The operator has been notified. You can pay using the details below.'
-                                : 'Thank you for confirming. The tour operator has been notified and will contact you shortly to finalize your booking.'}
-                            </p>
-
-                            <PaymentInstructions methods={paymentMethods} />
-
-                            <button
-                              onClick={() => {
-                                setShowConfirmModal(false);
-                                setConfirmStatus('idle');
-                              }}
-                              className="mt-6 rounded-lg bg-stone-800 px-6 py-3 text-sm font-medium text-white hover:bg-stone-900"
-                            >
-                              Close
-                            </button>
-                          </div>
-                        ) : (
-                          <>
-                            <h3 className="mb-2 font-serif text-2xl text-stone-900">
-                              Confirm Your Proposal
-                            </h3>
-                            <p className="mb-6 text-sm text-stone-600">
-                              By confirming, you agree to proceed with this trip. The tour operator
-                              will be notified and will contact you to finalize the details.
-                            </p>
-
-                            <div className="mb-6">
-                              <label className="mb-2 block text-xs font-semibold tracking-wide text-stone-500 uppercase">
-                                Your Name
-                              </label>
-                              <input
-                                type="text"
-                                value={confirmName}
-                                onChange={(e) => setConfirmName(e.target.value)}
-                                placeholder="Enter your full name"
-                                className="w-full rounded-lg border border-stone-200 bg-stone-50 px-4 py-3 text-stone-900 placeholder-stone-400 focus:border-stone-400 focus:ring-2 focus:ring-stone-200 focus:outline-none"
-                              />
-                            </div>
-
-                            {confirmStatus === 'error' && (
-                              <div className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-700">
-                                {confirmError}
-                              </div>
-                            )}
-
-                            <div className="flex gap-3">
-                              <button
-                                onClick={() => {
-                                  setShowConfirmModal(false);
-                                  setConfirmStatus('idle');
-                                  setConfirmError('');
-                                }}
-                                disabled={isConfirming}
-                                className="flex-1 rounded-lg border border-stone-200 px-6 py-3 text-sm font-medium text-stone-700 hover:bg-stone-50 disabled:opacity-50"
-                              >
-                                Cancel
-                              </button>
-                              <button
-                                onClick={handleConfirmProposal}
-                                disabled={isConfirming || !confirmName.trim()}
-                                className="flex-1 rounded-lg bg-green-700 px-6 py-3 text-sm font-medium text-white hover:bg-green-800 disabled:opacity-50"
-                              >
-                                {isConfirming ? (
-                                  <span className="flex items-center justify-center gap-2">
-                                    <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24">
-                                      <circle
-                                        className="opacity-25"
-                                        cx="12"
-                                        cy="12"
-                                        r="10"
-                                        stroke="currentColor"
-                                        strokeWidth="4"
-                                        fill="none"
-                                      />
-                                      <path
-                                        className="opacity-75"
-                                        fill="currentColor"
-                                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                                      />
-                                    </svg>
-                                    Confirming...
-                                  </span>
-                                ) : (
-                                  'Confirm & Notify'
-                                )}
-                              </button>
-                            </div>
-                          </>
-                        )}
-                      </motion.div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
+                {/* Confirm CTA links to the standalone booking page. In the PDF
+                    this must be an absolute URL so the link works from a
+                    downloaded file; on the web a relative path keeps the current
+                    origin. */}
+                <a
+                  href={bookingHref}
+                  data-pdf-avoid
+                  className="block w-full cursor-pointer rounded-xl bg-stone-800 px-8 py-5 text-center text-sm font-medium tracking-[0.2em] text-white uppercase transition-colors hover:bg-stone-900"
+                >
+                  Confirm Proposal
+                </a>
               </div>
 
               {/* Extra Info */}

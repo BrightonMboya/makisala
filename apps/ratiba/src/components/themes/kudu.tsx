@@ -19,7 +19,6 @@ import Image from 'next/image';
 import { Map, MapMarker, MapRoute, MarkerContent, MarkerTooltip } from '@repo/ui/map';
 import type { ItineraryData } from '@/types/itinerary-types';
 import { formatActivityTiming } from '@/lib/utils';
-import { ConfirmProposalModal } from '@/components/proposal/ConfirmProposalModal';
 import { AccommodationAlternativesBlock } from '@/components/themes/AccommodationAlternativesBlock';
 import { StaticTripMap } from '@/components/themes/StaticTripMap';
 import { useForPrint, usePrintImage } from '@/components/themes/print-context';
@@ -316,7 +315,6 @@ export default function KuduTheme({ data, onHeroImageChange, onDayImageChange }:
     heroImage,
     itinerary,
     pricing,
-    showPaymentDetails,
     includedItems,
     excludedItems,
     accommodations,
@@ -325,8 +323,6 @@ export default function KuduTheme({ data, onHeroImageChange, onDayImageChange }:
     organization,
     tripOverview,
   } = data;
-
-  const [showConfirm, setShowConfirm] = React.useState(false);
 
   // Print surface: swap the WebGL route map for a static raster and size-cap images.
   const forPrint = useForPrint();
@@ -687,14 +683,12 @@ export default function KuduTheme({ data, onHeroImageChange, onDayImageChange }:
               </div>
             )}
 
-            {showPaymentDetails && (
-              <button
-                onClick={() => setShowConfirm(true)}
-                className="flex w-full cursor-pointer items-center justify-center gap-3 bg-emerald-700 py-5 text-xs font-bold tracking-widest text-white uppercase transition-all duration-500 hover:bg-emerald-600"
-              >
-                Confirm Proposal <ArrowRight size={16} />
-              </button>
-            )}
+            <a
+              href={`/proposal/${data.id}/book`}
+              className="flex w-full cursor-pointer items-center justify-center gap-3 bg-emerald-700 py-5 text-xs font-bold tracking-widest text-white uppercase transition-all duration-500 hover:bg-emerald-600"
+            >
+              Confirm Proposal <ArrowRight size={16} />
+            </a>
             {organization?.name && (
               <div className="mt-4 flex items-center justify-center gap-2">
                 {organization.logoUrl && (
@@ -748,12 +742,6 @@ export default function KuduTheme({ data, onHeroImageChange, onDayImageChange }:
         ))}
       </div>
 
-      <ConfirmProposalModal
-        proposalId={data.id}
-        defaultName={clientName}
-        open={showConfirm}
-        onClose={() => setShowConfirm(false)}
-      />
     </div>
   );
 }

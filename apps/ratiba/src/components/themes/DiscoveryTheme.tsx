@@ -37,8 +37,6 @@ import {
 } from '@repo/ui/map';
 import type { ItineraryData } from '@/types/itinerary-types';
 import { capitalize, cn, formatActivityTiming } from '@/lib/utils';
-import { trpc } from '@/lib/trpc';
-import { PaymentInstructions, type PaymentMethod } from '@/components/proposal/PaymentInstructions';
 import { AccommodationAlternativesBlock } from '@/components/themes/AccommodationAlternativesBlock';
 import { StaticTripMap } from '@/components/themes/StaticTripMap';
 import { useForPrint, usePrintImage } from '@/components/themes/print-context';
@@ -793,7 +791,7 @@ const JourneyOverview = ({ data }: { data: ItineraryData }) => {
 // ============================================================================
 // PRICING SECTION - Elegant and clear
 // ============================================================================
-const PricingSection = ({ data, onConfirm }: { data: ItineraryData; onConfirm: () => void }) => (
+const PricingSection = ({ data }: { data: ItineraryData }) => (
   <section className="bg-stone-900 py-24 text-white lg:py-32">
     <div className="mx-auto max-w-6xl px-8 lg:px-16">
       <div className="grid grid-cols-1 gap-16 lg:grid-cols-2 lg:gap-24">
@@ -849,17 +847,15 @@ const PricingSection = ({ data, onConfirm }: { data: ItineraryData; onConfirm: (
             experiences.
           </p>
 
-          {data.showPaymentDetails && (
-            <div className="mt-12">
-              <button
-                onClick={onConfirm}
-                className="group inline-flex items-center gap-3 bg-white px-8 py-4 text-sm font-medium tracking-wide text-stone-900 transition-colors hover:bg-stone-100"
-              >
-                Reserve This Journey
-                <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
-              </button>
-            </div>
-          )}
+          <div className="mt-12">
+            <a
+              href={`/proposal/${data.id}/book`}
+              className="group inline-flex items-center gap-3 bg-white px-8 py-4 text-sm font-medium tracking-wide text-stone-900 transition-colors hover:bg-stone-100"
+            >
+              Reserve This Journey
+              <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+            </a>
+          </div>
         </motion.div>
 
         {/* Inclusions */}
@@ -1314,35 +1310,33 @@ const DaySection = ({
 // ============================================================================
 // FOOTER - Elegant closing
 // ============================================================================
-const Footer = ({ data, onConfirm }: { data: ItineraryData; onConfirm: () => void }) => (
+const Footer = ({ data }: { data: ItineraryData }) => (
   <footer className="bg-stone-950 text-white">
-    {/* CTA Section — only when the operator opted to collect payment on this proposal */}
-    {data.showPaymentDetails && (
-      <div className="border-b border-stone-800 px-8 py-24 text-center lg:px-16 lg:py-32">
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="mx-auto max-w-2xl"
+    {/* CTA Section */}
+    <div className="border-b border-stone-800 px-8 py-24 text-center lg:px-16 lg:py-32">
+      <motion.div
+        initial={{ opacity: 0, y: 30 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        className="mx-auto max-w-2xl"
+      >
+        <p className="mb-8 text-xs font-light tracking-[0.3em] text-stone-500 uppercase">
+          Begin Your Story
+        </p>
+        <h2 className="mb-8 font-serif text-4xl lg:text-5xl">Ready to embark?</h2>
+        <p className="mb-12 text-lg leading-relaxed font-light text-stone-400">
+          Every great journey begins with a single step. Let us guide you through an adventure that
+          will stay with you forever.
+        </p>
+        <a
+          href={`/proposal/${data.id}/book`}
+          className="group inline-flex items-center gap-3 bg-white px-10 py-5 text-base font-medium tracking-wide text-stone-900 transition-colors hover:bg-stone-100"
         >
-          <p className="mb-8 text-xs font-light tracking-[0.3em] text-stone-500 uppercase">
-            Begin Your Story
-          </p>
-          <h2 className="mb-8 font-serif text-4xl lg:text-5xl">Ready to embark?</h2>
-          <p className="mb-12 text-lg leading-relaxed font-light text-stone-400">
-            Every great journey begins with a single step. Let us guide you through an adventure that
-            will stay with you forever.
-          </p>
-          <button
-            onClick={onConfirm}
-            className="group inline-flex items-center gap-3 bg-white px-10 py-5 text-base font-medium tracking-wide text-stone-900 transition-colors hover:bg-stone-100"
-          >
-            Confirm &amp; Pay
-            <ChevronRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
-          </button>
-        </motion.div>
-      </div>
-    )}
+          Confirm &amp; Pay
+          <ChevronRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
+        </a>
+      </motion.div>
+    </div>
 
     {/* About & Payment Terms */}
     {(data.organization?.aboutDescription || data.organization?.paymentTerms) && (
@@ -1414,12 +1408,6 @@ export default function DiscoveryTheme({
   onHeroImageChange,
   onDayImageChange,
 }: DiscoveryThemeProps) {
-  const [showConfirmModal, setShowConfirmModal] = useState(false);
-  const [confirmName, setConfirmName] = useState(data.clientName || '');
-  const [isConfirming, setIsConfirming] = useState(false);
-  const [confirmStatus, setConfirmStatus] = useState<'idle' | 'success' | 'error'>('idle');
-  const [confirmError, setConfirmError] = useState('');
-  const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
   const [hoveredDayImage, setHoveredDayImage] = useState<number | null>(null);
 
   const handleHeroImageChange = () => {
@@ -1427,28 +1415,6 @@ export default function DiscoveryTheme({
       window.dispatchEvent(new CustomEvent('openHeroImagePicker'));
     }
   };
-
-  const confirmMutation = trpc.proposals.confirm.useMutation();
-
-  const handleConfirmProposal = async () => {
-    if (!confirmName.trim()) return;
-
-    setIsConfirming(true);
-    setConfirmError('');
-
-    try {
-      const result = await confirmMutation.mutateAsync({ proposalId: data.id, clientName: confirmName.trim() });
-      setPaymentMethods((result.paymentMethods ?? []) as PaymentMethod[]);
-      setConfirmStatus('success');
-    } catch (err: any) {
-      setConfirmStatus('error');
-      setConfirmError(err?.message || 'An unexpected error occurred');
-    } finally {
-      setIsConfirming(false);
-    }
-  };
-
-  const openConfirmModal = () => setShowConfirmModal(true);
 
   return (
     <div className="w-full bg-white">
@@ -1458,7 +1424,7 @@ export default function DiscoveryTheme({
       />
       <JourneyOverview data={data} />
       <IntroductionSection data={data} />
-      <PricingSection data={data} onConfirm={openConfirmModal} />
+      <PricingSection data={data} />
 
       {data.itinerary.map((day, index) => (
         <React.Fragment key={day.day}>
@@ -1480,124 +1446,7 @@ export default function DiscoveryTheme({
         </React.Fragment>
       ))}
 
-      <Footer data={data} onConfirm={openConfirmModal} />
-
-      {/* Confirmation Modal */}
-      <AnimatePresence>
-        {showConfirmModal && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
-            onClick={() => confirmStatus === 'idle' && setShowConfirmModal(false)}
-          >
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              onClick={(e) => e.stopPropagation()}
-              className="mx-4 max-h-[90vh] w-full max-w-md overflow-y-auto rounded-2xl bg-white p-8 shadow-2xl"
-            >
-              {confirmStatus === 'success' ? (
-                <div className="text-center">
-                  <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
-                    <Check className="h-8 w-8 text-green-600" />
-                  </div>
-                  <h3 className="mb-2 font-serif text-2xl text-stone-900">Proposal Confirmed!</h3>
-                  <p className="mb-2 text-stone-600">
-                    {paymentMethods.length > 0
-                      ? 'Thank you for confirming. The operator has been notified. You can pay using the details below.'
-                      : 'Thank you for confirming. The tour operator has been notified and will contact you shortly to finalize your booking.'}
-                  </p>
-
-                  <PaymentInstructions methods={paymentMethods} />
-
-                  <button
-                    onClick={() => {
-                      setShowConfirmModal(false);
-                      setConfirmStatus('idle');
-                    }}
-                    className="mt-6 rounded-lg bg-stone-800 px-6 py-3 text-sm font-medium text-white hover:bg-stone-900"
-                  >
-                    Close
-                  </button>
-                </div>
-              ) : (
-                <>
-                  <h3 className="mb-2 font-serif text-2xl text-stone-900">Confirm Your Journey</h3>
-                  <p className="mb-6 text-sm text-stone-600">
-                    By confirming, you agree to proceed with this trip. The tour operator will be
-                    notified and will contact you to finalize the details.
-                  </p>
-
-                  <div className="mb-6">
-                    <label className="mb-2 block text-xs font-semibold tracking-wide text-stone-500 uppercase">
-                      Your Name
-                    </label>
-                    <input
-                      type="text"
-                      value={confirmName}
-                      onChange={(e) => setConfirmName(e.target.value)}
-                      placeholder="Enter your full name"
-                      className="w-full rounded-lg border border-stone-200 bg-stone-50 px-4 py-3 text-stone-900 placeholder-stone-400 focus:border-stone-400 focus:ring-2 focus:ring-stone-200 focus:outline-none"
-                    />
-                  </div>
-
-                  {confirmStatus === 'error' && (
-                    <div className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-700">
-                      {confirmError}
-                    </div>
-                  )}
-
-                  <div className="flex gap-3">
-                    <button
-                      onClick={() => {
-                        setShowConfirmModal(false);
-                        setConfirmStatus('idle');
-                        setConfirmError('');
-                      }}
-                      disabled={isConfirming}
-                      className="flex-1 rounded-lg border border-stone-200 px-6 py-3 text-sm font-medium text-stone-700 hover:bg-stone-50 disabled:opacity-50"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      onClick={handleConfirmProposal}
-                      disabled={isConfirming || !confirmName.trim()}
-                      className="flex-1 rounded-lg bg-green-700 px-6 py-3 text-sm font-medium text-white hover:bg-green-800 disabled:opacity-50"
-                    >
-                      {isConfirming ? (
-                        <span className="flex items-center justify-center gap-2">
-                          <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24">
-                            <circle
-                              className="opacity-25"
-                              cx="12"
-                              cy="12"
-                              r="10"
-                              stroke="currentColor"
-                              strokeWidth="4"
-                              fill="none"
-                            />
-                            <path
-                              className="opacity-75"
-                              fill="currentColor"
-                              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                            />
-                          </svg>
-                          Confirming...
-                        </span>
-                      ) : (
-                        'Confirm & Notify'
-                      )}
-                    </button>
-                  </div>
-                </>
-              )}
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <Footer data={data} />
     </div>
   );
 }

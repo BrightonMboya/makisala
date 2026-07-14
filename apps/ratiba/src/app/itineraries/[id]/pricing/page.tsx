@@ -70,8 +70,6 @@ export default function PricingPage() {
     setInclusions,
     exclusions,
     setExclusions,
-    showPaymentDetails,
-    setShowPaymentDetails,
     useAutoPricing,
     setUseAutoPricing,
     vehicleId,
@@ -363,26 +361,6 @@ export default function PricingPage() {
             onUpdateRow={handleUpdateRow}
           />
         )}
-      </div>
-
-      <div className="flex flex-col items-end gap-3 pr-2">
-        <div className="flex items-start gap-2">
-          <Checkbox
-            id="show-payment-details"
-            checked={showPaymentDetails}
-            onCheckedChange={(checked) => setShowPaymentDetails(checked === true)}
-            className="mt-0.5 border-stone-300 data-[state=checked]:border-stone-900 data-[state=checked]:bg-stone-900"
-          />
-          <label htmlFor="show-payment-details" className="cursor-pointer text-right select-none">
-            <span className="block text-sm font-medium text-stone-600">
-              Show payment details after the client confirms
-            </span>
-            <span className="block text-xs text-stone-400">
-              On confirm, the client sees the payment methods from your Settings. Off keeps them
-              hidden.
-            </span>
-          </label>
-        </div>
       </div>
 
       {/* Accommodation Alternatives — only shown when at least one day has them */}

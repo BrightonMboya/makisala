@@ -12,7 +12,6 @@ import {
 } from '@repo/ui/map';
 import type { ItineraryData } from '@/types/itinerary-types';
 import { formatActivityTiming } from '@/lib/utils';
-import { ConfirmProposalModal } from '@/components/proposal/ConfirmProposalModal';
 import { AccommodationAlternativesBlock } from '@/components/themes/AccommodationAlternativesBlock';
 import { StaticTripMap } from '@/components/themes/StaticTripMap';
 import { useForPrint, usePrintImage } from '@/components/themes/print-context';
@@ -121,7 +120,6 @@ export default function SafariPortalTheme({ data }: { data: ItineraryData }) {
   const [isScrolled, setIsScrolled] = useState(false);
   const [scrollProgress, setScrollProgress] = useState(0);
   const [activeSection, setActiveSection] = useState<'overview' | number>('overview');
-  const [showConfirm, setShowConfirm] = useState(false);
   const rightContentRef = useRef<HTMLDivElement>(null);
   const sectionRefs = useRef(new Map<string, HTMLElement>());
 
@@ -641,14 +639,12 @@ export default function SafariPortalTheme({ data }: { data: ItineraryData }) {
                   </div>
                 </div>
 
-                {data.showPaymentDetails && (
-                  <button
-                    onClick={() => setShowConfirm(true)}
-                    className="w-full cursor-pointer rounded-full bg-white px-8 py-4 text-sm font-bold tracking-[0.2em] text-stone-900 uppercase transition-all hover:bg-stone-100"
-                  >
-                    Accept & Secure Dates
-                  </button>
-                )}
+                <a
+                  href={`/proposal/${data.id}/book`}
+                  className="block w-full cursor-pointer rounded-full bg-white px-8 py-4 text-center text-sm font-bold tracking-[0.2em] text-stone-900 uppercase transition-all hover:bg-stone-100"
+                >
+                  Accept & Secure Dates
+                </a>
               </div>
             </div>
 
@@ -692,12 +688,6 @@ export default function SafariPortalTheme({ data }: { data: ItineraryData }) {
         </div>
       </div>
 
-      <ConfirmProposalModal
-        proposalId={data.id}
-        defaultName={data.clientName}
-        open={showConfirm}
-        onClose={() => setShowConfirm(false)}
-      />
     </div>
   );
 }

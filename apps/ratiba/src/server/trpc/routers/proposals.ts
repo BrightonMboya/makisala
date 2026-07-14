@@ -71,7 +71,6 @@ interface BuilderData {
   countries?: string[] | null;
   inclusions?: string[] | null;
   exclusions?: string[] | null;
-  showPaymentDetails?: boolean;
   useAutoPricing?: boolean | null;
   vehicleId?: string | null;
   markupPct?: number | string | null;
@@ -835,7 +834,6 @@ export const proposalsRouter = router({
           countries: true,
           inclusions: true,
           exclusions: true,
-          showPaymentDetails: true,
           useAutoPricing: true,
           vehicleId: true,
           markupPct: true,
@@ -967,7 +965,6 @@ export const proposalsRouter = router({
         countries: builderData.countries || null,
         inclusions: builderData.inclusions || null,
         exclusions: builderData.exclusions || null,
-        showPaymentDetails: builderData.showPaymentDetails || false,
         useAutoPricing: builderData.useAutoPricing ?? false,
         vehicleId: builderData.vehicleId ?? null,
         markupPct:
@@ -1008,7 +1005,6 @@ export const proposalsRouter = router({
             countries: proposalData.countries || null,
             inclusions: proposalData.inclusions || null,
             exclusions: proposalData.exclusions || null,
-            showPaymentDetails: proposalData.showPaymentDetails || false,
             useAutoPricing: proposalData.useAutoPricing,
             vehicleId: proposalData.vehicleId,
             markupPct: proposalData.markupPct,
@@ -1043,7 +1039,6 @@ export const proposalsRouter = router({
               countries: proposalData.countries || null,
               inclusions: proposalData.inclusions || null,
               exclusions: proposalData.exclusions || null,
-              showPaymentDetails: proposalData.showPaymentDetails || false,
               useAutoPricing: proposalData.useAutoPricing,
               vehicleId: proposalData.vehicleId,
               markupPct: proposalData.markupPct,
@@ -1372,11 +1367,52 @@ export const proposalsRouter = router({
         .set({ status: 'awaiting_payment', updatedAt: new Date().toISOString() })
         .where(eq(proposals.id, input.proposalId));
 
-      // Return the operator's payment methods so the client can pay directly,
-      // but only when this proposal opted in via showPaymentDetails. These are
-      // intentionally only surfaced after the client commits, never in the
-      // public proposal payload.
-      const methods = proposal.showPaymentDetails
+      // Return the operator's payment methods so the client can pay directly.
+      // The booking page also fetches these; returning them here keeps the
+      // post-confirm response self-contained.
+      const methods = await ctx.db
+        .select({
+          id: paymentMethods.id,
+          type: paymentMethods.type,
+          label: paymentMethods.label,
+          instructions: paymentMethods.instructions,
+          url: paymentMethods.url,
+        })
+        .from(paymentMethods)
+        .where(eq(paymentMethods.organizationId, proposal.organization.id))
+        .orderBy(asc(paymentMethods.sortOrder), asc(paymentMethods.createdAt));
+
+      return { success: true, paymentMethods: methods };
+    }),
+
+  // Powers the standalone booking page (/proposal/[id]/book). Returns the
+  // proposal summary plus the operator's payment methods so the client can pay
+  // directly. Public: the proposal link is the access token. Payment details
+  // (bank/Stripe/Pesapal) are the operator's own payout info, safe to show to
+  // the client who received the proposal.
+  getBookingDetails: publicProcedure
+    .input(z.object({ id: z.string() }))
+    .query(async ({ ctx, input }) => {
+      const proposal = await ctx.db.query.proposals.findFirst({
+        where: eq(proposals.id, input.id),
+        columns: {
+          id: true,
+          name: true,
+          tourTitle: true,
+          startDate: true,
+          pricingRows: true,
+          travelerGroups: true,
+          status: true,
+          organizationId: true,
+        },
+        with: {
+          organization: { columns: { name: true, logoUrl: true } },
+          client: { columns: { name: true } },
+        },
+      });
+      if (!proposal) return null;
+
+      const methods = proposal.organizationId
         ? await ctx.db
             .select({
               id: paymentMethods.id,
@@ -1386,11 +1422,28 @@ export const proposalsRouter = router({
               url: paymentMethods.url,
             })
             .from(paymentMethods)
-            .where(eq(paymentMethods.organizationId, proposal.organization.id))
+            .where(eq(paymentMethods.organizationId, proposal.organizationId))
             .orderBy(asc(paymentMethods.sortOrder), asc(paymentMethods.createdAt))
         : [];
 
-      return { success: true, paymentMethods: methods };
+      const rows = (proposal.pricingRows as Array<{ count: number; unitPrice: number }>) || [];
+      const total = rows.reduce((acc, r) => acc + r.count * r.unitPrice, 0);
+      const groups = (proposal.travelerGroups as Array<{ count: number }>) || [];
+      const travelerCount = groups.reduce((acc, g) => acc + g.count, 0);
+
+      return {
+        id: proposal.id,
+        title: proposal.tourTitle || proposal.name,
+        clientName: proposal.client?.name ?? '',
+        startDate: proposal.startDate,
+        status: proposal.status,
+        travelerCount,
+        totalPrice: total > 0 ? total : null,
+        organization: proposal.organization
+          ? { name: proposal.organization.name, logoUrl: proposal.organization.logoUrl }
+          : null,
+        paymentMethods: methods,
+      };
     }),
 
   updateStatus: protectedProcedure
@@ -1504,7 +1557,6 @@ export const proposalsRouter = router({
           countries: original.countries,
           inclusions: original.inclusions,
           exclusions: original.exclusions,
-          showPaymentDetails: original.showPaymentDetails,
           useAutoPricing: original.useAutoPricing,
           vehicleId: original.vehicleId,
           markupPct: original.markupPct,
