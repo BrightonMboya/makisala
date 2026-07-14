@@ -192,9 +192,48 @@ export default async function ProposalPrintPage({ params, searchParams }: Props)
               [data-print-theme="minimalistic"] [class*="sticky"] {
                 position: static !important;
               }
-              /* Give the sidebar card room once it flows below the itinerary. */
+
+              /* ----------------------------------------------------------------
+                 Minimalistic pagination. On screen the itinerary is one endless
+                 scroll; sliced into fixed 1280x1810 pages it tears each day across
+                 a boundary and strands the accommodation summary alone at the top
+                 of the next page. Start every day on a fresh page and keep each
+                 atomic block (stay card, timeline entry, transfer, summary card)
+                 whole so a break never lands inside one.
+                 ---------------------------------------------------------------- */
+              [data-print-theme="minimalistic"] [data-pdf-day] {
+                break-before: page;
+                page-break-before: always;
+              }
+              [data-print-theme="minimalistic"] [data-pdf-day]:first-child {
+                break-before: auto;
+                page-break-before: auto;
+              }
+              [data-print-theme="minimalistic"] [data-pdf-avoid] {
+                break-inside: avoid;
+                page-break-inside: avoid;
+              }
+
+              /* The sidebar (route map + trip summary + pricing + inclusions) flows
+                 in as a full-width block after the itinerary. Start it on its own
+                 page, and strip the single wrapping card's border/radius/shadow so a
+                 box taller than a page can't fragment into the overlapping paint
+                 (the "CONFIRM PROPOSAL over the exclusions" artifact). Inner blocks
+                 (map, summary, pricing) carry their own break-inside:avoid instead. */
               [data-print-theme="minimalistic"] aside {
-                margin-top: 4rem;
+                break-before: page;
+                page-break-before: always;
+                margin-top: 0;
+              }
+              [data-print-theme="minimalistic"] aside [class*="rounded-3xl"] {
+                border: 0 !important;
+                border-radius: 0 !important;
+                box-shadow: none !important;
+                padding: 0 !important;
+              }
+              /* Keep the (non-clickable in a PDF) CTA clear of the exclusions list. */
+              [data-print-theme="minimalistic"] aside button[data-pdf-avoid] {
+                margin-top: 2rem;
               }
             `,
           }}

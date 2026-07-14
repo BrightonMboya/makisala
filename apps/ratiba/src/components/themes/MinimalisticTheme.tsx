@@ -455,7 +455,7 @@ export default function MinimalisticTheme({ data, onHeroImageChange, onDayImageC
                   }
 
                   return (
-                    <div key={day.day} className="group">
+                    <div key={day.day} data-pdf-day className="group">
                       <div className="flex flex-col gap-8 md:flex-row md:gap-16">
                         <div className="shrink-0 md:w-32">
                           <span className="font-serif text-5xl text-stone-200 italic transition-colors group-hover:text-stone-300">
@@ -482,7 +482,7 @@ export default function MinimalisticTheme({ data, onHeroImageChange, onDayImageC
 
                           {/* Accommodation Image Section - Show if different from previous day */}
                           {!shouldHideAccommodation && accommodation && accommodationDetails && (
-                            <div className="mt-8">
+                            <div className="mt-8" data-pdf-avoid>
                               <div
                                 className="group relative h-64 w-full overflow-hidden rounded-2xl"
                                 onMouseEnter={() => onDayImageChange && setHoveredDayImage(day.day)}
@@ -597,7 +597,7 @@ export default function MinimalisticTheme({ data, onHeroImageChange, onDayImageC
                                 );
 
                                 return (
-                                  <div key={idx} className="relative">
+                                  <div key={idx} className="relative" data-pdf-avoid>
                                     <div className="absolute top-1.5 -left-[37px] h-2.5 w-2.5 rounded-full bg-stone-400 outline outline-4 outline-[#FDFCFB]" />
                                     <div className="space-y-3">
                                       {/* Narrative intro */}
@@ -648,7 +648,7 @@ export default function MinimalisticTheme({ data, onHeroImageChange, onDayImageC
 
                           {/* Day Transfer — shown after activities as the closing event of the day */}
                           {day.transportation && (
-                            <div className="relative space-y-3 border-l border-dashed border-stone-300 pl-8">
+                            <div className="relative space-y-3 border-l border-dashed border-stone-300 pl-8" data-pdf-avoid>
                               <div className="absolute top-1.5 -left-[9px] h-[18px] w-[18px] rounded-full border-2 border-stone-300 bg-white">
                                 {day.transportation.mode.startsWith('flight') ? (
                                   <svg className="mt-[1px] ml-[1px] h-3 w-3 text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -699,7 +699,10 @@ export default function MinimalisticTheme({ data, onHeroImageChange, onDayImageC
                             </div>
                           )}
 
-                          <div className="flex flex-col justify-between gap-8 rounded-2xl bg-stone-50 p-8 md:flex-row">
+                          <div
+                            className="flex flex-col justify-between gap-8 rounded-2xl bg-stone-50 p-8 md:flex-row"
+                            data-pdf-avoid
+                          >
                             <div>
                               <span className="mb-2 block text-[10px] tracking-[0.2em] text-stone-400 uppercase">
                                 Accommodation
@@ -748,7 +751,7 @@ export default function MinimalisticTheme({ data, onHeroImageChange, onDayImageC
             <div className="sticky top-12 space-y-16">
               {/* Proposal Sidebar */}
               <div className="rounded-3xl border border-stone-100 bg-white p-10 shadow-sm">
-                <div className="mb-10">
+                <div className="mb-10" data-pdf-avoid>
                   {forPrint ? (
                     <StaticTripMap data={data.mapData} />
                   ) : (
@@ -756,7 +759,7 @@ export default function MinimalisticTheme({ data, onHeroImageChange, onDayImageC
                   )}
                 </div>
 
-                <div className="mb-8 border-b border-stone-100 pb-8">
+                <div className="mb-8 border-b border-stone-100 pb-8" data-pdf-avoid>
                   <h3 className="mb-6 text-sm font-medium tracking-[0.2em] text-stone-400 uppercase">
                     Trip Summary
                   </h3>
@@ -791,7 +794,7 @@ export default function MinimalisticTheme({ data, onHeroImageChange, onDayImageC
                 </div>
 
                 <>
-                    <div className="mb-8 border-b border-stone-100 pb-8">
+                    <div className="mb-8 border-b border-stone-100 pb-8" data-pdf-avoid>
                       <h3 className="mb-6 text-sm font-medium tracking-[0.2em] text-stone-400 uppercase">
                         Pricing
                       </h3>
@@ -868,6 +871,7 @@ export default function MinimalisticTheme({ data, onHeroImageChange, onDayImageC
                 {data.showPaymentDetails && (
                   <button
                     onClick={() => setShowConfirmModal(true)}
+                    data-pdf-avoid
                     className="w-full cursor-pointer rounded-xl bg-stone-800 px-8 py-5 text-sm font-medium tracking-[0.2em] text-white uppercase transition-colors hover:bg-stone-900"
                   >
                     Confirm Proposal
