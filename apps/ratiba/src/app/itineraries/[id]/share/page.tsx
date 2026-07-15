@@ -2,9 +2,7 @@
 
 import { Button } from '@repo/ui/button';
 import { Input } from '@repo/ui/input';
-import { Textarea } from '@repo/ui/textarea';
 import {
-  Mail,
   Send,
   TestTube,
   Loader2,
@@ -15,11 +13,19 @@ import {
   Pencil,
   Globe,
   Download,
+  Paperclip,
 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@repo/ui/select';
 import { useBuilder } from '@/components/itinerary-builder/builder-context';
 import { EmailDeliveryStatus } from '@/components/email-delivery-status';
-import { useState, useEffect, useRef, useCallback } from 'react';
+import {
+  EmailBodyEditor,
+  type EmailBodyEditorHandle,
+} from '@/components/email-composer/email-body-editor';
+import { EmailAttachments } from '@/components/email-composer/email-attachments';
+import { isSupportedEmailBody, type EditorNode } from '@/lib/email/proposal-email-body';
+import type { EmailAttachment } from '@repo/db/schema';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useParams } from 'next/navigation';
 import { toast } from '@repo/ui/toast';
 import { useMutation } from '@tanstack/react-query';
@@ -48,14 +54,6 @@ const LANGUAGES = [
   { code: 'tr', label: 'Turkish' },
   { code: 'he', label: 'Hebrew' },
 ] as const;
-
-const DEFAULT_MESSAGE = `Thank you for choosing us to plan your unforgettable journey! We've carefully crafted this personalized travel proposal based on your preferences and dreams.
-
-Inside, you'll find a detailed day-by-day itinerary, handpicked accommodations, exciting activities, and transparent pricing. We've poured our expertise and passion into creating an experience you'll cherish forever.
-
-Please take your time to review the proposal. If you have any questions or would like to make adjustments, simply leave a comment directly on the proposal or reply to this email. We're here to make your trip absolutely perfect.
-
-We can't wait to help you embark on this adventure!`;
 
 export default function SharePage() {
   const params = useParams();
@@ -92,17 +90,25 @@ export default function SharePage() {
   const [activeTab, setActiveTab] = useState<'edit' | 'preview'>('edit');
   const [recipientEmail, setRecipientEmail] = useState('');
   const [emailSubject, setEmailSubject] = useState('');
-  const [emailMessage, setEmailMessage] = useState(DEFAULT_MESSAGE);
   const [testEmail, setTestEmail] = useState('');
   const [isProposalSaved, setIsProposalSaved] = useState(false);
   const [proposalLink, setProposalLink] = useState('');
   const [selectedLanguage, setSelectedLanguage] = useState('en');
 
+  // Share-email composer state (react-email editor body + additional attachments).
+  const [emailBodyJson, setEmailBodyJson] = useState<EditorNode | null>(null);
+  const [emailAttachments, setEmailAttachments] = useState<EmailAttachment[]>([]);
+  const [previewHtml, setPreviewHtml] = useState('');
+  const [previewLoading, setPreviewLoading] = useState(false);
+  // Imperative handle to the editor: renders current HTML + inserts variables.
+  const editorHandleRef = useRef<EmailBodyEditorHandle>(null);
+
   const saveProposalMutation = trpc.proposals.save.useMutation();
+  const saveEmailDraftMutation = trpc.proposals.saveEmailDraft.useMutation();
   const translateMutation = trpc.translations.translate.useMutation();
   const resetLanguageMutation = trpc.translations.resetLanguage.useMutation();
 
-  // Fetch proposal language setting
+  // Fetch proposal language + saved email draft
   const { data: proposalData } = trpc.proposals.getForBuilder.useQuery(
     { id: proposalId },
     { staleTime: staleTimes.clients },
@@ -114,6 +120,19 @@ export default function SharePage() {
       setSelectedLanguage(proposalData.language);
     }
   }, [proposalData?.language]);
+
+  // Hydrate the composer from the saved draft once, when the proposal loads.
+  const hydratedRef = useRef(false);
+  useEffect(() => {
+    if (hydratedRef.current || !proposalData) return;
+    hydratedRef.current = true;
+    if (isSupportedEmailBody(proposalData.emailBodyJson)) {
+      setEmailBodyJson(proposalData.emailBodyJson);
+    }
+    if (Array.isArray(proposalData.emailAttachments)) {
+      setEmailAttachments(proposalData.emailAttachments as EmailAttachment[]);
+    }
+  }, [proposalData]);
 
   // Fetch client info
   const { data: clientData } = trpc.clients.getById.useQuery(
@@ -141,6 +160,96 @@ export default function SharePage() {
   }, [proposalId]);
 
   const clientName = clientData?.name || 'Valued Traveler';
+
+  // Values shown in place of the variable pills in the editor (so operators read
+  // the finished email, not template tokens). These mirror what the server
+  // substitutes at send time; the server remains the source of truth for the
+  // email actually sent. The org name comes from the proposal query.
+  const formattedStartDate = startDate
+    ? startDate.toLocaleDateString('en-US', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      })
+    : '';
+  const variableValues = useMemo<Record<string, string>>(
+    () => ({
+      clientName,
+      agencyName: proposalData?.organization?.name || 'Your Travel Agency',
+      proposalTitle: tourTitle || 'Your Safari Experience',
+      proposalUrl: proposalLink,
+      startDate: formattedStartDate,
+      duration: days.length ? `${days.length} days` : '',
+    }),
+    [clientName, proposalData?.organization?.name, tourTitle, proposalLink, formattedStartDate, days.length],
+  );
+
+  // The editor reads variable values once at mount, so hold it until the values
+  // it needs have resolved (client record, when this proposal has a client).
+  const valuesReady = proposalData !== undefined && (!clientId || clientData !== undefined);
+
+  // Debounced autosave of the email draft. We save on actual edits (not on the
+  // initial hydration) and pass the values explicitly to avoid stale closures.
+  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const scheduleDraftSave = useCallback(
+    (next: { body: EditorNode | null; attachments: EmailAttachment[] }) => {
+      if (saveTimer.current) clearTimeout(saveTimer.current);
+      saveTimer.current = setTimeout(() => {
+        if (!proposalId) return;
+        saveEmailDraftMutation.mutate({
+          id: proposalId,
+          emailBodyJson: next.body ?? undefined,
+          emailAttachments: next.attachments,
+        });
+      }, 1000);
+    },
+    [proposalId, saveEmailDraftMutation],
+  );
+
+  const handleBodyChange = useCallback(
+    (json: EditorNode) => {
+      setEmailBodyJson(json);
+      scheduleDraftSave({ body: json, attachments: emailAttachments });
+    },
+    [emailAttachments, scheduleDraftSave],
+  );
+
+  const handleAttachmentsChange = useCallback(
+    (list: EmailAttachment[]) => {
+      setEmailAttachments(list);
+      scheduleDraftSave({ body: emailBodyJson, attachments: list });
+    },
+    [emailBodyJson, scheduleDraftSave],
+  );
+
+  // Load the true rendered email (variables resolved) when the Preview tab opens.
+  // The composer renders its current HTML client-side; we post that so the
+  // server substitutes this proposal's variable values, matching the send.
+  useEffect(() => {
+    if (activeTab !== 'preview' || !proposalId) return;
+    let cancelled = false;
+    setPreviewLoading(true);
+    (async () => {
+      const bodyHtml = (await editorHandleRef.current?.getHtml()) ?? '';
+      const res = await fetch(`/api/proposal/${proposalId}/email-preview`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ bodyHtml }),
+      });
+      const d = (await res.json()) as { html?: string };
+      if (!cancelled) setPreviewHtml(d.html ?? '');
+    })()
+      .catch(() => {
+        if (!cancelled) setPreviewHtml('');
+      })
+      .finally(() => {
+        if (!cancelled) setPreviewLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [activeTab, proposalId, emailBodyJson]);
 
   // Auto-publish proposal mutation
   const autoPublishMutation = useMutation({
@@ -237,6 +346,18 @@ export default function SharePage() {
         throw new Error('Please enter an email address.');
       }
 
+      // Persist the latest composer draft (JSON for re-editing) and attachment
+      // list; the send route reads attachments from the DB (the source of truth).
+      await saveEmailDraftMutation.mutateAsync({
+        id: proposalId,
+        emailBodyJson: emailBodyJson ?? undefined,
+        emailAttachments,
+      });
+
+      // The email body itself is the HTML the composer renders right now (with
+      // {{variable}} tokens); the server substitutes real values into it.
+      const bodyHtml = (await editorHandleRef.current?.getHtml()) ?? '';
+
       // Wait out any in-flight prewarm so the email's PDF attachment reuses the cached
       // render instead of starting a concurrent one (Cloudflare 429s on concurrency).
       await awaitPrewarm();
@@ -249,8 +370,8 @@ export default function SharePage() {
           recipientEmail: targetEmail,
           recipientName: clientName, // Always use actual client name so test shows real preview
           subject: emailSubject,
-          message: emailMessage,
           isTest,
+          bodyHtml,
         }),
       });
 
@@ -382,16 +503,6 @@ export default function SharePage() {
       },
     );
   };
-
-  const duration = days.length > 0 ? `${days.length} days` : '';
-  const formattedStartDate = startDate
-    ? new Date(startDate).toLocaleDateString('en-US', {
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-      })
-    : '';
 
   return (
     <div className="mx-auto max-w-3xl space-y-6 px-6 pb-32">
@@ -526,66 +637,93 @@ export default function SharePage() {
       {/* Tab Content */}
       {activeTab === 'edit' ? (
         <div className="space-y-6">
-          {/* Email Form */}
-          <div className="rounded-xl border border-stone-200 bg-white p-6 shadow-sm">
-            <h3 className="mb-5 flex items-center gap-2 text-lg font-semibold text-stone-900">
-              <Mail className="h-5 w-5 text-green-600" />
-              Email Settings
-            </h3>
-
-            <div className="space-y-5">
-              <div>
-                <label className="mb-2 block text-xs font-semibold uppercase tracking-wide text-stone-500">
-                  Recipient Email
-                </label>
-                <Input
+          {/* Email canvas — one clean, borderless surface (Resend-style): the
+              recipient/subject fields sit inline above the body, sharing the same
+              sheet of "paper" as the message itself rather than living in separate
+              bordered cards. */}
+          <div className="overflow-hidden rounded-xl border border-stone-200 bg-white shadow-sm">
+            {/* Field rows: label on the left, borderless input inline, hairline
+                divider under each — mirrors the To / Subject header of a real email. */}
+            <div className="divide-y divide-stone-100">
+              <div className="flex items-center gap-3 px-6 py-3">
+                <label className="w-20 shrink-0 text-sm text-stone-400">To</label>
+                <input
                   type="email"
                   value={recipientEmail}
                   onChange={(e) => setRecipientEmail(e.target.value)}
                   placeholder="client@email.com"
-                  className="border-stone-200"
+                  className="flex-1 border-0 bg-transparent p-0 text-sm text-stone-900 placeholder:text-stone-400 focus:outline-none focus:ring-0"
                 />
                 {clientData?.email && recipientEmail !== clientData.email && (
                   <button
                     onClick={() => setRecipientEmail(clientData.email || '')}
-                    className="mt-1.5 text-xs text-green-600 hover:underline"
+                    className="shrink-0 text-xs text-green-600 hover:underline"
                   >
-                    Use client email: {clientData.email}
+                    Use {clientData.email}
                   </button>
                 )}
               </div>
 
-              <div>
-                <label className="mb-2 block text-xs font-semibold uppercase tracking-wide text-stone-500">
-                  Email Subject
-                </label>
-                <Input
+              <div className="flex items-center gap-3 px-6 py-3">
+                <label className="w-20 shrink-0 text-sm text-stone-400">Subject</label>
+                <input
                   value={emailSubject}
                   onChange={(e) => setEmailSubject(e.target.value)}
                   placeholder="Your Travel Proposal"
-                  className="border-stone-200"
+                  className="flex-1 border-0 bg-transparent p-0 text-sm font-medium text-stone-900 placeholder:font-normal placeholder:text-stone-400 focus:outline-none focus:ring-0"
                 />
-              </div>
-
-              <div>
-                <label className="mb-2 block text-xs font-semibold uppercase tracking-wide text-stone-500">
-                  Personal Message
-                </label>
-                <Textarea
-                  value={emailMessage}
-                  onChange={(e) => setEmailMessage(e.target.value)}
-                  placeholder="Add a personal message to the client..."
-                  rows={10}
-                  className="border-stone-200"
-                />
-                <button
-                  onClick={() => setEmailMessage(DEFAULT_MESSAGE)}
-                  className="mt-1.5 text-xs text-stone-500 hover:text-stone-700 hover:underline"
-                >
-                  Reset to default message
-                </button>
+                {saveEmailDraftMutation.isPending && (
+                  <span className="flex shrink-0 items-center gap-1.5 text-xs text-stone-400">
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                    Saving…
+                  </span>
+                )}
               </div>
             </div>
+
+            {/* Body — borderless, generous padding, reads as the message canvas.
+                The editor takes its content once at mount, so hold it back until the
+                saved draft has loaded; otherwise it would seed the default over an
+                existing email. Reject legacy (Maily) drafts so they reseed the default
+                rather than render broken. */}
+            <div className="px-6 py-5">
+              {!valuesReady ? (
+                <div className="flex h-40 items-center justify-center text-sm text-stone-400">
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Loading email…
+                </div>
+              ) : (
+                <EmailBodyEditor
+                  ref={editorHandleRef}
+                  value={
+                    emailBodyJson ??
+                    (isSupportedEmailBody(proposalData?.emailBodyJson)
+                      ? proposalData.emailBodyJson
+                      : null)
+                  }
+                  variableValues={variableValues}
+                  onChange={handleBodyChange}
+                />
+              )}
+            </div>
+          </div>
+
+          <p className="px-1 text-xs text-stone-400">
+            Highlighted fields (client name, proposal title, dates, and link) are filled in
+            automatically when you send. Use the Preview tab to see exactly what the client gets.
+          </p>
+
+          {/* Attachments */}
+          <div className="rounded-xl border border-stone-200 bg-white p-6 shadow-sm">
+            <h3 className="mb-4 flex items-center gap-2 text-lg font-semibold text-stone-900">
+              <Paperclip className="h-5 w-5 text-green-600" />
+              Attachments
+            </h3>
+            <EmailAttachments
+              proposalId={proposalId}
+              value={emailAttachments}
+              onChange={handleAttachmentsChange}
+            />
           </div>
 
           {/* Test Email */}
@@ -595,7 +733,8 @@ export default function SharePage() {
               Send Test Email
             </h3>
             <p className="mb-4 text-xs text-stone-500">
-              Preview how the email will look by sending a test to yourself.
+              Preview how the email will look by sending a test to yourself. Attachments are
+              included.
             </p>
             <div className="flex gap-2">
               <Input
@@ -622,9 +761,8 @@ export default function SharePage() {
           </div>
         </div>
       ) : (
-        /* Preview Tab */
+        /* Preview Tab: the real rendered email (variables resolved server-side) */
         <div className="overflow-hidden rounded-xl border border-stone-200 bg-white shadow-lg">
-          {/* Email Header */}
           <div className="border-b border-stone-100 bg-stone-50 px-6 py-4">
             <div className="text-xs text-stone-500">
               <span className="font-medium">To:</span> {recipientEmail || 'client@email.com'}
@@ -632,64 +770,34 @@ export default function SharePage() {
             <div className="mt-1 text-xs text-stone-500">
               <span className="font-medium">Subject:</span> {emailSubject || 'Your Travel Proposal'}
             </div>
-          </div>
-
-          {/* Email Body Preview */}
-          <div className="p-6">
-            <div className="mb-6 border-b border-stone-100 pb-4 text-center">
-              <h1 className="font-serif text-2xl font-bold text-green-700">
-                Your Safari Adventure Awaits
-              </h1>
-              <p className="mt-1 text-sm text-stone-500">
-                Your personalized travel proposal is ready to explore
-              </p>
-            </div>
-
-            <p className="mb-4 text-sm text-stone-700">Dear {clientName},</p>
-
-            <div className="mb-6 whitespace-pre-wrap text-sm leading-relaxed text-stone-600">
-              {emailMessage || 'Your personal message will appear here...'}
-            </div>
-
-            {/* Proposal Card Preview */}
-            <div className="mb-6 rounded-lg border-l-4 border-green-600 bg-stone-50 p-4">
-              <h2 className="font-serif text-lg font-semibold text-stone-900">
-                {tourTitle || 'Your Safari Experience'}
-              </h2>
-              {formattedStartDate && (
-                <p className="mt-1 text-sm text-stone-500">
-                  <span className="font-medium">Start Date:</span> {formattedStartDate}
-                </p>
-              )}
-              {duration && (
-                <p className="text-sm text-stone-500">
-                  <span className="font-medium">Duration:</span> {duration}
-                </p>
-              )}
-            </div>
-
-            {/* CTA Button Preview */}
-            <div className="text-center">
-              <div className="inline-block rounded-lg bg-green-600 px-8 py-3 text-sm font-semibold text-white">
-                View Your Proposal
+            {emailAttachments.length > 0 && (
+              <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                <Paperclip className="h-3 w-3 text-stone-400" />
+                {emailAttachments.map((a) => (
+                  <span
+                    key={a.key}
+                    className="rounded bg-white px-2 py-0.5 text-xs text-stone-600 ring-1 ring-stone-200"
+                  >
+                    {a.filename}
+                  </span>
+                ))}
+                <span className="text-xs text-stone-400">+ proposal PDF</span>
               </div>
-            </div>
-
-            <div className="mt-6 rounded-lg bg-green-50 p-4">
-              <p className="text-sm text-green-700">
-                <strong>Have questions?</strong> Simply reply to this email or leave a comment
-                directly on your proposal. We're here to make your trip absolutely perfect!
-              </p>
-            </div>
-
-            <div className="mt-6 border-t border-stone-100 pt-4">
-              <p className="text-sm text-stone-500">
-                Warm regards,
-                <br />
-                <span className="font-medium text-stone-700">Your Travel Team</span>
-              </p>
-            </div>
+            )}
           </div>
+
+          {previewLoading ? (
+            <div className="flex h-[600px] items-center justify-center text-sm text-stone-400">
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Rendering preview…
+            </div>
+          ) : (
+            <iframe
+              title="Email preview"
+              srcDoc={previewHtml}
+              className="h-[600px] w-full border-0 bg-white"
+            />
+          )}
         </div>
       )}
 

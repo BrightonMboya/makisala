@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import { withAxiom, type AxiomRequest } from 'next-axiom';
+import { GetObjectCommand } from '@aws-sdk/client-s3';
 import { db, member, recordSentEmail } from '@repo/db';
-import { proposals } from '@repo/db/schema';
+import { proposals, type EmailAttachment } from '@repo/db/schema';
 import { and, eq } from 'drizzle-orm';
 import { resend, orgFromAddress } from '@repo/resend';
 import { auth } from '@/lib/auth';
@@ -9,6 +10,31 @@ import { headers } from 'next/headers';
 import { env } from '@/lib/env';
 import { serializeError } from '@/lib/logger';
 import { getOrRenderProposalPdf } from '@/lib/pdf/proposal-pdf';
+import { substituteProposalEmailHtml } from '@/lib/email/render-proposal-email';
+import { renderLegacyProposalEmail } from '@/lib/email/legacy-proposal-email';
+import { r2 } from '@/lib/storage';
+
+// Resend caps a message at ~40MB (after encoding). The proposal PDF and any
+// operator attachments share that budget, so we stop adding files once the raw
+// total approaches the ceiling and log what was dropped.
+const MAX_TOTAL_ATTACHMENT_BYTES = 38 * 1024 * 1024;
+
+// Fetch one stored attachment from R2 as a Buffer for Resend. Best-effort: a
+// missing/unreadable object is skipped rather than failing the whole send.
+async function fetchAttachment(
+  a: EmailAttachment,
+): Promise<{ filename: string; content: Buffer } | null> {
+  try {
+    const res = await r2.send(
+      new GetObjectCommand({ Bucket: env.R2_BUCKET_NAME, Key: a.key }),
+    );
+    if (!res.Body) return null;
+    const bytes = await res.Body.transformToByteArray();
+    return { filename: a.filename, content: Buffer.from(bytes) };
+  } catch {
+    return null;
+  }
+}
 
 // The PDF is rendered on Cloudflare Browser Rendering (an off-box HTTP call, no
 // in-lambda Chromium), so we just wait on the response; maxDuration covers that
@@ -44,7 +70,7 @@ export const POST = withAxiom(async (request: AxiomRequest) => {
     }
 
     const body = await request.json();
-    const { proposalId, recipientEmail, recipientName, subject, message, isTest } = body;
+    const { proposalId, recipientEmail, recipientName, subject, message, isTest, bodyHtml } = body;
 
     if (!proposalId || !recipientEmail) {
       return NextResponse.json(
@@ -84,18 +110,19 @@ export const POST = withAxiom(async (request: AxiomRequest) => {
 
     const proposalUrl = `${env.NEXT_PUBLIC_APP_URL}/proposal/${proposalId}`;
     const agencyName = proposal.organization?.name || 'Your Travel Agency';
+    const proposalTitle = proposal.tourTitle || proposal.name;
 
-    // Render email HTML
-    const html = renderProposalEmail({
-      clientName: recipientName || 'Valued Traveler',
-      agencyName,
-      proposalTitle: proposal.tourTitle || proposal.name,
-      proposalUrl,
-      startDate,
-      duration,
-      message: message || undefined,
-      isTest,
-    });
+    // The operator composes the body in the `@react-email/editor` composer on
+    // /share, which renders it to HTML (with {{variable}} tokens) and posts that
+    // as `bodyHtml`. We substitute this proposal's real values so the send
+    // matches the preview exactly. When no composed HTML is posted we fall back
+    // to the static template.
+    const clientName = recipientName || 'Valued Traveler';
+    const variables = { clientName, agencyName, proposalTitle, proposalUrl, startDate, duration };
+    const html =
+      typeof bodyHtml === 'string' && bodyHtml.trim().length > 0
+        ? substituteProposalEmailHtml(bodyHtml, variables)
+        : renderLegacyProposalEmail({ ...variables, message: message || undefined, isTest });
 
     const fromEmail = orgFromAddress({
       name: proposal.organization?.name,
@@ -107,7 +134,6 @@ export const POST = withAxiom(async (request: AxiomRequest) => {
     // Cloudflare Browser Rendering (off-box). This is best-effort: a render hiccup
     // should never block the send, since the email's primary CTA is the online
     // proposal. On failure we log and send without the attachment.
-    const proposalTitle = proposal.tourTitle || proposal.name;
     const lang = (proposal as { language?: string }).language;
     let pdfAttachment: { filename: string; content: Buffer } | undefined;
     try {
@@ -127,13 +153,40 @@ export const POST = withAxiom(async (request: AxiomRequest) => {
       });
     }
 
+    // Assemble the final attachment list: the proposal PDF first, then any files
+    // the operator added on /share (fetched from R2). Stay under Resend's size
+    // ceiling by dropping files once the running total would exceed it.
+    const attachments: Array<{ filename: string; content: Buffer }> = [];
+    let totalBytes = 0;
+    if (pdfAttachment) {
+      attachments.push(pdfAttachment);
+      totalBytes += pdfAttachment.content.length;
+    }
+    const extraAttachments = (proposal.emailAttachments as EmailAttachment[] | null) ?? [];
+    for (const meta of extraAttachments) {
+      const fetched = await fetchAttachment(meta);
+      if (!fetched) {
+        request.log.warn('Skipping unreadable email attachment', { proposalId, key: meta.key });
+        continue;
+      }
+      if (totalBytes + fetched.content.length > MAX_TOTAL_ATTACHMENT_BYTES) {
+        request.log.warn('Attachment exceeds size budget; skipping', {
+          proposalId,
+          filename: fetched.filename,
+        });
+        continue;
+      }
+      attachments.push(fetched);
+      totalBytes += fetched.content.length;
+    }
+
     const result = await resend.emails.send({
       from: fromEmail,
       to: recipientEmail,
       subject: subject || `Your Travel Proposal: ${proposalTitle}`,
       html,
       ...(replyToEmail ? { replyTo: replyToEmail } : {}),
-      ...(pdfAttachment ? { attachments: [pdfAttachment] } : {}),
+      ...(attachments.length > 0 ? { attachments } : {}),
     });
 
     if (result.error) {
@@ -172,150 +225,3 @@ export const POST = withAxiom(async (request: AxiomRequest) => {
     return NextResponse.json({ success: false, error: 'Failed to send email' }, { status: 500 });
   }
 });
-
-interface EmailProps {
-  clientName: string;
-  agencyName: string;
-  proposalTitle: string;
-  proposalUrl: string;
-  startDate?: string;
-  duration?: string;
-  message?: string;
-  isTest?: boolean;
-}
-
-function escapeHtml(text: string | undefined): string {
-  if (!text) return '';
-  const map: Record<string, string> = {
-    '&': '&amp;',
-    '<': '&lt;',
-    '>': '&gt;',
-    '"': '&quot;',
-    "'": '&#039;',
-  };
-  return text.replace(/[&<>"']/g, (m) => map[m] ?? m);
-}
-
-function renderProposalEmail(props: EmailProps): string {
-  const {
-    clientName,
-    agencyName,
-    proposalTitle,
-    proposalUrl,
-    startDate,
-    duration,
-    message,
-    isTest,
-  } = props;
-
-  // Convert message line breaks to HTML
-  const formattedMessage = message
-    ? escapeHtml(message)
-        .replace(/\n\n/g, '</p><p style="margin-bottom: 16px;">')
-        .replace(/\n/g, '<br />')
-    : '';
-
-  return `
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Your Travel Proposal</title>
-</head>
-<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333333; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f5f5f5;">
-  ${
-    isTest
-      ? `
-  <div style="background-color: #fef3c7; border: 1px solid #f59e0b; border-radius: 8px; padding: 12px 16px; margin-bottom: 20px; text-align: center;">
-    <strong style="color: #92400e;">TEST EMAIL</strong>
-    <span style="color: #78716c;"> - This is a preview of how your email will look</span>
-  </div>
-  `
-      : ''
-  }
-
-  <div style="background-color: #ffffff; border-radius: 12px; padding: 40px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-    <!-- Greeting -->
-    <p style="font-size: 16px; margin-bottom: 20px;">
-      Dear <strong>${escapeHtml(clientName)}</strong>,
-    </p>
-
-    <!-- Custom Message -->
-    ${
-      formattedMessage
-        ? `
-    <div style="margin-bottom: 25px;">
-      <p style="margin-bottom: 16px;">${formattedMessage}</p>
-    </div>
-    `
-        : `
-    <p style="font-size: 16px; margin-bottom: 20px;">
-      Thank you for choosing ${escapeHtml(agencyName)} to plan your unforgettable journey! We've carefully crafted this personalized travel proposal based on your preferences and dreams.
-    </p>
-    <p style="font-size: 16px; margin-bottom: 25px;">
-      Inside, you'll find a detailed day-by-day itinerary, handpicked accommodations, exciting activities, and transparent pricing. We've poured our expertise and passion into creating an experience you'll cherish forever.
-    </p>
-    `
-    }
-
-    <!-- Proposal Card -->
-    <div style="background-color: #f8f9fa; border-left: 4px solid #15803d; padding: 24px; margin-bottom: 30px; border-radius: 0 8px 8px 0;">
-      <h2 style="margin: 0 0 12px 0; font-size: 22px; color: #1a1a1a; font-family: Georgia, serif;">
-        ${escapeHtml(proposalTitle)}
-      </h2>
-      ${
-        startDate
-          ? `
-      <p style="margin: 6px 0; font-size: 14px; color: #525252;">
-        <strong style="color: #737373;">Start Date:</strong> ${escapeHtml(startDate)}
-      </p>
-      `
-          : ''
-      }
-      ${
-        duration
-          ? `
-      <p style="margin: 6px 0; font-size: 14px; color: #525252;">
-        <strong style="color: #737373;">Duration:</strong> ${escapeHtml(duration)}
-      </p>
-      `
-          : ''
-      }
-    </div>
-
-    <!-- CTA Button -->
-    <div style="margin: 35px 0; text-align: center;">
-      <a href="${escapeHtml(proposalUrl)}" style="display: inline-block; background-color: #15803d; color: #ffffff; padding: 16px 40px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 16px; box-shadow: 0 2px 4px rgba(21, 128, 61, 0.3);">
-        View Your Proposal
-      </a>
-    </div>
-
-    <!-- Additional Info -->
-    <div style="background-color: #f0fdf4; border-radius: 8px; padding: 16px; margin-bottom: 25px;">
-      <p style="font-size: 14px; color: #166534; margin: 0;">
-        <strong>Have questions?</strong> Simply leave a comment directly on your proposal. We're here to make your trip absolutely perfect!
-      </p>
-    </div>
-
-    <!-- Divider -->
-    <hr style="border: none; border-top: 1px solid #e5e5e5; margin: 25px 0;" />
-
-    <!-- Footer -->
-    <p style="font-size: 14px; color: #666; margin: 0;">
-      We can't wait to help you embark on this adventure!
-    </p>
-    <p style="font-size: 14px; color: #666; margin-top: 15px;">
-      Warm regards,<br />
-      <strong style="color: #333;">${escapeHtml(agencyName)}</strong>
-    </p>
-
-    <!-- Legal Footer -->
-    <p style="margin-top: 35px; font-size: 11px; color: #999999; text-align: center; padding-top: 20px; border-top: 1px solid #f0f0f0;">
-      This email was sent by ${escapeHtml(agencyName)}. If you did not request this proposal, please ignore this email.
-    </p>
-  </div>
-</body>
-</html>
-  `.trim();
-}

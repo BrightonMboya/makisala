@@ -1,0 +1,41 @@
+/*
+ * Editor-only styling for the share-email composer. Loaded via the component
+ * import (not the Tailwind globals pipeline) so it ships in the same chunk as
+ * the editor and its vendored theme CSS.
+ *
+ * The personalization "variable" node renders as an inline pill inside the
+ * editor content (.tiptap); it serializes to a plain {{token}} in the sent
+ * HTML, so this is editor-chrome only.
+ */
+.tiptap .re-variable-pill {
+  display: inline-block;
+  padding: 0 0.375rem;
+  border-radius: 0.25rem;
+  background-color: #dcfce7;
+  color: #15803d;
+  /* Relative so a token inside a heading still reads at heading size. */
+  font-size: 0.9em;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: default;
+}
+
+/* Give the editor content a comfortable minimum height so it reads as a canvas.
+ * Borderless: the composer lives inside a single unified canvas (Resend-style),
+ * so the editor itself contributes no chrome of its own. */
+.re-email-editor .tiptap {
+  min-height: 22rem;
+  outline: none;
+  color: #1c1917; /* stone-900 for comfortable, high-contrast body copy */
+  font-size: 0.9375rem;
+  line-height: 1.65;
+}
+
+.re-email-editor .tiptap:focus {
+  outline: none;
+}
+
+/* Muted placeholder for the empty editor, matching Resend's "Press '/'…" hint. */
+.re-email-editor .tiptap p.is-empty:first-child::before {
+  color: #a8a29e; /* stone-400 */
+}

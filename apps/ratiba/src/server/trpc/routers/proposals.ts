@@ -842,9 +842,13 @@ export const proposalsRouter = router({
           theme: true,
           heroImage: true,
           language: true,
+          emailBodyJson: true,
+          emailAttachments: true,
         },
         with: {
           tour: { columns: { country: true } },
+          // Org name powers the {{agencyName}} field preview in the share-email composer.
+          organization: { columns: { name: true } },
           days: {
             columns: {
               id: true,
@@ -1174,6 +1178,60 @@ export const proposalsRouter = router({
       });
 
       return { success: true, id: proposalId };
+    }),
+
+  // Persist the share-email draft (editor body JSON + attachment list) composed
+  // on /share. Kept separate from `save` so the operator can autosave email edits
+  // without rewriting the whole proposal/day tree. Deliberately does NOT bump
+  // `updatedAt`: the email body isn't part of the client-facing proposal, and
+  // bumping it would invalidate the prewarmed PDF cache keyed on updatedAt.
+  saveEmailDraft: protectedProcedure
+    .input(
+      z.object({
+        id: z.string(),
+        emailBodyJson: z.unknown().optional(),
+        emailAttachments: z
+          .array(
+            z.object({
+              key: z.string().max(1024),
+              filename: z.string().max(255),
+              size: z.number().int().nonnegative(),
+              contentType: z.string().max(255),
+            }),
+          )
+          .max(20)
+          .optional(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const proposal = await ctx.db.query.proposals.findFirst({
+        where: and(eq(proposals.id, input.id), eq(proposals.organizationId, ctx.orgId)),
+        columns: { id: true },
+      });
+      if (!proposal) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Proposal not found' });
+      }
+
+      // Guard against an oversized editor blob (a runaway paste, etc). The editor
+      // JSON for a normal email is a few KB; 512KB is a generous ceiling.
+      if (
+        input.emailBodyJson !== undefined &&
+        JSON.stringify(input.emailBodyJson).length > 512 * 1024
+      ) {
+        throw new TRPCError({ code: 'BAD_REQUEST', message: 'Email body is too large' });
+      }
+
+      await ctx.db
+        .update(proposals)
+        .set({
+          ...(input.emailBodyJson !== undefined ? { emailBodyJson: input.emailBodyJson } : {}),
+          ...(input.emailAttachments !== undefined
+            ? { emailAttachments: input.emailAttachments }
+            : {}),
+        })
+        .where(eq(proposals.id, input.id));
+
+      return { success: true };
     }),
 
   assign: adminProcedure

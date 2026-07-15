@@ -3,6 +3,7 @@ import {
   index,
   integer,
   json,
+  jsonb,
   numeric,
   pgEnum,
   pgTable,
@@ -799,6 +800,16 @@ export const proposals = pgTable('proposals', {
   // they confirm this proposal. Off by default so payment details stay private.
   showPaymentDetails: boolean('show_payment_details').default(false),
   language: text('language').default('en'),
+  // ----- Share email composer (@react-email/editor) -----
+  // The operator-composed email body, stored as the Tiptap editor JSON so it
+  // stays editable. The composer renders it to HTML client-side (with {{variable}}
+  // tokens) at send/preview time; the server substitutes real values into that
+  // HTML. Null = use the built-in default.
+  emailBodyJson: jsonb('email_body_json'),
+  // Additional files the operator attached to the share email, alongside the
+  // auto-generated proposal PDF. Each entry points at an R2 object; the file is
+  // fetched server-side and passed to Resend at send time. See EmailAttachment.
+  emailAttachments: jsonb('email_attachments').$type<EmailAttachment[]>(),
   // ----- Pricing engine (rate-card-driven) -----
   useAutoPricing: boolean('use_auto_pricing').default(false).notNull(),
   vehicleId: uuid('vehicle_id').references((): any => vehicles.id, { onDelete: 'set null' }),
@@ -818,6 +829,16 @@ export const proposals = pgTable('proposals', {
     .default(sql`CURRENT_TIMESTAMP`)
     .notNull(),
 });
+
+// A file the operator attached to the share email. Stored denormalized as JSON
+// on the proposal (only ever read/written as a whole list). `key` is the R2
+// object key; the file is fetched from R2 and handed to Resend at send time.
+export interface EmailAttachment {
+  key: string;
+  filename: string;
+  size: number;
+  contentType: string;
+}
 
 // ---------- PROPOSAL DAYS ----------
 export const proposalDays = pgTable('proposal_days', {
