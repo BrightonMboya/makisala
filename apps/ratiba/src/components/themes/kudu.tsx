@@ -20,6 +20,7 @@ import { Map, MapMarker, MapRoute, MarkerContent, MarkerTooltip } from '@repo/ui
 import type { ItineraryData } from '@/types/itinerary-types';
 import { formatActivityTiming } from '@/lib/utils';
 import { AccommodationAlternativesBlock } from '@/components/themes/AccommodationAlternativesBlock';
+import { AgencyTrust, hasAgencyTrust } from '@/components/proposal/AgencyTrust';
 import { StaticTripMap } from '@/components/themes/StaticTripMap';
 import { useForPrint, usePrintImage } from '@/components/themes/print-context';
 
@@ -708,10 +709,12 @@ export default function KuduTheme({ data, onHeroImageChange, onDayImageChange }:
       </NarrativeSection>
 
       {/* ABOUT & PAYMENT TERMS */}
-      {(organization?.aboutDescription || organization?.paymentTerms) && (
+      {(organization?.aboutDescription ||
+        organization?.paymentTerms ||
+        hasAgencyTrust(organization)) && (
         <NarrativeSection imageUrl={pdfAsset(heroImage)} imageRight={true}>
           <div className="max-h-[80vh] overflow-y-auto pr-2">
-            {organization.aboutDescription && (
+            {organization?.aboutDescription && (
               <div className="mb-10">
                 <h2 className="mb-6 font-serif text-4xl font-bold text-slate-900">
                   About {organization.name}
@@ -721,7 +724,15 @@ export default function KuduTheme({ data, onHeroImageChange, onDayImageChange }:
                 </p>
               </div>
             )}
-            {organization.paymentTerms && (
+            {organization && (
+              <AgencyTrust
+                reviewLinks={organization.reviewLinks}
+                socialLinks={organization.socialLinks}
+                variant="light"
+                className="mb-10"
+              />
+            )}
+            {organization?.paymentTerms && (
               <div>
                 <h3 className="mb-4 text-[10px] font-bold tracking-[0.4em] text-emerald-800 uppercase">
                   Payment Terms & Conditions

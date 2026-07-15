@@ -8,6 +8,8 @@ import type {
   ItineraryData,
   Location,
   PricingRow,
+  ReviewLinkInfo,
+  SocialLinksInfo,
   TransportModeType,
   TravelerGroup,
   TripOverview,
@@ -90,6 +92,8 @@ type ProposalInput = Proposal & {
     logoUrl: string | null;
     aboutDescription: string | null;
     paymentTerms: string | null;
+    reviewLinks?: ReviewLinkInfo[] | null;
+    socialLinks?: SocialLinksInfo | null;
   } | null;
   client?: { name: string } | null;
   days?: ProposalDay[];
@@ -359,6 +363,8 @@ export function transformProposalToItineraryData(
           logoUrl: proposal.organization.logoUrl,
           aboutDescription: proposal.organization.aboutDescription,
           paymentTerms: proposal.organization.paymentTerms,
+          reviewLinks: proposal.organization.reviewLinks ?? null,
+          socialLinks: proposal.organization.socialLinks ?? null,
         }
       : undefined,
     tripOverview,

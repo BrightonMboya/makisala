@@ -13,6 +13,7 @@ import {
 import type { ItineraryData } from '@/types/itinerary-types';
 import { formatActivityTiming } from '@/lib/utils';
 import { AccommodationAlternativesBlock } from '@/components/themes/AccommodationAlternativesBlock';
+import { AgencyTrust, hasAgencyTrust } from '@/components/proposal/AgencyTrust';
 import { StaticTripMap } from '@/components/themes/StaticTripMap';
 import { useForPrint, usePrintImage } from '@/components/themes/print-context';
 
@@ -649,9 +650,11 @@ export default function SafariPortalTheme({ data }: { data: ItineraryData }) {
             </div>
 
             {/* About & Payment Terms */}
-            {(data.organization?.aboutDescription || data.organization?.paymentTerms) && (
+            {(data.organization?.aboutDescription ||
+              data.organization?.paymentTerms ||
+              hasAgencyTrust(data.organization)) && (
               <div className="space-y-10 border-t border-stone-200 pt-12">
-                {data.organization.aboutDescription && (
+                {data.organization?.aboutDescription && (
                   <div>
                     <h3 className="mb-4 text-[10px] font-bold tracking-[0.3em] text-stone-400 uppercase">
                       About {data.organization.name}
@@ -661,7 +664,15 @@ export default function SafariPortalTheme({ data }: { data: ItineraryData }) {
                     </p>
                   </div>
                 )}
-                {data.organization.paymentTerms && (
+                {data.organization && (
+                  <AgencyTrust
+                    reviewLinks={data.organization.reviewLinks}
+                    socialLinks={data.organization.socialLinks}
+                    variant="dark"
+                    className="max-w-md"
+                  />
+                )}
+                {data.organization?.paymentTerms && (
                   <div>
                     <h3 className="mb-4 text-[10px] font-bold tracking-[0.3em] text-stone-400 uppercase">
                       Payment Terms & Conditions

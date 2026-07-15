@@ -15,6 +15,7 @@ import {
 import type { ItineraryData } from '@/types/itinerary-types';
 import { formatActivityTiming } from '@/lib/utils';
 import { AccommodationAlternativesBlock } from '@/components/themes/AccommodationAlternativesBlock';
+import { AgencyTrust } from '@/components/proposal/AgencyTrust';
 import { StaticTripMap } from '@/components/themes/StaticTripMap';
 import { useForPrint, usePrintImage } from '@/components/themes/print-context';
 
@@ -912,6 +913,12 @@ export default function MinimalisticTheme({ data, onHeroImageChange, onDayImageC
                         {data.organization.aboutDescription}
                       </p>
                     )}
+                    <AgencyTrust
+                      reviewLinks={data.organization.reviewLinks}
+                      socialLinks={data.organization.socialLinks}
+                      variant="light"
+                      className="mt-6"
+                    />
                   </div>
                 )}
 

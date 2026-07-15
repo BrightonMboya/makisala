@@ -38,6 +38,7 @@ import {
 import type { ItineraryData } from '@/types/itinerary-types';
 import { capitalize, cn, formatActivityTiming } from '@/lib/utils';
 import { AccommodationAlternativesBlock } from '@/components/themes/AccommodationAlternativesBlock';
+import { AgencyTrust, hasAgencyTrust } from '@/components/proposal/AgencyTrust';
 import { StaticTripMap } from '@/components/themes/StaticTripMap';
 import { useForPrint, usePrintImage } from '@/components/themes/print-context';
 import { usePrintMode } from '@/components/proposal/PrintFrame';
@@ -1339,10 +1340,12 @@ const Footer = ({ data }: { data: ItineraryData }) => (
     </div>
 
     {/* About & Payment Terms */}
-    {(data.organization?.aboutDescription || data.organization?.paymentTerms) && (
+    {(data.organization?.aboutDescription ||
+      data.organization?.paymentTerms ||
+      hasAgencyTrust(data.organization)) && (
       <div className="border-t border-stone-800 px-8 py-16 lg:px-16">
         <div className="mx-auto max-w-4xl space-y-12">
-          {data.organization.aboutDescription && (
+          {data.organization?.aboutDescription && (
             <div>
               <p className="mb-4 text-xs font-light tracking-[0.3em] text-stone-500 uppercase">
                 About {data.organization.name}
@@ -1352,7 +1355,15 @@ const Footer = ({ data }: { data: ItineraryData }) => (
               </p>
             </div>
           )}
-          {data.organization.paymentTerms && (
+          {data.organization && (
+            <AgencyTrust
+              reviewLinks={data.organization.reviewLinks}
+              socialLinks={data.organization.socialLinks}
+              variant="dark"
+              className="max-w-md"
+            />
+          )}
+          {data.organization?.paymentTerms && (
             <div>
               <p className="mb-4 text-xs font-light tracking-[0.3em] text-stone-500 uppercase">
                 Payment Terms & Conditions

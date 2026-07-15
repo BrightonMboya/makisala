@@ -176,6 +176,32 @@ export const itinerariesRelations = relations(itineraries, ({ one }) => ({
 // ---------- ORGANIZATIONS ----------
 export const PlanTier = pgEnum('plan_tier', ['free', 'starter', 'pro', 'business']);
 
+// Review platforms an agency can showcase on their proposals. Each entry is a
+// trust badge: a link to the agency's profile on that platform plus an optional
+// star rating and review count (both entered manually by the agency).
+export const REVIEW_PLATFORMS = ['google', 'safaribookings', 'tripadvisor'] as const;
+export type ReviewPlatform = (typeof REVIEW_PLATFORMS)[number];
+
+export type ReviewLink = {
+  platform: ReviewPlatform;
+  url: string;
+  rating: number | null;
+  reviewCount: number | null;
+  // Google-connected badges carry the place_id so the rating/count can be
+  // refreshed automatically; manual badges leave these unset. `source` defaults
+  // to 'manual' when absent (older rows written before auto-connect existed).
+  placeId?: string | null;
+  source?: 'manual' | 'google';
+};
+
+// Social profiles an agency can link from the "About agency" block. Values are
+// full URLs; an empty/absent value means the agency has not connected that network.
+export type SocialLinks = {
+  instagram?: string;
+  tiktok?: string;
+  facebook?: string;
+};
+
 export const organizations = pgTable(
   'organizations',
   {
@@ -191,6 +217,9 @@ export const organizations = pgTable(
     address: text('address'),
     phone: text('phone'),
     taxId: text('tax_id'),
+    // Trust & social branding shown at the end of proposals ("About agency").
+    reviewLinks: jsonb('review_links').$type<ReviewLink[]>(),
+    socialLinks: jsonb('social_links').$type<SocialLinks>(),
     // When set, payment methods are locked and cannot be edited by the org admin.
     // Unlocking is a privileged, out-of-band operation by the Ratiba team (security
     // control against payout-detail tampering).

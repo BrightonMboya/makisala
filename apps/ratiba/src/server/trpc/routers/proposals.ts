@@ -704,7 +704,14 @@ export const proposalsRouter = router({
         where: eq(proposals.id, input.id),
         with: {
           organization: {
-            columns: { name: true, logoUrl: true, aboutDescription: true, paymentTerms: true },
+            columns: {
+              name: true,
+              logoUrl: true,
+              aboutDescription: true,
+              paymentTerms: true,
+              reviewLinks: true,
+              socialLinks: true,
+            },
           },
           tour: { columns: { country: true, tourName: true } },
           client: { columns: { name: true, email: true } },

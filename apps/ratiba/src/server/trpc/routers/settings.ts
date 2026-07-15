@@ -8,6 +8,7 @@ import { auth } from '@/lib/auth';
 import { uploadToStorage } from '@/lib/storage';
 import { compressImage } from '@/lib/image-utils';
 import { checkFeatureAccess } from '@/lib/plans';
+import { searchPlaces, getPlaceDetails, PlacesNotConfiguredError } from '@/lib/places';
 
 
 export const settingsRouter = router({
@@ -40,6 +41,26 @@ export const settingsRouter = router({
         address: z.string().max(1000).optional(),
         phone: z.string().max(64).optional(),
         taxId: z.string().max(64).optional(),
+        reviewLinks: z
+          .array(
+            z.object({
+              platform: z.enum(['google', 'safaribookings', 'tripadvisor']),
+              url: z.string().url().max(500),
+              rating: z.number().min(0).max(5).nullable(),
+              reviewCount: z.number().int().min(0).nullable(),
+              placeId: z.string().max(500).nullable().optional(),
+              source: z.enum(['manual', 'google']).optional(),
+            }),
+          )
+          .max(10)
+          .optional(),
+        socialLinks: z
+          .object({
+            instagram: z.string().url().max(500).or(z.literal('')).optional(),
+            tiktok: z.string().url().max(500).or(z.literal('')).optional(),
+            facebook: z.string().url().max(500).or(z.literal('')).optional(),
+          })
+          .optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -78,6 +99,57 @@ export const settingsRouter = router({
         throw err;
       }
       return { success: true };
+    }),
+
+  // Search Google for the agency's business by name so they can connect their
+  // Google rating without hunting for URLs. Returns a short pick list; the client
+  // stores the chosen place_id and its current rating/count on the review badge.
+  searchGooglePlaces: adminProcedure
+    .input(z.object({ query: z.string().min(2).max(200) }))
+    .mutation(async ({ input }) => {
+      try {
+        return await searchPlaces(input.query);
+      } catch (error) {
+        if (error instanceof PlacesNotConfiguredError) {
+          throw new TRPCError({
+            code: 'PRECONDITION_FAILED',
+            message: 'Google reviews are not available on this deployment yet.',
+          });
+        }
+        throw new TRPCError({
+          code: 'BAD_GATEWAY',
+          message: error instanceof Error ? error.message : 'Google Places search failed.',
+        });
+      }
+    }),
+
+  // Fetch the latest rating + review count for an already-connected place_id, used
+  // by the "Refresh" button in settings (the cron job refreshes the rest).
+  refreshGooglePlace: adminProcedure
+    .input(z.object({ placeId: z.string().min(1).max(500) }))
+    .mutation(async ({ input }) => {
+      try {
+        const place = await getPlaceDetails(input.placeId);
+        if (!place) {
+          throw new TRPCError({
+            code: 'NOT_FOUND',
+            message: 'That Google listing could no longer be found.',
+          });
+        }
+        return place;
+      } catch (error) {
+        if (error instanceof TRPCError) throw error;
+        if (error instanceof PlacesNotConfiguredError) {
+          throw new TRPCError({
+            code: 'PRECONDITION_FAILED',
+            message: 'Google reviews are not available on this deployment yet.',
+          });
+        }
+        throw new TRPCError({
+          code: 'BAD_GATEWAY',
+          message: error instanceof Error ? error.message : 'Google Places lookup failed.',
+        });
+      }
     }),
 
   uploadLogo: adminProcedure

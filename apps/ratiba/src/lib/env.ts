@@ -38,6 +38,12 @@ export const env = createEnv({
     // API in the GCP console. 500k chars/month are free; set a billing cap regardless.
     GOOGLE_TRANSLATE_API_KEY: z.string().min(1),
 
+    // Places API (New) — auto-fetches an agency's Google rating + review count for
+    // the proposal review badge. Server-side only; restrict the key to "Places API
+    // (New)" in the GCP console. Optional so the app boots without it; the Places
+    // lookup + refresh job no-op when unset.
+    GOOGLE_MAPS_API_KEY: z.string().min(1).optional(),
+
     // Polar billing
     POLAR_ACCESS_TOKEN: z.string().min(1),
     POLAR_PRODUCT_ID: z.string().min(1), // Pro tier
@@ -87,6 +93,7 @@ export const env = createEnv({
     PORTAL_ENCRYPTION_KEY: process.env.PORTAL_ENCRYPTION_KEY,
     GROQ_API_KEY: process.env.GROQ_API_KEY,
     GOOGLE_TRANSLATE_API_KEY: process.env.GOOGLE_TRANSLATE_API_KEY,
+    GOOGLE_MAPS_API_KEY: process.env.GOOGLE_MAPS_API_KEY,
     GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
     GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET,
     POLAR_ACCESS_TOKEN: process.env.POLAR_ACCESS_TOKEN,

@@ -246,11 +246,26 @@ export interface Accommodation {
   location: string;
 }
 
+export interface ReviewLinkInfo {
+  platform: 'google' | 'safaribookings' | 'tripadvisor';
+  url: string;
+  rating: number | null;
+  reviewCount: number | null;
+}
+
+export interface SocialLinksInfo {
+  instagram?: string;
+  tiktok?: string;
+  facebook?: string;
+}
+
 export interface OrganizationInfo {
   name: string;
   logoUrl: string | null;
   aboutDescription: string | null;
   paymentTerms: string | null;
+  reviewLinks?: ReviewLinkInfo[] | null;
+  socialLinks?: SocialLinksInfo | null;
 }
 
 export interface TripOverview {
