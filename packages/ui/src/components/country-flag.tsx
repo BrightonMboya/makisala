@@ -1,6 +1,5 @@
 'use client';
 import React from 'react';
-import { CircleFlag } from 'react-circle-flags';
 import { countries } from 'country-data-list';
 import { cn } from '../cn';
 
@@ -42,12 +41,14 @@ export function CountryFlag({
 
   return (
     <span className={cn('flex items-center gap-2 text-gray-600', className)}>
-      <span
-        className="inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full"
-        style={{ height: size, width: size }}
-      >
-        <CircleFlag countryCode={resolved.alpha2.toLowerCase()} height={size} />
-      </span>
+      {/* Rectangular flag SVG (4:3). The hairline ring gives white-edged flags
+          (e.g. Japan) definition against a white background. */}
+      <img
+        src={`https://flagcdn.com/${resolved.alpha2.toLowerCase()}.svg`}
+        alt={resolved.name}
+        style={{ height: size, width: 'auto' }}
+        className="shrink-0 rounded-[2px] object-cover ring-1 ring-black/10"
+      />
       {showName && (
         <span className="overflow-hidden text-ellipsis whitespace-nowrap">{resolved.name}</span>
       )}

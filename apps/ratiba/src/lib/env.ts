@@ -30,8 +30,13 @@ export const env = createEnv({
     GOOGLE_CLIENT_ID: z.string().min(1),
     GOOGLE_CLIENT_SECRET: z.string().min(1),
 
-    // Groq (translation)
+    // Groq (day-copy generation only; proposal translation uses Google Translate)
     GROQ_API_KEY: z.string().min(1),
+
+    // Google Cloud Translation API (proposal translation). Plain NMT model via the
+    // v2 REST endpoint, authed with an API key. Restrict the key to the Translation
+    // API in the GCP console. 500k chars/month are free; set a billing cap regardless.
+    GOOGLE_TRANSLATE_API_KEY: z.string().min(1),
 
     // Polar billing
     POLAR_ACCESS_TOKEN: z.string().min(1),
@@ -81,6 +86,7 @@ export const env = createEnv({
     RESEND_FROM_EMAIL: process.env.RESEND_FROM_EMAIL,
     PORTAL_ENCRYPTION_KEY: process.env.PORTAL_ENCRYPTION_KEY,
     GROQ_API_KEY: process.env.GROQ_API_KEY,
+    GOOGLE_TRANSLATE_API_KEY: process.env.GOOGLE_TRANSLATE_API_KEY,
     GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
     GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET,
     POLAR_ACCESS_TOKEN: process.env.POLAR_ACCESS_TOKEN,

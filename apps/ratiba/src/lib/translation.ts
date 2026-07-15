@@ -1,6 +1,15 @@
 import { env } from '@/lib/env';
 import { log } from '@/lib/logger';
 
+// Google Cloud Translation v2 (plain NMT model, API-key auth). Used for proposal
+// translation: we send flat arrays of strings and map the results back by index.
+const GOOGLE_TRANSLATE_URL = 'https://translation.googleapis.com/language/translate/v2';
+// v2 allows up to 128 segments per request; cap segments and per-request chars well
+// under the limits so a big proposal is split into a handful of small requests.
+const MAX_SEGMENTS_PER_BATCH = 100;
+const MAX_CHARS_PER_BATCH = 9000;
+
+// Groq is still used for day-copy generation (generateDayCopy), not translation.
 const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
 const MODEL = 'qwen/qwen3-32b';
 
@@ -62,66 +71,161 @@ export interface TranslatedContent {
   }>;
 }
 
+/** A single string to translate, paired with a setter that writes the result back. */
+interface TranslationJob {
+  text: string;
+  set: (translated: string) => void;
+}
+
+/**
+ * Translate every prose field of a proposal into `targetLanguage`.
+ *
+ * Rather than asking an LLM to round-trip the whole JSON (which blew past request
+ * limits and truncated on long safaris), we flatten the proposal into a flat list
+ * of strings, translate them with Google Cloud Translation in batches, and write
+ * each result back into the same structure by index. Proper nouns that read wrong
+ * when translated (accommodation names) are left in the source language.
+ */
 export async function translateProposalContent(
   content: TranslatableContent,
   targetLanguage: string,
 ): Promise<TranslatedContent> {
-  const prompt = `You are a professional travel proposal translator. Translate the following travel proposal content from English to ${targetLanguage}.
+  // Build the output shape up front (null -> undefined), then register a job for
+  // every field we want translated. Setters mutate `out` in place.
+  const out: TranslatedContent = {
+    tourTitle: content.tourTitle ?? undefined,
+    tourType: content.tourType ?? undefined,
+    pickupPoint: content.pickupPoint ?? undefined,
+    inclusions: [...(content.inclusions ?? [])],
+    exclusions: [...(content.exclusions ?? [])],
+    extras: (content.extras ?? []).map((e) => ({ id: e.id, name: e.name })),
+    days: content.days.map((d) => ({
+      dayNumber: d.dayNumber,
+      title: d.title ?? undefined,
+      description: d.description ?? undefined,
+      activities: d.activities.map((a) => ({
+        name: a.name,
+        description: a.description ?? undefined,
+        location: a.location ?? undefined,
+      })),
+      transportation: (d.transportation ?? []).map((t) => ({
+        id: t.id,
+        notes: t.notes ?? undefined,
+      })),
+    })),
+    accommodations: content.accommodations.map((ac) => ({
+      id: ac.id,
+      name: ac.name, // proper noun: kept in the source language
+      overview: ac.overview ?? undefined,
+      description: ac.description ?? undefined,
+    })),
+  };
 
-Rules:
-- Translate all text naturally for a travel context
-- Keep proper nouns (hotel names, park names, city names) in their original form unless they have a well-known local name
-- Preserve the exact JSON structure
-- Do not translate IDs or numeric values
+  const jobs: TranslationJob[] = [];
+  const collect = (text: string | undefined, set: (v: string) => void) => {
+    if (text && text.trim()) jobs.push({ text, set });
+  };
 
-Input JSON:
-${JSON.stringify(content, null, 2)}
+  collect(out.tourTitle, (v) => (out.tourTitle = v));
+  collect(out.tourType, (v) => (out.tourType = v));
+  collect(out.pickupPoint, (v) => (out.pickupPoint = v));
+  out.inclusions?.forEach((s, i) => collect(s, (v) => (out.inclusions![i] = v)));
+  out.exclusions?.forEach((s, i) => collect(s, (v) => (out.exclusions![i] = v)));
+  out.extras?.forEach((e) => collect(e.name, (v) => (e.name = v)));
+  out.days.forEach((d) => {
+    collect(d.title, (v) => (d.title = v));
+    collect(d.description, (v) => (d.description = v));
+    d.activities.forEach((a) => {
+      collect(a.name, (v) => (a.name = v));
+      collect(a.description, (v) => (a.description = v));
+      collect(a.location, (v) => (a.location = v));
+    });
+    d.transportation?.forEach((t) => collect(t.notes, (v) => (t.notes = v)));
+  });
+  out.accommodations.forEach((ac) => {
+    collect(ac.overview, (v) => (ac.overview = v));
+    collect(ac.description, (v) => (ac.description = v));
+  });
 
-Return ONLY raw valid JSON (no markdown, no code fences, no explanation) with the exact same structure as the input.`;
+  if (jobs.length === 0) return out;
 
-  const response = await fetch(GROQ_URL, {
+  const target = targetLanguage.trim().toLowerCase();
+
+  // Split into batches bounded by both segment count and total characters.
+  const batches: TranslationJob[][] = [];
+  let current: TranslationJob[] = [];
+  let currentChars = 0;
+  for (const job of jobs) {
+    const wouldOverflow =
+      current.length >= MAX_SEGMENTS_PER_BATCH ||
+      currentChars + job.text.length > MAX_CHARS_PER_BATCH;
+    if (wouldOverflow && current.length > 0) {
+      batches.push(current);
+      current = [];
+      currentChars = 0;
+    }
+    current.push(job);
+    currentChars += job.text.length;
+  }
+  if (current.length > 0) batches.push(current);
+
+  for (const batch of batches) {
+    const translated = await translateBatch(
+      batch.map((j) => j.text),
+      target,
+    );
+    translated.forEach((value, i) => batch[i]!.set(value));
+  }
+
+  return out;
+}
+
+/** Translate one batch of strings via Google Cloud Translation v2. Order-preserving. */
+async function translateBatch(texts: string[], target: string): Promise<string[]> {
+  const params = new URLSearchParams({ key: env.GOOGLE_TRANSLATE_API_KEY });
+  const response = await fetch(`${GOOGLE_TRANSLATE_URL}?${params.toString()}`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${env.GROQ_API_KEY}`,
-    },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      model: MODEL,
-      messages: [{ role: 'user', content: prompt }],
-      temperature: 0.3,
-      max_tokens: 16384,
+      q: texts,
+      source: 'en',
+      target,
+      format: 'text',
     }),
   });
 
   if (!response.ok) {
     const error = await response.text();
-    log.error('Groq translation failed', { status: response.status, error });
+    log.error('Google Translate failed', { status: response.status, error });
     throw new Error(`Translation API failed: ${response.status}`);
   }
 
   const data = await response.json();
-  const text = data.choices?.[0]?.message?.content;
-
-  if (!text) {
-    throw new Error('Empty response from translation API');
-  }
-
-  // Strip thinking tags (Qwen3 includes <think>...</think> before the answer)
-  const cleaned = text.replace(/<think>[\s\S]*?<\/think>/g, '').trim();
-
-  // Extract JSON from response - model may wrap it in markdown code blocks
-  // Closing fence may be missing if response was truncated
-  const jsonMatch = cleaned.match(/```(?:json)?\s*([\s\S]*?)(?:```|$)/);
-  const jsonStr = jsonMatch ? jsonMatch[1]!.trim() : cleaned;
-
-  try {
-    return JSON.parse(jsonStr) as TranslatedContent;
-  } catch {
-    log.error('Failed to parse translation JSON', {
-      responsePreview: jsonStr.slice(0, 500),
+  const translations = data?.data?.translations;
+  if (!Array.isArray(translations) || translations.length !== texts.length) {
+    log.error('Unexpected translation API response', {
+      expected: texts.length,
+      received: Array.isArray(translations) ? translations.length : 'not-array',
     });
-    throw new Error('Translation returned invalid JSON');
+    throw new Error('Translation API returned an unexpected response');
   }
+
+  return translations.map((t: { translatedText?: string }) =>
+    decodeHtmlEntities(t.translatedText ?? ''),
+  );
+}
+
+/**
+ * Google Translate re-encodes a handful of characters as HTML entities even with
+ * format=text. Decode the common ones so stored copy is clean plain text.
+ */
+function decodeHtmlEntities(s: string): string {
+  return s
+    .replace(/&#39;/g, "'")
+    .replace(/&quot;/g, '"')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&amp;/g, '&');
 }
 
 /** Extract translatable fields from a full proposal query result */
