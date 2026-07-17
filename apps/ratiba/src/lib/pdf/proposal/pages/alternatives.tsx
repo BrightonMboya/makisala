@@ -13,7 +13,7 @@ import {
   usePdfDoc,
 } from '../primitives';
 import { PHOTO_TILE } from '../theme';
-import { alternativePhotos, hasRealAccommodation } from '../helpers';
+import { accommodationFor, alternativePhotos, hasRealAccommodation } from '../helpers';
 
 /**
  * Alternative Accommodations: each night's booked lodge with the swaps available
@@ -105,10 +105,7 @@ export function AlternativesPage({ data }: { data: ItineraryData }) {
             </View>
 
             <View style={styles.booked}>
-              <Photo
-                src={data.accommodations.find((a) => a.name === day.accommodation)?.image}
-                style={styles.thumb}
-              />
+              <Photo src={accommodationFor(data, day)?.image} style={styles.thumb} />
               <View style={{ flex: 1 }}>
                 <Text
                   style={{
@@ -130,61 +127,61 @@ export function AlternativesPage({ data }: { data: ItineraryData }) {
               const [lead, ...strip] = alternativePhotos(alternative);
               const rows = photoRows(strip);
               return (
-              <View
-                key={i}
-                style={[styles.altBlock, { backgroundColor: palette.paperWarm }]}
-                wrap={false}
-              >
-              <View style={styles.altRow}>
-                <Photo src={lead} style={styles.thumb} />
-                <View style={styles.altBody}>
-                  <Text
-                    style={{
-                      fontFamily: 'Outfit',
-                      fontSize: TYPE.h3,
-                      fontWeight: 600,
-                      color: palette.ink,
-                    }}
-                  >
-                    {alternative.name}
-                  </Text>
-                  {alternative.rooms ? (
-                    <View style={styles.detail}>
-                      <Small color={palette.muted}>Rooms:</Small>
-                      <Small color={palette.body}>{alternative.rooms}</Small>
+                <View
+                  key={i}
+                  style={[styles.altBlock, { backgroundColor: palette.paperWarm }]}
+                  wrap={false}
+                >
+                  <View style={styles.altRow}>
+                    <Photo src={lead} style={styles.thumb} />
+                    <View style={styles.altBody}>
+                      <Text
+                        style={{
+                          fontFamily: 'Outfit',
+                          fontSize: TYPE.h3,
+                          fontWeight: 600,
+                          color: palette.ink,
+                        }}
+                      >
+                        {alternative.name}
+                      </Text>
+                      {alternative.rooms ? (
+                        <View style={styles.detail}>
+                          <Small color={palette.muted}>Rooms:</Small>
+                          <Small color={palette.body}>{alternative.rooms}</Small>
+                        </View>
+                      ) : null}
+                      {alternative.meals ? (
+                        <View style={styles.detail}>
+                          <Small color={palette.muted}>Meal Plan:</Small>
+                          <Small color={palette.body}>{alternative.meals}</Small>
+                        </View>
+                      ) : null}
                     </View>
-                  ) : null}
-                  {alternative.meals ? (
-                    <View style={styles.detail}>
-                      <Small color={palette.muted}>Meal Plan:</Small>
-                      <Small color={palette.body}>{alternative.meals}</Small>
-                    </View>
-                  ) : null}
-                </View>
-                {alternative.priceLabel ? (
-                  <View style={styles.price}>
-                    <Text
-                      style={{
-                        fontFamily: 'Outfit',
-                        fontSize: TYPE.h2,
-                        fontWeight: 700,
-                        color: palette.brand,
-                      }}
-                    >
-                      {alternative.priceLabel}
-                    </Text>
+                    {alternative.priceLabel ? (
+                      <View style={styles.price}>
+                        <Text
+                          style={{
+                            fontFamily: 'Outfit',
+                            fontSize: TYPE.h2,
+                            fontWeight: 700,
+                            color: palette.brand,
+                          }}
+                        >
+                          {alternative.priceLabel}
+                        </Text>
+                      </View>
+                    ) : null}
                   </View>
-                ) : null}
-              </View>
 
-              {rows.map((row, r) => (
-                <View key={r} style={styles.strip}>
-                  {row.map((url) => (
-                    <Photo key={url} src={url} style={styles.stripPhoto} />
+                  {rows.map((row, r) => (
+                    <View key={r} style={styles.strip}>
+                      {row.map((url) => (
+                        <Photo key={url} src={url} style={styles.stripPhoto} />
+                      ))}
+                    </View>
                   ))}
                 </View>
-              ))}
-              </View>
               );
             })}
           </View>

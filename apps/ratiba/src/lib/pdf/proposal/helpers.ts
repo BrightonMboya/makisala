@@ -136,8 +136,12 @@ export function seededShuffle<T>(items: T[], seed: string): T[] {
   return out;
 }
 
-/** Lead plus three fills the intro collage. */
-const INTRO_COUNT = 4;
+/**
+ * Lead plus three fills the intro collage; the fifth is the captioned photo beside
+ * the day description. That photo has to be its own frame rather than a reprint of
+ * a collage tile, which shows the same photograph twice on one page.
+ */
+const INTRO_COUNT = 5;
 const DETAIL_COUNT = 2;
 /** One page's worth. Lodge galleries run to 20+ near-identical shots. */
 export const GALLERY_MAX = 6;
@@ -189,9 +193,18 @@ export function planAllDayPhotos(
   const plans: DayPhotoPlans = new Map();
   for (const day of data.itinerary) {
     const photos = day.destinationId ? (destinationPhotos.get(day.destinationId) ?? []) : [];
-    // Seeded per destination too, so a trip visiting one park twice doesn't lead
-    // both days with the same photograph.
-    plans.set(day.day, planDayPhotos(data, day, photos, `${seed}:${day.destinationId ?? day.day}`));
+    // The day number is part of the seed, not just the destination: two days at the
+    // same park share a photo pool, and seeding on the destination alone deals both
+    // the identical shuffle, so they lead with the same photograph.
+    //
+    // This makes the leads differ; it doesn't partition the pool, so a park visited
+    // twice can still repeat a photo further down. Dealing disjoint slices per day
+    // would fix that, but a park with four curated photos visited twice would leave
+    // the second day with none.
+    plans.set(
+      day.day,
+      planDayPhotos(data, day, photos, `${seed}:${day.destinationId ?? 'none'}:${day.day}`),
+    );
   }
   return plans;
 }

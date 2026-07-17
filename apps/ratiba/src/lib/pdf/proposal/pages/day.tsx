@@ -98,7 +98,7 @@ function DayEyebrow({ day, onDark }: { day: Day; onDark?: boolean }) {
 }
 
 /** Collage intro: the destination, day title, lodge bar, and day description. */
-export function DayIntroPage({ data, day }: { data: ItineraryData; day: Day }) {
+export function DayIntroPage({ day }: { day: Day }) {
   const { palette } = usePdfDoc();
   const photos = usePhotoPlan(day).intro;
   const [lead, ...rest] = photos;
@@ -162,10 +162,13 @@ export function DayIntroPage({ data, day }: { data: ItineraryData; day: Day }) {
           <View style={styles.introText}>
             <Body>{day.description}</Body>
           </View>
-          {/* Guarded: without it a photo-less day renders an empty captioned frame. */}
-          {photos[1] ? (
+          {/* The collage spends photos[0..3], so this takes the fifth rather than
+              reprinting a tile from the panel directly above it. Guarded: a day with
+              fewer photos gives the description the full width instead of an empty
+              captioned frame. */}
+          {photos[4] ? (
             <Photo
-              src={photos[1]}
+              src={photos[4]}
               style={styles.introPhoto}
               caption={day.destination || undefined}
             />

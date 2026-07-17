@@ -70,13 +70,11 @@ function ContactRow({ label, value }: { label: string; value: string }) {
 
 export interface AboutPageProps {
   data: ItineraryData;
-  /** Team or vehicle shot for the hero. Falls back to the trip hero. */
-  teamImage?: string;
   /** Overrides the organization's own address and phone. */
   contact?: { address?: string; phone?: string; email?: string; website?: string };
 }
 
-export function AboutPage({ data, teamImage, contact }: AboutPageProps) {
+export function AboutPage({ data, contact }: AboutPageProps) {
   const { palette } = usePdfDoc();
   const org = data.organization;
   if (!org) return null;
@@ -88,12 +86,9 @@ export function AboutPage({ data, teamImage, contact }: AboutPageProps) {
   // Settings store a cleared address as '' rather than null, so these are
   // truthiness-checked throughout rather than compared against null.
   const details = contact ?? { address: org.address ?? undefined, phone: org.phone ?? undefined };
-  const contactEntries = [
-    details.address,
-    details.phone,
-    details.email,
-    details.website,
-  ].filter(Boolean);
+  const contactEntries = [details.address, details.phone, details.email, details.website].filter(
+    Boolean,
+  );
 
   // Otherwise: a hero, a name bar, and two empty columns.
   if (
@@ -108,7 +103,7 @@ export function AboutPage({ data, teamImage, contact }: AboutPageProps) {
   return (
     <PdfPage padded={false}>
       <View style={styles.hero}>
-        <Photo src={teamImage ?? data.heroImage} style={{ width: '100%', height: '100%' }} />
+        <Photo src={data.heroImage} style={{ width: '100%', height: '100%' }} />
         <Scrim height="70%" />
         <View style={styles.heroTitle}>
           <DisplayTitle size={TYPE.cover} color={palette.onBrand}>

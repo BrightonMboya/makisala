@@ -9,8 +9,8 @@ const nextConfig: NextConfig = {
   },
   // The proposal PDF reads its TTFs off disk at render time (see lib/pdf/proposal/
   // fonts.ts). Next's tracer only follows imports, so without this the font files
-  // are dropped from the serverless bundle and the PDF silently renders in
-  // Helvetica. Any route that can render a proposal PDF needs them.
+  // are dropped from the serverless bundle and the render throws ENOENT. Any route
+  // that can render a proposal PDF needs them.
   outputFileTracingIncludes: {
     '/api/proposal/**': ['./src/lib/pdf/proposal/fonts/**'],
     '/api/dev/proposal-pdf': ['./src/lib/pdf/proposal/fonts/**'],

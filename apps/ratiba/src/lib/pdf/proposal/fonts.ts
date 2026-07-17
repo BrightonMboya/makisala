@@ -7,8 +7,10 @@ import { Font } from '@react-pdf/renderer';
  * file per weight, since react-pdf can't instance a variable font.
  *
  * They're read off disk at render time, so they must survive Next's output trace:
- * `outputFileTracingIncludes` in next.config.ts pins this directory. Without it the
- * PDF route silently falls back to Helvetica in production.
+ * `outputFileTracingIncludes` in next.config.ts pins this directory. Without it
+ * react-pdf throws ENOENT on the first glyph it lays out rather than falling back
+ * to Helvetica, so a dropped font file fails the render outright: a 500 on the
+ * download, and an email that sends with no attachment.
  */
 const FONT_DIR = path.join(process.cwd(), 'src/lib/pdf/proposal/fonts');
 

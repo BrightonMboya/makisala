@@ -79,7 +79,7 @@ export function ProposalDocument({ data, letter, contact }: ProposalDocumentProp
 
       {/* Flattened, not wrapped per day: <Document> expects <Page> children. */}
       {data.itinerary.flatMap((day) => [
-        <DayIntroPage key={`intro-${day.day}`} data={data} day={day} />,
+        <DayIntroPage key={`intro-${day.day}`} day={day} />,
         <DayDetailPage key={`detail-${day.day}`} data={data} day={day} />,
         <DayGalleryPage key={`gallery-${day.day}`} day={day} />,
       ])}

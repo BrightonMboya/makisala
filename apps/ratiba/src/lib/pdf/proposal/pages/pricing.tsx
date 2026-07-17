@@ -4,7 +4,6 @@ import type { ItineraryData } from '@/types/itinerary-types';
 import {
   Body,
   DisplayTitle,
-  Label,
   MetaItem,
   PAGE,
   PdfPage,

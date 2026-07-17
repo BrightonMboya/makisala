@@ -34,10 +34,10 @@ async function getOrganizationId(
  * Warm the proposal PDF cache ahead of a Download / Send click.
  *
  * The share page fires this (fire-and-forget) once the proposal is published, so
- * the ~15s Cloudflare render happens while the operator reviews the page. By the
- * time they click, getOrRenderProposalPdf finds a fresh R2 copy and returns it
- * near-instantly. Rendering here is the same cache-populating call the download
- * uses, so a prewarm + a click never render twice for an unchanged proposal.
+ * the render happens while the operator reviews the page. By the time they click,
+ * getOrRenderProposalPdf finds a fresh R2 copy and returns it near-instantly.
+ * Rendering here is the same cache-populating call the download uses, so a prewarm
+ * + a click never render twice for an unchanged proposal.
  *
  *   POST /api/proposal/<id>/pdf/prewarm
  */

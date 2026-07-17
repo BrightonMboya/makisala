@@ -11,29 +11,13 @@ export interface CfImageOptions {
 }
 
 /**
- * Wraps an R2 image URL with Cloudflare Image Transformations.
- * Requires Image Resizing to be enabled on the Cloudflare zone
- * serving the R2 bucket (e.g. assets.makisala.com).
+ * Print-surface image preset: the source URL the proposal PDF fetches for an image.
+ * Callers pass the width their role prints at (see lib/pdf/proposal/images.ts), so
+ * Cloudflare does the downscale at the edge and the render pulls a right-sized photo
+ * instead of a multi-megabyte original it would only shrink locally.
  *
- * @example
- * // Basic optimization
- * cfImage('https://assets.makisala.com/img.jpg')
- *
- * // With resizing and sharpening
- * cfImage('https://assets.makisala.com/img.jpg', {
- *   width: 800,
- *   sharpen: 2,
- *   quality: 85,
- * })
- */
-/**
- * Print-surface image preset. Caps images for the proposal PDF (max 1600px) via
- * Cloudflare Image Resizing. Note: Cloudflare Browser Rendering's Chrome rasterizes
- * any object-fit-cropped image into an uncompressed RGB bitmap, so on that render
- * path the PDF size scales with pixel dimensions (not JPEG quality) and lowering
- * this width is the lever to shrink it. Proposal images live
- * on our CF zone; anything not on it (a rare unchanged default) passes through
- * rather than getting a broken /cdn-cgi/image URL.
+ * Only assets on our CF zone can be transformed; anything else (a rare unchanged
+ * Unsplash default) passes through rather than getting a broken /cdn-cgi/image URL.
  */
 export function printImage(imageUrl: string | undefined, width = 1600): string {
   if (!imageUrl) return '';
@@ -42,9 +26,9 @@ export function printImage(imageUrl: string | undefined, width = 1600): string {
   } catch {
     return imageUrl;
   }
-  // Force JPEG (not format=auto). Chromium's page.pdf() passes JPEG sources through
-  // as compressed DCTDecode streams, but re-embeds AVIF/WebP as near-uncompressed
-  // flate bitmaps (a capped 1600px photo balloons from ~200KB to ~2MB in the PDF).
+  // Force JPEG rather than format=auto, which negotiates on an Accept header that
+  // server-side fetch doesn't send. sharp re-encodes these anyway, so this is only
+  // about getting bytes that are small and cheap to decode, predictably.
   return cfImage(imageUrl, { width, quality: 82, format: 'jpeg' });
 }
 
@@ -68,6 +52,22 @@ function stripCfImagePrefix(imageUrl: string): string {
   return `${origin}/${source}`;
 }
 
+/**
+ * Wraps an R2 image URL with Cloudflare Image Transformations.
+ * Requires Image Resizing to be enabled on the Cloudflare zone
+ * serving the R2 bucket (e.g. assets.makisala.com).
+ *
+ * @example
+ * // Basic optimization
+ * cfImage('https://assets.makisala.com/img.jpg')
+ *
+ * // With resizing and sharpening
+ * cfImage('https://assets.makisala.com/img.jpg', {
+ *   width: 800,
+ *   sharpen: 2,
+ *   quality: 85,
+ * })
+ */
 export function cfImage(imageUrl: string, options: CfImageOptions = {}): string {
   const {
     width,

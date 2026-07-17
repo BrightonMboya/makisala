@@ -12,8 +12,8 @@ import type { ItineraryData } from '@/types/itinerary-types';
 /**
  * Dev tool for the react-pdf proposal document.
  *
- * Unlike /api/dev/pdf-benchmark, this renders in-process, so it works against a
- * local dev server with no Cloudflare token and no publicly reachable URL.
+ * Renders in-process, so it works against a local dev server with no publicly
+ * reachable URL.
  *
  *   GET /api/dev/proposal-pdf?id=<proposalId>          -> stream the PDF
  *   GET /api/dev/proposal-pdf?id=<id>&json=1           -> timing + size only
