@@ -36,9 +36,8 @@ async function fetchAttachment(
   }
 }
 
-// The PDF is rendered on Cloudflare Browser Rendering (an off-box HTTP call, no
-// in-lambda Chromium), so we just wait on the response; maxDuration covers that
-// round trip.
+// The PDF renders in-process (a couple of seconds of CPU, plus every image fetch)
+// on a cache miss, before the send itself. maxDuration covers both.
 export const maxDuration = 60;
 
 // Helper to get organization ID from session or member table
@@ -130,15 +129,15 @@ export const POST = withAxiom(async (request: AxiomRequest) => {
     });
     const replyToEmail = proposal.organization?.notificationEmail ?? undefined;
 
-    // Render a PDF copy of the proposal to attach alongside the live link, via
-    // Cloudflare Browser Rendering (off-box). This is best-effort: a render hiccup
-    // should never block the send, since the email's primary CTA is the online
-    // proposal. On failure we log and send without the attachment.
+    // Render a PDF copy of the proposal to attach alongside the live link. This is
+    // best-effort: a render hiccup should never block the send, since the email's
+    // primary CTA is the online proposal. On failure we log and send without the
+    // attachment.
     const lang = (proposal as { language?: string }).language;
     let pdfAttachment: { filename: string; content: Buffer } | undefined;
     try {
-      // Reuses the R2-cached copy when the share page prewarmed it, so a send
-      // right after publishing is near-instant instead of a fresh ~15s render.
+      // Reuses the R2-cached copy when the share page prewarmed it, so a send right
+      // after publishing is near-instant instead of a fresh render.
       const { filename, pdf } = await getOrRenderProposalPdf({
         id: proposalId,
         title: proposalTitle,

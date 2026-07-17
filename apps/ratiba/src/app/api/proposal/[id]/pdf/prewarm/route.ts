@@ -6,10 +6,10 @@ import { auth } from '@/lib/auth';
 import { headers } from 'next/headers';
 import { log, serializeError } from '@/lib/logger';
 import { getOrRenderProposalPdf } from '@/lib/pdf/proposal-pdf';
-import { isCloudflareRenderConfigured } from '@/lib/pdf/cloudflare-render';
 
-// Renders off-box on Cloudflare; maxDuration covers the round trip.
+// Renders in-process; maxDuration covers a photo-heavy itinerary on a cold cache.
 export const maxDuration = 60;
+export const runtime = 'nodejs';
 
 // Mirrors the download route's org resolution.
 async function getOrganizationId(
@@ -60,11 +60,6 @@ export async function POST(
 
     if (!proposal) {
       return NextResponse.json({ success: false, error: 'Proposal not found' }, { status: 404 });
-    }
-
-    if (!isCloudflareRenderConfigured()) {
-      // Not an error the caller should act on — prewarming is best-effort.
-      return NextResponse.json({ success: false, skipped: true });
     }
 
     const title = proposal.tourTitle || proposal.name;

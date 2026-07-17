@@ -222,6 +222,10 @@ export interface Day {
   title: string;
   description?: string; // Day description
   destination?: string; // Destination display name
+  // National park id, when the day's destination is a catalog park. Keyed to the
+  // curated photography in R2 under `national-parks/<id>/`. Absent for one-off
+  // destinations added in the builder, which have no curated images.
+  destinationId?: string;
   activities: DayActivity[];
   accommodation: string;
   accommodationAlternatives?: ThemeAccommodationAlternative[];
@@ -266,6 +270,9 @@ export interface OrganizationInfo {
   paymentTerms: string | null;
   reviewLinks?: ReviewLinkInfo[] | null;
   socialLinks?: SocialLinksInfo | null;
+  /** Postal address. Optional, and often an empty string rather than null. */
+  address?: string | null;
+  phone?: string | null;
 }
 
 export interface TripOverview {

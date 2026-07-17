@@ -711,6 +711,8 @@ export const proposalsRouter = router({
               paymentTerms: true,
               reviewLinks: true,
               socialLinks: true,
+              address: true,
+              phone: true,
             },
           },
           tour: { columns: { country: true, tourName: true } },

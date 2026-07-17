@@ -35,6 +35,19 @@ import { toLocalISOString } from '@/lib/date-utils';
 import { parseJsonResponse } from '@/lib/parse-json-response';
 import Link from 'next/link';
 
+/**
+ * Only languages the PDF can actually typeset.
+ *
+ * The attached PDF is rendered by react-pdf, which has no per-glyph font fallback:
+ * a character missing from the fonts in src/lib/pdf/proposal/fonts renders as
+ * mojibake rather than falling back the way a browser would. Those fonts cover
+ * Western European Latin only, so anything needing Cyrillic, CJK, Devanagari, or
+ * even Polish/Turkish accents (ż ł ę, ğ ş) silently garbles the client's copy.
+ *
+ * Adding a language here therefore means registering a font that covers its script
+ * first. Arabic and Hebrew additionally need bidi and shaping, which react-pdf gets
+ * wrong even with the right font.
+ */
 const LANGUAGES = [
   { code: 'en', label: 'English (default)' },
   { code: 'fr', label: 'French' },
@@ -43,16 +56,7 @@ const LANGUAGES = [
   { code: 'it', label: 'Italian' },
   { code: 'pt', label: 'Portuguese' },
   { code: 'nl', label: 'Dutch' },
-  { code: 'zh', label: 'Chinese (Mandarin)' },
-  { code: 'ja', label: 'Japanese' },
-  { code: 'ko', label: 'Korean' },
-  { code: 'ar', label: 'Arabic' },
-  { code: 'ru', label: 'Russian' },
-  { code: 'hi', label: 'Hindi' },
   { code: 'sw', label: 'Swahili' },
-  { code: 'pl', label: 'Polish' },
-  { code: 'tr', label: 'Turkish' },
-  { code: 'he', label: 'Hebrew' },
 ] as const;
 
 export default function SharePage() {

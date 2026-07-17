@@ -6,11 +6,11 @@ import { auth } from '@/lib/auth';
 import { headers } from 'next/headers';
 import { log, serializeError } from '@/lib/logger';
 import { getOrRenderProposalPdf } from '@/lib/pdf/proposal-pdf';
-import { isCloudflareRenderConfigured } from '@/lib/pdf/cloudflare-render';
 
-// The PDF is rendered off-box on Cloudflare Browser Rendering, so we just wait on
-// the round trip; maxDuration covers it.
+// The PDF is built in-process; the bulk of the time is fetching this proposal's
+// images. maxDuration covers a photo-heavy itinerary on a cold cache.
 export const maxDuration = 60;
+export const runtime = 'nodejs';
 
 // Resolve the caller's organization from the session, falling back to their first
 // membership. Mirrors the send-email route.
@@ -59,13 +59,6 @@ export async function GET(
 
     if (!proposal) {
       return NextResponse.json({ success: false, error: 'Proposal not found' }, { status: 404 });
-    }
-
-    if (!isCloudflareRenderConfigured()) {
-      return NextResponse.json(
-        { success: false, error: 'PDF rendering is not configured' },
-        { status: 503 },
-      );
     }
 
     const title = proposal.tourTitle || proposal.name;

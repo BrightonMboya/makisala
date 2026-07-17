@@ -39,9 +39,6 @@ import type { ItineraryData } from '@/types/itinerary-types';
 import { capitalize, cn, formatActivityTiming } from '@/lib/utils';
 import { AccommodationAlternativesBlock } from '@/components/themes/AccommodationAlternativesBlock';
 import { AgencyTrust, hasAgencyTrust } from '@/components/proposal/AgencyTrust';
-import { StaticTripMap } from '@/components/themes/StaticTripMap';
-import { useForPrint, usePrintImage } from '@/components/themes/print-context';
-import { usePrintMode } from '@/components/proposal/PrintFrame';
 
 function joinList(items: string[]): string {
   if (items.length <= 2) return items.join(' & ');
@@ -52,7 +49,6 @@ function joinList(items: string[]): string {
 // CINEMATIC IMAGE GALLERY
 // ============================================================================
 function CinematicGallery({ images, alt }: { images: string[]; alt: string }) {
-  const pdfAsset = usePrintImage();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
 
@@ -91,7 +87,7 @@ function CinematicGallery({ images, alt }: { images: string[]; alt: string }) {
           transition={{ duration: 0.5 }}
           className="absolute inset-0"
         >
-          <Image src={pdfAsset(currentImage)} alt={alt} fill className="object-cover" />
+          <Image src={currentImage ?? ''} alt={alt} fill className="object-cover" />
         </motion.div>
       </AnimatePresence>
 
@@ -146,7 +142,6 @@ function CinematicGallery({ images, alt }: { images: string[]; alt: string }) {
 // ============================================================================
 function JourneyMap({ data, className }: { data: ItineraryData['mapData']; className?: string }) {
   const { locations, startLocation, endLocation } = data;
-  const isPrint = usePrintMode();
   const mapRef = useRef<any>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const [showHint, setShowHint] = useState(false);
@@ -157,9 +152,7 @@ function JourneyMap({ data, className }: { data: ItineraryData['mapData']; class
   );
 
   // Disable scroll zoom by default, enable only when Cmd/Ctrl is held.
-  // In print there's no scrolling to intercept — the map is a static snapshot.
   useEffect(() => {
-    if (isPrint) return;
     const wrapper = wrapperRef.current;
     if (!wrapper) return;
 
@@ -187,7 +180,7 @@ function JourneyMap({ data, className }: { data: ItineraryData['mapData']; class
       wrapper.removeEventListener('wheel', handleWheel);
       if (hintTimeout.current) clearTimeout(hintTimeout.current);
     };
-  }, [isMac, isPrint]);
+  }, [isMac]);
 
   if (!locations || locations.length === 0) return null;
 
@@ -221,8 +214,7 @@ function JourneyMap({ data, className }: { data: ItineraryData['mapData']; class
         minZoom={4}
         maxZoom={12}
         scrollZoom={false}
-        // Fully static snapshot for the PDF: no drag, zoom, or scroll interaction.
-        interactive={!isPrint}
+        interactive
         styles={{
           light: 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json',
           dark: 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json',
@@ -339,8 +331,6 @@ const HeroSection = ({
   data: ItineraryData;
   onImageChange?: () => void;
 }) => {
-  const isPrint = usePrintMode();
-  const pdfAsset = usePrintImage();
   const heroRef = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({
     target: heroRef,
@@ -352,9 +342,9 @@ const HeroSection = ({
 
   return (
     <section ref={heroRef} className="relative h-screen w-full overflow-hidden">
-      {/* Parallax Background (static in the PDF — a page has no scroll to parallax against) */}
-      <motion.div className="absolute inset-0" style={isPrint ? undefined : { y }}>
-        <Image src={pdfAsset(data.heroImage)} alt="Hero" fill className="object-cover" priority />
+      {/* Parallax Background */}
+      <motion.div className="absolute inset-0" style={{ y }}>
+        <Image src={data.heroImage ?? ''} alt="Hero" fill className="object-cover" priority />
       </motion.div>
 
       {/* Cinematic Overlays */}
@@ -381,7 +371,7 @@ const HeroSection = ({
 
       <motion.div
         className="relative z-10 flex h-full flex-col justify-end px-8 pb-24 lg:px-16 lg:pb-32 xl:px-24"
-        style={isPrint ? undefined : { opacity }}
+        style={{ opacity }}
       >
         <div className="max-w-5xl">
           {data.clientName && (
@@ -573,7 +563,6 @@ function getMealBasis(meals: string): string {
 }
 
 const JourneyOverview = ({ data }: { data: ItineraryData }) => {
-  const forPrint = useForPrint();
   return (
     <section className="bg-[#faf9f7]">
       <div className="mx-auto max-w-7xl px-6 pt-20 pb-16 lg:px-12">
@@ -775,7 +764,7 @@ const JourneyOverview = ({ data }: { data: ItineraryData }) => {
 
       {/* Map */}
       <div className="relative h-[50vh] lg:h-[600px]">
-        {forPrint ? <StaticTripMap data={data.mapData} /> : <JourneyMap data={data.mapData} />}
+        <JourneyMap data={data.mapData} />
         <div className="absolute top-8 left-8 max-w-xs rounded-2xl bg-white/95 p-6 shadow-xl backdrop-blur-sm">
           <p className="mb-2 text-xs font-light tracking-[0.2em] text-stone-400 uppercase">
             Your Route
@@ -931,7 +920,6 @@ const DaySection = ({
   hoveredDayImage: number | null;
   setHoveredDayImage: (day: number | null) => void;
 }) => {
-  const pdfAsset = usePrintImage();
   const accommodationDetails = data.accommodations.find((a) => a.name === day.accommodation);
 
   // Derive location from activity locations, falling back to day.destination
@@ -969,7 +957,7 @@ const DaySection = ({
         onMouseLeave={() => setHoveredDayImage(null)}
       >
         <Image
-          src={pdfAsset(destinationImage)}
+          src={destinationImage ?? ''}
           alt={dayLocation || day.title}
           fill
           className="object-cover"

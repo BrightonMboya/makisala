@@ -14,8 +14,6 @@ import type { ItineraryData } from '@/types/itinerary-types';
 import { formatActivityTiming } from '@/lib/utils';
 import { AccommodationAlternativesBlock } from '@/components/themes/AccommodationAlternativesBlock';
 import { AgencyTrust, hasAgencyTrust } from '@/components/proposal/AgencyTrust';
-import { StaticTripMap } from '@/components/themes/StaticTripMap';
-import { useForPrint, usePrintImage } from '@/components/themes/print-context';
 
 function TripMap({ data }: { data: ItineraryData['mapData'] }) {
   const { locations, startLocation, endLocation } = data;
@@ -116,8 +114,6 @@ function TripMap({ data }: { data: ItineraryData['mapData'] }) {
 
 export default function SafariPortalTheme({ data }: { data: ItineraryData }) {
   // Print surface: swap the WebGL route map for a static raster and size-cap images.
-  const forPrint = useForPrint();
-  const pdfAsset = usePrintImage();
   const [isScrolled, setIsScrolled] = useState(false);
   const [scrollProgress, setScrollProgress] = useState(0);
   const [activeSection, setActiveSection] = useState<'overview' | number>('overview');
@@ -189,7 +185,7 @@ export default function SafariPortalTheme({ data }: { data: ItineraryData }) {
               className="relative h-[120%] w-full"
             >
               <Image
-                src={pdfAsset(data.heroImage)}
+                src={data.heroImage ?? ''}
                 alt={data.title}
                 fill
                 className="object-cover"
@@ -237,7 +233,7 @@ export default function SafariPortalTheme({ data }: { data: ItineraryData }) {
                   className="relative h-[120%] w-full"
                 >
                   <Image
-                    src={pdfAsset(imageSrc)}
+                    src={imageSrc ?? ''}
                     alt={day.title}
                     fill
                     className="object-cover"
@@ -408,7 +404,7 @@ export default function SafariPortalTheme({ data }: { data: ItineraryData }) {
                     <div className="flex items-start gap-6">
                       <div className="relative flex-shrink-0">
                         <Image
-                          src={pdfAsset(day.previewImage || accommodation?.image || data.heroImage)}
+                          src={day.previewImage || accommodation?.image || data.heroImage || ''}
                           alt={day.title}
                           width={100}
                           height={100}
@@ -474,7 +470,7 @@ export default function SafariPortalTheme({ data }: { data: ItineraryData }) {
                           <div className="mt-6">
                             <div className="relative h-48 w-full overflow-hidden rounded-xl">
                               <Image
-                                src={pdfAsset(day.previewImage || accommodation.image)}
+                                src={day.previewImage || accommodation.image || ''}
                                 alt={accommodation.name}
                                 fill
                                 className="object-cover"
@@ -537,7 +533,7 @@ export default function SafariPortalTheme({ data }: { data: ItineraryData }) {
                 <div key={lodge.id} className="group cursor-pointer">
                   <div className="relative mb-4 aspect-[16/10] overflow-hidden rounded-2xl">
                     <Image
-                      src={pdfAsset(lodge.image)}
+                      src={lodge.image ?? ''}
                       alt={lodge.name}
                       fill
                       className="object-cover transition-transform duration-1000 group-hover:scale-105"
@@ -577,7 +573,7 @@ export default function SafariPortalTheme({ data }: { data: ItineraryData }) {
               ))}
             </div>
             <div className="h-[400px] overflow-hidden rounded-xl">
-              {forPrint ? <StaticTripMap data={data.mapData} /> : <TripMap data={data.mapData} />}
+              <TripMap data={data.mapData} />
             </div>
           </section>
 
