@@ -270,6 +270,20 @@ export interface ProposalAcceptanceData {
   totalPrice?: string;
   recipientEmail: string;
   orgSlug?: string;
+  /** Itinerary price before the client's add-on selections. */
+  baseTotal?: string;
+  /** Optional activities, lodge swaps, and extras the client opted into. */
+  addOns?: Array<{
+    label: string;
+    detail: string | null;
+    amount: string;
+    /** Lodge swaps (no availability check exists) and unpriced items the
+     *  operator still has to quote. Flagged so they can't be missed. */
+    needsReview: boolean;
+  }>;
+  /** How many nights the client changed lodge on. Drives the subject-line
+   *  warning, since an unavailable lodge has to be caught before payment. */
+  lodgeChangeCount?: number;
 }
 
 /**
@@ -298,15 +312,23 @@ export async function sendProposalAcceptanceEmail(
       startDate: data.startDate,
       duration: data.duration,
       totalPrice: data.totalPrice,
+      baseTotal: data.baseTotal,
+      addOns: data.addOns,
       acceptedAt,
     });
 
     const fromEmail = orgFromAddress({ name: data.agencyName, slug: data.orgSlug });
 
+    // A lodge swap has to be confirmed as available before the client pays,
+    // so it goes in the subject rather than only in the body.
+    const subjectPrefix = data.lodgeChangeCount
+      ? `[Lodge change x${data.lodgeChangeCount}] `
+      : '';
+
     const result = await resend.emails.send({
       from: fromEmail,
       to: data.recipientEmail,
-      subject: `Proposal Accepted: ${data.proposalTitle} - ${data.clientName}`,
+      subject: `${subjectPrefix}Proposal Accepted: ${data.proposalTitle} - ${data.clientName}`,
       html,
       ...(data.clientEmail ? { replyTo: data.clientEmail } : {}),
     });

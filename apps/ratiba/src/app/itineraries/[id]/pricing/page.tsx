@@ -622,10 +622,25 @@ function AccommodationAlternativesSection({
                   className="border-stone-200 bg-stone-50 pl-7 shadow-none"
                 />
               </div>
+              {/* How the amount scales if the client picks this lodge on the
+                  booking page. An alternative covers one night, so "per night"
+                  is the flat case. The label beside it is display-only. */}
+              <select
+                value={alt.priceBasis ?? 'flat'}
+                onChange={(e) =>
+                  updateAlt(day.id, alt.id, {
+                    priceBasis: e.target.value as 'flat' | 'per_person',
+                  })
+                }
+                className="h-9 rounded-md border border-stone-200 bg-stone-50 px-2 text-sm text-stone-700"
+              >
+                <option value="flat">total</option>
+                <option value="per_person">per person</option>
+              </select>
               <Input
                 value={alt.priceUnitLabel ?? ''}
                 onChange={(e) => updateAlt(day.id, alt.id, { priceUnitLabel: e.target.value })}
-                placeholder="e.g. per person / per night"
+                placeholder="Label shown to client, e.g. per person / per night"
                 className="h-9 flex-1 border-stone-200 bg-stone-50 text-sm shadow-none"
               />
             </div>

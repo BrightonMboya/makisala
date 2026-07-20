@@ -48,6 +48,9 @@ export default async function BookingPage({ params }: Props) {
           organization={booking.organization}
           paymentMethods={booking.paymentMethods as PaymentMethod[]}
           alreadyConfirmed={alreadyConfirmed}
+          addOns={booking.addOns}
+          initialSelections={booking.selections}
+          confirmedTotal={booking.confirmedTotal}
         />
       </main>
     );

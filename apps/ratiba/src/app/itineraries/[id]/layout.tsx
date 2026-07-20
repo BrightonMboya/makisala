@@ -465,6 +465,9 @@ function BuilderLayoutInner({ children }: { children: React.ReactNode }) {
             moment: act.moment,
             startTime: act.time || null,
             isOptional: act.isOptional,
+            // numeric() round-trips as a string; the builder edits a number.
+            price: act.price == null ? null : Number(act.price),
+            priceUnit: act.priceUnit ?? null,
             imageUrl: act.imageUrl,
           })),
           transfer: day.transportation?.[0]

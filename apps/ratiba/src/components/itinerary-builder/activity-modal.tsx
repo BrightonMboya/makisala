@@ -563,6 +563,46 @@ function SortableActivityRow({
               </div>
             </div>
           </div>
+
+          {/* Optional activities are excluded from the rate-card quote, so this
+              is the only place their price is set. Without one, the booking
+              page offers the activity "on request" instead of pricing it. */}
+          {activity.isOptional && (
+            <div className="col-span-2 space-y-1.5 border-t border-stone-100 pt-3">
+              <label className="text-xs font-bold text-stone-500 uppercase">
+                Add-on price
+              </label>
+              <div className="flex gap-2">
+                <Input
+                  type="number"
+                  min={0}
+                  step="0.01"
+                  value={activity.price ?? ''}
+                  onChange={(e) =>
+                    onUpdate(
+                      activity.id,
+                      'price',
+                      e.target.value === '' ? null : Number(e.target.value),
+                    )
+                  }
+                  placeholder="e.g. 250"
+                  className="h-9 w-32 border-stone-200 bg-stone-50 text-sm"
+                />
+                <select
+                  value={activity.priceUnit ?? 'per_person'}
+                  onChange={(e) => onUpdate(activity.id, 'priceUnit', e.target.value)}
+                  className="h-9 rounded-md border border-stone-200 bg-stone-50 px-2 text-sm text-stone-700"
+                >
+                  <option value="per_person">per person</option>
+                  <option value="per_group">per group</option>
+                </select>
+              </div>
+              <p className="text-[10px] text-stone-500">
+                What the client pays to add this on the booking page. Leave empty to offer it
+                on request and quote it yourself.
+              </p>
+            </div>
+          )}
         </div>
       )}
     </div>

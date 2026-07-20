@@ -22,6 +22,8 @@ import {
 } from '@repo/resend';
 import { router, protectedProcedure, adminProcedure, publicProcedure, escapeLikeQuery } from '../init';
 import { getHiddenImageIds } from '../lib/hidden-images';
+import { loadBookingAddOns } from '../lib/booking-addons';
+import { computeBookingTotal, parseSelections, type Selections } from '@/lib/booking-addons';
 import { checkFeatureAccess, getOrgPlan, ALLOWED_THEMES_BY_TIER } from '@/lib/plans';
 import { DEFAULT_DASHBOARD_STATUSES } from '@/lib/proposal-status';
 import { deriveMealPlan } from '@/lib/pricing-engine';
@@ -90,6 +92,9 @@ interface BuilderActivity {
   startTime?: string | null;
   time?: string | null;
   isOptional?: boolean;
+  /** Optional activities only: what adding it costs on the booking page. */
+  price?: number | null;
+  priceUnit?: 'per_person' | 'per_group' | null;
   imageUrl?: string | null;
 }
 
@@ -127,6 +132,7 @@ interface BuilderDay {
     mealOptions?: string[];
     additionalPrice?: number | null;
     priceUnitLabel?: string | null;
+    priceBasis?: 'flat' | 'per_person';
     hideInQuote?: boolean;
   }>;
   activities?: BuilderActivity[];
@@ -884,7 +890,7 @@ export const proposalsRouter = router({
                 },
               },
               meals: { columns: { breakfast: true, lunch: true, dinner: true, options: true } },
-              activities: { columns: { id: true, activityLibraryId: true, name: true, description: true, location: true, fromLocation: true, toLocation: true, moment: true, time: true, isOptional: true, imageUrl: true } },
+              activities: { columns: { id: true, activityLibraryId: true, name: true, description: true, location: true, fromLocation: true, toLocation: true, moment: true, time: true, isOptional: true, price: true, priceUnit: true, imageUrl: true } },
               transportation: {
                 columns: {
                   id: true,
@@ -1139,6 +1145,13 @@ export const proposalsRouter = router({
                 moment: activity.moment || '',
                 time: activity.startTime || null,
                 isOptional: activity.isOptional || false,
+                // Only meaningful for optional activities; the pricing engine
+                // costs the rest from rate cards.
+                price:
+                  activity.isOptional && activity.price != null
+                    ? String(activity.price)
+                    : null,
+                priceUnit: activity.isOptional ? (activity.priceUnit ?? 'per_person') : null,
                 imageUrl: activity.imageUrl || null,
               });
             }
@@ -1369,7 +1382,22 @@ export const proposalsRouter = router({
     }),
 
   confirm: publicProcedure
-    .input(z.object({ proposalId: z.string(), clientName: z.string().max(255) }))
+    .input(
+      z.object({
+        proposalId: z.string(),
+        clientName: z.string().max(255),
+        // Add-ons the client opted into on the booking page. Ids only: the
+        // server re-reads every price from the proposal, so a tampered or
+        // stale browser can change what was picked but never what it costs.
+        selections: z
+          .object({
+            activityIds: z.array(z.string()).max(100),
+            alternativeByDayId: z.record(z.string(), z.string()),
+            extraIds: z.array(z.string()).max(100),
+          })
+          .optional(),
+      }),
+    )
     .mutation(async ({ ctx, input }) => {
       const [proposal, daysCountResult] = await Promise.all([
         ctx.db.query.proposals.findFirst({
@@ -1390,6 +1418,17 @@ export const proposalsRouter = router({
         throw new TRPCError({ code: 'BAD_REQUEST', message: 'No notification email configured for this organization' });
       }
 
+      // Once confirmed, the client has agreed to a specific set of add-ons at a
+      // specific total and the operator has been told what to hold. Letting the
+      // page post again would silently replace both.
+      const CONFIRMED_STATUSES = ['awaiting_payment', 'paid', 'booked', 'completed'] as const;
+      if ((CONFIRMED_STATUSES as readonly string[]).includes(proposal.status)) {
+        throw new TRPCError({
+          code: 'CONFLICT',
+          message: 'This booking has already been confirmed. Contact the operator to change it.',
+        });
+      }
+
       const daysCount = daysCountResult[0]?.count ?? 0;
       const duration = daysCount > 0 ? `${daysCount} days` : undefined;
 
@@ -1402,12 +1441,23 @@ export const proposalsRouter = router({
           })
         : undefined;
 
-      let totalPrice: string | undefined;
-      if (proposal.pricingRows) {
-        const rows = proposal.pricingRows as Array<{ count: number; unitPrice: number }>;
-        const total = rows.reduce((acc, row) => acc + row.count * row.unitPrice, 0);
-        if (total > 0) totalPrice = `$${total.toLocaleString()}`;
-      }
+      // Reprice from stored data. The browser sends which add-ons were picked,
+      // never what they cost, so this is the only figure that binds.
+      const rows = (proposal.pricingRows as Array<{ count: number; unitPrice: number }>) || [];
+      const baseTotal = rows.reduce((acc, row) => acc + row.count * row.unitPrice, 0);
+      const groups = (proposal.travelerGroups as Array<{ count: number }>) || [];
+      const travelerCount = groups.reduce((acc, g) => acc + g.count, 0);
+
+      const selections: Selections = parseSelections(input.selections);
+      const addOns = await loadBookingAddOns(ctx.db, proposal.id, proposal.organizationId);
+      const { lines, total } = computeBookingTotal(baseTotal, addOns, selections, travelerCount);
+
+      const totalPrice = total > 0 ? `$${total.toLocaleString()}` : undefined;
+
+      // Any lodge swap needs the operator's eyes: there is no availability
+      // check anywhere in the booking flow, so the client can pick a lodge we
+      // cannot actually hold. Surfaced in the email, not blocked.
+      const lodgeChanges = lines.filter((l) => l.kind === 'alternative');
 
       const proposalUrl = `${env.NEXT_PUBLIC_APP_URL}/proposal/${input.proposalId}`;
 
@@ -1422,16 +1472,34 @@ export const proposalsRouter = router({
         totalPrice,
         recipientEmail: proposal.organization.notificationEmail,
         orgSlug: proposal.organization.slug,
+        baseTotal: baseTotal > 0 ? `$${baseTotal.toLocaleString()}` : undefined,
+        addOns: lines.map((l) => ({
+          label: l.label,
+          detail: l.detail,
+          amount: l.onRequest
+            ? 'On request'
+            : `${l.amount < 0 ? '-' : '+'}$${Math.abs(Math.round(l.amount)).toLocaleString()}`,
+          needsReview: l.kind === 'alternative' || l.onRequest,
+        })),
+        lodgeChangeCount: lodgeChanges.length,
       });
 
       if (!result.success) {
         throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: result.error });
       }
 
-      // Auto-transition status to awaiting_payment
+      // Snapshot what was agreed alongside the status change. The proposal
+      // stays editable afterwards, so recomputing later would not reproduce
+      // the figure the client actually saw.
       await ctx.db
         .update(proposals)
-        .set({ status: 'awaiting_payment', updatedAt: new Date().toISOString() })
+        .set({
+          status: 'awaiting_payment',
+          clientSelections: selections,
+          confirmedTotal: total.toFixed(2),
+          confirmedAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        })
         .where(eq(proposals.id, input.proposalId));
 
       // Return the operator's payment methods so the client can pay directly.
@@ -1449,7 +1517,7 @@ export const proposalsRouter = router({
         .where(eq(paymentMethods.organizationId, proposal.organization.id))
         .orderBy(asc(paymentMethods.sortOrder), asc(paymentMethods.createdAt));
 
-      return { success: true, paymentMethods: methods };
+      return { success: true, paymentMethods: methods, total, addOnLines: lines };
     }),
 
   // Powers the standalone booking page (/proposal/[id]/book). Returns the
@@ -1471,6 +1539,8 @@ export const proposalsRouter = router({
           travelerGroups: true,
           status: true,
           organizationId: true,
+          clientSelections: true,
+          confirmedTotal: true,
         },
         with: {
           organization: { columns: { name: true, logoUrl: true } },
@@ -1498,6 +1568,8 @@ export const proposalsRouter = router({
       const groups = (proposal.travelerGroups as Array<{ count: number }>) || [];
       const travelerCount = groups.reduce((acc, g) => acc + g.count, 0);
 
+      const addOns = await loadBookingAddOns(ctx.db, proposal.id, proposal.organizationId);
+
       return {
         id: proposal.id,
         title: proposal.tourTitle || proposal.name,
@@ -1510,6 +1582,11 @@ export const proposalsRouter = router({
           ? { name: proposal.organization.name, logoUrl: proposal.organization.logoUrl }
           : null,
         paymentMethods: methods,
+        addOns,
+        // What a returning client picked last time, so the page rehydrates
+        // their choices instead of resetting to the bare itinerary.
+        selections: parseSelections(proposal.clientSelections),
+        confirmedTotal: proposal.confirmedTotal == null ? null : Number(proposal.confirmedTotal),
       };
     }),
 
@@ -1670,6 +1747,8 @@ export const proposalsRouter = router({
               moment: activity.moment,
               time: activity.time || null,
               isOptional: activity.isOptional,
+              price: activity.price,
+              priceUnit: activity.priceUnit,
               imageUrl: activity.imageUrl,
             });
           }

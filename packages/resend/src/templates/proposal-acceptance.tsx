@@ -7,6 +7,15 @@ interface ProposalAcceptanceEmailProps {
   startDate?: string;
   duration?: string;
   totalPrice?: string;
+  /** Itinerary price before the client's add-on selections. */
+  baseTotal?: string;
+  /** What the client opted into on the booking page. */
+  addOns?: Array<{
+    label: string;
+    detail: string | null;
+    amount: string;
+    needsReview: boolean;
+  }>;
   acceptedAt: string;
 }
 
@@ -32,8 +41,46 @@ export function renderProposalAcceptanceEmail(props: ProposalAcceptanceEmailProp
     startDate,
     duration,
     totalPrice,
+    baseTotal,
+    addOns,
     acceptedAt,
   } = props;
+
+  const addOnRows = (addOns ?? [])
+    .map(
+      (a) => `
+      <tr>
+        <td style="padding: 8px 0; font-size: 14px; color: #333; border-bottom: 1px solid #f0f0f0;">
+          ${a.needsReview ? '<span style="color:#b45309; font-weight:600;">&#9888; </span>' : ''}${escapeHtml(a.label)}
+          ${a.detail ? `<span style="color:#888; font-size:12px;"> (${escapeHtml(a.detail)})</span>` : ''}
+        </td>
+        <td style="padding: 8px 0; font-size: 14px; color: #333; text-align: right; white-space: nowrap; border-bottom: 1px solid #f0f0f0;">
+          ${escapeHtml(a.amount)}
+        </td>
+      </tr>`,
+    )
+    .join('');
+
+  const needsReview = (addOns ?? []).some((a) => a.needsReview);
+
+  const addOnsBlock = addOnRows
+    ? `
+    <div style="background-color: #f8f9fa; border: 1px solid #e5e7eb; border-radius: 8px; padding: 20px; margin-bottom: 25px;">
+      <h2 style="margin: 0 0 12px 0; font-size: 16px; color: #1a1a1a;">Client add-ons</h2>
+      <table style="width: 100%; border-collapse: collapse;">
+        ${baseTotal ? `<tr><td style="padding: 8px 0; font-size: 14px; color: #666; border-bottom: 1px solid #f0f0f0;">Itinerary as quoted</td><td style="padding: 8px 0; font-size: 14px; color: #666; text-align: right; border-bottom: 1px solid #f0f0f0;">${escapeHtml(baseTotal)}</td></tr>` : ''}
+        ${addOnRows}
+        ${totalPrice ? `<tr><td style="padding: 10px 0 0 0; font-size: 15px; font-weight: 600; color: #1a1a1a;">New total</td><td style="padding: 10px 0 0 0; font-size: 15px; font-weight: 600; color: #1a1a1a; text-align: right;">${escapeHtml(totalPrice)}</td></tr>` : ''}
+      </table>
+      ${
+        needsReview
+          ? `<p style="margin: 14px 0 0 0; font-size: 13px; color: #854d0e; background-color: #fffbeb; border: 1px solid #fcd34d; border-radius: 6px; padding: 10px;">
+               &#9888; Flagged items need your confirmation. Lodge changes are not availability-checked, and items marked "On request" have no price set yet. Confirm both with the client before taking payment.
+             </p>`
+          : ''
+      }
+    </div>`
+    : '';
 
   return `
 <!DOCTYPE html>
@@ -77,6 +124,8 @@ export function renderProposalAcceptanceEmail(props: ProposalAcceptanceEmailProp
       ${duration ? `<p style="margin: 5px 0; font-size: 14px; color: #666666;"><strong>Duration:</strong> ${escapeHtml(duration)}</p>` : ''}
       ${totalPrice ? `<p style="margin: 5px 0; font-size: 14px; color: #666666;"><strong>Total Price:</strong> ${escapeHtml(totalPrice)}</p>` : ''}
     </div>
+
+    ${addOnsBlock}
 
     <p style="font-size: 16px; margin-bottom: 25px;">
       The client has confirmed they want to proceed with this trip. You can now begin the booking process and reach out to finalize the details.

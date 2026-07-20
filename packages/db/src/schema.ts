@@ -851,6 +851,16 @@ export const proposals = pgTable('proposals', {
   }),
   organizationId: uuid('organization_id').references(() => organizations.id),
   status: ProposalStatus('status').default('draft').notNull(),
+  // ----- Client add-on selections (booking page) -----
+  // What the client opted into on /proposal/[id]/book. Written by the public
+  // `confirm` mutation; the server recomputes the total from these rather than
+  // trusting any figure the browser sends. See ClientSelections.
+  clientSelections: jsonb('client_selections').$type<ClientSelections>(),
+  // The total quoted at the moment the client confirmed, and when. Snapshotted
+  // because nothing prevents the operator editing the proposal afterwards, so
+  // recomputing later would not reproduce what the client actually agreed to.
+  confirmedTotal: numeric('confirmed_total', { precision: 12, scale: 2 }),
+  confirmedAt: timestamp('confirmed_at', { precision: 3, mode: 'string' }),
   createdAt: timestamp('created_at', { precision: 3, mode: 'string' })
     .default(sql`CURRENT_TIMESTAMP`)
     .notNull(),
@@ -858,6 +868,16 @@ export const proposals = pgTable('proposals', {
     .default(sql`CURRENT_TIMESTAMP`)
     .notNull(),
 });
+
+// What the client picked on the booking page. Ids reference, respectively,
+// proposal_activities.id, proposalDays.alternatives[].id keyed by day id, and
+// proposals.extras[].id. Absent day key = client kept the primary lodge.
+export interface ClientSelections {
+  activityIds: string[];
+  /** proposalDay.id -> chosen alternative id */
+  alternativeByDayId: Record<string, string>;
+  extraIds: string[];
+}
 
 // A file the operator attached to the share email. Stored denormalized as JSON
 // on the proposal (only ever read/written as a whole list). `key` is the R2
@@ -905,6 +925,12 @@ export interface AlternativeAccommodation {
   mealOptions?: string[];
   additionalPrice?: number | null;
   priceUnitLabel?: string | null;
+  // How `additionalPrice` scales when the client picks this lodge on the
+  // booking page. An alternative covers a single night, so "per night" is the
+  // flat case. Absent on rows saved before the booking page could reprice;
+  // those fall back to 'flat' and keep showing `priceUnitLabel` verbatim so the
+  // client sees exactly what the operator wrote.
+  priceBasis?: 'flat' | 'per_person';
   hideInQuote?: boolean;
   // Resolved public image URLs for the lodge. Not persisted (kept out of the
   // stored JSON); injected at read time so the client proposal can show photos.
@@ -947,6 +973,12 @@ export const proposalActivities = pgTable('proposal_activities', {
   moment: text('moment').notNull(), // 'Morning', 'Afternoon', 'Evening', 'Half Day', 'Full Day', 'Night'
   time: text('time'), // Exact start time e.g. "08:00", "14:30"
   isOptional: boolean('is_optional').default(false).notNull(),
+  // Price for optional activities only. The pricing engine excludes optional
+  // activities from the quoted cost, so this is the only place their price
+  // lives. Null = operator never set one; the booking page then offers it as
+  // "on request" instead of pricing it. Ignored for non-optional activities.
+  price: numeric('price', { precision: 12, scale: 2 }),
+  priceUnit: text('price_unit').$type<'per_person' | 'per_group'>(),
   imageUrl: text('image_url'),
   createdAt: timestamp('created_at', { precision: 3, mode: 'string' })
     .default(sql`CURRENT_TIMESTAMP`)

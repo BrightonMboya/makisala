@@ -1,9 +1,18 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { CheckCircle2 } from 'lucide-react';
 import { trpc } from '@/lib/trpc';
 import { PaymentInstructions, type PaymentMethod } from '@/components/proposal/PaymentInstructions';
+import {
+  computeBookingTotal,
+  formatDelta,
+  hasAddOns,
+  isSelectionEmpty,
+  type AlternativeOffer,
+  type BookingAddOns,
+  type Selections,
+} from '@/lib/booking-addons';
 
 type Props = {
   proposalId: string;
@@ -16,6 +25,11 @@ type Props = {
   paymentMethods: PaymentMethod[];
   /** Proposal already confirmed on a previous visit. */
   alreadyConfirmed: boolean;
+  addOns: BookingAddOns;
+  /** Selections restored from a previous visit. */
+  initialSelections: Selections;
+  /** Total agreed at confirm time, if already confirmed. */
+  confirmedTotal: number | null;
 };
 
 function formatDate(value: string | null): string | null {
@@ -25,10 +39,34 @@ function formatDate(value: string | null): string | null {
   return d.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
 }
 
+function money(n: number): string {
+  return `$${Math.round(n).toLocaleString()}`;
+}
+
+/** Alternatives grouped into the night they belong to, so each night renders as
+ *  one either/or choice rather than a flat list of unrelated lodges. */
+function groupByDay(alternatives: AlternativeOffer[]) {
+  const map = new Map<string, { dayId: string; dayNumber: number; primaryName: string | null; options: AlternativeOffer[] }>();
+  for (const alt of alternatives) {
+    const entry = map.get(alt.dayId) ?? {
+      dayId: alt.dayId,
+      dayNumber: alt.dayNumber,
+      primaryName: alt.primaryName,
+      options: [],
+    };
+    entry.options.push(alt);
+    map.set(alt.dayId, entry);
+  }
+  return [...map.values()].sort((a, b) => a.dayNumber - b.dayNumber);
+}
+
 /**
  * Standalone booking surface reached from a proposal's "Confirm Proposal" CTA
- * (web page and downloaded PDF both link here). Payment details are shown
- * directly. Confirming notifies the operator and marks the proposal
+ * (web page and downloaded PDF both link here). The client can opt into the
+ * optional activities, alternative lodges, and extras the operator offered on
+ * the proposal; the total reprices live. The server recomputes that total from
+ * its own copy of the prices at confirm time, so this arithmetic is for display
+ * only. Confirming notifies the operator and marks the proposal
  * awaiting_payment; the payment details stay visible afterwards.
  */
 export function BookingConfirm({
@@ -41,18 +79,59 @@ export function BookingConfirm({
   organization,
   paymentMethods,
   alreadyConfirmed,
+  addOns,
+  initialSelections,
+  confirmedTotal,
 }: Props) {
   const [name, setName] = useState(clientName || '');
   const [confirmed, setConfirmed] = useState(alreadyConfirmed);
   const [error, setError] = useState('');
+  const [selections, setSelections] = useState<Selections>(initialSelections);
 
   const confirmMutation = trpc.proposals.confirm.useMutation();
+
+  const baseTotal = totalPrice ?? 0;
+  const { lines, addOnTotal, total } = useMemo(
+    () => computeBookingTotal(baseTotal, addOns, selections, travelerCount),
+    [baseTotal, addOns, selections, travelerCount],
+  );
+
+  const showCustomizer = !confirmed && hasAddOns(addOns);
+  const altGroups = useMemo(() => groupByDay(addOns.alternatives), [addOns.alternatives]);
+  const displayTotal = confirmed && confirmedTotal != null ? confirmedTotal : total;
+
+  const toggleActivity = (id: string) =>
+    setSelections((s) => ({
+      ...s,
+      activityIds: s.activityIds.includes(id)
+        ? s.activityIds.filter((x) => x !== id)
+        : [...s.activityIds, id],
+    }));
+
+  const toggleExtra = (id: string) =>
+    setSelections((s) => ({
+      ...s,
+      extraIds: s.extraIds.includes(id) ? s.extraIds.filter((x) => x !== id) : [...s.extraIds, id],
+    }));
+
+  /** Passing null picks the primary lodge back, i.e. drops the day entirely. */
+  const chooseAlternative = (dayId: string, altId: string | null) =>
+    setSelections((s) => {
+      const next = { ...s.alternativeByDayId };
+      if (altId === null) delete next[dayId];
+      else next[dayId] = altId;
+      return { ...s, alternativeByDayId: next };
+    });
 
   const handleConfirm = async () => {
     if (!name.trim()) return;
     setError('');
     try {
-      await confirmMutation.mutateAsync({ proposalId, clientName: name.trim() });
+      await confirmMutation.mutateAsync({
+        proposalId,
+        clientName: name.trim(),
+        selections,
+      });
       setConfirmed(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong. Please try again.');
@@ -93,13 +172,253 @@ export function BookingConfirm({
             </p>
           </div>
         )}
-        {totalPrice != null && (
+        {displayTotal > 0 && (
           <div>
             <p className="text-xs tracking-wide text-stone-400 uppercase">Total</p>
-            <p className="mt-1 text-sm font-medium text-stone-800">${totalPrice.toLocaleString()}</p>
+            <p className="mt-1 text-sm font-medium text-stone-800">{money(displayTotal)}</p>
           </div>
         )}
       </div>
+
+      {showCustomizer && (
+        <div className="mb-8 space-y-6">
+          <div>
+            <h2 className="font-serif text-xl text-stone-900">Customize your trip</h2>
+            <p className="mt-1 text-sm text-stone-500">
+              Everything here is optional. Your total updates as you choose.
+            </p>
+          </div>
+
+          {/* Optional activities */}
+          {addOns.activities.length > 0 && (
+            <section className="rounded-2xl border border-stone-200 p-6">
+              <h3 className="mb-4 text-xs font-semibold tracking-wide text-stone-500 uppercase">
+                Optional activities
+              </h3>
+              <div className="space-y-3">
+                {addOns.activities.map((a) => {
+                  const checked = selections.activityIds.includes(a.id);
+                  return (
+                    <label
+                      key={a.id}
+                      className={`flex cursor-pointer items-start gap-3 rounded-xl border p-4 transition-colors ${
+                        checked ? 'border-stone-800 bg-stone-50' : 'border-stone-200 hover:border-stone-300'
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={() => toggleActivity(a.id)}
+                        className="mt-1 h-4 w-4 shrink-0 accent-stone-800"
+                      />
+                      <span className="flex-1">
+                        <span className="flex flex-wrap items-baseline justify-between gap-2">
+                          <span className="text-sm font-medium text-stone-900">{a.name}</span>
+                          <span className="text-sm font-medium text-stone-700">
+                            {a.price == null
+                              ? 'On request'
+                              : `+${money(a.price)}${a.priceUnit === 'per_person' ? ' pp' : ''}`}
+                          </span>
+                        </span>
+                        <span className="mt-0.5 block text-xs text-stone-400">Day {a.dayNumber}</span>
+                        {a.description && (
+                          <span className="mt-2 block text-sm text-stone-500">{a.description}</span>
+                        )}
+                        {a.price == null && (
+                          <span className="mt-2 block text-xs text-stone-500">
+                            We will confirm the price with you before payment.
+                          </span>
+                        )}
+                      </span>
+                    </label>
+                  );
+                })}
+              </div>
+            </section>
+          )}
+
+          {/* Alternative lodges, one either/or choice per night */}
+          {altGroups.length > 0 && (
+            <section className="rounded-2xl border border-stone-200 p-6">
+              <h3 className="mb-4 text-xs font-semibold tracking-wide text-stone-500 uppercase">
+                Alternative Accommodations
+              </h3>
+              <div className="space-y-6">
+                {altGroups.map((group) => {
+                  const chosen = selections.alternativeByDayId[group.dayId] ?? null;
+                  return (
+                    <div key={group.dayId}>
+                      <p className="mb-2 text-xs font-medium tracking-wide text-stone-400 uppercase">
+                        Day {group.dayNumber}
+                      </p>
+                      <div className="space-y-2">
+                        <label
+                          className={`flex cursor-pointer items-start gap-3 rounded-xl border p-4 transition-colors ${
+                            chosen === null ? 'border-stone-800 bg-stone-50' : 'border-stone-200 hover:border-stone-300'
+                          }`}
+                        >
+                          <input
+                            type="radio"
+                            name={`lodge-${group.dayId}`}
+                            checked={chosen === null}
+                            onChange={() => chooseAlternative(group.dayId, null)}
+                            className="mt-1 h-4 w-4 shrink-0 accent-stone-800"
+                          />
+                          <span className="flex-1">
+                            <span className="flex flex-wrap items-baseline justify-between gap-2">
+                              <span className="text-sm font-medium text-stone-900">
+                                {group.primaryName ?? 'As quoted'}
+                              </span>
+                              <span className="text-sm text-stone-400">Included</span>
+                            </span>
+                            <span className="mt-0.5 block text-xs text-stone-400">
+                              Originally quoted
+                            </span>
+                          </span>
+                        </label>
+
+                        {group.options.map((alt) => {
+                          const isChosen = chosen === alt.id;
+                          return (
+                            <label
+                              key={alt.id}
+                              className={`flex cursor-pointer items-start gap-3 rounded-xl border p-4 transition-colors ${
+                                isChosen ? 'border-stone-800 bg-stone-50' : 'border-stone-200 hover:border-stone-300'
+                              }`}
+                            >
+                              <input
+                                type="radio"
+                                name={`lodge-${group.dayId}`}
+                                checked={isChosen}
+                                onChange={() => chooseAlternative(group.dayId, alt.id)}
+                                className="mt-1 h-4 w-4 shrink-0 accent-stone-800"
+                              />
+                              {/* One thumbnail as a recognition cue only. The
+                                  full gallery lives on the proposal, which the
+                                  client has already browsed; a strip here just
+                                  adds scroll to a decision page. */}
+                              {alt.images[0] && (
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img
+                                  src={alt.images[0]}
+                                  alt=""
+                                  className="h-12 w-12 shrink-0 rounded-lg object-cover"
+                                />
+                              )}
+                              <span className="flex-1">
+                                <span className="flex flex-wrap items-baseline justify-between gap-2">
+                                  <span className="text-sm font-medium text-stone-900">{alt.name}</span>
+                                  <span className="text-sm font-medium text-stone-700">
+                                    {formatDelta(alt.additionalPrice)}
+                                    {alt.priceBasis === 'per_person' && alt.additionalPrice !== 0
+                                      ? ' pp'
+                                      : ''}
+                                  </span>
+                                </span>
+                                {(alt.rooms || alt.meals) && (
+                                  <span className="mt-0.5 block text-xs text-stone-400">
+                                    {[alt.rooms, alt.meals].filter(Boolean).join(' · ')}
+                                  </span>
+                                )}
+                                {alt.priceUnitLabel && (
+                                  <span className="mt-0.5 block text-xs text-stone-400">
+                                    {alt.priceUnitLabel}
+                                  </span>
+                                )}
+                              </span>
+                            </label>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
+          )}
+
+          {/* Extras */}
+          {addOns.extras.length > 0 && (
+            <section className="rounded-2xl border border-stone-200 p-6">
+              <h3 className="mb-4 text-xs font-semibold tracking-wide text-stone-500 uppercase">
+                Extras
+              </h3>
+              <div className="space-y-3">
+                {addOns.extras.map((e) => {
+                  const checked = selections.extraIds.includes(e.id);
+                  const label =
+                    e.unit === 'free'
+                      ? 'Free'
+                      : `+${money(e.price)}${e.unit === 'per_person' ? ' pp' : ''}`;
+                  return (
+                    <label
+                      key={e.id}
+                      className={`flex cursor-pointer items-start gap-3 rounded-xl border p-4 transition-colors ${
+                        checked ? 'border-stone-800 bg-stone-50' : 'border-stone-200 hover:border-stone-300'
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={() => toggleExtra(e.id)}
+                        className="mt-1 h-4 w-4 shrink-0 accent-stone-800"
+                      />
+                      <span className="flex flex-1 flex-wrap items-baseline justify-between gap-2">
+                        <span className="text-sm font-medium text-stone-900">{e.name}</span>
+                        <span className="text-sm font-medium text-stone-700">{label}</span>
+                      </span>
+                      {e.unit === 'custom' && e.customUnitLabel && (
+                        <span className="text-xs text-stone-400">{e.customUnitLabel}</span>
+                      )}
+                    </label>
+                  );
+                })}
+              </div>
+            </section>
+          )}
+        </div>
+      )}
+
+      {/* Price breakdown: only worth showing once something has been added */}
+      {!isSelectionEmpty(selections) && lines.length > 0 && (
+        <div className="mb-8 rounded-2xl border border-stone-200 bg-stone-50 p-6">
+          <h3 className="mb-4 text-xs font-semibold tracking-wide text-stone-500 uppercase">
+            {confirmed ? 'What you booked' : 'Your total'}
+          </h3>
+          <dl className="space-y-2 text-sm">
+            <div className="flex justify-between gap-4">
+              <dt className="text-stone-600">Itinerary as quoted</dt>
+              <dd className="font-medium text-stone-800">{money(baseTotal)}</dd>
+            </div>
+            {lines.map((l) => (
+              <div key={`${l.kind}-${l.id}`} className="flex justify-between gap-4">
+                <dt className="text-stone-600">
+                  {l.label}
+                  {l.detail && <span className="ml-1 text-xs text-stone-400">({l.detail})</span>}
+                </dt>
+                <dd className="shrink-0 font-medium text-stone-800">
+                  {l.onRequest ? 'On request' : formatDelta(l.amount)}
+                </dd>
+              </div>
+            ))}
+            <div className="flex justify-between gap-4 border-t border-stone-200 pt-3">
+              <dt className="font-semibold text-stone-900">Total</dt>
+              <dd className="font-semibold text-stone-900">{money(displayTotal)}</dd>
+            </div>
+          </dl>
+          {addOnTotal !== 0 && !confirmed && (
+            <p className="mt-3 text-xs text-stone-500">
+              {formatDelta(addOnTotal)} against the original quote.
+            </p>
+          )}
+          {lines.some((l) => l.onRequest) && (
+            <p className="mt-3 text-xs text-stone-500">
+              Items marked &ldquo;on request&rdquo; are not in the total yet.{' '}
+              {organization?.name || 'The operator'} will confirm their price with you.
+            </p>
+          )}
+        </div>
+      )}
 
       {confirmed ? (
         <div className="mb-8 flex items-start gap-3 rounded-2xl border border-green-200 bg-green-50 p-5">
@@ -132,7 +451,11 @@ export function BookingConfirm({
             disabled={confirmMutation.isPending || !name.trim()}
             className="mt-4 w-full cursor-pointer rounded-lg bg-stone-800 px-6 py-3.5 text-sm font-medium tracking-wide text-white transition-colors hover:bg-stone-900 disabled:opacity-50"
           >
-            {confirmMutation.isPending ? 'Confirming...' : 'Confirm booking'}
+            {confirmMutation.isPending
+              ? 'Confirming...'
+              : displayTotal > 0
+                ? `Confirm booking · ${money(displayTotal)}`
+                : 'Confirm booking'}
           </button>
           <p className="mt-3 text-center text-xs text-stone-400">
             Confirming notifies {organization?.name || 'the operator'} that you are ready to proceed.

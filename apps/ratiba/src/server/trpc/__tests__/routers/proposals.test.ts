@@ -401,6 +401,123 @@ describe('proposals router', () => {
       ).rejects.toMatchObject({ code: 'NOT_FOUND' });
     });
 
+    test('reprices from stored data and snapshots the agreed total', async () => {
+      const { ctx, db } = createPublicContext();
+      const caller = createCaller(ctx);
+
+      db._results.set('query.proposals.findFirst', {
+        id: 'p-1',
+        name: 'Proposal',
+        tourTitle: 'Safari Trip',
+        startDate: '2024-06-01',
+        status: 'shared',
+        organizationId: 'org-1',
+        // 4 travelers at 2500 = 10000 base
+        pricingRows: [{ count: 4, unitPrice: 2500 }],
+        travelerGroups: [{ count: 4 }],
+        extras: [{ id: 'ex-1', name: 'Insurance', price: 45, priceUnit: 'per_person' }],
+        organization: { id: 'org-1', name: 'Safari Co', notificationEmail: 'notify@test.com' },
+        client: { name: 'Client', email: 'client@test.com' },
+      });
+      db._results.set('query.proposalDays.findMany', [
+        {
+          id: 'day-1',
+          dayNumber: 1,
+          alternatives: [
+            {
+              id: 'alt-1',
+              accommodation: 'acc-2',
+              accommodationName: 'Upgrade Lodge',
+              additionalPrice: 200,
+              priceBasis: 'per_person',
+            },
+          ],
+          activities: [
+            {
+              id: 'act-1',
+              name: 'Balloon safari',
+              description: null,
+              isOptional: true,
+              price: '550.00',
+              priceUnit: 'per_person',
+            },
+          ],
+          accommodations: [{ id: 'pa-1', accommodation: { name: 'Serena Lodge' } }],
+        },
+      ]);
+      db._results.set('select', [{ count: 5 }]);
+
+      const result = await caller.proposals.confirm({
+        proposalId: 'p-1',
+        clientName: 'Client',
+        selections: {
+          activityIds: ['act-1'], // 550 x 4 = 2200
+          alternativeByDayId: { 'day-1': 'alt-1' }, // 200 x 4 = 800
+          extraIds: ['ex-1'], // 45 x 4 = 180
+        },
+      });
+
+      // 10000 + 2200 + 800 + 180
+      expect(result.total).toBe(13180);
+
+      const setCall = db._calls.find(
+        (c) => c.method === 'update.set' && (c.args[0] as any)?.confirmedTotal !== undefined,
+      );
+      expect((setCall?.args[0] as any).confirmedTotal).toBe('13180.00');
+      expect((setCall?.args[0] as any).status).toBe('awaiting_payment');
+      expect((setCall?.args[0] as any).clientSelections.activityIds).toEqual(['act-1']);
+    });
+
+    test('ignores selections that do not exist on the proposal', async () => {
+      const { ctx, db } = createPublicContext();
+      const caller = createCaller(ctx);
+
+      db._results.set('query.proposals.findFirst', {
+        id: 'p-1',
+        name: 'Proposal',
+        status: 'shared',
+        organizationId: 'org-1',
+        pricingRows: [{ count: 2, unitPrice: 1000 }],
+        travelerGroups: [{ count: 2 }],
+        extras: [],
+        organization: { id: 'org-1', name: 'Safari Co', notificationEmail: 'notify@test.com' },
+        client: { name: 'Client', email: 'client@test.com' },
+      });
+      db._results.set('query.proposalDays.findMany', []);
+      db._results.set('select', [{ count: 3 }]);
+
+      const result = await caller.proposals.confirm({
+        proposalId: 'p-1',
+        clientName: 'Client',
+        selections: {
+          activityIds: ['made-up'],
+          alternativeByDayId: { 'no-such-day': 'no-such-alt' },
+          extraIds: ['nope'],
+        },
+      });
+
+      expect(result.total).toBe(2000);
+    });
+
+    test('rejects a second confirm once the booking is awaiting payment', async () => {
+      const { ctx, db } = createPublicContext();
+      const caller = createCaller(ctx);
+
+      db._results.set('query.proposals.findFirst', {
+        id: 'p-1',
+        status: 'awaiting_payment',
+        organizationId: 'org-1',
+        pricingRows: [{ count: 2, unitPrice: 500 }],
+        organization: { id: 'org-1', name: 'Safari Co', notificationEmail: 'notify@test.com' },
+        client: { name: 'Client' },
+      });
+      db._results.set('select', [{ count: 3 }]);
+
+      await expect(
+        caller.proposals.confirm({ proposalId: 'p-1', clientName: 'Client' }),
+      ).rejects.toMatchObject({ code: 'CONFLICT' });
+    });
+
     test('throws BAD_REQUEST when no notification email', async () => {
       const { ctx, db } = createPublicContext();
       const caller = createCaller(ctx);
