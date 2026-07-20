@@ -1136,7 +1136,7 @@ export const proposalsRouter = router({
                 location: activity.location || null,
                 fromLocation: activity.fromLocation || null,
                 toLocation: activity.toLocation || null,
-                moment: activity.moment || 'Full Day',
+                moment: activity.moment || '',
                 time: activity.startTime || null,
                 isOptional: activity.isOptional || false,
                 imageUrl: activity.imageUrl || null,

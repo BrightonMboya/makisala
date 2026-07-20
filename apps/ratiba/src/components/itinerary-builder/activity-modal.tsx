@@ -222,7 +222,7 @@ export function ActivityModal({
       id: Math.random().toString(36).substr(2, 9),
       name: '',
       location: '',
-      moment: 'Morning',
+      moment: '',
       isOptional: false,
       description: '',
       imageUrl: '',
