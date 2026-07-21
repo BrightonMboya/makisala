@@ -82,25 +82,35 @@ describe('tours router', () => {
   });
 
   describe('getDetails', () => {
-    test('returns formatted tour details (public)', async () => {
-      const { ctx, db } = createPublicContext();
+    const mockTour = (organizationId: string | null) => ({
+      id: 't-1',
+      organizationId,
+      pricing: '$500',
+      country: 'Tanzania',
+      days: [
+        {
+          id: 'd-1',
+          dayNumber: 1,
+          national_park_id: 'park-1',
+          itineraryAccommodations: [{ accommodation: { id: 'acc-1' } }],
+        },
+      ],
+    });
+
+    test('requires authentication', async () => {
+      const { ctx } = createPublicContext();
       const caller = createCaller(ctx);
 
-      db._results.set('query.tours.findFirst', {
-        id: 't-1',
-        pricing: '$500',
-        country: 'Tanzania',
-        days: [
-          {
-            id: 'd-1',
-            dayNumber: 1,
-            national_park_id: 'park-1',
-            itineraryAccommodations: [
-              { accommodation: { id: 'acc-1' } },
-            ],
-          },
-        ],
+      await expect(caller.tours.getDetails({ id: 't-1' })).rejects.toMatchObject({
+        code: 'UNAUTHORIZED',
       });
+    });
+
+    test('returns formatted tour details for own org', async () => {
+      const { ctx, db } = createProtectedContext();
+      const caller = createCaller(ctx);
+
+      db._results.set('query.tours.findFirst', mockTour('org-1'));
 
       const result = await caller.tours.getDetails({ id: 't-1' });
       expect(result).not.toBeNull();
@@ -111,8 +121,29 @@ describe('tours router', () => {
       expect(result!.days[0]!.accommodation).toBe('acc-1');
     });
 
+    test('returns details for a global (org-NULL) template', async () => {
+      const { ctx, db } = createProtectedContext();
+      const caller = createCaller(ctx);
+
+      db._results.set('query.tours.findFirst', mockTour(null));
+
+      const result = await caller.tours.getDetails({ id: 't-1' });
+      expect(result).not.toBeNull();
+      expect(result!.days).toHaveLength(1);
+    });
+
+    test('returns null for a tour owned by another org', async () => {
+      const { ctx, db } = createProtectedContext();
+      const caller = createCaller(ctx);
+
+      db._results.set('query.tours.findFirst', mockTour('other-org'));
+
+      const result = await caller.tours.getDetails({ id: 't-1' });
+      expect(result).toBeNull();
+    });
+
     test('returns null when tour not found', async () => {
-      const { ctx, db } = createPublicContext();
+      const { ctx, db } = createProtectedContext();
       const caller = createCaller(ctx);
 
       db._results.set('query.tours.findFirst', undefined);

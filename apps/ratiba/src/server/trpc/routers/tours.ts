@@ -58,7 +58,7 @@ export const toursRouter = router({
       return tour;
     }),
 
-  getDetails: publicProcedure
+  getDetails: protectedProcedure
     .input(z.object({ id: z.string() }))
     .query(async ({ ctx, input }) => {
       const tour = await ctx.db.query.tours.findFirst({
@@ -75,7 +75,12 @@ export const toursRouter = router({
         },
       });
 
-      if (!tour) return null;
+      // Only the caller's own tours or global (org-NULL) templates are
+      // readable. A tour owned by another org is treated as not found so we
+      // never leak its itinerary structure across orgs.
+      if (!tour || (tour.organizationId !== ctx.orgId && tour.organizationId !== null)) {
+        return null;
+      }
 
       return {
         tourType: 'Private Tour',

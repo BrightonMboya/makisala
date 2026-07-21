@@ -916,7 +916,19 @@ export const proposalsRouter = router({
           country: result.tour?.country || null,
         };
       }
-      return result ?? null;
+
+      // No org-scoped match. Distinguish a proposal that exists but belongs to
+      // another org (access denied -> the builder should show a not-found
+      // fallback) from an id that does not exist yet (a brand-new, not-yet-saved
+      // proposal, which must render the empty builder). Only the former throws.
+      const foreign = await ctx.db.query.proposals.findFirst({
+        where: eq(proposals.id, input.id),
+        columns: { id: true },
+      });
+      if (foreign) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Proposal not found' });
+      }
+      return null;
     }),
 
   save: protectedProcedure

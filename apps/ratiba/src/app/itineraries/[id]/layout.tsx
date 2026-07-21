@@ -360,7 +360,7 @@ function BuilderLayoutInner({ children }: { children: React.ReactNode }) {
   const isNewProposal = !id || id === 'new';
 
   // Use React Query for data fetching (cached, deduped)
-  const { proposal, tourTemplate, isLoading } = useProposalData({
+  const { proposal, tourTemplate, isLoading, notFound } = useProposalData({
     proposalId: id,
     tourId,
     isNewProposal,
@@ -514,6 +514,27 @@ function BuilderLayoutInner({ children }: { children: React.ReactNode }) {
         <div className="flex flex-col items-center gap-4">
           <div className="h-10 w-10 animate-spin rounded-full border-4 border-green-600 border-t-transparent"></div>
           <p className="text-sm font-medium text-stone-600">Loading proposal...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // The id points at a proposal that isn't ours (another org) or doesn't exist.
+  // Render a not-found message instead of a blank builder theme.
+  if (notFound) {
+    return (
+      <div className="flex h-screen flex-col items-center justify-center bg-stone-50 px-6 text-center">
+        <div className="flex max-w-md flex-col items-center gap-3">
+          <h1 className="font-serif text-2xl text-stone-800">This proposal doesn&apos;t exist</h1>
+          <p className="text-sm text-stone-600">
+            It may have been deleted, or you don&apos;t have access to it.
+          </p>
+          <Link
+            href="/dashboard"
+            className="mt-2 rounded-md bg-stone-800 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-stone-700"
+          >
+            Back to dashboard
+          </Link>
         </div>
       </div>
     );
