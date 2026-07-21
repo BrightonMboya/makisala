@@ -104,7 +104,14 @@ export type AddOnLine = {
   label: string;
   /** Unit basis shown next to the amount, e.g. "per person x 4". */
   detail: string | null;
+  /** Line total: {@link unitAmount} times {@link quantity}. */
   amount: number;
+  /** Price for a single unit before scaling (per person, or per group/night). */
+  unitAmount: number;
+  /** How many units {@link unitAmount} is charged for: the traveler count for
+   *  per-person pricing, otherwise 1. Lets an invoice show a truthful "N x unit"
+   *  instead of collapsing everything to one line. */
+  quantity: number;
   /** Operator must quote this one manually; it contributes 0 to the total. */
   onRequest: boolean;
 };
@@ -132,6 +139,8 @@ export function priceSelections(
         label: `${a.name} (Day ${a.dayNumber})`,
         detail: null,
         amount: 0,
+        unitAmount: 0,
+        quantity: 1,
         onRequest: true,
       });
       continue;
@@ -143,6 +152,8 @@ export function priceSelections(
       label: `${a.name} (Day ${a.dayNumber})`,
       detail: a.priceUnit === 'per_person' ? `per person x ${qty}` : 'per group',
       amount: money(a.price * qty),
+      unitAmount: a.price,
+      quantity: qty,
       onRequest: false,
     });
   }
@@ -157,6 +168,8 @@ export function priceSelections(
       label: `Day ${alt.dayNumber}: ${alt.name}${alt.primaryName ? ` instead of ${alt.primaryName}` : ''}`,
       detail: alt.priceUnitLabel ?? (alt.priceBasis === 'per_person' ? `per person x ${qty}` : null),
       amount: money(alt.additionalPrice * qty),
+      unitAmount: alt.additionalPrice,
+      quantity: qty,
       onRequest: false,
     });
   }
@@ -177,6 +190,8 @@ export function priceSelections(
       label: e.name,
       detail,
       amount: money(price * qty),
+      unitAmount: price,
+      quantity: qty,
       onRequest: false,
     });
   }

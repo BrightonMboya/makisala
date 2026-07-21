@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { CheckCircle2 } from 'lucide-react';
+import { CheckCircle2, FileText } from 'lucide-react';
 import { trpc } from '@/lib/trpc';
 import { PaymentInstructions, type PaymentMethod } from '@/components/proposal/PaymentInstructions';
 import {
@@ -30,6 +30,18 @@ type Props = {
   initialSelections: Selections;
   /** Total agreed at confirm time, if already confirmed. */
   confirmedTotal: number | null;
+  /** Invoice the operator has issued for this trip, if any (sent only). */
+  invoice: InvoiceSummary | null;
+};
+
+type InvoiceSummary = {
+  number: string;
+  currency: string;
+  totalCents: number;
+  amountPaidCents: number;
+  status: string;
+  dueDate: string | null;
+  shareToken: string;
 };
 
 function formatDate(value: string | null): string | null {
@@ -41,6 +53,18 @@ function formatDate(value: string | null): string | null {
 
 function money(n: number): string {
   return `$${Math.round(n).toLocaleString()}`;
+}
+
+function invoiceMoney(cents: number, currency: string): string {
+  try {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency,
+      maximumFractionDigits: 2,
+    }).format(cents / 100);
+  } catch {
+    return `${currency} ${(cents / 100).toFixed(2)}`;
+  }
 }
 
 /** Alternatives grouped into the night they belong to, so each night renders as
@@ -82,11 +106,15 @@ export function BookingConfirm({
   addOns,
   initialSelections,
   confirmedTotal,
+  invoice,
 }: Props) {
   const [name, setName] = useState(clientName || '');
   const [confirmed, setConfirmed] = useState(alreadyConfirmed);
   const [error, setError] = useState('');
   const [selections, setSelections] = useState<Selections>(initialSelections);
+  // Starts from the invoice loaded with the page (a returning, already-confirmed
+  // client); replaced by the fresh one the confirm mutation issues on this visit.
+  const [checkoutInvoice, setCheckoutInvoice] = useState<InvoiceSummary | null>(invoice);
 
   const confirmMutation = trpc.proposals.confirm.useMutation();
 
@@ -127,11 +155,12 @@ export function BookingConfirm({
     if (!name.trim()) return;
     setError('');
     try {
-      await confirmMutation.mutateAsync({
+      const result = await confirmMutation.mutateAsync({
         proposalId,
         clientName: name.trim(),
         selections,
       });
+      if (result.invoice) setCheckoutInvoice(result.invoice);
       setConfirmed(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong. Please try again.');
@@ -460,6 +489,54 @@ export function BookingConfirm({
           <p className="mt-3 text-center text-xs text-stone-400">
             Confirming notifies {organization?.name || 'the operator'} that you are ready to proceed.
           </p>
+        </div>
+      )}
+
+      {/* The traveler's invoice for this booking: their downloadable receipt,
+          reflecting the add-ons and extras they selected at checkout. */}
+      {checkoutInvoice && (
+        <div className="mb-8 rounded-2xl border border-stone-200 p-6">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div className="flex items-start gap-3">
+              <FileText className="mt-0.5 h-5 w-5 shrink-0 text-stone-400" />
+              <div>
+                <p className="text-sm font-semibold text-stone-900">
+                  Invoice {checkoutInvoice.number}
+                </p>
+                <p className="mt-0.5 text-sm text-stone-500">
+                  {checkoutInvoice.status === 'paid'
+                    ? 'Paid in full. Thank you.'
+                    : checkoutInvoice.amountPaidCents > 0 &&
+                        checkoutInvoice.amountPaidCents < checkoutInvoice.totalCents
+                      ? `Balance due ${invoiceMoney(checkoutInvoice.totalCents - checkoutInvoice.amountPaidCents, checkoutInvoice.currency)}`
+                      : `Amount due ${invoiceMoney(checkoutInvoice.totalCents, checkoutInvoice.currency)}`}
+                </p>
+              </div>
+            </div>
+            {checkoutInvoice.status === 'paid' && (
+              <span className="rounded bg-green-600 px-2 py-1 text-[10px] font-medium tracking-wide text-white uppercase">
+                Paid
+              </span>
+            )}
+          </div>
+          <div className="mt-4 flex flex-wrap gap-3">
+            <a
+              href={`/invoice/${checkoutInvoice.shareToken}`}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center rounded-lg bg-stone-800 px-4 py-2.5 text-sm font-medium tracking-wide text-white transition-colors hover:bg-stone-900"
+            >
+              View invoice
+            </a>
+            <a
+              href={`/invoice/${checkoutInvoice.shareToken}/pdf`}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center rounded-lg border border-stone-200 px-4 py-2.5 text-sm font-medium tracking-wide text-stone-700 transition-colors hover:border-stone-300"
+            >
+              Download PDF
+            </a>
+          </div>
         </div>
       )}
 

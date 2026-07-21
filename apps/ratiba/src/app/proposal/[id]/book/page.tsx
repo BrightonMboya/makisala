@@ -51,6 +51,7 @@ export default async function BookingPage({ params }: Props) {
           addOns={booking.addOns}
           initialSelections={booking.selections}
           confirmedTotal={booking.confirmedTotal}
+          invoice={booking.invoice}
         />
       </main>
     );

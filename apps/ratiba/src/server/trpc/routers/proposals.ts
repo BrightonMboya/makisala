@@ -1,3 +1,4 @@
+import { randomBytes, randomUUID } from 'crypto';
 import { z } from 'zod';
 import {
   proposals,
@@ -12,6 +13,7 @@ import {
   paymentMethods,
   accommodationImages,
   emailMessages,
+  invoices,
 } from '@repo/db/schema';
 import { recordSentEmail } from '@repo/db';
 import { and, asc, desc, eq, gte, inArray, isNull, isNotNull, lte, notInArray, or, sql, count } from 'drizzle-orm';
@@ -24,11 +26,15 @@ import { router, protectedProcedure, adminProcedure, publicProcedure, escapeLike
 import { getHiddenImageIds } from '../lib/hidden-images';
 import { loadBookingAddOns } from '../lib/booking-addons';
 import { computeBookingTotal, parseSelections, type Selections } from '@/lib/booking-addons';
+import { buildCheckoutLineItems, computeTotals } from '@/lib/invoices/seed-from-proposal';
+import { getNextInvoiceNumber } from '@/lib/invoices/numbering';
+import { getOrgPaymentMethodSnapshot } from '@/lib/invoices/payment-methods';
 import { checkFeatureAccess, getOrgPlan, ALLOWED_THEMES_BY_TIER } from '@/lib/plans';
 import { DEFAULT_DASHBOARD_STATUSES } from '@/lib/proposal-status';
 import { deriveMealPlan } from '@/lib/pricing-engine';
 import { env } from '@/lib/env';
 import { getPublicUrl } from '@/lib/storage';
+import { log, serializeError } from '@/lib/logger';
 
 /**
  * Pin a start date to noon UTC before storing so the calendar day can't drift.
@@ -1514,6 +1520,80 @@ export const proposalsRouter = router({
         })
         .where(eq(proposals.id, input.proposalId));
 
+      // Issue the traveler's invoice from exactly what they just confirmed: the
+      // base itinerary plus the add-ons they selected, priced from the same
+      // server-side read. This is their downloadable receipt (bank transfer,
+      // records). Best-effort: confirmation already succeeded above, so an
+      // invoice-numbering hiccup must not fail the booking.
+      let checkoutInvoice: {
+        number: string;
+        currency: string;
+        totalCents: number;
+        amountPaidCents: number;
+        status: string;
+        dueDate: string | null;
+        shareToken: string;
+      } | null = null;
+      try {
+        const lineItems = buildCheckoutLineItems(
+          proposal.pricingRows as Array<{ id: string; count: number; type: string; unitPrice: number }>,
+          lines,
+        );
+        const { subtotalCents, taxCents, totalCents } = computeTotals(lineItems, null);
+        const [number, paymentMethodSnapshot] = await Promise.all([
+          getNextInvoiceNumber(proposal.organization.id),
+          getOrgPaymentMethodSnapshot(ctx.db, proposal.organization.id),
+        ]);
+        const nowIso = new Date().toISOString();
+        const shareToken = randomBytes(24).toString('base64url');
+        await ctx.db.insert(invoices).values({
+          id: randomUUID(),
+          organizationId: proposal.organization.id,
+          proposalId: proposal.id,
+          clientId: proposal.client?.id ?? null,
+          number,
+          title: proposal.tourTitle || proposal.name,
+          currency: 'USD',
+          lineItems,
+          subtotalCents,
+          taxCents,
+          totalCents,
+          fromDetails: {
+            name: proposal.organization.name ?? null,
+            email: proposal.organization.notificationEmail ?? null,
+            phone: proposal.organization.phone ?? null,
+            address: proposal.organization.address ?? null,
+            taxId: proposal.organization.taxId ?? null,
+            logoUrl: proposal.organization.logoUrl ?? null,
+          },
+          toDetails: {
+            name: input.clientName || proposal.client?.name || null,
+            email: proposal.client?.email ?? null,
+            phone: proposal.client?.phone ?? null,
+          },
+          paymentMethods: paymentMethodSnapshot,
+          // Issued to the client at checkout, not an operator draft: mark it sent
+          // so the public invoice page skips its "draft preview" banner.
+          status: 'sent',
+          sentAt: nowIso,
+          shareToken,
+        });
+        checkoutInvoice = {
+          number,
+          currency: 'USD',
+          totalCents,
+          amountPaidCents: 0,
+          status: 'sent',
+          dueDate: null,
+          shareToken,
+        };
+      } catch (err) {
+        log.error('Failed to generate checkout invoice', {
+          proposalId: input.proposalId,
+          error: serializeError(err),
+        });
+      }
+
       // Return the operator's payment methods so the client can pay directly.
       // The booking page also fetches these; returning them here keeps the
       // post-confirm response self-contained.
@@ -1529,7 +1609,7 @@ export const proposalsRouter = router({
         .where(eq(paymentMethods.organizationId, proposal.organization.id))
         .orderBy(asc(paymentMethods.sortOrder), asc(paymentMethods.createdAt));
 
-      return { success: true, paymentMethods: methods, total, addOnLines: lines };
+      return { success: true, paymentMethods: methods, total, addOnLines: lines, invoice: checkoutInvoice };
     }),
 
   // Powers the standalone booking page (/proposal/[id]/book). Returns the
@@ -1582,6 +1662,36 @@ export const proposalsRouter = router({
 
       const addOns = await loadBookingAddOns(ctx.db, proposal.id, proposal.organizationId);
 
+      // On a return visit, surface the invoice already issued for this trip
+      // (the checkout invoice the client generated by confirming, or a later one
+      // the operator sent) so they can still download it. Only expose sent
+      // invoices (an unsent draft is the operator's working copy), newest first.
+      const invoiceRow = await ctx.db.query.invoices.findFirst({
+        where: and(eq(invoices.proposalId, proposal.id), isNotNull(invoices.sentAt)),
+        orderBy: desc(invoices.createdAt),
+        columns: {
+          number: true,
+          currency: true,
+          totalCents: true,
+          amountPaidCents: true,
+          status: true,
+          dueDate: true,
+          shareToken: true,
+        },
+      });
+      const invoice =
+        invoiceRow && invoiceRow.shareToken
+          ? {
+              number: invoiceRow.number,
+              currency: invoiceRow.currency,
+              totalCents: invoiceRow.totalCents,
+              amountPaidCents: invoiceRow.amountPaidCents,
+              status: invoiceRow.status,
+              dueDate: invoiceRow.dueDate,
+              shareToken: invoiceRow.shareToken,
+            }
+          : null;
+
       return {
         id: proposal.id,
         title: proposal.tourTitle || proposal.name,
@@ -1599,6 +1709,7 @@ export const proposalsRouter = router({
         // their choices instead of resetting to the bare itinerary.
         selections: parseSelections(proposal.clientSelections),
         confirmedTotal: proposal.confirmedTotal == null ? null : Number(proposal.confirmedTotal),
+        invoice,
       };
     }),
 
