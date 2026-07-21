@@ -20,8 +20,7 @@ export function useProposalData({ proposalId, tourId, isNewProposal }: UsePropos
     {
       enabled: !isNewProposal && !!proposalId,
       staleTime: staleTimes.proposals,
-      // A NOT_FOUND means the id belongs to another org (or doesn't exist);
-      // that verdict is deterministic, so don't retry it into a slow spinner.
+      // NOT_FOUND is deterministic; retrying just yields a slow spinner.
       retry: (failureCount, error) =>
         error.data?.code === 'NOT_FOUND' ? false : failureCount < 2,
     },
@@ -39,8 +38,7 @@ export function useProposalData({ proposalId, tourId, isNewProposal }: UsePropos
   // Determine loading state
   const isLoading = proposalQuery.isLoading || (!!tourId && tourQuery.isLoading);
 
-  // The requested proposal id resolves to a proposal owned by another org (or
-  // to nothing at all). The builder should render a not-found fallback rather
+  // Owned by another org, or nonexistent: render a not-found fallback rather
   // than an empty theme.
   const notFound = proposalQuery.error?.data?.code === 'NOT_FOUND';
 

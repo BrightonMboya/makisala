@@ -106,10 +106,8 @@ mock.module('@/lib/plans', () => ({
 }));
 
 // ── @repo/resend ──
-// Keep the real module (pure helpers like orgFromAddress, types) but stub every
-// send* function so no test ever hits the network. Deriving the stubs from the
-// real exports means a newly added send* is covered automatically instead of
-// silently falling through to a live send.
+// Keep the real module but stub every send* so no test hits the network.
+// Deriving stubs from the real exports covers newly added send* automatically.
 mock.module('@repo/resend', () => {
   const stubbed: Record<string, unknown> = { ...realResend };
   for (const key of Object.keys(realResend)) {
@@ -121,10 +119,8 @@ mock.module('@repo/resend', () => {
   return stubbed;
 });
 
-// ── @repo/db ──
-// Keep every real export (schema tables, recordSentEmail, member, etc. — they're
-// plain column defs / pure functions) and override only `db`, so createContext
-// in init.ts never touches a real connection. Tests inject their own db via ctx.db.
+// Keep every real export and override only `db`, so createContext never touches
+// a real connection. Tests inject their own db via ctx.db.
 mock.module('@repo/db', () => ({
   ...realDb,
   db: new Proxy(

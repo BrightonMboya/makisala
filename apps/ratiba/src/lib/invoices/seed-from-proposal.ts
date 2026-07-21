@@ -42,15 +42,12 @@ export function buildLineItemsFromProposal(proposal: ProposalSeed): InvoiceLineI
 }
 
 /**
- * Builds line items for the invoice a traveler generates by confirming their
- * booking: the base itinerary (one line per traveler group) plus only the
- * add-ons they actually selected, already priced by {@link priceSelections}.
+ * Line items for the invoice a traveler generates by confirming: the base
+ * itinerary plus only the add-ons they selected.
  *
  * Unlike {@link buildLineItemsFromProposal}, this must not pull the proposal's
- * full `extras` list. On the booking page extras are opt-in, so an invoice that
- * billed every offered extra would not match the total the client agreed to.
- * On-request add-ons carry a 0 amount and a note, matching how the booking page
- * leaves them out of the running total until the operator quotes them.
+ * full `extras` list. Extras are opt-in on the booking page, so billing every
+ * offered one would not match the total the client agreed to.
  */
 export function buildCheckoutLineItems(
   pricingRows: PricingRow[] | null | undefined,
@@ -69,12 +66,8 @@ export function buildCheckoutLineItems(
   }
 
   for (const line of addOnLines) {
-    // Lead each line with its category so the invoice reads directly
-    // ("Alternative accommodation", "Optional extra"), with the specific
-    // lodge/extra as the description beneath it. The unit basis is not printed:
-    // per-person lines carry a real quantity, so "9 x $300" already shows the
-    // scaling. (The booking page keeps the operator's free-text label; here it
-    // would only contradict the arithmetic when the two disagree.)
+    // Category leads, specifics go beneath. The free-text basis label is not
+    // printed: quantity already shows the scaling, and the two can disagree.
     const description = line.onRequest
       ? `${line.label} · Price to be confirmed by the operator`
       : line.label;

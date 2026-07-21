@@ -15,9 +15,8 @@ export type BuilderActivity = {
   moment: string;
   startTime?: string | null; // Optional exact time e.g. "08:00", "14:30"
   isOptional: boolean;
-  // Optional activities only: what it costs to add. The pricing engine leaves
-  // optional activities out of the quote, so this is their only price. Null /
-  // undefined = no price set, offered "on request" on the booking page.
+  // Optional activities only: the pricing engine leaves them out of the quote,
+  // so this is their only price. Null = offered "on request".
   price?: number | null;
   priceUnit?: 'per_person' | 'per_group' | null;
   description?: string;
@@ -54,9 +53,8 @@ export type AccommodationAlternative = {
   // --- Pricing (set on the pricing step) ---
   additionalPrice?: number | null;
   priceUnitLabel?: string | null; // free text, e.g. "per person / per night"
-  // How the delta scales if the client picks this lodge on the booking page.
-  // An alternative covers one night, so "per night" is the flat case. Legacy
-  // rows have it undefined and are treated as flat.
+  // How the delta scales. An alternative covers one night, so "per night" is
+  // the flat case. Legacy rows are undefined and treated as flat.
   priceBasis?: 'flat' | 'per_person';
   hideInQuote?: boolean; // keep it in the builder but omit from the client quote
 };

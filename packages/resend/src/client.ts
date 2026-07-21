@@ -1,12 +1,9 @@
 import { Resend } from 'resend';
 import { env } from './env';
 
-// Hard stop against sending real email from tests. The test suite mocks
-// @repo/resend, but that mock relies on a bunfig preload; when it once failed
-// to load, the acceptance-flow tests sent live mail to @test.com addresses and
-// bounced against the production sending domain. Even with the mock in place,
-// refuse to construct a live client under NODE_ENV=test so no config slip can
-// reach Resend again. Throwing on send makes the mistake loud instead of silent.
+// Hard stop against sending real email from tests. The @repo/resend mock relies
+// on a bunfig preload; when that once failed to load, tests sent live mail. This
+// refuses to construct a client under NODE_ENV=test so a slip fails loudly.
 function createResend(): Resend {
   if (process.env.NODE_ENV === 'test') {
     return new Proxy({} as Resend, {

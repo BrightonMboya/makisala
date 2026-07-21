@@ -277,12 +277,10 @@ export interface ProposalAcceptanceData {
     label: string;
     detail: string | null;
     amount: string;
-    /** Lodge swaps (no availability check exists) and unpriced items the
-     *  operator still has to quote. Flagged so they can't be missed. */
+    /** Lodge swaps (no availability check) and items still to be quoted. */
     needsReview: boolean;
   }>;
-  /** How many nights the client changed lodge on. Drives the subject-line
-   *  warning, since an unavailable lodge has to be caught before payment. */
+  /** Nights the client swapped lodge on. Drives the subject-line warning. */
   lodgeChangeCount?: number;
 }
 

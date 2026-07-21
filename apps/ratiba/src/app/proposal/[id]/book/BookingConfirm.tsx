@@ -30,7 +30,7 @@ type Props = {
   initialSelections: Selections;
   /** Total agreed at confirm time, if already confirmed. */
   confirmedTotal: number | null;
-  /** Invoice the operator has issued for this trip, if any (sent only). */
+  /** Invoice already issued for this trip, if any. */
   invoice: InvoiceSummary | null;
 };
 
@@ -67,8 +67,7 @@ function invoiceMoney(cents: number, currency: string): string {
   }
 }
 
-/** Alternatives grouped into the night they belong to, so each night renders as
- *  one either/or choice rather than a flat list of unrelated lodges. */
+/** Grouped by night so each renders as one either/or choice. */
 function groupByDay(alternatives: AlternativeOffer[]) {
   const map = new Map<string, { dayId: string; dayNumber: number; primaryName: string | null; options: AlternativeOffer[] }>();
   for (const alt of alternatives) {
@@ -85,13 +84,9 @@ function groupByDay(alternatives: AlternativeOffer[]) {
 }
 
 /**
- * Standalone booking surface reached from a proposal's "Confirm Proposal" CTA
- * (web page and downloaded PDF both link here). The client can opt into the
- * optional activities, alternative lodges, and extras the operator offered on
- * the proposal; the total reprices live. The server recomputes that total from
- * its own copy of the prices at confirm time, so this arithmetic is for display
- * only. Confirming notifies the operator and marks the proposal
- * awaiting_payment; the payment details stay visible afterwards.
+ * Booking surface reached from a proposal's "Confirm Proposal" CTA. The client
+ * opts into add-ons and the total reprices live; the server recomputes it at
+ * confirm time, so this arithmetic is display-only.
  */
 export function BookingConfirm({
   proposalId,
@@ -112,8 +107,7 @@ export function BookingConfirm({
   const [confirmed, setConfirmed] = useState(alreadyConfirmed);
   const [error, setError] = useState('');
   const [selections, setSelections] = useState<Selections>(initialSelections);
-  // Starts from the invoice loaded with the page (a returning, already-confirmed
-  // client); replaced by the fresh one the confirm mutation issues on this visit.
+  // Replaced by the fresh one the confirm mutation issues on this visit.
   const [checkoutInvoice, setCheckoutInvoice] = useState<InvoiceSummary | null>(invoice);
 
   const confirmMutation = trpc.proposals.confirm.useMutation();
@@ -171,7 +165,6 @@ export function BookingConfirm({
 
   return (
     <div className="mx-auto max-w-2xl px-6 py-16">
-      {/* Operator branding */}
       <div className="mb-10 flex flex-col items-center text-center">
         {organization?.logoUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
@@ -184,8 +177,6 @@ export function BookingConfirm({
           {confirmed ? 'Booking confirmed' : 'Complete your booking'}
         </p>
       </div>
-
-      {/* Trip summary */}
       <div className="mb-8 grid grid-cols-2 gap-x-6 gap-y-5 rounded-2xl border border-stone-200 bg-stone-50 p-6 sm:grid-cols-3">
         {dateStr && (
           <div>
@@ -217,8 +208,6 @@ export function BookingConfirm({
               Everything here is optional. Your total updates as you choose.
             </p>
           </div>
-
-          {/* Optional activities */}
           {addOns.activities.length > 0 && (
             <section className="rounded-2xl border border-stone-200 p-6">
               <h3 className="mb-4 text-xs font-semibold tracking-wide text-stone-500 uppercase">
@@ -265,8 +254,6 @@ export function BookingConfirm({
               </div>
             </section>
           )}
-
-          {/* Alternative lodges, one either/or choice per night */}
           {altGroups.length > 0 && (
             <section className="rounded-2xl border border-stone-200 p-6">
               <h3 className="mb-4 text-xs font-semibold tracking-wide text-stone-500 uppercase">
@@ -322,10 +309,8 @@ export function BookingConfirm({
                                 onChange={() => chooseAlternative(group.dayId, alt.id)}
                                 className="mt-1 h-4 w-4 shrink-0 accent-stone-800"
                               />
-                              {/* One thumbnail as a recognition cue only. The
-                                  full gallery lives on the proposal, which the
-                                  client has already browsed; a strip here just
-                                  adds scroll to a decision page. */}
+                              {/* One thumbnail as a recognition cue; the full
+                                  gallery lives on the proposal. */}
                               {alt.images[0] && (
                                 // eslint-disable-next-line @next/next/no-img-element
                                 <img
@@ -365,8 +350,6 @@ export function BookingConfirm({
               </div>
             </section>
           )}
-
-          {/* Extras */}
           {addOns.extras.length > 0 && (
             <section className="rounded-2xl border border-stone-200 p-6">
               <h3 className="mb-4 text-xs font-semibold tracking-wide text-stone-500 uppercase">
@@ -408,7 +391,7 @@ export function BookingConfirm({
         </div>
       )}
 
-      {/* Price breakdown: only worth showing once something has been added */}
+      {/* Only worth showing once something has been added. */}
       {!isSelectionEmpty(selections) && lines.length > 0 && (
         <div className="mb-8 rounded-2xl border border-stone-200 bg-stone-50 p-6">
           <h3 className="mb-4 text-xs font-semibold tracking-wide text-stone-500 uppercase">
@@ -492,8 +475,7 @@ export function BookingConfirm({
         </div>
       )}
 
-      {/* The traveler's invoice for this booking: their downloadable receipt,
-          reflecting the add-ons and extras they selected at checkout. */}
+      {/* The traveler's downloadable receipt for what they selected. */}
       {checkoutInvoice && (
         <div className="mb-8 rounded-2xl border border-stone-200 p-6">
           <div className="flex flex-wrap items-start justify-between gap-4">

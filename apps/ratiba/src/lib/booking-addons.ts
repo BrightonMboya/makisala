@@ -1,28 +1,22 @@
 /**
- * Add-ons the client can opt into on the booking page (/proposal/[id]/book):
- * optional activities, alternative lodges, and extras.
+ * Add-ons the client can opt into on the booking page (/proposal/[id]/book).
  *
- * The same functions run in the browser (for live repricing as the client
- * ticks boxes) and on the server (in proposals.confirm, which recomputes the
- * total from the stored proposal and never trusts a figure sent by the
- * browser). Keeping one implementation is the point of this file.
+ * Runs in the browser (live repricing) and on the server (proposals.confirm,
+ * which recomputes from the stored proposal and never trusts a browser figure).
  */
 
 export type AddOnUnit = 'per_person' | 'per_group';
 
-/** An optional activity offered for a given day. */
 export type ActivityOffer = {
   id: string;
   name: string;
   description: string | null;
   dayNumber: number;
-  /** Null when the operator never priced it. Selectable, but adds 0 and is
-   *  flagged on-request so the operator quotes it manually. */
+  /** Null when unpriced: selectable, but adds 0 and is flagged on-request. */
   price: number | null;
   priceUnit: AddOnUnit;
 };
 
-/** An alternative lodge offered for one night. */
 export type AlternativeOffer = {
   id: string;
   dayId: string;
@@ -36,8 +30,7 @@ export type AlternativeOffer = {
   /** Signed delta against the primary lodge: negative is cheaper. */
   additionalPrice: number;
   priceBasis: 'flat' | 'per_person';
-  /** Operator's free-text label, shown verbatim so the client sees the basis
-   *  the operator actually wrote (e.g. "per person / per night"). */
+  /** Display-only free text; priceBasis drives the arithmetic. */
   priceUnitLabel: string | null;
 };
 
@@ -57,8 +50,7 @@ export type BookingAddOns = {
 
 export type Selections = {
   activityIds: string[];
-  /** proposalDay.id -> chosen alternative id. A missing day means the client
-   *  kept the primary lodge. */
+  /** proposalDay.id -> alternative id. A missing day means the primary lodge. */
   alternativeByDayId: Record<string, string>;
   extraIds: string[];
 };
@@ -83,14 +75,13 @@ export function isSelectionEmpty(s: Selections): boolean {
   );
 }
 
-/** Money rounding. Sub-cent drift would otherwise show up as a total that
- *  differs between the page and the confirmation email. */
+/** Rounds to whole cents so the page and the confirmation email agree. */
 function money(n: number): number {
   return Math.round(n * 100) / 100;
 }
 
-/** 'custom' and 'free' extras carry a free-text unit we cannot compute with, so
- *  they are applied once. 'free' is priced at 0 upstream. */
+/** 'custom' and 'free' carry a free-text unit we cannot compute with, so they
+ *  are applied once. */
 function multiplier(
   unit: ExtraOffer['unit'] | AddOnUnit | AlternativeOffer['priceBasis'],
   travelerCount: number,
@@ -104,23 +95,19 @@ export type AddOnLine = {
   label: string;
   /** Unit basis shown next to the amount, e.g. "per person x 4". */
   detail: string | null;
-  /** Line total: {@link unitAmount} times {@link quantity}. */
+  /** unitAmount x quantity. */
   amount: number;
-  /** Price for a single unit before scaling (per person, or per group/night). */
   unitAmount: number;
-  /** How many units {@link unitAmount} is charged for: the traveler count for
-   *  per-person pricing, otherwise 1. Lets an invoice show a truthful "N x unit"
-   *  instead of collapsing everything to one line. */
+  /** Traveler count for per-person pricing, otherwise 1. */
   quantity: number;
   /** Operator must quote this one manually; it contributes 0 to the total. */
   onRequest: boolean;
 };
 
 /**
- * Prices a set of selections. Unknown ids are ignored rather than throwing:
- * the client may be holding a stale page after the operator edited the
- * proposal, and dropping the vanished option is better than failing the
- * booking outright.
+ * Unknown ids are ignored rather than throwing: the client may hold a stale
+ * page after the operator edited the proposal, and dropping the vanished
+ * option beats failing the booking.
  */
 export function priceSelections(
   addOns: BookingAddOns,
@@ -199,7 +186,6 @@ export function priceSelections(
   return { lines, addOnTotal: money(lines.reduce((acc, l) => acc + l.amount, 0)) };
 }
 
-/** Base itinerary price plus selected add-ons. */
 export function computeBookingTotal(
   baseTotal: number,
   addOns: BookingAddOns,
@@ -217,10 +203,7 @@ export function formatDelta(amount: number): string {
   return `${sign}$${Math.abs(Math.round(amount)).toLocaleString()}`;
 }
 
-/**
- * Narrows arbitrary stored JSON to a Selections. Used when reading
- * proposals.client_selections back, which may predate this shape.
- */
+/** Narrows stored client_selections JSON, which may predate this shape. */
 export function parseSelections(value: unknown): Selections {
   if (!value || typeof value !== 'object') return EMPTY_SELECTIONS;
   const v = value as Partial<Selections>;

@@ -29,12 +29,9 @@ function roomsLabel(rooms?: Array<{ roomType: string | null; pax: number }> | nu
 }
 
 /**
- * Everything the client can opt into on the booking page, for one proposal.
- *
- * Loaded on the server for both the page render and the confirm mutation, so
- * the prices the client sees and the prices the server bills against come from
- * the same read. Alternatives marked `hideInQuote` are the operator's private
- * working notes and are never offered.
+ * Loaded for both the page render and the confirm mutation, so the prices the
+ * client sees and the ones the server bills against come from the same read.
+ * Alternatives marked `hideInQuote` are private operator notes, never offered.
  */
 export async function loadBookingAddOns(
   db: typeof database,
@@ -105,9 +102,8 @@ export async function loadBookingAddOns(
     }
   }
 
-  // Alternatives are denormalized JSON with no image join, so resolve their
-  // lodge photos separately (same visibility rules as the proposal itself:
-  // curated images plus this org's own, minus anything the org hid).
+  // Alternatives are denormalized JSON with no image join, so resolve lodge
+  // photos separately, under the proposal's own visibility rules.
   const altAccIds = Array.from(
     new Set(
       days.flatMap((d) =>
@@ -151,8 +147,7 @@ export async function loadBookingAddOns(
     }
     for (const offer of alternatives) {
       const accId = accByAltId.get(offer.id);
-      // The booking page shows a single thumbnail per lodge, so there is no
-      // point shipping the rest of the gallery to the client.
+      // The page shows one thumbnail per lodge; don't ship the rest.
       offer.images = accId ? (byAcc.get(accId) ?? []).slice(0, 1) : [];
     }
   }

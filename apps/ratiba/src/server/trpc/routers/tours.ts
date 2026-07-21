@@ -75,9 +75,8 @@ export const toursRouter = router({
         },
       });
 
-      // Only the caller's own tours or global (org-NULL) templates are
-      // readable. A tour owned by another org is treated as not found so we
-      // never leak its itinerary structure across orgs.
+      // Only own tours or global (org-NULL) templates. Another org's tour is
+      // treated as not found so its itinerary never leaks across orgs.
       if (!tour || (tour.organizationId !== ctx.orgId && tour.organizationId !== null)) {
         return null;
       }
