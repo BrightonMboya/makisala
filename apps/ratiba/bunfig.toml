@@ -1,0 +1,6 @@
+[test]
+# Preload global mocks (next/headers, @repo/resend, @/lib/*, ...) before any
+# test runs. Without this, `bun test` loads the REAL modules — which once sent
+# live email from the proposal-acceptance tests to @test.com addresses and
+# triggered Resend delivery-delayed/bounce webhooks against production.
+preload = ["./src/server/trpc/__tests__/helpers/setup.ts"]

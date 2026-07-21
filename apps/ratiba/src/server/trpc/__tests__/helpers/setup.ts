@@ -3,6 +3,8 @@
  * Mocks external modules so router imports don't fail.
  */
 import { mock } from 'bun:test';
+import * as realDb from '@repo/db';
+import * as realResend from '@repo/resend';
 
 // ── next/headers ──
 mock.module('next/headers', () => ({
@@ -22,6 +24,7 @@ mock.module('@/lib/env', () => ({
     R2_BUCKET_NAME: 'test-bucket',
     R2_PUBLIC_URL: 'https://r2.test.com',
     RESEND_FROM_EMAIL: 'noreply@test.com',
+    PORTAL_ENCRYPTION_KEY: 'test-portal-encryption-key-32bytes!!',
     GOOGLE_CLIENT_ID: 'test',
     GOOGLE_CLIENT_SECRET: 'test',
     POLAR_ACCESS_TOKEN: 'test',
@@ -52,10 +55,17 @@ mock.module('@/lib/auth', () => ({
 mock.module('@/lib/storage', () => ({
   uploadToStorage: () =>
     Promise.resolve({ bucket: 'test-bucket', key: 'test-key', publicUrl: 'https://r2.test.com/test-key' }),
+  uploadPdfToStorage: () =>
+    Promise.resolve({ bucket: 'test-bucket', key: 'test-key.pdf', publicUrl: 'https://r2.test.com/test-key.pdf' }),
+  putPdfObject: () => Promise.resolve(),
+  getPdfObject: () => Promise.resolve(Buffer.from('pdf')),
+  getSignedUploadUrl: () => Promise.resolve('https://r2.test.com/signed-upload'),
+  getSignedDownloadUrl: () => Promise.resolve('https://r2.test.com/signed-download'),
   deleteFromStorage: () => Promise.resolve(),
   listStorageFolders: () => Promise.resolve([]),
   listStorageImages: () => Promise.resolve([]),
   getPublicUrl: (bucket: string, key: string) => `https://r2.test.com/${key}`,
+  ALLOWED_UPLOAD_CONTENT_TYPES: ['image/jpeg', 'image/png', 'image/webp'],
   r2: {},
 }));
 
@@ -96,33 +106,33 @@ mock.module('@/lib/plans', () => ({
 }));
 
 // ── @repo/resend ──
-mock.module('@repo/resend', () => ({
-  sendCommentNotificationEmail: () => Promise.resolve({ success: true }),
-  sendProposalShareEmail: () => Promise.resolve({ success: true }),
-  sendProposalAcceptanceEmail: () => Promise.resolve({ success: true }),
-  sendTeamInvitationEmail: () => Promise.resolve({ success: true }),
-  sendEmailVerificationEmail: () => Promise.resolve({ success: true }),
-  sendNoteMentionEmail: () => Promise.resolve({ success: true }),
-  sendInquiryNotificationEmail: () => Promise.resolve({ success: true }),
-  sendDemoRequestEmail: () => Promise.resolve({ success: true }),
-  sendPaymentDetailsChangeRequestEmail: () => Promise.resolve({ success: true }),
-  env: {},
-  resend: {},
-  orgFromAddress: () => 'noreply@test.com',
-  platformFromAddress: () => 'noreply@test.com',
-}));
+// Keep the real module (pure helpers like orgFromAddress, types) but stub every
+// send* function so no test ever hits the network. Deriving the stubs from the
+// real exports means a newly added send* is covered automatically instead of
+// silently falling through to a live send.
+mock.module('@repo/resend', () => {
+  const stubbed: Record<string, unknown> = { ...realResend };
+  for (const key of Object.keys(realResend)) {
+    if (key.startsWith('send')) {
+      stubbed[key] = () => Promise.resolve({ success: true });
+    }
+  }
+  stubbed.resend = {};
+  return stubbed;
+});
 
-// ── @repo/db ── (only the db export used by init.ts)
-mock.module('@repo/db', () => {
-  // Provide a minimal db stub for createContext; tests inject their own mock via ctx.db
-  return {
-    db: new Proxy({}, {
+// ── @repo/db ──
+// Keep every real export (schema tables, recordSentEmail, member, etc. — they're
+// plain column defs / pure functions) and override only `db`, so createContext
+// in init.ts never touches a real connection. Tests inject their own db via ctx.db.
+mock.module('@repo/db', () => ({
+  ...realDb,
+  db: new Proxy(
+    {},
+    {
       get() {
         return () => new Proxy({}, { get() { return () => ({}); } });
       },
-    }),
-    // Re-export schema tables as empty stubs — the real schema tables
-    // are imported from @repo/db/schema which doesn't need mocking
-    // (they're just column definitions, not runtime dependencies)
-  };
-});
+    },
+  ),
+}));
