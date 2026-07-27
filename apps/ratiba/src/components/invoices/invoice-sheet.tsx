@@ -7,7 +7,7 @@ import { useCallback } from 'react';
 import { trpc } from '@/lib/trpc';
 import { InvoiceForm } from './invoice-form';
 
-export function InvoiceSheet({ proposalId }: { proposalId: string }) {
+export function InvoiceSheet({ proposalId }: { proposalId: string | null }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const invoiceId = searchParams.get('invoiceId');
@@ -50,7 +50,7 @@ function SheetBody({
   onSent,
 }: {
   invoiceId: string;
-  proposalId: string;
+  proposalId: string | null;
   onSent: () => void;
 }) {
   const { data: invoice, isLoading } = trpc.invoices.getById.useQuery({ id: invoiceId });

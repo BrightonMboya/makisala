@@ -6,6 +6,7 @@ import { useState } from 'react';
 import {
   Calculator,
   ClipboardList,
+  FileText,
   LayoutDashboard,
   Library,
   LogOut,
@@ -97,6 +98,12 @@ export function AppSidebar({ serverData }: { serverData?: SidebarServerData | nu
       label: 'Client Portals',
       href: '/portals',
       active: pathname?.startsWith('/portals'),
+    },
+    {
+      icon: FileText,
+      label: 'Invoices',
+      href: '/invoices',
+      active: pathname?.startsWith('/invoices'),
     },
     {
       icon: Calculator,

@@ -40,7 +40,7 @@ function buildDefaults(invoice: Invoice): InvoiceFormValues {
 
 interface InvoiceFormProps {
   invoice: Invoice;
-  proposalId: string;
+  proposalId: string | null;
   onSent?: () => void;
 }
 
@@ -61,7 +61,8 @@ export function InvoiceForm({ invoice, proposalId, onSent }: InvoiceFormProps) {
     onMutate: () => setIsSaving(true),
     onSuccess: () => {
       void utils.invoices.getById.invalidate({ id: invoice.id });
-      void utils.invoices.listForProposal.invalidate({ proposalId });
+      if (proposalId) void utils.invoices.listForProposal.invalidate({ proposalId });
+      void utils.invoices.listAll.invalidate();
     },
     onError: (error) => {
       toast({
@@ -76,7 +77,8 @@ export function InvoiceForm({ invoice, proposalId, onSent }: InvoiceFormProps) {
   const sendMutation = trpc.invoices.send.useMutation({
     onSuccess: () => {
       void utils.invoices.getById.invalidate({ id: invoice.id });
-      void utils.invoices.listForProposal.invalidate({ proposalId });
+      if (proposalId) void utils.invoices.listForProposal.invalidate({ proposalId });
+      void utils.invoices.listAll.invalidate();
       toast({
         title: 'Invoice sent',
         description: 'Client received the invoice with a PDF attachment.',
@@ -95,7 +97,8 @@ export function InvoiceForm({ invoice, proposalId, onSent }: InvoiceFormProps) {
   const setPaidMutation = trpc.invoices.setPaid.useMutation({
     onSuccess: (updated) => {
       void utils.invoices.getById.invalidate({ id: invoice.id });
-      void utils.invoices.listForProposal.invalidate({ proposalId });
+      if (proposalId) void utils.invoices.listForProposal.invalidate({ proposalId });
+      void utils.invoices.listAll.invalidate();
       toast({
         title: updated?.status === 'paid' ? 'Marked as paid' : 'Marked as unpaid',
       });

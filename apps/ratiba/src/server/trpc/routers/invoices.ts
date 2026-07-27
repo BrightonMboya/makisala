@@ -1,12 +1,12 @@
 import { randomBytes, randomUUID } from 'crypto';
 import { z } from 'zod';
-import { and, desc, eq } from 'drizzle-orm';
+import { and, desc, eq, ilike, or } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
-import { invoices, proposals } from '@repo/db/schema';
+import { invoices, proposals, clients } from '@repo/db/schema';
 import type { Invoice, InvoiceLineItem, InvoicePartyDetails } from '@repo/db/schema';
 import { sendInvoiceShareEmail } from '@repo/resend';
 import { recordSentEmail } from '@repo/db';
-import { router, protectedProcedure, publicProcedure } from '../init';
+import { router, protectedProcedure, publicProcedure, escapeLikeQuery } from '../init';
 import { getNextInvoiceNumber } from '@/lib/invoices/numbering';
 import { buildLineItemsFromProposal, computeTotals } from '@/lib/invoices/seed-from-proposal';
 import {
@@ -50,6 +50,63 @@ async function loadOwnedInvoice(
 }
 
 export const invoicesRouter = router({
+  listAll: protectedProcedure
+    .input(
+      z
+        .object({
+          query: z.string().max(100).optional(),
+          page: z.number().int().positive().default(1),
+          limit: z.number().int().positive().max(100).default(20),
+        })
+        .optional(),
+    )
+    .query(async ({ ctx, input }) => {
+      const page = input?.page ?? 1;
+      const limit = input?.limit ?? 20;
+      const offset = (page - 1) * limit;
+
+      const conditions = [eq(invoices.organizationId, ctx.orgId)];
+
+      const query = input?.query?.trim();
+      if (query && query.length >= 2) {
+        const pattern = `%${escapeLikeQuery(query)}%`;
+        const searchCondition = or(
+          ilike(invoices.number, pattern),
+          ilike(invoices.title, pattern),
+          ilike(proposals.tourTitle, pattern),
+          ilike(proposals.name, pattern),
+          ilike(clients.name, pattern),
+        );
+        if (searchCondition) conditions.push(searchCondition);
+      }
+
+      const rows = await ctx.db
+        .select({
+          invoice: invoices,
+          proposal: { id: proposals.id, tourTitle: proposals.tourTitle, name: proposals.name },
+          client: { id: clients.id, name: clients.name },
+        })
+        .from(invoices)
+        .leftJoin(proposals, eq(invoices.proposalId, proposals.id))
+        .leftJoin(clients, eq(invoices.clientId, clients.id))
+        .where(and(...conditions))
+        .orderBy(desc(invoices.createdAt))
+        .limit(limit + 1)
+        .offset(offset);
+
+      const hasNextPage = rows.length > limit;
+      const pageRows = hasNextPage ? rows.slice(0, limit) : rows;
+
+      return {
+        invoices: pageRows.map((row) => ({
+          ...row.invoice,
+          proposal: row.proposal?.id ? row.proposal : null,
+          client: row.client?.id ? row.client : null,
+        })),
+        pagination: { page, limit, hasNextPage },
+      };
+    }),
+
   listForProposal: protectedProcedure
     .input(z.object({ proposalId: z.string() }))
     .query(async ({ ctx, input }) => {
