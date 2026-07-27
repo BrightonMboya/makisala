@@ -17,6 +17,8 @@ export type ActivityOffer = {
   priceUnit: AddOnUnit;
 };
 
+export type AlternativeBasis = 'flat' | 'per_person' | 'per_room';
+
 export type AlternativeOffer = {
   id: string;
   dayId: string;
@@ -29,9 +31,14 @@ export type AlternativeOffer = {
   images: string[];
   /** Signed delta against the primary lodge: negative is cheaper. */
   additionalPrice: number;
-  priceBasis: 'flat' | 'per_person';
-  /** Display-only free text; priceBasis drives the arithmetic. */
-  priceUnitLabel: string | null;
+  /**
+   * Sole input to both the arithmetic and the unit shown to the client. There
+   * is deliberately no free-text unit alongside it: the two used to be able to
+   * disagree, and the client reads the text while the invoice bills the basis.
+   */
+  priceBasis: AlternativeBasis;
+  /** Rooms in this alternative, the multiplier for `per_room`. */
+  roomCount: number;
 };
 
 export type ExtraOffer = {
@@ -83,10 +90,27 @@ function money(n: number): number {
 /** 'custom' and 'free' carry a free-text unit we cannot compute with, so they
  *  are applied once. */
 function multiplier(
-  unit: ExtraOffer['unit'] | AddOnUnit | AlternativeOffer['priceBasis'],
+  unit: ExtraOffer['unit'] | AddOnUnit | AlternativeBasis,
   travelerCount: number,
+  roomCount = 1,
 ): number {
-  return unit === 'per_person' ? Math.max(1, travelerCount) : 1;
+  if (unit === 'per_person') return Math.max(1, travelerCount);
+  if (unit === 'per_room') return Math.max(1, roomCount);
+  return 1;
+}
+
+/** The unit shown beside an alternative's amount. Derived, never free text. */
+export function basisLabel(basis: AlternativeBasis, quantity: number): string | null {
+  if (basis === 'per_person') return `per person x ${quantity}`;
+  if (basis === 'per_room') return `per room x ${quantity}`;
+  return null;
+}
+
+/** Short form for the offer list, e.g. "+$450 per person". */
+export function basisSuffix(basis: AlternativeBasis): string {
+  if (basis === 'per_person') return ' per person';
+  if (basis === 'per_room') return ' per room';
+  return '';
 }
 
 export type AddOnLine = {
@@ -148,12 +172,12 @@ export function priceSelections(
   for (const [dayId, altId] of Object.entries(selections.alternativeByDayId)) {
     const alt = addOns.alternatives.find((x) => x.dayId === dayId && x.id === altId);
     if (!alt) continue;
-    const qty = multiplier(alt.priceBasis, travelerCount);
+    const qty = multiplier(alt.priceBasis, travelerCount, alt.roomCount);
     lines.push({
       kind: 'alternative',
       id: alt.id,
       label: `Day ${alt.dayNumber}: ${alt.name}${alt.primaryName ? ` instead of ${alt.primaryName}` : ''}`,
-      detail: alt.priceUnitLabel ?? (alt.priceBasis === 'per_person' ? `per person x ${qty}` : null),
+      detail: basisLabel(alt.priceBasis, qty),
       amount: money(alt.additionalPrice * qty),
       unitAmount: alt.additionalPrice,
       quantity: qty,
@@ -203,12 +227,27 @@ export function formatDelta(amount: number): string {
   return `${sign}$${Math.abs(Math.round(amount)).toLocaleString()}`;
 }
 
+/** What a priced line reads as in the summary. Zero-cost extras are free, not
+ *  "no change" — that phrasing only makes sense for a lodge swap. */
+export function formatLineAmount(line: AddOnLine): string {
+  if (line.onRequest) return 'On request';
+  if (line.amount === 0 && line.kind !== 'alternative') return 'Free';
+  return formatDelta(line.amount);
+}
+
+/** Ids repeated in one list would price and invoice the same option twice, so
+ *  every list is deduped before it reaches the arithmetic. */
+function uniqueStrings(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return [...new Set(value.filter((x): x is string => typeof x === 'string'))];
+}
+
 /** Narrows stored client_selections JSON, which may predate this shape. */
 export function parseSelections(value: unknown): Selections {
   if (!value || typeof value !== 'object') return EMPTY_SELECTIONS;
   const v = value as Partial<Selections>;
   return {
-    activityIds: Array.isArray(v.activityIds) ? v.activityIds.filter((x) => typeof x === 'string') : [],
+    activityIds: uniqueStrings(v.activityIds),
     alternativeByDayId:
       v.alternativeByDayId && typeof v.alternativeByDayId === 'object'
         ? Object.fromEntries(
@@ -217,6 +256,6 @@ export function parseSelections(value: unknown): Selections {
             ),
           )
         : {},
-    extraIds: Array.isArray(v.extraIds) ? v.extraIds.filter((x) => typeof x === 'string') : [],
+    extraIds: uniqueStrings(v.extraIds),
   };
 }

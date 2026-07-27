@@ -52,10 +52,11 @@ export type AccommodationAlternative = {
   images?: string[] | null;
   // --- Pricing (set on the pricing step) ---
   additionalPrice?: number | null;
-  priceUnitLabel?: string | null; // free text, e.g. "per person / per night"
+  /** @deprecated Superseded by priceBasis, which drives both label and price. */
+  priceUnitLabel?: string | null;
   // How the delta scales. An alternative covers one night, so "per night" is
-  // the flat case. Legacy rows are undefined and treated as flat.
-  priceBasis?: 'flat' | 'per_person';
+  // the flat case; `rooms` gives the count for "per_room".
+  priceBasis?: 'flat' | 'per_person' | 'per_room';
   hideInQuote?: boolean; // keep it in the builder but omit from the client quote
 };
 

@@ -34,14 +34,26 @@ function mealSummaryText(meals: AccommodationAlternative['meals']): string | und
   return parts.length > 0 ? (parts.join(', ') as string) : undefined;
 }
 
-/** Signed, formatted price delta, e.g. "−$200 per person / per night" or "+$150". */
+/**
+ * Signed, formatted price delta, e.g. "−$200 per person" or "+$150".
+ *
+ * The unit comes from `priceBasis`, the same field the booking page bills on,
+ * so the proposal and the checkout can never quote different units for the
+ * same lodge. The old free-text `priceUnitLabel` is deliberately ignored: it
+ * was display-only and routinely disagreed with what was charged.
+ */
 function priceDeltaLabel(alt: AccommodationAlternative): string | undefined {
   const amount = alt.additionalPrice;
   if (amount == null || amount === 0) return undefined;
   const sign = amount < 0 ? '−' : '+'; // real minus sign for display
   const abs = Math.abs(amount);
-  const unit = alt.priceUnitLabel?.trim();
-  return `${sign}$${abs.toLocaleString()}${unit ? ` ${unit}` : ''}`;
+  const unit =
+    alt.priceBasis === 'per_person'
+      ? ' per person'
+      : alt.priceBasis === 'per_room'
+        ? ' per room'
+        : '';
+  return `${sign}$${abs.toLocaleString()}${unit}`;
 }
 
 /**

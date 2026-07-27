@@ -578,13 +578,16 @@ function SortableActivityRow({
                   min={0}
                   step="0.01"
                   value={activity.price ?? ''}
-                  onChange={(e) =>
+                  onChange={(e) => {
+                    // `min` is advisory in the DOM; a pasted or spun negative
+                    // would reduce the client's total on the booking page.
+                    const parsed = Number(e.target.value);
                     onUpdate(
                       activity.id,
                       'price',
-                      e.target.value === '' ? null : Number(e.target.value),
-                    )
-                  }
+                      e.target.value === '' || Number.isNaN(parsed) ? null : Math.max(0, parsed),
+                    );
+                  }}
                   placeholder="e.g. 250"
                   className="h-9 w-32 border-stone-200 bg-stone-50 text-sm"
                 />

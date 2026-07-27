@@ -50,7 +50,8 @@ export function AccommodationAlternativesModal({
         meals: { breakfast: false, lunch: false, dinner: false },
         mealOptions: [],
         additionalPrice: null,
-        priceUnitLabel: null,
+        // Written on create so an unset basis always means a pre-0061 row.
+        priceBasis: 'flat',
         hideInQuote: false,
       },
     ]);

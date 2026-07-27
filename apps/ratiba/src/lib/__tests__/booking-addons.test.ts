@@ -2,6 +2,7 @@ import { describe, expect, test } from 'bun:test';
 import {
   computeBookingTotal,
   formatDelta,
+  formatLineAmount,
   parseSelections,
   priceSelections,
   EMPTY_SELECTIONS,
@@ -48,7 +49,7 @@ const addOns: BookingAddOns = {
       images: [],
       additionalPrice: 200,
       priceBasis: 'per_person',
-      priceUnitLabel: 'per person / per night',
+      roomCount: 2,
     },
     {
       id: 'alt-cheaper',
@@ -61,7 +62,7 @@ const addOns: BookingAddOns = {
       images: [],
       additionalPrice: -150,
       priceBasis: 'flat',
-      priceUnitLabel: null,
+      roomCount: 2,
     },
   ],
   extras: [
@@ -183,6 +184,61 @@ describe('parseSelections', () => {
     expect(parsed.alternativeByDayId).toEqual({ 'day-1': 'alt-1' });
     expect(parsed.extraIds).toEqual([]);
   });
+
+  // A hand-rolled request can repeat an id. Left alone it would price the same
+  // option N times and emit N invoice line items sharing one id.
+  test('deduplicates repeated ids', () => {
+    const parsed = parseSelections({
+      activityIds: ['a', 'a', 'b', 'a'],
+      extraIds: ['x', 'x'],
+    });
+    expect(parsed.activityIds).toEqual(['a', 'b']);
+    expect(parsed.extraIds).toEqual(['x']);
+  });
+
+  test('a repeated id cannot inflate the priced total', () => {
+    const inflated = parseSelections({
+      activityIds: Array(50).fill('act-balloon'),
+      alternativeByDayId: {},
+      extraIds: [],
+    });
+    // 550 per person x 4 travelers, charged once, not fifty times.
+    expect(priceSelections(addOns, inflated, 4).addOnTotal).toBe(2200);
+  });
+});
+
+describe('alternative price basis', () => {
+  test('per_person scales with travelers, not rooms', () => {
+    const s = select({ alternativeByDayId: { 'day-1': 'alt-upgrade' } });
+    const { lines, addOnTotal } = priceSelections(addOns, s, 4);
+    expect(addOnTotal).toBe(800); // 200 x 4 travelers
+    expect(lines[0]?.detail).toBe('per person x 4');
+  });
+
+  test('per_room scales with the alternative room count, not travelers', () => {
+    const perRoom: BookingAddOns = {
+      ...addOns,
+      alternatives: [{ ...addOns.alternatives[0]!, priceBasis: 'per_room', roomCount: 2 }],
+    };
+    const s = select({ alternativeByDayId: { 'day-1': 'alt-upgrade' } });
+    const { lines, addOnTotal } = priceSelections(perRoom, s, 4);
+    expect(addOnTotal).toBe(400); // 200 x 2 rooms
+    expect(lines[0]?.detail).toBe('per room x 2');
+  });
+
+  test('flat is charged once however large the party', () => {
+    const s = select({ alternativeByDayId: { 'day-2': 'alt-cheaper' } });
+    expect(priceSelections(addOns, s, 8).addOnTotal).toBe(-150);
+  });
+
+  // Regression: the detail used to come from a free-text priceUnitLabel that
+  // could read "Per Person" over an amount billed once.
+  test('the unit shown is derived from the basis that is billed', () => {
+    const s = select({ alternativeByDayId: { 'day-2': 'alt-cheaper' } });
+    const { lines } = priceSelections(addOns, s, 4);
+    expect(lines[0]?.detail).toBeNull();
+    expect(lines[0]?.quantity).toBe(1);
+  });
 });
 
 describe('formatDelta', () => {
@@ -190,5 +246,26 @@ describe('formatDelta', () => {
     expect(formatDelta(450)).toBe('+$450');
     expect(formatDelta(-200)).toBe('-$200');
     expect(formatDelta(0)).toBe('No change');
+  });
+});
+
+describe('formatLineAmount', () => {
+  test('a zero-cost extra reads as free, not "no change"', () => {
+    const { lines } = priceSelections(addOns, select({ extraIds: ['ex-free'] }), 4);
+    expect(formatLineAmount(lines[0]!)).toBe('Free');
+  });
+
+  test('a lodge swap with no delta still reads as no change', () => {
+    const { lines } = priceSelections(
+      { ...addOns, alternatives: [{ ...addOns.alternatives[0]!, additionalPrice: 0 }] },
+      select({ alternativeByDayId: { 'day-1': 'alt-upgrade' } }),
+      4,
+    );
+    expect(formatLineAmount(lines[0]!)).toBe('No change');
+  });
+
+  test('an unpriced activity is on request', () => {
+    const { lines } = priceSelections(addOns, select({ activityIds: ['act-unpriced'] }), 4);
+    expect(formatLineAmount(lines[0]!)).toBe('On request');
   });
 });

@@ -5,6 +5,7 @@ import { getPublicUrl } from '@/lib/storage';
 import type { db as database } from '@repo/db';
 import type {
   ActivityOffer,
+  AlternativeBasis,
   AlternativeOffer,
   BookingAddOns,
   ExtraOffer,
@@ -18,6 +19,15 @@ function mealsLabel(meals?: { breakfast: boolean; lunch: boolean; dinner: boolea
     meals.dinner && 'Dinner',
   ].filter(Boolean) as string[];
   return parts.length > 0 ? parts.join(', ') : null;
+}
+
+/**
+ * Anything unrecognised bills once. Migration 0061 backfilled every stored row
+ * from its old free-text label, so an unset basis here means a row written
+ * before that ran, not an operator choosing flat.
+ */
+function normalizeBasis(basis: unknown): AlternativeBasis {
+  return basis === 'per_person' || basis === 'per_room' ? basis : 'flat';
 }
 
 function roomsLabel(rooms?: Array<{ roomType: string | null; pax: number }> | null): string | null {
@@ -96,8 +106,8 @@ export async function loadBookingAddOns(
         meals: mealsLabel(alt.meals),
         images: [],
         additionalPrice: alt.additionalPrice ?? 0,
-        priceBasis: alt.priceBasis === 'per_person' ? 'per_person' : 'flat',
-        priceUnitLabel: alt.priceUnitLabel ?? null,
+        priceBasis: normalizeBasis(alt.priceBasis),
+        roomCount: alt.rooms?.length ?? 1,
       });
     }
   }

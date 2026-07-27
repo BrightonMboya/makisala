@@ -622,27 +622,25 @@ function AccommodationAlternativesSection({
                   className="border-stone-200 bg-stone-50 pl-7 shadow-none"
                 />
               </div>
-              {/* How the amount scales if the client picks this lodge on the
-                  booking page. An alternative covers one night, so "per night"
-                  is the flat case. The label beside it is display-only. */}
+              {/* Drives both the charge and the unit the client is shown, so
+                  the two cannot disagree. There used to be a free-text label
+                  beside this; it was what the client read while this was what
+                  they were billed. An alternative covers one night, so a
+                  multi-night swap is already one row per night: "per night"
+                  needs no option here. */}
               <select
                 value={alt.priceBasis ?? 'flat'}
                 onChange={(e) =>
                   updateAlt(day.id, alt.id, {
-                    priceBasis: e.target.value as 'flat' | 'per_person',
+                    priceBasis: e.target.value as 'flat' | 'per_person' | 'per_room',
                   })
                 }
-                className="h-9 rounded-md border border-stone-200 bg-stone-50 px-2 text-sm text-stone-700"
+                className="h-9 flex-1 rounded-md border border-stone-200 bg-stone-50 px-2 text-sm text-stone-700"
               >
-                <option value="flat">total</option>
+                <option value="flat">total for the night</option>
                 <option value="per_person">per person</option>
+                <option value="per_room">per room</option>
               </select>
-              <Input
-                value={alt.priceUnitLabel ?? ''}
-                onChange={(e) => updateAlt(day.id, alt.id, { priceUnitLabel: e.target.value })}
-                placeholder="Label shown to client, e.g. per person / per night"
-                className="h-9 flex-1 border-stone-200 bg-stone-50 text-sm shadow-none"
-              />
             </div>
           </div>
         ))}

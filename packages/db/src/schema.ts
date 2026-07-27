@@ -920,10 +920,17 @@ export interface AlternativeAccommodation {
   meals?: { breakfast: boolean; lunch: boolean; dinner: boolean };
   mealOptions?: string[];
   additionalPrice?: number | null;
+  /**
+   * @deprecated Free text that used to describe the unit. It could disagree
+   * with what was actually charged, so `priceBasis` is now the only input to
+   * the arithmetic AND to the label shown to the client. Kept for old rows;
+   * no longer written or read.
+   */
   priceUnitLabel?: string | null;
   // How `additionalPrice` scales. An alternative covers one night, so "per
-  // night" is the flat case. Legacy rows are undefined and treated as flat.
-  priceBasis?: 'flat' | 'per_person';
+  // night" is the flat case; `rooms` gives the count for `per_room`. Written
+  // on create so a missing value means a pre-0061 row, not a deliberate flat.
+  priceBasis?: 'flat' | 'per_person' | 'per_room';
   hideInQuote?: boolean;
   // Resolved public image URLs for the lodge. Not persisted (kept out of the
   // stored JSON); injected at read time so the client proposal can show photos.

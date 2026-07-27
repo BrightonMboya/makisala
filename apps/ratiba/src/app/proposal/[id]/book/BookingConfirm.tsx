@@ -5,8 +5,10 @@ import { CheckCircle2, FileText } from 'lucide-react';
 import { trpc } from '@/lib/trpc';
 import { PaymentInstructions, type PaymentMethod } from '@/components/proposal/PaymentInstructions';
 import {
+  basisSuffix,
   computeBookingTotal,
   formatDelta,
+  formatLineAmount,
   hasAddOns,
   isSelectionEmpty,
   type AlternativeOffer,
@@ -51,8 +53,17 @@ function formatDate(value: string | null): string | null {
   return d.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
 }
 
+/**
+ * Whole dollars when the amount is whole, cents when it isn't. Rounding a
+ * $13,180.50 total to "$13,181" on the page while the invoice PDF says
+ * $13,180.50 reads as two different prices for the same booking.
+ */
 function money(n: number): string {
-  return `$${Math.round(n).toLocaleString()}`;
+  const whole = Number.isInteger(n);
+  return `$${n.toLocaleString('en-US', {
+    minimumFractionDigits: whole ? 0 : 2,
+    maximumFractionDigits: whole ? 0 : 2,
+  })}`;
 }
 
 function invoiceMoney(cents: number, currency: string): string {
@@ -65,6 +76,15 @@ function invoiceMoney(cents: number, currency: string): string {
   } catch {
     return `${currency} ${(cents / 100).toFixed(2)}`;
   }
+}
+
+/** tRPC surfaces the code on `data`, which isn't on the Error type. */
+function isConflict(err: unknown): boolean {
+  return (
+    typeof err === 'object' &&
+    err !== null &&
+    (err as { data?: { code?: string } }).data?.code === 'CONFLICT'
+  );
 }
 
 /** Grouped by night so each renders as one either/or choice. */
@@ -157,6 +177,13 @@ export function BookingConfirm({
       if (result.invoice) setCheckoutInvoice(result.invoice);
       setConfirmed(true);
     } catch (err) {
+      // The booking went through and this is a duplicate submit: a lost
+      // response, a second tab, a back-then-resubmit. Showing a red error to
+      // someone who has already booked is worse than showing the confirmation.
+      if (isConflict(err)) {
+        setConfirmed(true);
+        return;
+      }
       setError(err instanceof Error ? err.message : 'Something went wrong. Please try again.');
     }
   };
@@ -322,21 +349,19 @@ export function BookingConfirm({
                               <span className="flex-1">
                                 <span className="flex flex-wrap items-baseline justify-between gap-2">
                                   <span className="text-sm font-medium text-stone-900">{alt.name}</span>
+                                  {/* Unit comes from priceBasis, the same
+                                      field this is billed on. There used to be
+                                      a free-text label rendered underneath,
+                                      which could and did say "Per Person" over
+                                      an amount charged once. */}
                                   <span className="text-sm font-medium text-stone-700">
                                     {formatDelta(alt.additionalPrice)}
-                                    {alt.priceBasis === 'per_person' && alt.additionalPrice !== 0
-                                      ? ' pp'
-                                      : ''}
+                                    {alt.additionalPrice !== 0 ? basisSuffix(alt.priceBasis) : ''}
                                   </span>
                                 </span>
                                 {(alt.rooms || alt.meals) && (
                                   <span className="mt-0.5 block text-xs text-stone-400">
                                     {[alt.rooms, alt.meals].filter(Boolean).join(' · ')}
-                                  </span>
-                                )}
-                                {alt.priceUnitLabel && (
-                                  <span className="mt-0.5 block text-xs text-stone-400">
-                                    {alt.priceUnitLabel}
                                   </span>
                                 )}
                               </span>
@@ -408,9 +433,7 @@ export function BookingConfirm({
                   {l.label}
                   {l.detail && <span className="ml-1 text-xs text-stone-400">({l.detail})</span>}
                 </dt>
-                <dd className="shrink-0 font-medium text-stone-800">
-                  {l.onRequest ? 'On request' : formatDelta(l.amount)}
-                </dd>
+                <dd className="shrink-0 font-medium text-stone-800">{formatLineAmount(l)}</dd>
               </div>
             ))}
             <div className="flex justify-between gap-4 border-t border-stone-200 pt-3">
@@ -503,7 +526,7 @@ export function BookingConfirm({
           </div>
           <div className="mt-4 flex flex-wrap gap-3">
             <a
-              href={`/invoice/${checkoutInvoice.shareToken}`}
+              href={`/invoice/${checkoutInvoice.shareToken}/pdf`}
               target="_blank"
               rel="noreferrer"
               className="inline-flex items-center rounded-lg bg-stone-800 px-4 py-2.5 text-sm font-medium tracking-wide text-white transition-colors hover:bg-stone-900"

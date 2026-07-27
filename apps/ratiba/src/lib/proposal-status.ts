@@ -33,6 +33,24 @@ export const DEFAULT_DASHBOARD_STATUSES: ProposalStatus[] = [
   'booked',
 ];
 
+/**
+ * The only statuses from which a client may confirm on /proposal/[id]/book.
+ *
+ * Allow-list, not a deny-list: `confirm` sends the operator an acceptance
+ * email, snapshots an agreed total and issues a numbered invoice, so a status
+ * added later must opt in rather than silently inherit the ability to be
+ * re-confirmed. Notably this keeps `cancelled` out — a cancelled trip could
+ * otherwise be resurrected by anyone still holding the link.
+ *
+ * Used by both the confirm mutation and the booking page, so the page never
+ * renders a live button the server will reject.
+ */
+export const CLIENT_CONFIRMABLE_STATUSES: ProposalStatus[] = ['draft', 'shared'];
+
+export function isClientConfirmable(status: string): boolean {
+  return (CLIENT_CONFIRMABLE_STATUSES as string[]).includes(status);
+}
+
 export const proposalStatusConfig: Record<ProposalStatus, StatusConfig> = {
   draft: { label: 'Draft', bg: 'bg-stone-100', text: 'text-stone-800', dot: 'bg-stone-400', hex: { fg: '#78716c', bg: '#f5f5f4' } },
   shared: { label: 'Shared', bg: 'bg-green-100', text: 'text-green-800', dot: 'bg-green-500', hex: { fg: '#16a34a', bg: '#dcfce7' } },

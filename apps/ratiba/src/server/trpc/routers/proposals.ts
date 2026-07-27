@@ -30,11 +30,23 @@ import { buildCheckoutLineItems, computeTotals } from '@/lib/invoices/seed-from-
 import { getNextInvoiceNumber } from '@/lib/invoices/numbering';
 import { getOrgPaymentMethodSnapshot } from '@/lib/invoices/payment-methods';
 import { checkFeatureAccess, getOrgPlan, ALLOWED_THEMES_BY_TIER } from '@/lib/plans';
-import { DEFAULT_DASHBOARD_STATUSES } from '@/lib/proposal-status';
+import {
+  CLIENT_CONFIRMABLE_STATUSES,
+  DEFAULT_DASHBOARD_STATUSES,
+  isClientConfirmable,
+} from '@/lib/proposal-status';
 import { deriveMealPlan } from '@/lib/pricing-engine';
 import { env } from '@/lib/env';
 import { getPublicUrl } from '@/lib/storage';
 import { log, serializeError } from '@/lib/logger';
+
+/** Thrown to skip checkout invoicing when the proposal already has a sent
+ *  invoice. Distinguished from a real failure so it isn't logged as an error. */
+class AlreadyInvoiced extends Error {
+  constructor(readonly number: string) {
+    super(`Proposal already has invoice ${number}`);
+  }
+}
 
 /**
  * Pin a start date to noon UTC before storing so the calendar day can't drift.
@@ -137,8 +149,9 @@ interface BuilderDay {
     meals?: { breakfast: boolean; lunch: boolean; dinner: boolean };
     mealOptions?: string[];
     additionalPrice?: number | null;
+    /** @deprecated Only ever round-tripped now, never written by the editor. */
     priceUnitLabel?: string | null;
-    priceBasis?: 'flat' | 'per_person';
+    priceBasis?: 'flat' | 'per_person' | 'per_room';
     hideInQuote?: boolean;
   }>;
   activities?: BuilderActivity[];
@@ -1435,10 +1448,10 @@ export const proposalsRouter = router({
         throw new TRPCError({ code: 'BAD_REQUEST', message: 'No notification email configured for this organization' });
       }
 
-      // Re-posting would silently replace the agreed add-ons and total the
-      // operator has already been told to hold.
-      const CONFIRMED_STATUSES = ['awaiting_payment', 'paid', 'booked', 'completed'] as const;
-      if ((CONFIRMED_STATUSES as readonly string[]).includes(proposal.status)) {
+      // Cheap pre-check for the common case. It is NOT the guard: the real one
+      // is the conditional UPDATE below, which is what makes this safe against
+      // two tabs confirming at once.
+      if (!isClientConfirmable(proposal.status)) {
         throw new TRPCError({
           code: 'CONFLICT',
           message: 'This booking has already been confirmed. Contact the operator to change it.',
@@ -1475,6 +1488,38 @@ export const proposalsRouter = router({
 
       const proposalUrl = `${env.NEXT_PUBLIC_APP_URL}/proposal/${input.proposalId}`;
 
+      // Claim the booking before doing anything with side effects. The status
+      // predicate lives in the WHERE, so of two tabs confirming at the same
+      // instant exactly one updates a row; the loser matches nothing and bails
+      // without a second acceptance email or a second invoice.
+      //
+      // The total is snapshotted here rather than recomputed on read: the
+      // operator can keep editing the proposal afterwards, so a later
+      // recomputation would not reproduce the figure the client agreed to.
+      const claimed = await ctx.db
+        .update(proposals)
+        .set({
+          status: 'awaiting_payment',
+          clientSelections: selections,
+          confirmedTotal: total.toFixed(2),
+          confirmedAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        })
+        .where(
+          and(
+            eq(proposals.id, input.proposalId),
+            inArray(proposals.status, CLIENT_CONFIRMABLE_STATUSES),
+          ),
+        )
+        .returning({ id: proposals.id });
+
+      if (claimed.length === 0) {
+        throw new TRPCError({
+          code: 'CONFLICT',
+          message: 'This booking has already been confirmed. Contact the operator to change it.',
+        });
+      }
+
       const result = await sendProposalAcceptanceEmail({
         agencyName: proposal.organization.name,
         clientName: input.clientName || proposal.client?.name || 'Guest',
@@ -1498,22 +1543,22 @@ export const proposalsRouter = router({
         lodgeChangeCount: lodgeChanges.length,
       });
 
+      // The operator learning about the booking is the whole point of this
+      // mutation, so a failed send is a failed confirm. Release the claim so
+      // the client's retry is not met with "already confirmed".
       if (!result.success) {
+        await ctx.db
+          .update(proposals)
+          .set({
+            status: proposal.status,
+            clientSelections: proposal.clientSelections,
+            confirmedTotal: proposal.confirmedTotal,
+            confirmedAt: proposal.confirmedAt,
+            updatedAt: new Date().toISOString(),
+          })
+          .where(eq(proposals.id, input.proposalId));
         throw new TRPCError({ code: 'INTERNAL_SERVER_ERROR', message: result.error });
       }
-
-      // Snapshot what was agreed: the proposal stays editable, so recomputing
-      // later would not reproduce the figure the client saw.
-      await ctx.db
-        .update(proposals)
-        .set({
-          status: 'awaiting_payment',
-          clientSelections: selections,
-          confirmedTotal: total.toFixed(2),
-          confirmedAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        })
-        .where(eq(proposals.id, input.proposalId));
 
       // The traveler's downloadable receipt, from exactly what they confirmed.
       // Best-effort: confirmation already succeeded, so an invoice-numbering
@@ -1528,6 +1573,18 @@ export const proposalsRouter = router({
         shareToken: string;
       } | null = null;
       try {
+        // The operator may have already sent one from the dashboard. Issuing a
+        // second numbered invoice for one trip is an accounting problem, and
+        // the two would disagree: the dashboard seeder bills every offered
+        // extra, this one bills only what the client actually picked.
+        const existingSent = await ctx.db.query.invoices.findFirst({
+          where: and(eq(invoices.proposalId, proposal.id), isNotNull(invoices.sentAt)),
+          columns: { number: true },
+        });
+        if (existingSent) {
+          throw new AlreadyInvoiced(existingSent.number);
+        }
+
         const lineItems = buildCheckoutLineItems(
           proposal.pricingRows as Array<{ id: string; count: number; type: string; unitPrice: number }>,
           lines,
@@ -1581,10 +1638,19 @@ export const proposalsRouter = router({
           shareToken,
         };
       } catch (err) {
-        log.error('Failed to generate checkout invoice', {
-          proposalId: input.proposalId,
-          error: serializeError(err),
-        });
+        if (err instanceof AlreadyInvoiced) {
+          // Not a failure. getBookingDetails serves the existing one, so the
+          // client still gets a receipt on the page.
+          log.info('Skipped checkout invoice, proposal already invoiced', {
+            proposalId: input.proposalId,
+            number: err.number,
+          });
+        } else {
+          log.error('Failed to generate checkout invoice', {
+            proposalId: input.proposalId,
+            error: serializeError(err),
+          });
+        }
       }
 
       // Return the operator's payment methods so the client can pay directly.
@@ -1634,42 +1700,44 @@ export const proposalsRouter = router({
       });
       if (!proposal) return null;
 
-      const methods = proposal.organizationId
-        ? await ctx.db
-            .select({
-              id: paymentMethods.id,
-              type: paymentMethods.type,
-              label: paymentMethods.label,
-              instructions: paymentMethods.instructions,
-              url: paymentMethods.url,
-            })
-            .from(paymentMethods)
-            .where(eq(paymentMethods.organizationId, proposal.organizationId))
-            .orderBy(asc(paymentMethods.sortOrder), asc(paymentMethods.createdAt))
-        : [];
-
       const rows = (proposal.pricingRows as Array<{ count: number; unitPrice: number }>) || [];
       const total = rows.reduce((acc, r) => acc + r.count * r.unitPrice, 0);
       const groups = (proposal.travelerGroups as Array<{ count: number }>) || [];
       const travelerCount = groups.reduce((acc, g) => acc + g.count, 0);
 
-      const addOns = await loadBookingAddOns(ctx.db, proposal.id, proposal.organizationId);
-
-      // Newest issued invoice, so a returning client can still download it.
-      // Unsent drafts stay hidden: they are the operator's working copy.
-      const invoiceRow = await ctx.db.query.invoices.findFirst({
-        where: and(eq(invoices.proposalId, proposal.id), isNotNull(invoices.sentAt)),
-        orderBy: desc(invoices.createdAt),
-        columns: {
-          number: true,
-          currency: true,
-          totalCents: true,
-          amountPaidCents: true,
-          status: true,
-          dueDate: true,
-          shareToken: true,
-        },
-      });
+      // Independent reads, and this query is the whole booking page: the add-on
+      // load alone fans out to days, activities and accommodation images.
+      const [methods, addOns, invoiceRow] = await Promise.all([
+        proposal.organizationId
+          ? ctx.db
+              .select({
+                id: paymentMethods.id,
+                type: paymentMethods.type,
+                label: paymentMethods.label,
+                instructions: paymentMethods.instructions,
+                url: paymentMethods.url,
+              })
+              .from(paymentMethods)
+              .where(eq(paymentMethods.organizationId, proposal.organizationId))
+              .orderBy(asc(paymentMethods.sortOrder), asc(paymentMethods.createdAt))
+          : Promise.resolve([]),
+        loadBookingAddOns(ctx.db, proposal.id, proposal.organizationId),
+        // Newest issued invoice, so a returning client can still download it.
+        // Unsent drafts stay hidden: they are the operator's working copy.
+        ctx.db.query.invoices.findFirst({
+          where: and(eq(invoices.proposalId, proposal.id), isNotNull(invoices.sentAt)),
+          orderBy: desc(invoices.createdAt),
+          columns: {
+            number: true,
+            currency: true,
+            totalCents: true,
+            amountPaidCents: true,
+            status: true,
+            dueDate: true,
+            shareToken: true,
+          },
+        }),
+      ]);
       const invoice =
         invoiceRow && invoiceRow.shareToken
           ? {

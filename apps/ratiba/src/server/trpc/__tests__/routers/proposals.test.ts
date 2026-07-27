@@ -376,11 +376,15 @@ describe('proposals router', () => {
         name: 'Proposal',
         tourTitle: 'Safari Trip',
         startDate: '2024-06-01',
+        status: 'shared',
         pricingRows: [{ count: 2, unitPrice: 500 }],
         organization: { name: 'Safari Co', notificationEmail: 'notify@test.com' },
         client: { name: 'Client', email: 'client@test.com' },
       });
       db._results.set('select', [{ count: 5 }]);
+      // confirm claims the booking with a conditional UPDATE, so the claim
+      // must match a row or the mutation correctly bails with CONFLICT.
+      db._results.set('update.proposals', [{ id: 'p-1' }]);
 
       const result = await caller.proposals.confirm({
         proposalId: 'p-1',
@@ -446,6 +450,9 @@ describe('proposals router', () => {
         },
       ]);
       db._results.set('select', [{ count: 5 }]);
+      // confirm claims the booking with a conditional UPDATE, so the claim
+      // must match a row or the mutation correctly bails with CONFLICT.
+      db._results.set('update.proposals', [{ id: 'p-1' }]);
 
       const result = await caller.proposals.confirm({
         proposalId: 'p-1',
@@ -485,6 +492,9 @@ describe('proposals router', () => {
       });
       db._results.set('query.proposalDays.findMany', []);
       db._results.set('select', [{ count: 3 }]);
+      // confirm claims the booking with a conditional UPDATE, so the claim
+      // must match a row or the mutation correctly bails with CONFLICT.
+      db._results.set('update.proposals', [{ id: 'p-1' }]);
 
       const result = await caller.proposals.confirm({
         proposalId: 'p-1',
@@ -512,6 +522,54 @@ describe('proposals router', () => {
         client: { name: 'Client' },
       });
       db._results.set('select', [{ count: 3 }]);
+
+      await expect(
+        caller.proposals.confirm({ proposalId: 'p-1', clientName: 'Client' }),
+      ).rejects.toMatchObject({ code: 'CONFLICT' });
+    });
+
+    // A cancelled trip used to be confirmable: the status list was a deny-list
+    // that never included it, so anyone still holding the link could flip it
+    // back to awaiting_payment, re-notify the operator and mint an invoice.
+    test('rejects a confirm on a cancelled proposal', async () => {
+      const { ctx, db } = createPublicContext();
+      const caller = createCaller(ctx);
+
+      db._results.set('query.proposals.findFirst', {
+        id: 'p-1',
+        status: 'cancelled',
+        organizationId: 'org-1',
+        pricingRows: [{ count: 2, unitPrice: 500 }],
+        organization: { id: 'org-1', name: 'Safari Co', notificationEmail: 'notify@test.com' },
+        client: { name: 'Client' },
+      });
+      db._results.set('select', [{ count: 3 }]);
+
+      await expect(
+        caller.proposals.confirm({ proposalId: 'p-1', clientName: 'Client' }),
+      ).rejects.toMatchObject({ code: 'CONFLICT' });
+    });
+
+    // Two tabs, or a retried request: the pre-check can pass in both, so the
+    // conditional UPDATE is what actually serializes them.
+    test('rejects when the conditional claim matches no row', async () => {
+      const { ctx, db } = createPublicContext();
+      const caller = createCaller(ctx);
+
+      db._results.set('query.proposals.findFirst', {
+        id: 'p-1',
+        status: 'shared',
+        organizationId: 'org-1',
+        pricingRows: [{ count: 2, unitPrice: 500 }],
+        travelerGroups: [{ count: 2 }],
+        extras: [],
+        organization: { id: 'org-1', name: 'Safari Co', notificationEmail: 'notify@test.com' },
+        client: { name: 'Client' },
+      });
+      db._results.set('query.proposalDays.findMany', []);
+      db._results.set('select', [{ count: 3 }]);
+      // Another request won the race between the read and the write.
+      db._results.set('update.proposals', []);
 
       await expect(
         caller.proposals.confirm({ proposalId: 'p-1', clientName: 'Client' }),
