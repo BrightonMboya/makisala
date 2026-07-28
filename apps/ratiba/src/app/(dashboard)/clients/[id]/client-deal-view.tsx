@@ -17,12 +17,13 @@ import {
 } from 'lucide-react';
 import { Button } from '@repo/ui/button';
 import { CountryFlag } from '@repo/ui/country-flag';
-import { EmailStatusBadge } from '@/components/email-status-badge';
 import { trpc } from '@/lib/trpc';
 import { staleTimes } from '@/lib/query-keys';
 import { ProposalStatusDropdown } from '@/components/proposal-status-dropdown';
 import { NewRequestDialog } from '@/components/new-request-dialog';
 import { ProposalRowMenu } from './proposal-row-menu';
+import { ActivityTrigger } from '@/components/activity/activity-trigger';
+import { ActivitySheet } from '@/components/activity/activity-sheet';
 import type { AppRouter } from '@/server/trpc/router';
 import type { inferRouterOutputs } from '@trpc/server';
 
@@ -154,13 +155,11 @@ export function ClientDealView({
                         {p.travelers} traveler{p.travelers !== 1 ? 's' : ''}
                       </span>
                     )}
-                    <span className="text-xs">
-                      <EmailStatusBadge status={p.emailStatus} />
-                    </span>
                   </div>
                 </button>
                 <div className="flex shrink-0 items-center gap-2">
                   <ProposalStatusDropdown proposalId={p.id} status={p.status} />
+                  <ActivityTrigger kind="proposal" id={p.id} />
                   <Link
                     href={`/proposal/${p.id}`}
                     target="_blank"
@@ -191,6 +190,7 @@ export function ClientDealView({
         onOpenChange={setDialogOpen}
         defaultClientId={clientId}
       />
+      <ActivitySheet />
     </div>
   );
 }

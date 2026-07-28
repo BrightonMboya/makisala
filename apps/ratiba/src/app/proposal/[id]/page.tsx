@@ -9,6 +9,7 @@ import DiscoveryTheme from '@/components/themes/DiscoveryTheme';
 import { CommentsProvider } from '@/components/comments/CommentsProvider';
 import { CommentsOverlay } from '@/components/comments/CommentsOverlay';
 import { LanguageToggle } from '@/components/proposal/LanguageToggle';
+import { ViewBeacon } from '@/components/tracking/view-beacon';
 import { createServerCaller } from '@/server/trpc/caller';
 import { transformProposalToItineraryData } from '@/lib/proposal-transform';
 import { getOrgPlan } from '@/lib/plans';
@@ -117,6 +118,7 @@ export default async function ItineraryPage({ params, searchParams }: Props) {
           ) : (
             <MinimalisticTheme data={transformedData} />
           )}
+          <ViewBeacon kind="proposal" id={id} />
           {showLanguageToggle && (
             <LanguageToggle
               proposalId={id}

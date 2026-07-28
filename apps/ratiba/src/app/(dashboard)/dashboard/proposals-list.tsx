@@ -26,7 +26,6 @@ import { useRouter } from 'next/navigation';
 import { type ReactNode, useState } from 'react';
 import { CountryFlag } from '@repo/ui/country-flag';
 import { useDebounce } from '@repo/ui/use-debounce';
-import { EmailStatusBadge } from '@/components/email-status-badge';
 import { trpc } from '@/lib/trpc';
 import { staleTimes } from '@/lib/query-keys';
 import {
@@ -307,7 +306,6 @@ function ClientRow({ row, router }: { row: ClientRowData; router: Router }) {
                 {row.travelers} traveler{row.travelers !== 1 ? 's' : ''}
               </span>
             )}
-            <EmailStatusBadge status={row.emailStatus} />
           </div>
         </div>
         <div className="flex shrink-0 items-center gap-3">
@@ -357,7 +355,6 @@ function DraftRow({ row, router }: { row: DraftRowData; router: Router }) {
                 {row.travelers} traveler{row.travelers !== 1 ? 's' : ''}
               </span>
             )}
-            <EmailStatusBadge status={row.emailStatus} />
           </div>
         </div>
         <div className="flex shrink-0 items-center gap-3">

@@ -849,7 +849,9 @@ export const proposals = pgTable('proposals', {
   dropoffTransferRateId: uuid('dropoff_transfer_rate_id').references((): any => transferRates.id, {
     onDelete: 'set null',
   }),
-  organizationId: uuid('organization_id').references(() => organizations.id),
+  organizationId: uuid('organization_id')
+    .notNull()
+    .references(() => organizations.id),
   status: ProposalStatus('status').default('draft').notNull(),
   // What the client opted into on /proposal/[id]/book. The server recomputes
   // the total from these rather than trusting a browser figure.
@@ -1618,6 +1620,65 @@ export const emailMessagesRelations = relations(emailMessages, ({ one }) => ({
 
 export type EmailMessage = typeof emailMessages.$inferSelect;
 export type NewEmailMessage = typeof emailMessages.$inferInsert;
+
+// ---------- LINK VIEWS (proposal/invoice page engagement) ----------
+// One row per page load of a client-facing proposal or invoice link.
+// durationSeconds is patched in later by a client-side beacon on page unload,
+// so it stays null for rows where the visitor never fired one (bots, PDF hits).
+export const linkViews = pgTable(
+  'link_views',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    organizationId: uuid('organization_id').references(() => organizations.id, {
+      onDelete: 'cascade',
+    }),
+    proposalId: text('proposal_id').references(() => proposals.id, { onDelete: 'cascade' }),
+    invoiceId: text('invoice_id').references(() => invoices.id, { onDelete: 'cascade' }),
+    // 'html' (the itinerary/invoice page itself) or 'pdf' (invoice PDF download).
+    format: text('format').default('html').notNull(),
+    // Anonymous per-visitor cookie id, so repeat views by the same person can be grouped.
+    sessionId: text('session_id').notNull(),
+    ip: text('ip'),
+    country: text('country'),
+    region: text('region'),
+    city: text('city'),
+    device: text('device'), // mobile | tablet | desktop
+    browser: text('browser'),
+    referrer: text('referrer'),
+    durationSeconds: integer('duration_seconds'),
+    // withTimezone: a plain `timestamp` column is ambiguous to the pg driver -
+    // it reinterprets the naive value using the *reading process's* local
+    // clock, which is silently wrong for relative-time display ("2 hours
+    // ago" for a row inserted seconds ago) whenever that process isn't UTC.
+    createdAt: timestamp('created_at', { precision: 3, mode: 'string', withTimezone: true })
+      .default(sql`CURRENT_TIMESTAMP`)
+      .notNull(),
+  },
+  (table) => [
+    index('link_views_proposal_idx').on(table.proposalId),
+    index('link_views_invoice_idx').on(table.invoiceId),
+    index('link_views_org_idx').on(table.organizationId),
+    index('link_views_session_idx').on(table.sessionId),
+  ],
+);
+
+export const linkViewsRelations = relations(linkViews, ({ one }) => ({
+  organization: one(organizations, {
+    fields: [linkViews.organizationId],
+    references: [organizations.id],
+  }),
+  proposal: one(proposals, {
+    fields: [linkViews.proposalId],
+    references: [proposals.id],
+  }),
+  invoice: one(invoices, {
+    fields: [linkViews.invoiceId],
+    references: [invoices.id],
+  }),
+}));
+
+export type LinkView = typeof linkViews.$inferSelect;
+export type NewLinkView = typeof linkViews.$inferInsert;
 
 // ---------- DAY CONTENT TEMPLATES ----------
 export const DayType = pgEnum('day_type', ['arrival', 'full_day', 'half_day', 'departure']);

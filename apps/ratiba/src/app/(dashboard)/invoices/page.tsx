@@ -9,6 +9,8 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { trpc } from '@/lib/trpc';
 import { InvoiceSheet } from '@/components/invoices/invoice-sheet';
 import { formatMoney } from '@/components/invoices/form-types';
+import { ActivityTrigger } from '@/components/activity/activity-trigger';
+import { ActivitySheet } from '@/components/activity/activity-sheet';
 
 const PAGE_SIZE = 20;
 
@@ -102,6 +104,7 @@ export default function InvoicesPage() {
                     <th className="px-4 py-2.5 text-right font-mono text-[11px] font-normal uppercase tracking-wide text-[#878787]">
                       Amount
                     </th>
+                    <th className="px-4 py-2.5 text-right font-mono text-[11px] font-normal uppercase tracking-wide text-[#878787]" />
                   </tr>
                 </thead>
                 <tbody>
@@ -144,6 +147,13 @@ export default function InvoicesPage() {
                           <span className="font-mono text-[11px] text-foreground">
                             {formatMoney(invoice.totalCents / 100, invoice.currency)}
                           </span>
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          <ActivityTrigger
+                            kind="invoice"
+                            id={invoice.id}
+                            className="inline-flex items-center gap-1 text-[#878787] hover:text-foreground"
+                          />
                         </td>
                       </tr>
                     );
@@ -194,6 +204,7 @@ export default function InvoicesPage() {
       </div>
 
       <InvoiceSheet proposalId={selectedInvoice?.proposalId ?? null} />
+      <ActivitySheet />
     </div>
   );
 }

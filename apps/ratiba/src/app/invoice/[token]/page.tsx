@@ -9,6 +9,7 @@ import type {
   InvoicePaymentMethod,
 } from '@repo/db/schema';
 import { lineTotalCents } from '@/lib/invoices/seed-from-proposal';
+import { ViewBeacon } from '@/components/tracking/view-beacon';
 
 type Props = {
   params: Promise<{ token: string }>;
@@ -108,6 +109,7 @@ export default async function PublicInvoicePage({ params }: Props) {
 
   return (
     <div className="min-h-screen bg-stone-50 py-10 font-sans text-neutral-950">
+      <ViewBeacon kind="invoice" id={invoice.id} />
       <div className="mx-auto max-w-3xl px-4">
         {isDraft ? (
           <div className="mb-4 rounded-md border border-amber-200 bg-amber-50 px-4 py-2 font-mono text-[11px] font-medium tracking-wide text-amber-800 uppercase">
