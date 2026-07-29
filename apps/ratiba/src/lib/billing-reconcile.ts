@@ -93,15 +93,14 @@ async function getPolarTruthForOrg(orgId: string): Promise<PolarTruth | null> {
 /**
  * Reconciles an organization's stored plan tier against Polar's live state.
  * Best-effort: never throws — logs and returns on failure so callers (page loads,
- * webhooks) are not broken by a Polar outage. Skips orgs on an active trial so the
- * trial's pro-equivalent access is preserved.
+ * webhooks) are not broken by a Polar outage. Do not skip trialing orgs: that
+ * previously hid a mid-trial upgrade until the trial expired.
  */
 export async function reconcileOrgPlanWithPolar(orgId: string): Promise<void> {
   try {
     const [org] = await db
       .select({
         planTier: organizations.planTier,
-        trialEndsAt: organizations.trialEndsAt,
         polarSubscriptionId: organizations.polarSubscriptionId,
       })
       .from(organizations)
@@ -109,11 +108,6 @@ export async function reconcileOrgPlanWithPolar(orgId: string): Promise<void> {
       .limit(1);
 
     if (!org) return;
-
-    // Don't disturb an active free trial.
-    const isTrialing =
-      org.planTier === 'free' && !!org.trialEndsAt && org.trialEndsAt > new Date();
-    if (isTrialing) return;
 
     const truth = await getPolarTruthForOrg(orgId);
     if (!truth) return; // No linked Polar customer — nothing to reconcile against.
