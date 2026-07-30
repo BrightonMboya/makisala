@@ -20,6 +20,7 @@ export const toursRouter = router({
         imageUrl: tours.img_url,
         overview: tours.overview,
         country: tours.country,
+        countries: tours.countries,
         pricing: tours.pricing,
         tags: tours.tags,
       })
@@ -85,6 +86,7 @@ export const toursRouter = router({
         tourType: 'Private Tour',
         price: tour.pricing,
         country: tour.country,
+        countries: tour.countries && tour.countries.length > 0 ? tour.countries : [tour.country],
         days: tour.days.map((day) => ({
           id: day.id,
           dayNumber: day.dayNumber,
@@ -104,7 +106,7 @@ export const toursRouter = router({
         tourName: z.string().min(2).max(255),
         overview: z.string().min(1).max(5000),
         pricing: z.string(),
-        country: z.string().min(2),
+        countries: z.array(z.string().min(2)).min(1, 'At least one country is required'),
         tags: z.array(z.string().max(100)).max(20),
         img_url: z.string().optional(),
         number_of_days: z.number().min(1),
@@ -123,17 +125,18 @@ export const toursRouter = router({
       }),
     )
     .mutation(async ({ ctx, input }) => {
-      const { itineraries, ...tourData } = input;
+      const { itineraries, countries, ...tourData } = input;
+      const primaryCountry = countries[0]!; // zod .min(1) guarantees at least one element
 
       // When no image is provided, snapshot a random scenic hero image scoped
-      // to the tour's country from the marketing tour_packages catalog. Chosen
-      // once at creation and stored, so it stays stable across renders.
+      // to the tour's primary country from the marketing tour_packages catalog.
+      // Chosen once at creation and stored, so it stays stable across renders.
       let img_url = tourData.img_url || '';
       if (!img_url) {
         const [pkg] = await ctx.db
           .select({ url: tourPackages.hero_image_url })
           .from(tourPackages)
-          .where(sql`lower(${tourPackages.country}) = ${tourData.country.toLowerCase()}`)
+          .where(sql`lower(${tourPackages.country}) = ${primaryCountry.toLowerCase()}`)
           .orderBy(sql`random()`)
           .limit(1);
         img_url = pkg?.url ?? '';
@@ -144,6 +147,8 @@ export const toursRouter = router({
           .insert(tours)
           .values({
             ...tourData,
+            country: primaryCountry,
+            countries,
             img_url,
             activities: [],
             topFeatures: [],
@@ -192,7 +197,7 @@ export const toursRouter = router({
         tourName: z.string().optional(),
         overview: z.string().optional(),
         pricing: z.string().optional(),
-        country: z.string().optional(),
+        countries: z.array(z.string().min(2)).min(1).optional(),
         tags: z.array(z.string().max(100)).max(20).optional(),
         img_url: z.string().optional(),
         number_of_days: z.number().optional(),
@@ -220,7 +225,9 @@ export const toursRouter = router({
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Tour not found or unauthorized' });
       }
 
-      const { id, itineraries, ...tourData } = input;
+      const { id, itineraries, countries, ...tourData } = input;
+      // zod .min(1) on `countries` guarantees at least one element when present
+      const tourUpdate = countries ? { ...tourData, countries, country: countries[0]! } : tourData;
 
       if (itineraries && itineraries.length > 0) {
         const dayNumbers = itineraries.map((d) => d.dayNumber);
@@ -244,7 +251,7 @@ export const toursRouter = router({
       await ctx.db.transaction(async (tx) => {
         await tx
           .update(tours)
-          .set({ ...tourData, updatedAt: new Date() })
+          .set({ ...tourUpdate, updatedAt: new Date() })
           .where(eq(tours.id, id));
 
         if (itineraries && itineraries.length > 0) {
@@ -322,6 +329,7 @@ export const toursRouter = router({
         overview: tours.overview,
         days: tours.number_of_days,
         country: tours.country,
+        countries: tours.countries,
         imageUrl: tours.img_url,
         tags: tours.tags,
       })
@@ -360,6 +368,7 @@ export const toursRouter = router({
             overview: template.overview,
             pricing: template.pricing,
             country: template.country,
+            countries: template.countries && template.countries.length > 0 ? template.countries : [template.country],
             sourceUrl: template.sourceUrl,
             activities: template.activities,
             topFeatures: template.topFeatures,

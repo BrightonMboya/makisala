@@ -519,7 +519,8 @@ export const tours = pgTable('tours', {
   slug: text(),
   overview: text('overview').notNull(), // data.overview
   pricing: numeric('pricing', { precision: 12, scale: 2 }).notNull(), // data.pricing
-  country: text('country').notNull(), // if you scrape it
+  country: text('country').notNull(), // if you scrape it. Primary/first country - kept in sync with countries[0]
+  countries: text('countries').array(), // full set of countries covered by this tour; falls back to [country] when null
   sourceUrl: text('source_url'), // optional: where you scraped from
   activities: json('activities').notNull(), // [{title: "...", activity_name: "..."}]
   topFeatures: json('top_features').notNull(), // [{title: "...", description: "..."}]

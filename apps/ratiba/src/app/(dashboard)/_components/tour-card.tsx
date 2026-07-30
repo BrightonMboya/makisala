@@ -16,7 +16,7 @@ interface TourCardProps {
     days: number;
     imageUrl: string;
     overview: string;
-    country: string;
+    countries: string[];
     pricing: string;
     tags: string[];
   };
@@ -58,7 +58,7 @@ export default function TourCard({ tour }: TourCardProps) {
         <div className="text-stone-500 mb-3 flex items-center gap-4 text-sm">
           <div className="flex items-center gap-1">
             <MapPin className="h-4 w-4" />
-            <span>{capitalize(tour.country)}</span>
+            <span>{tour.countries.map(capitalize).join(' & ')}</span>
           </div>
           <div className="flex items-center gap-1">
             <Calendar className="h-4 w-4" />

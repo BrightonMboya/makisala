@@ -27,6 +27,7 @@ interface Template {
   overview: string;
   days: number;
   country: string;
+  countries: string[] | null;
   imageUrl: string;
   tags: string[];
 }
@@ -80,9 +81,10 @@ export function TemplateBrowser({ trigger, onTemplateCloned }: TemplateBrowserPr
   const filteredTemplates = templates.filter((template) => {
     if (!searchQuery.trim()) return true;
     const query = searchQuery.toLowerCase();
+    const templateCountries = template.countries?.length ? template.countries : [template.country];
     return (
       template.name.toLowerCase().includes(query) ||
-      template.country.toLowerCase().includes(query) ||
+      templateCountries.some((c) => c.toLowerCase().includes(query)) ||
       template.tags.some((tag) => tag.toLowerCase().includes(query))
     );
   });
@@ -146,7 +148,7 @@ export function TemplateBrowser({ trigger, onTemplateCloned }: TemplateBrowserPr
                         <div className="flex items-center gap-3 mt-1 text-white/80 text-sm">
                           <span className="flex items-center gap-1">
                             <MapPin className="h-3 w-3" />
-                            {template.country}
+                            {(template.countries?.length ? template.countries : [template.country]).join(' & ')}
                           </span>
                           <span className="flex items-center gap-1">
                             <Calendar className="h-3 w-3" />

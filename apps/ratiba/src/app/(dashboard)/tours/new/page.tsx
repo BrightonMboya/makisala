@@ -46,7 +46,7 @@ export default function NewTourPage() {
       tourName: data.tourName,
       overview: data.overview,
       pricing: data.pricing,
-      country: data.country,
+      countries: data.countries,
       tags: data.tags,
       img_url: data.img_url,
       number_of_days: data.number_of_days,

@@ -65,7 +65,7 @@ export default function TourDetailPage() {
       tourName: tour.tourName,
       overview: tour.overview,
       pricing: tour.pricing || '',
-      country: tour.country,
+      countries: tour.countries && tour.countries.length > 0 ? tour.countries : [tour.country],
       img_url: tour.img_url || '',
       number_of_days: tour.number_of_days,
       tags: tour.tags || [],
@@ -265,7 +265,11 @@ export default function TourDetailPage() {
               <div className="flex items-center gap-6 text-stone-600 mb-4">
                 <div className="flex items-center gap-2">
                   <MapPin className="h-5 w-5" />
-                  <span>{capitalize(tour.country)}</span>
+                  <span>
+                    {(tour.countries && tour.countries.length > 0 ? tour.countries : [tour.country])
+                      .map(capitalize)
+                      .join(' & ')}
+                  </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Calendar className="h-5 w-5" />

@@ -31,7 +31,9 @@ export default function ToursPage() {
     return tours.filter(
       (tour) =>
         tour.name.toLowerCase().includes(query) ||
-        tour.country.toLowerCase().includes(query) ||
+        (tour.countries && tour.countries.length > 0 ? tour.countries : [tour.country]).some((c) =>
+          c.toLowerCase().includes(query)
+        ) ||
         (tour.tags || []).some((tag) => tag.toLowerCase().includes(query))
     );
   }, [tours, deferredSearchQuery]);
@@ -101,7 +103,7 @@ export default function ToursPage() {
                   days: tour.days,
                   imageUrl: tour.imageUrl,
                   overview: tour.overview,
-                  country: tour.country,
+                  countries: tour.countries && tour.countries.length > 0 ? tour.countries : [tour.country],
                   pricing: tour.pricing,
                   tags: tour.tags,
                 }}

@@ -1,19 +1,3 @@
-'use client';
-
-import { useState } from 'react';
-import { Check, ChevronsUpDown } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { Button } from '@repo/ui/button';
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from '@repo/ui/command';
-import { Popover, PopoverContent, PopoverTrigger } from '@repo/ui/popover';
-
 // African countries. `value` is the lowercase name stored in the DB, matching
 // the existing `tanzania` / `rwanda` convention.
 export const AFRICAN_COUNTRIES = [
@@ -22,6 +6,7 @@ export const AFRICAN_COUNTRIES = [
   { value: 'rwanda', label: 'Rwanda', flag: '🇷🇼' },
   { value: 'kenya', label: 'Kenya', flag: '🇰🇪' },
   { value: 'botswana', label: 'Botswana', flag: '🇧🇼' },
+  { value: 'uganda', label: 'Uganda', flag: '🇺🇬' },
   { value: 'algeria', label: 'Algeria', flag: '🇩🇿' },
   { value: 'angola', label: 'Angola', flag: '🇦🇴' },
   { value: 'benin', label: 'Benin', flag: '🇧🇯' },
@@ -69,73 +54,6 @@ export const AFRICAN_COUNTRIES = [
   { value: 'sudan', label: 'Sudan', flag: '🇸🇩' },
   { value: 'togo', label: 'Togo', flag: '🇹🇬' },
   { value: 'tunisia', label: 'Tunisia', flag: '🇹🇳' },
-  { value: 'uganda', label: 'Uganda', flag: '🇺🇬' },
   { value: 'zambia', label: 'Zambia', flag: '🇿🇲' },
   { value: 'zimbabwe', label: 'Zimbabwe', flag: '🇿🇼' },
 ] as const;
-
-export function CountrySelect({
-  value,
-  onChange,
-  placeholder = 'Select country',
-}: {
-  value?: string;
-  onChange: (value: string) => void;
-  placeholder?: string;
-}) {
-  const [open, setOpen] = useState(false);
-  const selected = AFRICAN_COUNTRIES.find((c) => c.value === value);
-
-  return (
-    <Popover open={open} onOpenChange={setOpen} modal={false}>
-      <PopoverTrigger asChild>
-        <Button
-          type="button"
-          variant="outline"
-          role="combobox"
-          aria-expanded={open}
-          className="w-full justify-between font-normal"
-        >
-          {selected ? (
-            <span className="flex items-center gap-2">
-              <span className="text-base leading-none">{selected.flag}</span>
-              {selected.label}
-            </span>
-          ) : (
-            <span className="text-stone-500">{placeholder}</span>
-          )}
-          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
-        <Command>
-          <CommandInput placeholder="Search countries..." />
-          <CommandList>
-            <CommandEmpty>No country found.</CommandEmpty>
-            <CommandGroup>
-              {AFRICAN_COUNTRIES.map((country) => (
-                <CommandItem
-                  key={country.value}
-                  value={country.label}
-                  onSelect={() => {
-                    onChange(country.value);
-                    setOpen(false);
-                  }}
-                >
-                  <Check
-                    className={cn(
-                      'mr-2 h-4 w-4',
-                      value === country.value ? 'opacity-100' : 'opacity-0',
-                    )}
-                  />
-                  <span className="mr-2 text-base leading-none">{country.flag}</span>
-                  {country.label}
-                </CommandItem>
-              ))}
-            </CommandGroup>
-          </CommandList>
-        </Command>
-      </PopoverContent>
-    </Popover>
-  );
-}

@@ -148,9 +148,6 @@ export default function DayByDayPage() {
               <div className="space-y-2">
                 <label className="text-xs font-semibold tracking-wide text-stone-500 uppercase">
                   Tour Starts In
-                  {country && (
-                    <span className="ml-2 text-green-600 capitalize">({country})</span>
-                  )}
                 </label>
                 <CreatableAsyncCombobox
                   value={startCity || null}
@@ -165,9 +162,6 @@ export default function DayByDayPage() {
               <div className="space-y-2">
                 <label className="text-xs font-semibold tracking-wide text-stone-500 uppercase">
                   Tour Ends In
-                  {country && (
-                    <span className="ml-2 text-green-600 capitalize">({country})</span>
-                  )}
                 </label>
                 <CreatableAsyncCombobox
                   value={endCity || null}

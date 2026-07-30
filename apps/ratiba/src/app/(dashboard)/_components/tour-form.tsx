@@ -18,7 +18,7 @@ import {
 import { TagInput } from '@repo/ui/tag-input';
 import { Trash2, Plus } from 'lucide-react';
 import { AsyncCombobox } from '@/components/itinerary-builder/async-combobox';
-import { CountrySelect } from './country-select';
+import { CountryPicker } from '@/components/itinerary-builder/country-picker';
 
 export const itinerarySchema = z.object({
   title: z.string().min(1, 'Day title is required').max(255, 'Title too long'),
@@ -34,7 +34,7 @@ export const tourFormSchema = z.object({
     (val) => !isNaN(Number(val)) && Number(val) >= 0,
     'Pricing must be a valid positive number'
   ),
-  country: z.string().min(2, 'Country is required'),
+  countries: z.array(z.string().min(2)).min(1, 'At least one country is required'),
   img_url: z.string().url('Must be a valid URL').optional().or(z.literal('')),
   number_of_days: z.number().min(1, 'Number of days must be at least 1'),
   tags: z.array(z.string().max(50, 'Tag too long')).min(1, 'At least one tag is required'),
@@ -47,7 +47,7 @@ export const emptyTourFormValues: TourFormData = {
   tourName: '',
   overview: '',
   pricing: '',
-  country: '',
+  countries: [],
   img_url: '',
   number_of_days: 1,
   tags: [],
@@ -99,11 +99,15 @@ export function TourForm({
 
             <FormField
               control={form.control}
-              name="country"
+              name="countries"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Country</FormLabel>
-                  <CountrySelect value={field.value} onChange={field.onChange} />
+                  <FormLabel>Countries</FormLabel>
+                  <CountryPicker
+                    value={field.value}
+                    onChange={field.onChange}
+                    triggerLabel="Countries:"
+                  />
                   <FormMessage />
                 </FormItem>
               )}
