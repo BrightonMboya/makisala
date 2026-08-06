@@ -129,6 +129,47 @@ export default function PricingPage() {
     setExtras(extras.map((extra) => (extra.id === extraId ? { ...extra, [field]: value } : extra)));
   };
 
+  // Activities marked "Optional" in the day-by-day step are priced here, not
+  // in the activity modal — one place to set a price, regardless of which day
+  // it's on. Derived live from `days`, not a separate copy, so it can't drift.
+  const activityOptions = useMemo(
+    () =>
+      days.flatMap((day) =>
+        day.activities
+          .filter((a) => a.isOptional)
+          .map((activity) => ({
+            dayId: day.id,
+            dayNumber: day.dayNumber,
+            activity,
+            label: `Day ${day.dayNumber}: ${activity.name || 'Untitled activity'}${
+              activity.location ? `, ${activity.location}` : ''
+            }`,
+          })),
+      ),
+    [days],
+  );
+
+  const updateActivityOptionPrice = (dayId: string, activityId: string, patch: any) => {
+    setDays((prev) =>
+      prev.map((day) =>
+        day.id === dayId
+          ? {
+              ...day,
+              activities: day.activities.map((a) =>
+                a.id === activityId ? { ...a, ...patch } : a,
+              ),
+            }
+          : day,
+      ),
+    );
+  };
+
+  // Removing an option here just un-marks the activity as optional — it stays
+  // on the day, it's just no longer priced as an add-on.
+  const removeActivityOption = (dayId: string, activityId: string) => {
+    updateActivityOptionPrice(dayId, activityId, { isOptional: false });
+  };
+
   // Org catalog of custom pricing units, so a unit typed on one itinerary is
   // suggested on every future one (like moments / extra names).
   const utils = trpc.useUtils();
@@ -271,7 +312,9 @@ export default function PricingPage() {
 
   // Totals
   const manualRowsTotal = pricingRows.reduce((acc, row) => acc + row.count * row.unitPrice, 0);
-  const extrasTotal = extras.filter((e) => e.name.trim()).reduce((acc, e) => acc + e.price, 0);
+  const extrasTotal =
+    extras.filter((e) => e.name.trim()).reduce((acc, e) => acc + e.price, 0) +
+    activityOptions.reduce((acc, { activity }) => acc + (activity.price ?? 0), 0);
   const autoSellTotal = computeQuery.data?.sellTotal ?? 0;
   const tripTotal: number | null = useAutoPricing
     ? computeQuery.data
@@ -384,6 +427,62 @@ export default function PricingPage() {
         </div>
 
         <div className="space-y-3 p-6">
+          {activityOptions.map(({ dayId, activity, label }) => (
+            <div key={activity.id} className="grid grid-cols-12 items-start gap-4">
+              <div className="col-span-5">
+                <div className="flex h-9 items-center gap-2 rounded-md border border-stone-200 bg-stone-100 px-3 text-sm text-stone-700">
+                  <span className="shrink-0 rounded-full bg-green-100 px-1.5 py-0.5 text-[10px] font-bold text-green-700">
+                    Day-by-day
+                  </span>
+                  <span className="truncate">{label}</span>
+                </div>
+              </div>
+              <div className="col-span-3">
+                <div className="relative">
+                  <span className="absolute top-2.5 left-3 text-sm font-medium text-stone-500">
+                    $
+                  </span>
+                  <Input
+                    type="number"
+                    min={0}
+                    step="0.01"
+                    value={activity.price ?? ''}
+                    onChange={(e) => {
+                      const parsed = Number(e.target.value);
+                      updateActivityOptionPrice(dayId, activity.id, {
+                        price:
+                          e.target.value === '' || Number.isNaN(parsed)
+                            ? null
+                            : Math.max(0, parsed),
+                      });
+                    }}
+                    placeholder="On request"
+                    className="border-stone-200 bg-stone-50 pl-7 shadow-none"
+                  />
+                </div>
+              </div>
+              <div className="col-span-4 flex items-start gap-2">
+                <select
+                  value={activity.priceUnit ?? 'per_person'}
+                  onChange={(e) =>
+                    updateActivityOptionPrice(dayId, activity.id, { priceUnit: e.target.value })
+                  }
+                  className="h-9 flex-1 rounded-md border border-stone-200 bg-stone-50 px-2 text-sm text-stone-700"
+                >
+                  <option value="per_person">per person</option>
+                  <option value="per_group">per group</option>
+                </select>
+                <button
+                  className="rounded-md p-2 text-stone-400 transition-colors hover:bg-red-50 hover:text-red-500"
+                  onClick={() => removeActivityOption(dayId, activity.id)}
+                  title="Un-mark as optional"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+          ))}
+
           {extras.map((extra) => {
             const isFree = extra.priceUnit === 'free';
             return (
@@ -406,10 +505,16 @@ export default function PricingPage() {
                       </span>
                       <Input
                         type="number"
-                        value={extra.price}
-                        onChange={(e) =>
-                          handleUpdateExtra(extra.id, 'price', parseFloat(e.target.value) || 0)
-                        }
+                        value={extra.price === 0 ? '' : extra.price}
+                        onChange={(e) => {
+                          const parsed = parseFloat(e.target.value);
+                          handleUpdateExtra(
+                            extra.id,
+                            'price',
+                            e.target.value === '' || Number.isNaN(parsed) ? 0 : parsed,
+                          );
+                        }}
+                        placeholder="0.00"
                         className="border-stone-200 bg-stone-50 pl-7 shadow-none"
                       />
                     </div>
@@ -953,10 +1058,12 @@ function ManualPricingSection({
                 </span>
                 <Input
                   type="number"
-                  value={row.unitPrice}
-                  onChange={(e) =>
-                    onUpdateRow(row.id, 'unitPrice', parseFloat(e.target.value) || 0)
-                  }
+                  value={row.unitPrice === 0 ? '' : row.unitPrice}
+                  onChange={(e) => {
+                    const parsed = parseFloat(e.target.value);
+                    onUpdateRow(row.id, 'unitPrice', e.target.value === '' || Number.isNaN(parsed) ? 0 : parsed);
+                  }}
+                  placeholder="0.00"
                   className="border-stone-200 bg-stone-50 pl-7 shadow-none"
                 />
               </div>

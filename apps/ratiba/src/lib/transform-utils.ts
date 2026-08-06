@@ -129,10 +129,22 @@ export function formatDuration(minutes: number | null): string | null {
   return `${hours}h ${mins}min`;
 }
 
+// An activity marked "Optional" in the day-by-day step, priced in the
+// Pricing step. `price` numeric() comes back as a string from the DB; null
+// means "on request" — quoted by the operator directly, not shown as $0.
+export type ActivityOptionInput = {
+  dayNumber: number;
+  name: string;
+  location?: string | null;
+  price: number | string | null;
+  priceUnit?: 'per_person' | 'per_group' | null;
+};
+
 export function calculatePricing(
   pricingRows: PricingRow[],
   extras: ExtraOption[],
   travelerGroups: TravelerGroup[],
+  activityOptions: ActivityOptionInput[] = [],
 ): ItineraryData['pricing'] {
   // Extras are NOT rolled into the main safari total. They are surfaced
   // separately as optional add-ons the client can choose to add on top.
@@ -164,11 +176,28 @@ export function calculatePricing(
       };
     });
 
+  // Activities marked optional in the day-by-day step, priced in the Pricing
+  // step. A null price means the operator left it "on request" instead of
+  // charging a set amount — quote it directly, don't show $0.
+  const activityExtras = activityOptions
+    .filter((a) => a.name.trim())
+    .map((a) => {
+      const price = a.price == null || a.price === '' ? null : Number(a.price);
+      const label = `Day ${a.dayNumber}: ${a.name}${a.location ? `, ${a.location}` : ''}`;
+      return {
+        label,
+        price: price == null || Number.isNaN(price) ? 'On request' : `$${Math.round(price).toLocaleString()}`,
+        unit: price == null || Number.isNaN(price) ? undefined : a.priceUnit === 'per_group' ? 'per group' : 'per person',
+      };
+    });
+
+  const allExtras = [...activityExtras, ...optionalExtras];
+
   return {
     total: `$${Math.round(totalPrice).toLocaleString()}`,
     perPerson: `$${Math.round(perPerson).toLocaleString()}`,
     currency: 'USD',
     breakdown: breakdown.length > 0 ? breakdown : undefined,
-    extras: optionalExtras.length > 0 ? optionalExtras : undefined,
+    extras: allExtras.length > 0 ? allExtras : undefined,
   };
 }

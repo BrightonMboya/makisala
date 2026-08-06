@@ -59,6 +59,7 @@ export function ActivityModal({
   onSave,
   countries,
   knownMoments,
+  defaultLocation,
 }: {
   isOpen: boolean;
   onClose: () => void;
@@ -69,6 +70,9 @@ export function ActivityModal({
   // Custom moments used anywhere in the itinerary, so a moment created on one
   // day (e.g. "Before Lunch") stays available in the dropdown on every day.
   knownMoments?: string[];
+  // The day's main destination. A new activity almost always happens there
+  // too, so it's used to pre-fill (not lock) the activity's location.
+  defaultLocation?: string | null;
 }) {
   const [activities, setActivities] = useState<Activity[]>([]);
   const utils = trpc.useUtils();
@@ -221,7 +225,7 @@ export function ActivityModal({
     const newActivity: Activity = {
       id: Math.random().toString(36).substr(2, 9),
       name: '',
-      location: '',
+      location: defaultLocation ?? '',
       moment: '',
       isOptional: false,
       description: '',
@@ -564,45 +568,13 @@ function SortableActivityRow({
             </div>
           </div>
 
-          {/* Optional activities are excluded from the rate-card quote, so this
-              is the only place their price is set. Without one, the booking
-              page offers the activity "on request" instead of pricing it. */}
+          {/* Optional activities are excluded from the rate-card quote. Their
+              price is set on the Pricing step's Optional Extras list, not
+              here, so it stays in one place regardless of which day it's on. */}
           {activity.isOptional && (
-            <div className="col-span-2 space-y-1.5 border-t border-stone-100 pt-3">
-              <label className="text-xs font-bold text-stone-500 uppercase">
-                Add-on price
-              </label>
-              <div className="flex gap-2">
-                <Input
-                  type="number"
-                  min={0}
-                  step="0.01"
-                  value={activity.price ?? ''}
-                  onChange={(e) => {
-                    // `min` is advisory in the DOM; a pasted or spun negative
-                    // would reduce the client's total on the booking page.
-                    const parsed = Number(e.target.value);
-                    onUpdate(
-                      activity.id,
-                      'price',
-                      e.target.value === '' || Number.isNaN(parsed) ? null : Math.max(0, parsed),
-                    );
-                  }}
-                  placeholder="e.g. 250"
-                  className="h-9 w-32 border-stone-200 bg-stone-50 text-sm"
-                />
-                <select
-                  value={activity.priceUnit ?? 'per_person'}
-                  onChange={(e) => onUpdate(activity.id, 'priceUnit', e.target.value)}
-                  className="h-9 rounded-md border border-stone-200 bg-stone-50 px-2 text-sm text-stone-700"
-                >
-                  <option value="per_person">per person</option>
-                  <option value="per_group">per group</option>
-                </select>
-              </div>
+            <div className="col-span-2 border-t border-stone-100 pt-3">
               <p className="text-[10px] text-stone-500">
-                What the client pays to add this on the booking page. Leave empty to offer it
-                on request and quote it yourself.
+                Optional add-on — set its price in the Pricing step under Optional Extras.
               </p>
             </div>
           )}

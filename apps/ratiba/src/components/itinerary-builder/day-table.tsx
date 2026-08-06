@@ -278,6 +278,7 @@ export function DayTable({
           onSave={(activities) => handleSaveActivities(selectedDay.id, activities)}
           countries={countries}
           knownMoments={knownMoments}
+          defaultLocation={selectedDay.destinationName ?? null}
         />
       )}
 

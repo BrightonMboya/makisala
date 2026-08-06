@@ -760,7 +760,7 @@ export const proposalsRouter = router({
                 },
               },
               activities: {
-                columns: { name: true, description: true, location: true, fromLocation: true, toLocation: true, moment: true, time: true, isOptional: true, imageUrl: true },
+                columns: { name: true, description: true, location: true, fromLocation: true, toLocation: true, moment: true, time: true, isOptional: true, imageUrl: true, price: true, priceUnit: true },
               },
               meals: true,
               transportation: {

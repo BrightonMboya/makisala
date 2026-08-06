@@ -187,7 +187,18 @@ export function transformBuilderToItineraryData(params: {
     }
   });
 
-  const pricing = calculatePricing(pricingRows, extras, travelerGroups);
+  const activityOptions = days.flatMap((day) =>
+    day.activities
+      .filter((a) => a.isOptional)
+      .map((a) => ({
+        dayNumber: day.dayNumber,
+        name: a.name,
+        location: a.location,
+        price: a.price ?? null,
+        priceUnit: a.priceUnit ?? null,
+      })),
+  );
+  const pricing = calculatePricing(pricingRows, extras, travelerGroups, activityOptions);
 
   // Generate map data
   const mapLocations: Location[] = [];

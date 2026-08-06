@@ -68,6 +68,9 @@ type ProposalDay = {
     moment: string;
     time?: string | null;
     imageUrl: string | null;
+    isOptional?: boolean;
+    price?: string | number | null;
+    priceUnit?: 'per_person' | 'per_group' | null;
   }>;
   meals?: {
     breakfast: boolean;
@@ -283,7 +286,20 @@ export function transformProposalToItineraryData(
     proposal.heroImage ||
     'https://images.unsplash.com/photo-1516426122078-c23e76319801?q=80&w=2000&auto=format&fit=crop';
 
-  const pricing = calculatePricing(pricingRows, extras, travelerGroups);
+  const activityOptions = proposalDays.flatMap((day) =>
+    (day.activities || [])
+      .filter((a) => a.isOptional)
+      .map((a) => ({
+        dayNumber: day.dayNumber,
+        name: a.name,
+        location: isTransferActivity(a.name)
+          ? formatTransferLocation(a.fromLocation, a.toLocation)
+          : a.location,
+        price: a.price ?? null,
+        priceUnit: a.priceUnit ?? null,
+      })),
+  );
+  const pricing = calculatePricing(pricingRows, extras, travelerGroups, activityOptions);
 
   const duration = `${proposalDays.length} Days`;
 
