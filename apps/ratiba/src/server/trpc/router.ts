@@ -6,6 +6,7 @@ import { extrasRouter } from './routers/extras';
 import { extraUnitsRouter } from './routers/extraUnits';
 import { mealOptionsRouter } from './routers/mealOptions';
 import { momentsRouter } from './routers/moments';
+import { inclusionExclusionsRouter } from './routers/inclusionExclusions';
 import { onboardingRouter } from './routers/onboarding';
 import { accommodationsRouter } from './routers/accommodations';
 import { commentsRouter } from './routers/comments';
@@ -31,6 +32,7 @@ export const appRouter = router({
   extraUnits: extraUnitsRouter,
   mealOptions: mealOptionsRouter,
   moments: momentsRouter,
+  inclusionExclusions: inclusionExclusionsRouter,
   onboarding: onboardingRouter,
   accommodations: accommodationsRouter,
   comments: commentsRouter,

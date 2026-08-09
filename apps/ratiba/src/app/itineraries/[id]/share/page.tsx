@@ -23,6 +23,7 @@ import {
   type EmailBodyEditorHandle,
 } from '@/components/email-composer/email-body-editor';
 import { EmailAttachments } from '@/components/email-composer/email-attachments';
+import { RecipientInput } from '@/components/email-composer/recipient-input';
 import { isSupportedEmailBody, type EditorNode } from '@/lib/email/proposal-email-body';
 import type { EmailAttachment } from '@repo/db/schema';
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
@@ -92,7 +93,7 @@ export default function SharePage() {
   } = useBuilder();
 
   const [activeTab, setActiveTab] = useState<'edit' | 'preview'>('edit');
-  const [recipientEmail, setRecipientEmail] = useState('');
+  const [recipients, setRecipients] = useState<string[]>([]);
   const [emailSubject, setEmailSubject] = useState('');
   const [testEmail, setTestEmail] = useState('');
   const [isProposalSaved, setIsProposalSaved] = useState(false);
@@ -144,10 +145,12 @@ export default function SharePage() {
     { enabled: !!clientId, staleTime: staleTimes.clients },
   );
 
-  // Set default values when client data loads
+  // Seed the To field with the client's email once, when their record loads.
+  // Only runs while the field is still empty so it never clobbers pills the
+  // operator has already added or removed.
   useEffect(() => {
     if (clientData?.email) {
-      setRecipientEmail(clientData.email);
+      setRecipients((prev) => (prev.length === 0 ? [clientData.email as string] : prev));
     }
   }, [clientData]);
 
@@ -344,9 +347,9 @@ export default function SharePage() {
   // Send email mutation
   const sendEmailMutation = useMutation({
     mutationFn: async ({ isTest }: { isTest: boolean }) => {
-      const targetEmail = isTest ? testEmail : recipientEmail;
+      const targetEmail: string | string[] = isTest ? testEmail : recipients;
 
-      if (!targetEmail) {
+      if (targetEmail.length === 0) {
         throw new Error('Please enter an email address.');
       }
 
@@ -396,7 +399,7 @@ export default function SharePage() {
         title: isTest ? 'Test Email Sent!' : 'Email Sent Successfully!',
         description: isTest
           ? `Test email sent to ${testEmail}`
-          : `Proposal sent to ${clientName} at ${recipientEmail}`,
+          : `Proposal sent to ${clientName} at ${recipients.join(', ')}`,
       });
     },
     onError: (error: Error) => {
@@ -649,21 +652,19 @@ export default function SharePage() {
             {/* Field rows: label on the left, borderless input inline, hairline
                 divider under each — mirrors the To / Subject header of a real email. */}
             <div className="divide-y divide-stone-100">
-              <div className="flex items-center gap-3 px-6 py-3">
-                <label className="w-20 shrink-0 text-sm text-stone-400">To</label>
-                <input
-                  type="email"
-                  value={recipientEmail}
-                  onChange={(e) => setRecipientEmail(e.target.value)}
+              <div className="flex items-start gap-3 px-6 py-3">
+                <label className="w-20 shrink-0 pt-1 text-sm text-stone-400">To</label>
+                <RecipientInput
+                  recipients={recipients}
+                  onChange={setRecipients}
                   placeholder="client@email.com"
-                  className="flex-1 border-0 bg-transparent p-0 text-sm text-stone-900 placeholder:text-stone-400 focus:outline-none focus:ring-0"
                 />
-                {clientData?.email && recipientEmail !== clientData.email && (
+                {clientData?.email && !recipients.includes(clientData.email) && (
                   <button
-                    onClick={() => setRecipientEmail(clientData.email || '')}
-                    className="shrink-0 text-xs text-green-600 hover:underline"
+                    onClick={() => setRecipients([...recipients, clientData.email || ''])}
+                    className="shrink-0 pt-1 text-xs whitespace-nowrap text-green-600 hover:underline"
                   >
-                    Use {clientData.email}
+                    Add {clientData.email}
                   </button>
                 )}
               </div>
@@ -769,7 +770,8 @@ export default function SharePage() {
         <div className="overflow-hidden rounded-xl border border-stone-200 bg-white shadow-lg">
           <div className="border-b border-stone-100 bg-stone-50 px-6 py-4">
             <div className="text-xs text-stone-500">
-              <span className="font-medium">To:</span> {recipientEmail || 'client@email.com'}
+              <span className="font-medium">To:</span>{' '}
+              {recipients.length > 0 ? recipients.join(', ') : 'client@email.com'}
             </div>
             <div className="mt-1 text-xs text-stone-500">
               <span className="font-medium">Subject:</span> {emailSubject || 'Your Travel Proposal'}
@@ -833,7 +835,7 @@ export default function SharePage() {
             <Button
               className="gap-2 bg-green-600 hover:bg-green-700"
               onClick={() => sendEmailMutation.mutate({ isTest: false })}
-              disabled={!recipientEmail || sendEmailMutation.isPending || !isProposalSaved}
+              disabled={recipients.length === 0 || sendEmailMutation.isPending || !isProposalSaved}
             >
               {sendEmailMutation.isPending ? (
                 <Loader2 className="h-4 w-4 animate-spin" />

@@ -71,7 +71,15 @@ export const POST = withAxiom(async (request: AxiomRequest) => {
     const body = await request.json();
     const { proposalId, recipientEmail, recipientName, subject, message, isTest, bodyHtml } = body;
 
-    if (!proposalId || !recipientEmail) {
+    // The share page's To field now supports multiple pills; accept either a
+    // single address (test sends) or an array (real sends) from the client.
+    const recipients: string[] = Array.isArray(recipientEmail)
+      ? recipientEmail.filter(Boolean)
+      : recipientEmail
+        ? [recipientEmail]
+        : [];
+
+    if (!proposalId || recipients.length === 0) {
       return NextResponse.json(
         { success: false, error: 'Missing required fields' },
         { status: 400 },
@@ -181,7 +189,7 @@ export const POST = withAxiom(async (request: AxiomRequest) => {
 
     const result = await resend.emails.send({
       from: fromEmail,
-      to: recipientEmail,
+      to: recipients,
       subject: subject || `Your Travel Proposal: ${proposalTitle}`,
       html,
       ...(replyToEmail ? { replyTo: replyToEmail } : {}),
@@ -204,7 +212,7 @@ export const POST = withAxiom(async (request: AxiomRequest) => {
         await recordSentEmail(db, {
           resendId: result.data.id,
           type: 'proposal_share',
-          toEmail: recipientEmail,
+          toEmail: recipients.join(', '),
           subject: subject || `Your Travel Proposal: ${proposalTitle}`,
           organizationId: orgId,
           proposalId,

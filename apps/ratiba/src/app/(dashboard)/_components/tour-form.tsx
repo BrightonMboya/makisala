@@ -49,7 +49,7 @@ export const emptyTourFormValues: TourFormData = {
   pricing: '',
   countries: [],
   img_url: '',
-  number_of_days: 1,
+  number_of_days: 0,
   tags: [],
   itineraries: [{ title: 'Day 1', overview: '', national_park_id: '', accommodation_id: '' }],
 };
@@ -126,10 +126,10 @@ export function TourForm({
                       name={field.name}
                       ref={field.ref}
                       onBlur={field.onBlur}
-                      value={field.value ?? ''}
+                      value={field.value === 0 ? '' : field.value}
                       onChange={(e) => {
-                        const val = e.target.value;
-                        field.onChange(val === '' ? undefined : parseInt(val, 10));
+                        const parsed = parseInt(e.target.value, 10);
+                        field.onChange(Number.isNaN(parsed) ? 0 : parsed);
                       }}
                     />
                   </FormControl>
@@ -150,7 +150,11 @@ export function TourForm({
                       min="0"
                       step="0.01"
                       placeholder="5000"
-                      {...field}
+                      name={field.name}
+                      ref={field.ref}
+                      onBlur={field.onBlur}
+                      value={field.value === '0' ? '' : field.value}
+                      onChange={(e) => field.onChange(e.target.value)}
                     />
                   </FormControl>
                   <FormMessage />

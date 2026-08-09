@@ -1384,49 +1384,133 @@ function InclusionList({
           </li>
         ))}
       </ul>
-      <div className="relative">
-        <NewItemInput onAdd={(val) => onUpdate([...items, val])} placeholder={placeholder} />
-      </div>
+      <NewItemInput
+        kind={isExclusion ? 'exclusion' : 'inclusion'}
+        onAdd={(val) => onUpdate([...items, val])}
+        placeholder={placeholder}
+      />
     </div>
   );
 }
 
 function NewItemInput({
+  kind,
   onAdd,
   placeholder,
 }: {
+  kind: 'inclusion' | 'exclusion';
   onAdd: (val: string) => void;
   placeholder: string;
 }) {
+  const utils = trpc.useUtils();
+  const recordUsage = trpc.inclusionExclusions.recordUsage.useMutation();
   const [val, setVal] = useState('');
+  const [open, setOpen] = useState(false);
+
+  const q = val.trim();
+  // Don't search (or show the full library) until there's something to
+  // narrow by — with hundreds of saved phrases, an empty/1-char query would
+  // otherwise dump most of the catalog into the dropdown.
+  const canSearch = q.length >= 2;
+  const debouncedQuery = useDebounce(q, 300);
+  const { data: results = [], isFetching } = trpc.inclusionExclusions.search.useQuery(
+    { kind, query: debouncedQuery, limit: 8 },
+    { enabled: open && canSearch, staleTime: 60 * 1000 },
+  );
+
+  // True while a keystroke's debounce hasn't fired yet, or the query itself
+  // is still in flight — covers the whole "still searching" window.
+  const isSearching = canSearch && (q !== debouncedQuery || isFetching);
+  const isNew =
+    canSearch && !isSearching && !results.some((r) => r.text.toLowerCase() === q.toLowerCase());
+
+  // Adds the phrase to this tour's list and records it in the shared
+  // (cross-org) library so it shows up as a suggestion on other tours too.
+  const commit = (text: string) => {
+    const trimmed = text.trim();
+    if (!trimmed) return;
+    onAdd(trimmed);
+    recordUsage.mutate(
+      { kind, text: trimmed },
+      { onSuccess: () => utils.inclusionExclusions.search.invalidate({ kind }) },
+    );
+    setVal('');
+    setOpen(false);
+  };
+
   return (
-    <div className="flex gap-2">
-      <Input
-        value={val}
-        onChange={(e) => setVal(e.target.value)}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' && val.trim()) {
-            onAdd(val.trim());
-            setVal('');
-          }
-        }}
-        placeholder={placeholder}
-        className="h-9 border-stone-200 bg-white text-xs"
-      />
-      <Button
-        size="sm"
-        variant="outline"
-        className="h-9 border-stone-200 px-3 text-stone-500 hover:bg-green-50 hover:text-green-600"
-        onClick={() => {
-          if (val.trim()) {
-            onAdd(val.trim());
-            setVal('');
-          }
-        }}
-        disabled={!val.trim()}
-      >
-        <Plus className="h-4 w-4" />
-      </Button>
+    <div
+      className="relative"
+      onBlur={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget as Node | null)) {
+          setOpen(false);
+        }
+      }}
+    >
+      <div className="flex gap-2">
+        <div className="relative flex-1">
+          <Input
+            value={val}
+            onChange={(e) => {
+              setVal(e.target.value);
+              setOpen(true);
+            }}
+            onFocus={() => setOpen(true)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && val.trim()) {
+                e.preventDefault();
+                commit(val);
+              } else if (e.key === 'Escape') {
+                setOpen(false);
+              }
+            }}
+            placeholder={placeholder}
+            className="h-9 border-stone-200 bg-white pr-7 text-xs"
+          />
+          {isSearching && (
+            <Loader2 className="pointer-events-none absolute top-1/2 right-2.5 h-3.5 w-3.5 -translate-y-1/2 animate-spin text-stone-300" />
+          )}
+        </div>
+        <Button
+          size="sm"
+          variant="outline"
+          className="h-9 border-stone-200 px-3 text-stone-500 hover:bg-green-50 hover:text-green-600"
+          onClick={() => commit(val)}
+          disabled={!val.trim()}
+        >
+          <Plus className="h-4 w-4" />
+        </Button>
+      </div>
+      {open && canSearch && (results.length > 0 || isSearching || isNew) && (
+        <div className="absolute z-50 mt-1 max-h-64 w-full overflow-y-auto rounded-md border border-stone-200 bg-white py-1 shadow-lg">
+          {results.map((r) => (
+            <button
+              key={r.id}
+              type="button"
+              onClick={() => commit(r.text)}
+              className="block w-full truncate px-3 py-2 text-left text-xs text-stone-700 hover:bg-stone-50"
+            >
+              {r.text}
+            </button>
+          ))}
+          {isSearching && results.length === 0 && (
+            <div className="flex items-center gap-2 px-3 py-2 text-xs text-stone-400">
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              Searching…
+            </div>
+          )}
+          {isNew && (
+            <button
+              type="button"
+              onClick={() => commit(q)}
+              className="flex w-full items-center gap-2 truncate px-3 py-2 text-left text-xs text-green-600 hover:bg-green-50"
+            >
+              <Plus className="h-3.5 w-3.5 shrink-0" />
+              New: {q}
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }
