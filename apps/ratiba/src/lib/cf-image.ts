@@ -12,12 +12,11 @@ export interface CfImageOptions {
 
 /**
  * Print-surface image preset: the source URL the proposal PDF fetches for an image.
- * Callers pass the width their role prints at (see lib/pdf/proposal/images.ts), so
- * Cloudflare does the downscale at the edge and the render pulls a right-sized photo
- * instead of a multi-megabyte original it would only shrink locally.
  *
- * Only assets on our CF zone can be transformed; anything else (a rare unchanged
- * Unsplash default) passes through rather than getting a broken /cdn-cgi/image URL.
+ * Previously asked Cloudflare to downscale at the edge to the caller's print width
+ * (see lib/pdf/proposal/images.ts); now a passthrough to cfImage(), which no longer
+ * transforms (see its docstring). Harmless now that uploads are pre-resized at
+ * upload time, so the PDF render pulls an already-reasonable-sized photo anyway.
  */
 export function printImage(imageUrl: string | undefined, width = 1600): string {
   if (!imageUrl) return '';
@@ -26,9 +25,6 @@ export function printImage(imageUrl: string | undefined, width = 1600): string {
   } catch {
     return imageUrl;
   }
-  // Force JPEG rather than format=auto, which negotiates on an Accept header that
-  // server-side fetch doesn't send. sharp re-encodes these anyway, so this is only
-  // about getting bytes that are small and cheap to decode, predictably.
   return cfImage(imageUrl, { width, quality: 82, format: 'jpeg' });
 }
 
@@ -53,61 +49,20 @@ function stripCfImagePrefix(imageUrl: string): string {
 }
 
 /**
- * Wraps an R2 image URL with Cloudflare Image Transformations.
- * Requires Image Resizing to be enabled on the Cloudflare zone
- * serving the R2 bucket (e.g. assets.makisala.com).
+ * Cloudflare Image Transformations disabled (2026-08-10): not worth the
+ * $/mo at current traffic, and uploads are now pre-resized/compressed at
+ * upload time (see image-utils.ts / client-image-compress.ts) plus the
+ * one-time batch reprocess of existing R2 photos, so a live resize on every
+ * request no longer earns its cost. This still unwraps any existing
+ * /cdn-cgi/image/ prefix (idempotent) so stored/legacy URLs resolve to the
+ * raw asset instead of a broken transform request.
  *
- * @example
- * // Basic optimization
- * cfImage('https://assets.makisala.com/img.jpg')
- *
- * // With resizing and sharpening
- * cfImage('https://assets.makisala.com/img.jpg', {
- *   width: 800,
- *   sharpen: 2,
- *   quality: 85,
- * })
+ * To re-enable, restore the param-building + `${url.origin}/cdn-cgi/image/${paramString}${url.pathname}`
+ * behavior this replaced (see git history).
  */
-export function cfImage(imageUrl: string, options: CfImageOptions = {}): string {
-  const {
-    width,
-    height,
-    quality = 85,
-    fit = 'scale-down',
-    format = 'auto',
-    sharpen = 1,
-    brightness,
-    contrast,
-    dpr,
-  } = options;
-
-  const params: string[] = [];
-
-  params.push(`quality=${quality}`);
-  params.push(`format=${format}`);
-  params.push(`fit=${fit}`);
-  if (sharpen) params.push(`sharpen=${sharpen}`);
-  if (width) params.push(`width=${width}`);
-  if (height) params.push(`height=${height}`);
-  if (brightness) params.push(`brightness=${brightness}`);
-  if (contrast) params.push(`contrast=${contrast}`);
-  if (dpr) params.push(`dpr=${dpr}`);
-
-  const paramString = params.join(',');
-
+export function cfImage(imageUrl: string, _options: CfImageOptions = {}): string {
   try {
-    // Idempotent: unwrap any existing prefix so we never nest /cdn-cgi/image/.
-    const source = stripCfImagePrefix(imageUrl);
-    const url = new URL(source);
-    const pathname = url.pathname.toLowerCase();
-
-    // Some R2 assets are stored as AVIF and may fail through Image Resizing.
-    // Serve AVIF files directly from the bucket URL instead.
-    if (pathname.endsWith('.avif')) {
-      return source;
-    }
-
-    return `${url.origin}/cdn-cgi/image/${paramString}${url.pathname}`;
+    return stripCfImagePrefix(imageUrl);
   } catch {
     return imageUrl;
   }

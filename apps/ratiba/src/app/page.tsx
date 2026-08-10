@@ -280,7 +280,7 @@ export default function LandingPage() {
                   subtitle: 'Custom Gorilla Trekking Safari',
                   href: '/proposal/fesyck',
                   image:
-                    'https://assets.makisala.com/cdn-cgi/image/quality=85,format=auto,fit=scale-down,sharpen=1/destinations/rwanda/gorilla.jpg',
+                    'https://assets.makisala.com/destinations/rwanda/gorilla.jpg',
                 },
                 {
                   badge: { label: 'Lookbook', color: '#E0F0FF' },
@@ -288,7 +288,7 @@ export default function LandingPage() {
                   subtitle: 'Zanzibar Lookbook Escape',
                   href: '/proposal/589643b4-0076-4e48-8703-458602268f9f',
                   image:
-                    'https://assets.makisala.com/cdn-cgi/image/quality=85,format=auto,fit=scale-down,sharpen=1/organizations/411c36e8-0808-46f4-a3b2-130a3eecc349/images/1772879807340-43ed50b7c65549688f1c879fd60ce826-800.webp',
+                    'https://assets.makisala.com/organizations/411c36e8-0808-46f4-a3b2-130a3eecc349/images/1772879807340-43ed50b7c65549688f1c879fd60ce826-800.webp',
                 },
                 {
                   badge: { label: 'Branded', color: '#FFE0EC' },
@@ -296,7 +296,7 @@ export default function LandingPage() {
                   subtitle: 'Northern Circuit Branded Journey',
                   href: '/proposal/rnxdpk',
                   image:
-                    'https://assets.makisala.com/cdn-cgi/image/quality=85,format=auto,fit=scale-down,sharpen=1/organizations/411c36e8-0808-46f4-a3b2-130a3eecc349/images/1770650569417-pexels-isis-petroni-280715053-13142739.webp',
+                    'https://assets.makisala.com/organizations/411c36e8-0808-46f4-a3b2-130a3eecc349/images/1770650569417-pexels-isis-petroni-280715053-13142739.webp',
                 },
                 {
                   badge: { label: 'Honeymoon', color: '#E0F0FF' },
@@ -304,7 +304,7 @@ export default function LandingPage() {
                   subtitle: 'Romantic Honeymoon Escape',
                   href: '/proposal/lmxmro',
                   image:
-                    'https://assets.makisala.com/cdn-cgi/image/quality=85,format=auto,fit=scale-down,sharpen=1/accommodations/c1a5284f-5401-4b86-b3c0-16c2df4c5fe1/24.jpg',
+                    'https://assets.makisala.com/accommodations/c1a5284f-5401-4b86-b3c0-16c2df4c5fe1/24.jpg',
                 },
               ].map((item, i) => (
                 <motion.div

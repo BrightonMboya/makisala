@@ -63,6 +63,7 @@ export default async function AccommodationDetailPage({ params }: Props) {
   const images = acc.images.map((img) => ({
     id: img.id,
     url: getPublicUrl(img.bucket, img.key),
+    blurDataUrl: img.blurDataUrl,
   }));
 
   return (

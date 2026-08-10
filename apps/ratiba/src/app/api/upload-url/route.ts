@@ -3,6 +3,7 @@ import { auth } from '@/lib/auth';
 import { db, member } from '@repo/db';
 import { eq } from 'drizzle-orm';
 import { uploadToStorage } from '@/lib/storage';
+import { compressImage, generateBlurPlaceholder, replaceExtension } from '@/lib/image-utils';
 import { log } from '@/lib/logger';
 
 const MAX_URLS = 20;
@@ -90,30 +91,34 @@ export async function POST(req: Request) {
         }
 
         const buffer = Buffer.from(await response.arrayBuffer());
-        const contentType = response.headers.get('content-type') || 'image/jpeg';
+        const [compressed, blurDataUrl] = await Promise.all([
+          compressImage(buffer),
+          generateBlurPlaceholder(buffer),
+        ]);
 
         const urlPath = new URL(url).pathname;
         const originalName = urlPath.split('/').pop() || 'image.jpg';
-        const key = `${folder}/${Date.now()}-${i}-${originalName}`;
+        const compressedName = replaceExtension(originalName, compressed.extension);
+        const key = `${folder}/${Date.now()}-${i}-${compressedName}`;
 
         const { bucket, key: storageKey } = await uploadToStorage({
-          file: buffer,
-          contentType,
+          file: compressed.buffer,
+          contentType: compressed.contentType,
           key,
           visibility: 'public',
         });
 
-        return { key: storageKey, bucket };
+        return { key: storageKey, bucket, blurDataUrl };
       })
     );
 
     const results = settled
       .filter(
-        (r): r is PromiseFulfilledResult<{ key: string; bucket: string } | null> =>
+        (r): r is PromiseFulfilledResult<{ key: string; bucket: string; blurDataUrl: string } | null> =>
           r.status === 'fulfilled'
       )
       .map(r => r.value)
-      .filter((r): r is { key: string; bucket: string } => r !== null);
+      .filter((r): r is { key: string; bucket: string; blurDataUrl: string } => r !== null);
 
     log.info('URL upload complete', {
       userId: session.user.id,

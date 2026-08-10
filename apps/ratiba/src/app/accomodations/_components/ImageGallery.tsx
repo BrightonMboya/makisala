@@ -6,16 +6,16 @@ import { Dialog, DialogContent } from '@repo/ui/dialog';
 import { Button } from '@repo/ui/button';
 import { ChevronLeft, ChevronRight, X, Maximize2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { cfImage } from '@/lib/cf-image';
 
 interface ImageGalleryProps {
-  images: { id: string; url: string }[];
+  images: { id: string; url: string; blurDataUrl?: string | null }[];
   accommodationName: string;
   className?: string;
 }
 
 function BlurImage({
   src,
+  blurDataUrl,
   alt,
   fill,
   className,
@@ -23,6 +23,7 @@ function BlurImage({
   sizes,
 }: {
   src: string;
+  blurDataUrl?: string | null;
   alt: string;
   fill?: boolean;
   className?: string;
@@ -30,16 +31,17 @@ function BlurImage({
   sizes?: string;
 }) {
   const [loaded, setLoaded] = useState(false);
-  const blurSrc = cfImage(src, { width: 20, quality: 10, format: 'webp', sharpen: 0 });
 
   const handleLoad = useCallback(() => setLoaded(true), []);
 
   return (
     <>
-      {/* Tiny blurred placeholder */}
-      {!loaded && (
+      {/* Tiny blurred placeholder, precomputed at upload time. Photos uploaded
+          before this existed have no blurDataUrl yet, so they just skip straight
+          to the full image fading in. */}
+      {!loaded && blurDataUrl && (
         <img
-          src={blurSrc}
+          src={blurDataUrl}
           alt=""
           aria-hidden
           className={cn(className, 'absolute inset-0 h-full w-full scale-110 blur-xl')}
@@ -123,6 +125,7 @@ export function ImageGallery({ images, accommodationName, className }: ImageGall
         >
           <BlurImage
             src={currentImage.url}
+            blurDataUrl={currentImage.blurDataUrl}
             alt={`${accommodationName} - Image ${currentImageIndex + 1}`}
             fill
             className="object-cover"
@@ -204,6 +207,7 @@ export function ImageGallery({ images, accommodationName, className }: ImageGall
             <div className="relative h-full w-full">
               <BlurImage
                 src={currentImage.url}
+                blurDataUrl={currentImage.blurDataUrl}
                 alt={`${accommodationName} - Fullscreen`}
                 fill
                 className="object-contain"

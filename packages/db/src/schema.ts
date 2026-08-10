@@ -615,6 +615,9 @@ export const accommodationImages = pgTable(
       .references(() => accommodations.id, { onDelete: 'cascade' }),
     bucket: text('bucket').notNull(),
     key: text('key').notNull(),
+    // Tiny (~20px) base64 data URI generated once at upload time, used as the
+    // blur-up placeholder instead of a live Cloudflare Image Resizing request.
+    blurDataUrl: text('blur_data_url'),
     // Org attribution. NULL = curated/global image shared with every org.
     // Non-null = private to that org; only visible to (and deletable by) that org.
     organizationId: uuid('organization_id').references(() => organizations.id, {
@@ -1443,6 +1446,28 @@ export const extraUnitLibraryRelations = relations(extraUnitLibrary, ({ one }) =
     references: [organizations.id],
   }),
 }));
+
+// A shared, cross-organization catalog of inclusion/exclusion phrases ("Beer,
+// wine", "Park Fees", "International Flights") typed on the pricing page.
+// Unlike the libraries above, this one is global with no per-org rows: the
+// phrasing is generic across operators, so every org's usage improves
+// autocomplete for everyone. usageCount ranks suggestions by popularity.
+export const InclusionExclusionKind = pgEnum('inclusion_exclusion_kind', [
+  'inclusion',
+  'exclusion',
+]);
+
+export const inclusionExclusionLibrary = pgTable(
+  'inclusion_exclusion_library',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    kind: InclusionExclusionKind('kind').notNull(),
+    text: text('text').notNull(),
+    usageCount: integer('usage_count').default(1).notNull(),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+  },
+  (t) => [uniqueIndex('inclusion_exclusion_library_kind_text_unique').on(t.kind, t.text)],
+);
 
 export type ExtraLibraryItem = typeof extraLibrary.$inferSelect;
 export type NewExtraLibraryItem = typeof extraLibrary.$inferInsert;

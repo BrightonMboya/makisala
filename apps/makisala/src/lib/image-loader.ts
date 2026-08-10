@@ -9,11 +9,11 @@ type LoaderArgs = { src: string; width: number; quality?: number }
 export default function imageLoader({ src, width, quality }: LoaderArgs): string {
     const q = quality ?? 75
 
-    // assets.makisala.com — Cloudflare Image Resizing on our own zone.
-    // Pattern: /cdn-cgi/image/<options>/<path>
+    // assets.makisala.com — Cloudflare Image Resizing disabled (2026-08-10):
+    // not worth the $/mo at current traffic. Serve the raw R2 asset as-is.
+    // To re-enable, wrap in cdn-cgi/image/width=${width},quality=${q},format=auto/ again.
     if (src.startsWith('https://assets.makisala.com/')) {
-        const path = src.slice('https://assets.makisala.com/'.length)
-        return `https://assets.makisala.com/cdn-cgi/image/width=${width},quality=${q},format=auto/${path}`
+        return src
     }
 
     // Unsplash has its own resize API; ignore any existing query and rebuild.
@@ -32,12 +32,9 @@ export default function imageLoader({ src, width, quality }: LoaderArgs): string
         return src
     }
 
-    // Local /public assets in dev — pass through. In production, route them
-    // through Cloudflare Image Resizing on the apex makisala.com zone.
+    // Local /public assets — Cloudflare Image Resizing disabled (2026-08-10),
+    // same reasoning as assets.makisala.com above. Pass through as-is.
     if (src.startsWith('/')) {
-        if (process.env.NODE_ENV === 'production') {
-            return `https://www.makisala.com/cdn-cgi/image/width=${width},quality=${q},format=auto${src}`
-        }
         return src
     }
 

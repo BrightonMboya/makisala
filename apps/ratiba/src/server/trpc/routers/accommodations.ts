@@ -20,6 +20,7 @@ import {
 const uploadedImageSchema = z.object({
   key: z.string().min(1),
   bucket: z.string().min(1),
+  blurDataUrl: z.string().max(20_000).optional(),
 });
 
 const MAX_UPLOAD_BYTES = 15 * 1024 * 1024; // 15 MB per image
@@ -303,6 +304,7 @@ export const accommodationsRouter = router({
               accommodationId: newAcc.id,
               bucket: img.bucket,
               key: img.key,
+              blurDataUrl: img.blurDataUrl,
               organizationId: ctx.orgId,
             });
           }
@@ -364,6 +366,7 @@ export const accommodationsRouter = router({
             accommodationId: id,
             bucket: img.bucket,
             key: img.key,
+            blurDataUrl: img.blurDataUrl,
             organizationId: ctx.orgId,
           });
         }
@@ -454,6 +457,7 @@ export const accommodationsRouter = router({
           accommodationId: input.accommodationId,
           bucket: img.bucket,
           key: img.key,
+          blurDataUrl: img.blurDataUrl,
           organizationId: ctx.orgId,
         })),
       );

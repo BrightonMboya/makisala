@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@repo/ui/card';
 import { Eye, EyeOff, Link2, Loader2, Upload, X } from 'lucide-react';
 import { useToast } from '@repo/ui/use-toast';
 import { trpc } from '@/lib/trpc';
+import { compressImageFile } from '@/lib/client-image-compress';
 
 interface AccomodationFormProps {
   initialData?: {
@@ -121,18 +122,22 @@ export default function AccomodationForm({ initialData }: AccomodationFormProps)
   async function uploadLocalFiles(files: PendingFile[], accommodationId: string) {
     if (files.length === 0) return [];
 
+    // Resize/re-encode before requesting upload URLs, since this path PUTs
+    // straight to R2 and never passes through server-side compression.
+    const compressed = await Promise.all(files.map((f) => compressImageFile(f.file)));
+
     const targets = await createUploadUrlsMutation.mutateAsync({
       accommodationId,
-      files: files.map((f) => ({
-        name: f.file.name,
-        contentType: f.file.type,
-        size: f.file.size,
+      files: compressed.map(({ file }) => ({
+        name: file.name,
+        contentType: file.type,
+        size: file.size,
       })),
     });
 
     await Promise.all(
       targets.map(async (target, i) => {
-        const file = files[i]!.file;
+        const { file } = compressed[i]!;
         const res = await fetch(target.uploadUrl, {
           method: 'PUT',
           headers: { 'Content-Type': file.type },
@@ -142,7 +147,11 @@ export default function AccomodationForm({ initialData }: AccomodationFormProps)
       }),
     );
 
-    return targets.map((t) => ({ key: t.key, bucket: t.bucket }));
+    return targets.map((t, i) => ({
+      key: t.key,
+      bucket: t.bucket,
+      blurDataUrl: compressed[i]!.blurDataUrl ?? undefined,
+    }));
   }
 
   async function uploadUrlImages(urls: string[], accommodationId: string) {
@@ -157,7 +166,7 @@ export default function AccomodationForm({ initialData }: AccomodationFormProps)
       const err = await res.json().catch(() => ({}));
       throw new Error(err.error || 'Image upload failed');
     }
-    return (await res.json()).images as { key: string; bucket: string }[];
+    return (await res.json()).images as { key: string; bucket: string; blurDataUrl?: string }[];
   }
 
   async function uploadAllPending(accommodationId: string) {

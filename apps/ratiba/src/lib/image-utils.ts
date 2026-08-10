@@ -49,6 +49,20 @@ export async function compressImage(
 }
 
 /**
+ * Generate a tiny (~20px) base64 data URI to use as a blur-up placeholder,
+ * computed once at upload time instead of a live Cloudflare Image Resizing
+ * request on every gallery load.
+ */
+export async function generateBlurPlaceholder(input: Buffer | Uint8Array): Promise<string> {
+  const buffer = await sharp(input)
+    .resize(20, 20, { fit: 'inside', withoutEnlargement: true })
+    .webp({ quality: 40 })
+    .toBuffer()
+
+  return `data:image/webp;base64,${buffer.toString('base64')}`
+}
+
+/**
  * Replace file extension with new one
  */
 export function replaceExtension(filename: string, newExtension: string): string {
