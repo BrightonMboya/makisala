@@ -183,7 +183,7 @@ export default function ConfirmationPage() {
           </h1>
 
           <Link
-            href="/proposal/tjksu"
+            href="/proposal/w7mp75"
             className="transition-opacity hover:opacity-90"
             style={{
               display: 'inline-flex',

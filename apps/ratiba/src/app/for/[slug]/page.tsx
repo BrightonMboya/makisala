@@ -166,7 +166,7 @@ export default async function UseCasePage({ params }: Props) {
                   Book a demo
                 </Link>
                 <Link
-                  href="/proposal/tjksu"
+                  href="/proposal/w7mp75"
                   className="rounded-xl border border-[rgba(38,27,7,0.18)] px-6 py-3 text-sm font-[580] text-[#261B07] transition-opacity hover:opacity-70"
                 >
                   See a sample itinerary
@@ -341,7 +341,7 @@ export default async function UseCasePage({ params }: Props) {
                       Book a demo
                     </Link>
                     <Link
-                      href="/proposal/tjksu"
+                      href="/proposal/w7mp75"
                       className="rounded-xl border border-[rgba(38,27,7,0.18)] px-6 py-3 text-sm font-[580] text-[#261B07] transition-opacity hover:opacity-70"
                     >
                       See a sample itinerary
@@ -438,7 +438,7 @@ export default async function UseCasePage({ params }: Props) {
                 Book a demo
               </Link>
               <Link
-                href="/proposal/tjksu"
+                href="/proposal/w7mp75"
                 className="rounded-xl border border-[rgba(38,27,7,0.18)] px-6 py-3 text-sm font-[580] text-[#261B07] transition-opacity hover:opacity-70"
               >
                 See a sample itinerary
