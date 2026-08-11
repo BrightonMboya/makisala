@@ -256,10 +256,6 @@ export default function PreviewPage() {
   // Share Proposal Mutation
   const shareProposalMutation = useMutation({
     mutationFn: async () => {
-      if (!tourId) {
-        throw new Error('Tour ID is required to save proposal.');
-      }
-
       const proposalData = {
         days,
         startDate: startDate ? toLocalISOString(startDate) : null,

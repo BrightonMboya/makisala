@@ -131,12 +131,6 @@ function Header() {
   // Publish Proposal Mutation
   const publishMutation = useMutation({
     mutationFn: async () => {
-      if (!tourId) {
-        throw new Error(
-          'Tour ID is required to publish. Please go back to dashboard and create a new proposal.',
-        );
-      }
-
       const proposalData = {
         days,
         startDate: startDate ? toLocalISOString(startDate) : null,

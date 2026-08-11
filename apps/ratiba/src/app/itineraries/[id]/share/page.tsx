@@ -261,10 +261,6 @@ export default function SharePage() {
   // Auto-publish proposal mutation
   const autoPublishMutation = useMutation({
     mutationFn: async () => {
-      if (!tourId) {
-        throw new Error('Tour ID is required to save proposal.');
-      }
-
       const proposalData = {
         days,
         startDate: startDate ? toLocalISOString(startDate) : null,
@@ -316,7 +312,7 @@ export default function SharePage() {
 
   // Auto-publish on mount
   useEffect(() => {
-    if (tourId && !isProposalSaved && !autoPublishMutation.isPending) {
+    if (!isProposalSaved && !autoPublishMutation.isPending) {
       autoPublishMutation.mutate();
     }
   }, [tourId]);

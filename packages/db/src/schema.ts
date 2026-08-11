@@ -790,9 +790,8 @@ export const ProposalStatus = pgEnum('proposal_status', [
 export const proposals = pgTable('proposals', {
   id: text('id').primaryKey(),
   name: text('name').notNull(),
-  tourId: uuid('tour_id')
-    .notNull()
-    .references(() => tours.id, { onDelete: 'cascade' }),
+  // Nullable: a proposal can be started from a blank template (no tour).
+  tourId: uuid('tour_id').references(() => tours.id, { onDelete: 'set null' }),
   clientId: uuid('client_id').references(() => clients.id, { onDelete: 'set null' }),
   tourTitle: text('tour_title'),
   tourType: text('tour_type'),

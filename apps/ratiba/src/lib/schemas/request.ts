@@ -11,7 +11,7 @@ export const requestSchema = z.object({
   tourType: z.string().min(1, 'Tour type is required'),
   startDate: z.date(),
   travelers: z.number().min(1, 'At least 1 traveler is required'),
-  selectedTourId: z.string().min(1, 'Please select a tour template'),
+  selectedTourId: z.string().optional(),
 }).refine(data => data.clientId || data.lastName, {
   message: 'Either select an existing client or enter client details',
   path: ['clientId'],

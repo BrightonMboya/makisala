@@ -226,7 +226,7 @@ export function NewRequestDialog({ open, onOpenChange, defaultClientId }: NewReq
                 name="selectedTourId"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Tour Template *</FormLabel>
+                    <FormLabel>Tour Template</FormLabel>
                     <FormControl>
                       <Combobox
                         items={availableTours.map((t) => ({
@@ -238,6 +238,9 @@ export function NewRequestDialog({ open, onOpenChange, defaultClientId }: NewReq
                         placeholder="Search tour templates..."
                       />
                     </FormControl>
+                    <p className="text-xs italic text-stone-500">
+                      Leave blank to start from scratch.
+                    </p>
                     {availableTours.length === 0 && (
                       <p className="text-xs text-stone-500">
                         No tour templates available. Create tours first.

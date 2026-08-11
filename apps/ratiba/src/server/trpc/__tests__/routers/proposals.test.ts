@@ -213,6 +213,27 @@ describe('proposals router', () => {
       expect(result.id).toBe('new-prop');
     });
 
+    test('saves a proposal with no tourId (blank template)', async () => {
+      const { ctx, db } = createProtectedContext();
+      const caller = createCaller(ctx);
+
+      db._results.set('query.proposals.findFirst', undefined);
+      db._results.set('tx.insert', [{ id: 'blank-prop' }]);
+      db._results.set('tx.delete', { success: true });
+      db._results.set('tx.select', []);
+
+      const result = await caller.proposals.save({
+        id: 'blank-prop',
+        name: 'Blank Proposal',
+        data: {
+          tourTitle: 'Custom Safari',
+          selectedTheme: 'minimalistic',
+        },
+      });
+      expect(result.success).toBe(true);
+      expect(result.id).toBe('blank-prop');
+    });
+
     test('generates UUID for empty id', async () => {
       const { ctx, db } = createProtectedContext();
       const caller = createCaller(ctx);

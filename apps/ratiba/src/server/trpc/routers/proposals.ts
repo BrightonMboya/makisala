@@ -957,7 +957,7 @@ export const proposalsRouter = router({
         name: z.string(),
         data: z.record(z.string(), z.unknown()),
         status: z.enum(['draft', 'shared', 'awaiting_payment', 'paid', 'booked', 'completed', 'cancelled']).optional(),
-        tourId: z.string(),
+        tourId: z.string().nullable().optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -993,7 +993,7 @@ export const proposalsRouter = router({
       const proposalData = {
         id: proposalId,
         name: input.name,
-        tourId: input.tourId || builderData.tourId!,
+        tourId: input.tourId || builderData.tourId || null,
         organizationId: ctx.orgId,
         clientId: builderData.clientId || null,
         tourTitle: builderData.tourTitle || input.name,
