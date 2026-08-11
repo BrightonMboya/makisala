@@ -711,6 +711,11 @@ export default function MinimalisticTheme({ data, onHeroImageChange, onDayImageC
                                   </span>
                                 )}
                               </span>
+                              {day.rooms && !shouldHideAccommodation && (
+                                <span className="mt-1 block text-xs text-stone-400">
+                                  {day.rooms}
+                                </span>
+                              )}
                             </div>
                             <div className="md:text-right">
                               <span className="mb-2 block text-[10px] tracking-[0.2em] text-stone-400 uppercase">

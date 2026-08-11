@@ -19,6 +19,7 @@ import {
   formatDuration,
   formatTransferLocation,
   isTransferActivity,
+  roomSummaryText,
   toThemeAlternatives,
   transportModeLabels,
 } from '@/lib/transform-utils';
@@ -144,6 +145,8 @@ export function transformBuilderToItineraryData(params: {
       return acc ? { name: acc.name, images: acc.images } : undefined;
     });
 
+    const rooms = roomSummaryText(day.rooms);
+
     return {
       day: day.dayNumber,
       date: dateStr,
@@ -152,6 +155,7 @@ export function transformBuilderToItineraryData(params: {
       destination: destinationName || undefined,
       activities,
       accommodation: accommodationName,
+      rooms,
       accommodationAlternatives,
       meals: mealsStr,
       mealOptions: Array.isArray(day.mealOptions) ? day.mealOptions : [],

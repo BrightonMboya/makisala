@@ -636,6 +636,7 @@ const JourneyOverview = ({ data }: { data: ItineraryData }) => {
                       Stay
                     </span>
                     <p className="mt-1 text-sm text-stone-600">{day.accommodation}</p>
+                    {day.rooms && <p className="text-xs text-stone-400">{day.rooms}</p>}
                   </div>
                 )}
               </motion.div>
@@ -723,9 +724,12 @@ const JourneyOverview = ({ data }: { data: ItineraryData }) => {
                     {/* Accommodation */}
                     <td className="py-4 pr-4">
                       {!isLastDay && day.accommodation ? (
-                        <span className="text-sm text-stone-600">
-                          {day.accommodation}
-                        </span>
+                        <div>
+                          <span className="text-sm text-stone-600">{day.accommodation}</span>
+                          {day.rooms && (
+                            <p className="text-xs text-stone-400">{day.rooms}</p>
+                          )}
+                        </div>
                       ) : (
                         <span className="text-sm text-stone-300">—</span>
                       )}
@@ -1250,6 +1254,24 @@ const DaySection = ({
                     </p>
                     <p className="mt-1 text-sm font-medium text-stone-800">1 Night</p>
                   </div>
+
+                  {day.rooms && (
+                    <>
+                      <div className="mx-2 mt-1 h-8 w-px bg-stone-200" />
+                      <div className="pl-6">
+                        <p className="text-[10px] font-light tracking-[0.2em] text-stone-400 uppercase">
+                          Room
+                        </p>
+                        <div className="mt-1 space-y-0.5">
+                          {day.rooms.split(', ').map((room) => (
+                            <p key={room} className="text-sm font-medium text-stone-800">
+                              {room}
+                            </p>
+                          ))}
+                        </div>
+                      </div>
+                    </>
+                  )}
 
                   {(mealsArray.length > 0 ||
                     (day.mealOptions && day.mealOptions.length > 0)) && (

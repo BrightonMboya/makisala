@@ -236,6 +236,9 @@ export interface Day {
   destinationId?: string;
   activities: DayActivity[];
   accommodation: string;
+  // "Double Room · 2 pax" / "Double Room · 2 pax, Single Room · 1 pax" — undefined
+  // when no room type has been set for this night (render nothing, not a placeholder).
+  rooms?: string;
   accommodationAlternatives?: ThemeAccommodationAlternative[];
   meals: string;
   mealOptions?: string[];

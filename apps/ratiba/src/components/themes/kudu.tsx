@@ -540,6 +540,9 @@ export default function KuduTheme({ data, onHeroImageChange, onDayImageChange }:
                       {day.accommodation}
                     </span>
                   </div>
+                  {day.rooms && (
+                    <span className="text-[11px] text-slate-400 italic">{day.rooms}</span>
+                  )}
                 </div>
                 {day.meals && (
                   <>

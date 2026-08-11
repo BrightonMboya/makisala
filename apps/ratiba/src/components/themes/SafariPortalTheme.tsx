@@ -505,6 +505,9 @@ export default function SafariPortalTheme({ data }: { data: ItineraryData }) {
                               </span>
                             )}
                           </div>
+                          {day.rooms && !shouldHideAccommodation && (
+                            <div className="mt-1 text-xs text-stone-400">{day.rooms}</div>
+                          )}
                           {!shouldHideAccommodation && (
                             <AccommodationAlternativesBlock
                               alternatives={day.accommodationAlternatives}

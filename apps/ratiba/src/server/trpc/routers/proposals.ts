@@ -749,7 +749,7 @@ export const proposalsRouter = router({
                 columns: { id: true, name: true, country: true, park_overview: true, latitude: true, longitude: true },
               },
               accommodations: {
-                columns: { id: true },
+                columns: { id: true, roomType: true, paxCount: true },
                 with: {
                   accommodation: {
                     columns: { id: true, name: true, overview: true, description: true },

@@ -70,6 +70,7 @@ const styles = StyleSheet.create({
   detailHead: { flexDirection: 'row', alignItems: 'center', gap: SPACE.sm, marginBottom: SPACE.lg },
   columns: { flexDirection: 'row', gap: SPACE.lg, flex: 1 },
   col: { flex: 1, gap: SPACE.sm },
+  detail: { flexDirection: 'row', gap: 4 },
   stackPhoto: { width: '100%', height: 118 },
   group: { gap: 3, marginBottom: SPACE.sm },
   activity: { flexDirection: 'row', gap: SPACE.sm, alignItems: 'flex-start' },
@@ -212,6 +213,12 @@ export function DayDetailPage({ data, day }: { data: ItineraryData; day: Day }) 
                 {day.accommodation}
               </Text>
               {accommodation?.location ? <Badge>{accommodation.location}</Badge> : null}
+              {day.rooms ? (
+                <View style={styles.detail}>
+                  <Small color={palette.muted}>Rooms: </Small>
+                  <Small color={palette.body}>{day.rooms}</Small>
+                </View>
+              ) : null}
               {accommodation?.description ? <Body>{accommodation.description}</Body> : null}
               {alternatives.length > 0 ? (
                 <View

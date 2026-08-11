@@ -22,6 +22,7 @@ import {
   formatDuration,
   formatTransferLocation,
   isTransferActivity,
+  roomSummaryText,
   toThemeAlternatives,
   transportModeLabels,
 } from '@/lib/transform-utils';
@@ -50,6 +51,8 @@ type ProposalDay = {
     longitude: string | null;
   } | null;
   accommodations?: Array<{
+    roomType?: string | null;
+    paxCount?: number | null;
     accommodation: {
       id: string;
       name: string;
@@ -208,6 +211,16 @@ export function transformProposalToItineraryData(
     // Stored alternatives carry their own lodge name, so no id→name resolver is needed.
     const accommodationAlternatives = toThemeAlternatives(day.alternatives);
 
+    // One `proposalAccommodations` row per room line in the night's mix (see the
+    // `save` mutation), so every entry — not just [0] — has to be read to recover
+    // a room mix like "1 double + 1 single".
+    const rooms = roomSummaryText(
+      (day.accommodations ?? []).map((a) => ({
+        roomType: a.roomType ?? null,
+        pax: a.paxCount ?? 0,
+      })),
+    );
+
     return {
       day: day.dayNumber,
       date: dateStr,
@@ -217,6 +230,7 @@ export function transformProposalToItineraryData(
       destinationId: day.nationalPark?.id,
       activities,
       accommodation: accommodationName,
+      rooms,
       accommodationAlternatives,
       meals: mealsStr,
       mealOptions: Array.isArray(meals?.options) ? meals.options : [],

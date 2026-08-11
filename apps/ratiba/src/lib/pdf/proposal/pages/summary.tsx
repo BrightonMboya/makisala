@@ -118,6 +118,9 @@ export function SummaryPage({ data }: { data: ItineraryData }) {
                   <Small color={palette.ink}>
                     {hasRealAccommodation(day) ? day.accommodation : 'No accommodation'}
                   </Small>
+                  {hasRealAccommodation(day) && day.rooms ? (
+                    <Small color={palette.muted}>{day.rooms}</Small>
+                  ) : null}
                 </View>
               </View>
               <View style={styles.detailRow}>

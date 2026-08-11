@@ -15,7 +15,9 @@ const titleCaseWords = (s: string) =>
     .join(' ');
 
 /** "Double Room · 2 pax, Single Room · 1 pax" — or null when no rooms set. */
-function roomSummaryText(rooms: AccommodationAlternative['rooms']): string | undefined {
+export function roomSummaryText(
+  rooms: { roomType: string | null; pax: number }[] | undefined,
+): string | undefined {
   if (!rooms || rooms.length === 0) return undefined;
   const parts = rooms
     .filter((r) => r.roomType || r.pax)
