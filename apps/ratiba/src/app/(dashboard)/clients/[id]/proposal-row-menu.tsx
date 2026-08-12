@@ -19,14 +19,15 @@ import {
   AlertDialogTitle,
 } from '@repo/ui/alert-dialog';
 import { toast } from '@repo/ui/toast';
-import { Copy, MoreVertical, Trash2 } from 'lucide-react';
+import { Copy, LayoutTemplate, MoreVertical, Trash2 } from 'lucide-react';
 import { trpc } from '@/lib/trpc';
 import { DuplicateProposalDialog } from '../../dashboard/duplicate-proposal-dialog';
 
 /**
- * Per-proposal actions on the client deal page: Duplicate and Delete. Status is
- * changed via the row's status pill (ProposalStatusDropdown), and Edit / Open
- * have their own buttons, so this kebab only holds the two extras.
+ * Per-proposal actions on the client deal page: Duplicate, Save as template,
+ * and Delete. Status is changed via the row's status pill
+ * (ProposalStatusDropdown), and Edit / Open have their own buttons, so this
+ * kebab only holds the extras.
  */
 export function ProposalRowMenu({
   proposalId,
@@ -55,6 +56,16 @@ export function ProposalRowMenu({
     },
   });
 
+  const saveAsTemplate = trpc.proposals.saveAsTemplate.useMutation({
+    onSuccess: () => {
+      toast({ title: 'Saved as template', description: 'Find it under Tours.' });
+    },
+    onError: () => {
+      toast({ title: 'Failed to save as template', variant: 'destructive' });
+    },
+    onSettled: () => utils.proposals.listTemplates.invalidate(),
+  });
+
   // Open a dialog only after the dropdown's dismiss layer has torn down, or Radix
   // treats the same click as an "interact outside" and closes it instantly.
   const openAfterMenuCloses = (open: () => void) => setTimeout(open, 0);
@@ -71,13 +82,20 @@ export function ProposalRowMenu({
             <MoreVertical className="h-4 w-4" />
           </button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-40">
+        <DropdownMenuContent align="end" className="w-48">
           <DropdownMenuItem
             onSelect={() => openAfterMenuCloses(() => setDuplicateOpen(true))}
             className="gap-2"
           >
             <Copy className="h-3.5 w-3.5" />
             Duplicate
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            onSelect={() => saveAsTemplate.mutate({ proposalId })}
+            className="gap-2"
+          >
+            <LayoutTemplate className="h-3.5 w-3.5" />
+            Save as template
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem

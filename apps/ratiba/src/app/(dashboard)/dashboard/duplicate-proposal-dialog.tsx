@@ -58,11 +58,15 @@ export function DuplicateProposalDialog({
   defaultTitle,
   open,
   onOpenChange,
+  dialogTitle = 'Duplicate proposal',
+  submitLabel = 'Duplicate & edit',
 }: {
   proposalId: string;
   defaultTitle: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  dialogTitle?: string;
+  submitLabel?: string;
 }) {
   const router = useRouter();
 
@@ -128,7 +132,7 @@ export function DuplicateProposalDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg" onClick={(e) => e.stopPropagation()}>
         <DialogHeader>
-          <DialogTitle className="font-serif text-xl">Duplicate proposal</DialogTitle>
+          <DialogTitle className="font-serif text-xl">{dialogTitle}</DialogTitle>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-2">
@@ -284,7 +288,7 @@ export function DuplicateProposalDialog({
                 disabled={form.formState.isSubmitting}
               >
                 {form.formState.isSubmitting && <Loader2 className="h-4 w-4 animate-spin" />}
-                Duplicate & edit
+                {submitLabel}
               </Button>
             </div>
           </form>

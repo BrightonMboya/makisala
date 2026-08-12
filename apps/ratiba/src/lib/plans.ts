@@ -90,7 +90,7 @@ export async function checkFeatureAccess(
           await db
             .select({ count: sql<number>`count(*)::int` })
             .from(proposals)
-            .where(eq(proposals.organizationId, orgId))
+            .where(and(eq(proposals.organizationId, orgId), eq(proposals.isTemplate, false)))
         )[0]?.count ??
         0;
       if (count >= limits.activeProposals) {

@@ -1,42 +1,37 @@
 'use client';
 
 import { Input } from '@repo/ui/input';
-import { Button } from '@repo/ui/button';
 import {
   Map,
   Search,
-  Plus,
 } from 'lucide-react';
 import { trpc } from '@/lib/trpc';
 import { staleTimes } from '@/lib/query-keys';
 import { useSession } from '@/components/session-context';
 import { useState, useMemo, useDeferredValue } from 'react';
-import Link from 'next/link';
-import TourCard from '../_components/tour-card';
+import ProposalTemplateCard from '../_components/proposal-template-card';
 
 export default function ToursPage() {
   const { session } = useSession();
   const [searchQuery, setSearchQuery] = useState('');
   const deferredSearchQuery = useDeferredValue(searchQuery);
 
-  const { data: tours = [], isLoading } = trpc.tours.list.useQuery(undefined, {
+  const { data: templates = [], isLoading } = trpc.proposals.listTemplates.useQuery(undefined, {
     staleTime: staleTimes.tours,
     enabled: !!session?.user?.id,
   });
 
-  // Filter tours based on search query (deferred for performance)
-  const filteredTours = useMemo(() => {
-    if (!deferredSearchQuery.trim()) return tours;
+  // Filter templates based on search query (deferred for performance)
+  const filteredTemplates = useMemo(() => {
+    if (!deferredSearchQuery.trim()) return templates;
     const query = deferredSearchQuery.toLowerCase();
-    return tours.filter(
-      (tour) =>
-        tour.name.toLowerCase().includes(query) ||
-        (tour.countries && tour.countries.length > 0 ? tour.countries : [tour.country]).some((c) =>
-          c.toLowerCase().includes(query)
-        ) ||
-        (tour.tags || []).some((tag) => tag.toLowerCase().includes(query))
+    return templates.filter(
+      (template) =>
+        template.name.toLowerCase().includes(query) ||
+        (template.tourTitle || '').toLowerCase().includes(query) ||
+        template.countries.some((c) => c.toLowerCase().includes(query))
     );
-  }, [tours, deferredSearchQuery]);
+  }, [templates, deferredSearchQuery]);
 
   return (
     <div className="flex flex-col h-full bg-stone-50">
@@ -46,18 +41,12 @@ export default function ToursPage() {
           <div className="relative w-64">
             <Search className="absolute top-2.5 left-2.5 h-4 w-4 text-stone-400" />
             <Input
-              placeholder="Search by name, country, tags..."
+              placeholder="Search by name, country..."
               className="pl-9"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
-          <Button asChild className="bg-green-700 hover:bg-green-800 gap-2">
-            <Link href="/tours/new">
-              <Plus className="h-4 w-4" />
-              New Tour
-            </Link>
-          </Button>
         </div>
       </header>
 
@@ -66,48 +55,30 @@ export default function ToursPage() {
           <div className="flex items-center justify-center py-12">
             <div className="h-8 w-8 animate-spin rounded-full border-4 border-green-600 border-t-transparent"></div>
           </div>
-        ) : tours.length === 0 ? (
+        ) : templates.length === 0 ? (
           <div className="py-24 text-center">
             <div className="mx-auto h-12 w-12 text-stone-300 mb-4">
               <Map className="h-full w-full" />
             </div>
-            <h3 className="text-lg font-medium text-stone-900">No tours yet</h3>
+            <h3 className="text-lg font-medium text-stone-900">No templates yet</h3>
             <p className="text-stone-500 mt-1 mb-6">
-              Create your first tour to get started with proposals.
+              Save a finished proposal as a template from its menu to see it here.
             </p>
-            <Button asChild className="bg-green-700 hover:bg-green-800 gap-2">
-              <Link href="/tours/new">
-                <Plus className="h-4 w-4" />
-                New Tour
-              </Link>
-            </Button>
           </div>
-        ) : filteredTours.length === 0 ? (
+        ) : filteredTemplates.length === 0 ? (
           <div className="py-24 text-center">
             <div className="mx-auto h-12 w-12 text-stone-300 mb-4">
               <Search className="h-full w-full" />
             </div>
-            <h3 className="text-lg font-medium text-stone-900">No tours found</h3>
+            <h3 className="text-lg font-medium text-stone-900">No templates found</h3>
             <p className="text-stone-500 mt-1">
               Try adjusting your search query.
             </p>
           </div>
         ) : (
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {filteredTours.map((tour) => (
-              <TourCard
-                key={tour.id}
-                tour={{
-                  id: tour.id,
-                  name: tour.name,
-                  days: tour.days,
-                  imageUrl: tour.imageUrl,
-                  overview: tour.overview,
-                  countries: tour.countries && tour.countries.length > 0 ? tour.countries : [tour.country],
-                  pricing: tour.pricing,
-                  tags: tour.tags,
-                }}
-              />
+            {filteredTemplates.map((template) => (
+              <ProposalTemplateCard key={template.id} template={template} />
             ))}
           </div>
         )}

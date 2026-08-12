@@ -25,7 +25,7 @@ import {
   AlertDialogTitle,
 } from '@repo/ui/alert-dialog';
 import { toast } from '@repo/ui/toast';
-import { Check, Copy, MoreVertical, Pencil, Tag, Trash2 } from 'lucide-react';
+import { Check, Copy, LayoutTemplate, MoreVertical, Pencil, Tag, Trash2 } from 'lucide-react';
 import { trpc } from '@/lib/trpc';
 import { PROPOSAL_STATUSES, getStatusConfig, type ProposalStatus } from '@/lib/proposal-status';
 import { DuplicateProposalDialog } from './duplicate-proposal-dialog';
@@ -103,6 +103,12 @@ export function ProposalEventMenu({
     onSettled: invalidateLists,
   });
 
+  const saveAsTemplate = trpc.proposals.saveAsTemplate.useMutation({
+    onSuccess: () => toast({ title: 'Saved as template', description: 'Find it under Tours.' }),
+    onError: () => toast({ title: 'Failed to save as template', variant: 'destructive' }),
+    onSettled: () => utils.proposals.listTemplates.invalidate(),
+  });
+
   const remove = trpc.proposals.delete.useMutation({
     onMutate: async () => {
       setConfirmOpen(false);
@@ -159,7 +165,7 @@ export function ProposalEventMenu({
           <DropdownMenuContent
             align="end"
             onClick={(e) => e.stopPropagation()}
-            className="w-44"
+            className="w-48"
           >
             <DropdownMenuItem onClick={openEditor} className="gap-2">
               <Pencil className="h-3.5 w-3.5" />
@@ -197,6 +203,14 @@ export function ProposalEventMenu({
             >
               <Copy className="h-3.5 w-3.5" />
               Duplicate
+            </DropdownMenuItem>
+
+            <DropdownMenuItem
+              onClick={() => saveAsTemplate.mutate({ proposalId })}
+              className="gap-2"
+            >
+              <LayoutTemplate className="h-3.5 w-3.5" />
+              Save as template
             </DropdownMenuItem>
 
             <DropdownMenuSeparator />

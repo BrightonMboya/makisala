@@ -856,6 +856,10 @@ export const proposals = pgTable('proposals', {
     .notNull()
     .references(() => organizations.id),
   status: ProposalStatus('status').default('draft').notNull(),
+  // A reusable, client-stripped copy of a finished proposal. Shown on /tours
+  // instead of a live pipeline entry; "send to client" clones it back into a
+  // real proposal via the same logic as `duplicate`.
+  isTemplate: boolean('is_template').default(false).notNull(),
   // What the client opted into on /proposal/[id]/book. The server recomputes
   // the total from these rather than trusting a browser figure.
   clientSelections: jsonb('client_selections').$type<ClientSelections>(),

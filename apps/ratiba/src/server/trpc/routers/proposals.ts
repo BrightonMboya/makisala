@@ -62,6 +62,83 @@ function normalizeStartDate(value: string | Date): string {
   ).toISOString();
 }
 
+/**
+ * Deep-copies a proposal's days (and their accommodations/activities/meals/
+ * transportation) onto `newProposalId`. Shared by `duplicate` and
+ * `saveAsTemplate`, which differ only in how the parent `proposals` row is
+ * inserted.
+ */
+async function copyProposalDays(tx: any, days: any[], newProposalId: string) {
+  for (const day of days) {
+    const [newDay] = await tx
+      .insert(proposalDays)
+      .values({
+        proposalId: newProposalId,
+        dayNumber: day.dayNumber,
+        title: day.title,
+        description: day.description,
+        previewImage: day.previewImage,
+        nationalParkId: day.nationalParkId,
+        destinationName: day.destinationName,
+        destinationLat: day.destinationLat,
+        destinationLng: day.destinationLng,
+        alternatives: day.alternatives,
+      })
+      .returning();
+
+    if (!newDay) continue;
+
+    for (const acc of day.accommodations) {
+      await tx.insert(proposalAccommodations).values({
+        proposalDayId: newDay.id,
+        accommodationId: acc.accommodationId,
+      });
+    }
+
+    for (const activity of day.activities) {
+      await tx.insert(proposalActivities).values({
+        proposalDayId: newDay.id,
+        activityLibraryId: activity.activityLibraryId,
+        name: activity.name,
+        description: activity.description,
+        location: activity.location,
+        fromLocation: activity.fromLocation,
+        toLocation: activity.toLocation,
+        moment: activity.moment,
+        time: activity.time || null,
+        isOptional: activity.isOptional,
+        price: activity.price,
+        priceUnit: activity.priceUnit,
+        imageUrl: activity.imageUrl,
+      });
+    }
+
+    if (day.meals) {
+      await tx.insert(proposalMeals).values({
+        proposalDayId: newDay.id,
+        breakfast: day.meals.breakfast,
+        lunch: day.meals.lunch,
+        dinner: day.meals.dinner,
+        options: Array.isArray(day.meals.options) ? day.meals.options : [],
+      });
+    }
+
+    for (const transport of day.transportation) {
+      await tx.insert(proposalTransportation).values({
+        proposalDayId: newDay.id,
+        originName: transport.originName,
+        originId: transport.originId,
+        destinationName: transport.destinationName,
+        destinationId: transport.destinationId,
+        mode: transport.mode,
+        durationMinutes: transport.durationMinutes,
+        distanceKm: transport.distanceKm,
+        notes: transport.notes,
+      });
+    }
+  }
+}
+
 interface BuilderData {
   selectedTheme?: string;
   tourId?: string;
@@ -179,7 +256,9 @@ export const proposalsRouter = router({
       }),
     )
     .query(async ({ ctx, input }) => {
-      const conditions = [eq(proposals.organizationId, ctx.orgId)];
+      // Templates are drafts with no client — exclude them so they don't
+      // surface as a stray "fresh draft" row in the pipeline.
+      const conditions = [eq(proposals.organizationId, ctx.orgId), eq(proposals.isTemplate, false)];
 
       if (input.filter === 'mine') {
         const assignedRows = await ctx.db
@@ -297,7 +376,9 @@ export const proposalsRouter = router({
       }),
     )
     .query(async ({ ctx, input }) => {
-      const conditions = [eq(proposals.organizationId, ctx.orgId)];
+      // Templates are drafts with no client — exclude them so they don't
+      // surface as a stray "fresh draft" row in the pipeline.
+      const conditions = [eq(proposals.organizationId, ctx.orgId), eq(proposals.isTemplate, false)];
 
       if (input.filter === 'mine') {
         const assignedRows = await ctx.db
@@ -1836,8 +1917,11 @@ export const proposalsRouter = router({
       const newId = crypto.randomUUID();
 
       // Apply the dialog's overrides, falling back to the original's values.
+      // A template isn't a prior deal, so instantiating one shouldn't read as
+      // a "(copy)" — just use its title directly.
       const newTourTitle = input.tourTitle ?? original.tourTitle;
-      const newName = input.tourTitle ?? `${original.name} (copy)`;
+      const newName =
+        input.tourTitle ?? (original.isTemplate ? original.tourTitle ?? original.name : `${original.name} (copy)`);
       const newStartDate = input.startDate ? normalizeStartDate(input.startDate) : original.startDate;
       const newTravelerGroups = input.travelerGroups ?? original.travelerGroups;
       // When the party size changes, rebuild pricing rows to match the new
@@ -1887,74 +1971,7 @@ export const proposalsRouter = router({
           status: 'draft',
         });
 
-        for (const day of original.days) {
-          const [newDay] = await tx
-            .insert(proposalDays)
-            .values({
-              proposalId: newId,
-              dayNumber: day.dayNumber,
-              title: day.title,
-              description: day.description,
-              previewImage: day.previewImage,
-              nationalParkId: day.nationalParkId,
-              destinationName: day.destinationName,
-              destinationLat: day.destinationLat,
-              destinationLng: day.destinationLng,
-              alternatives: day.alternatives,
-            })
-            .returning();
-
-          if (!newDay) continue;
-
-          for (const acc of day.accommodations) {
-            await tx.insert(proposalAccommodations).values({
-              proposalDayId: newDay.id,
-              accommodationId: acc.accommodationId,
-            });
-          }
-
-          for (const activity of day.activities) {
-            await tx.insert(proposalActivities).values({
-              proposalDayId: newDay.id,
-              activityLibraryId: activity.activityLibraryId,
-              name: activity.name,
-              description: activity.description,
-              location: activity.location,
-              fromLocation: activity.fromLocation,
-              toLocation: activity.toLocation,
-              moment: activity.moment,
-              time: activity.time || null,
-              isOptional: activity.isOptional,
-              price: activity.price,
-              priceUnit: activity.priceUnit,
-              imageUrl: activity.imageUrl,
-            });
-          }
-
-          if (day.meals) {
-            await tx.insert(proposalMeals).values({
-              proposalDayId: newDay.id,
-              breakfast: day.meals.breakfast,
-              lunch: day.meals.lunch,
-              dinner: day.meals.dinner,
-              options: Array.isArray(day.meals.options) ? day.meals.options : [],
-            });
-          }
-
-          for (const transport of day.transportation) {
-            await tx.insert(proposalTransportation).values({
-              proposalDayId: newDay.id,
-              originName: transport.originName,
-              originId: transport.originId,
-              destinationName: transport.destinationName,
-              destinationId: transport.destinationId,
-              mode: transport.mode,
-              durationMinutes: transport.durationMinutes,
-              distanceKm: transport.distanceKm,
-              notes: transport.notes,
-            });
-          }
-        }
+        await copyProposalDays(tx, original.days, newId);
 
         // Assign the current user
         await tx
@@ -1965,6 +1982,109 @@ export const proposalsRouter = router({
 
       return { success: true, newProposalId: newId };
     }),
+
+  // Flags a finished proposal as a reusable template: a client-stripped copy
+  // that shows up on /tours instead of the live pipeline. "Send to client"
+  // later instantiates it back into a real proposal via `duplicate`.
+  saveAsTemplate: protectedProcedure
+    .input(
+      z.object({
+        proposalId: z.string(),
+        templateName: z.string().min(1).optional(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const original = await ctx.db.query.proposals.findFirst({
+        where: and(eq(proposals.id, input.proposalId), eq(proposals.organizationId, ctx.orgId)),
+        with: {
+          days: {
+            with: {
+              accommodations: true,
+              activities: true,
+              meals: true,
+              transportation: true,
+            },
+            orderBy: (days, { asc }) => [asc(days.dayNumber)],
+          },
+        },
+      });
+
+      if (!original) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Proposal not found' });
+      }
+
+      const newId = crypto.randomUUID();
+      const newName = input.templateName ?? original.tourTitle ?? original.name;
+
+      await ctx.db.transaction(async (tx) => {
+        await tx.insert(proposals).values({
+          id: newId,
+          name: newName,
+          tourId: original.tourId,
+          organizationId: ctx.orgId,
+          clientId: null,
+          tourTitle: original.tourTitle,
+          tourType: original.tourType,
+          theme: original.theme,
+          heroImage: original.heroImage,
+          startDate: null,
+          startCity: original.startCity,
+          startCityLat: original.startCityLat,
+          startCityLng: original.startCityLng,
+          endCity: original.endCity,
+          endCityLat: original.endCityLat,
+          endCityLng: original.endCityLng,
+          pickupPoint: original.pickupPoint,
+          transferIncluded: original.transferIncluded,
+          travelerGroups: original.travelerGroups,
+          pricingRows: original.pricingRows,
+          extras: original.extras,
+          countries: original.countries,
+          inclusions: original.inclusions,
+          exclusions: original.exclusions,
+          useAutoPricing: original.useAutoPricing,
+          vehicleId: original.vehicleId,
+          markupPct: original.markupPct,
+          pickupTransferRateId: original.pickupTransferRateId,
+          dropoffTransferRateId: original.dropoffTransferRateId,
+          status: 'draft',
+          isTemplate: true,
+        });
+
+        await copyProposalDays(tx, original.days, newId);
+      });
+
+      return { success: true, templateId: newId };
+    }),
+
+  // The org's reusable proposal templates, shown on /tours.
+  listTemplates: protectedProcedure.query(async ({ ctx }) => {
+    const rows = await ctx.db.query.proposals.findMany({
+      where: and(eq(proposals.organizationId, ctx.orgId), eq(proposals.isTemplate, true)),
+      orderBy: desc(proposals.updatedAt),
+      with: {
+        days: { columns: { id: true } },
+      },
+      columns: {
+        id: true,
+        name: true,
+        tourTitle: true,
+        heroImage: true,
+        countries: true,
+        updatedAt: true,
+      },
+    });
+
+    return rows.map((row) => ({
+      id: row.id,
+      name: row.name,
+      tourTitle: row.tourTitle,
+      heroImage: row.heroImage,
+      countries: row.countries ?? [],
+      numberOfDays: row.days.length,
+      updatedAt: row.updatedAt,
+    }));
+  }),
 
   delete: protectedProcedure
     .input(z.object({ proposalId: z.string() }))
