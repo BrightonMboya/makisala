@@ -21,14 +21,25 @@ export interface EmailAttachmentsProps {
   proposalId: string;
   value: EmailAttachment[];
   onChange: (attachments: EmailAttachment[]) => void;
+  /** Whether the proposal PDF itself will be attached at send time. */
+  includePdf: boolean;
+  onIncludePdfChange: (includePdf: boolean) => void;
 }
 
 /**
  * Lets the operator attach additional files (visas, invoices, photos) to the
- * share email. Uploads straight to R2 via the proposal attachments route; the
- * proposal PDF is attached automatically at send time and is not listed here.
+ * share email. Uploads straight to R2 via the proposal attachments route. The
+ * proposal PDF is shown as a pinned row at the top of the same list, so
+ * removing/re-adding it feels like any other attachment rather than a
+ * separate setting elsewhere on the page.
  */
-export function EmailAttachments({ proposalId, value, onChange }: EmailAttachmentsProps) {
+export function EmailAttachments({
+  proposalId,
+  value,
+  onChange,
+  includePdf,
+  onIncludePdfChange,
+}: EmailAttachmentsProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [removingKey, setRemovingKey] = useState<string | null>(null);
@@ -97,8 +108,25 @@ export function EmailAttachments({ proposalId, value, onChange }: EmailAttachmen
         onChange={(e) => handleFiles(e.target.files)}
       />
 
-      {value.length > 0 && (
+      {(includePdf || value.length > 0) && (
         <ul className="mb-3 space-y-2">
+          {includePdf && (
+            <li className="flex items-center justify-between gap-3 rounded-lg border border-green-200 bg-green-50/60 px-3 py-2">
+              <div className="flex min-w-0 items-center gap-2.5">
+                <FileText className="h-4 w-4 shrink-0 text-green-600" />
+                <span className="truncate text-sm text-stone-700">Proposal PDF</span>
+                <span className="shrink-0 text-xs text-green-600">Attached automatically</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => onIncludePdfChange(false)}
+                className="shrink-0 rounded-md p-1 text-stone-400 hover:bg-stone-100 hover:text-stone-600"
+                aria-label="Remove proposal PDF"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </li>
+          )}
           {value.map((a) => (
             <li
               key={a.key}
@@ -131,23 +159,32 @@ export function EmailAttachments({ proposalId, value, onChange }: EmailAttachmen
         </ul>
       )}
 
-      <button
-        type="button"
-        onClick={() => inputRef.current?.click()}
-        disabled={uploading}
-        className="flex items-center gap-2 rounded-lg border border-dashed border-stone-300 px-4 py-2.5 text-sm font-medium text-stone-600 hover:border-stone-400 hover:bg-stone-50 disabled:opacity-60"
-      >
-        {uploading ? (
-          <Loader2 className="h-4 w-4 animate-spin" />
-        ) : (
-          <Paperclip className="h-4 w-4" />
+      <div className="flex flex-wrap gap-2">
+        <button
+          type="button"
+          onClick={() => inputRef.current?.click()}
+          disabled={uploading}
+          className="flex items-center gap-2 rounded-lg border border-dashed border-stone-300 px-4 py-2.5 text-sm font-medium text-stone-600 hover:border-stone-400 hover:bg-stone-50 disabled:opacity-60"
+        >
+          {uploading ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <Paperclip className="h-4 w-4" />
+          )}
+          {uploading ? 'Uploading…' : 'Add attachment'}
+        </button>
+        {!includePdf && (
+          <button
+            type="button"
+            onClick={() => onIncludePdfChange(true)}
+            className="flex items-center gap-2 rounded-lg border border-dashed border-stone-300 px-4 py-2.5 text-sm font-medium text-stone-600 hover:border-stone-400 hover:bg-stone-50"
+          >
+            <FileText className="h-4 w-4" />
+            Add proposal PDF
+          </button>
         )}
-        {uploading ? 'Uploading…' : 'Add attachment'}
-      </button>
-      <p className="mt-2 text-xs text-stone-400">
-        PDF, images, or Office docs up to 15MB each. The proposal PDF is attached
-        automatically.
-      </p>
+      </div>
+      <p className="mt-2 text-xs text-stone-400">PDF, images, or Office docs up to 15MB each.</p>
     </div>
   );
 }

@@ -69,7 +69,16 @@ export const POST = withAxiom(async (request: AxiomRequest) => {
     }
 
     const body = await request.json();
-    const { proposalId, recipientEmail, recipientName, subject, message, isTest, bodyHtml } = body;
+    const {
+      proposalId,
+      recipientEmail,
+      recipientName,
+      subject,
+      message,
+      isTest,
+      bodyHtml,
+      includePdf = true,
+    } = body;
 
     // The share page's To field now supports multiple pills; accept either a
     // single address (test sends) or an array (real sends) from the client.
@@ -140,24 +149,26 @@ export const POST = withAxiom(async (request: AxiomRequest) => {
     // Render a PDF copy of the proposal to attach alongside the live link. This is
     // best-effort: a render hiccup should never block the send, since the email's
     // primary CTA is the online proposal. On failure we log and send without the
-    // attachment.
+    // attachment. The operator can also opt out of the PDF entirely from /share.
     const lang = (proposal as { language?: string }).language;
     let pdfAttachment: { filename: string; content: Buffer } | undefined;
-    try {
-      // Reuses the R2-cached copy when the share page prewarmed it, so a send right
-      // after publishing is near-instant instead of a fresh render.
-      const { filename, pdf } = await getOrRenderProposalPdf({
-        id: proposalId,
-        title: proposalTitle,
-        language: lang,
-        updatedAt: proposal.updatedAt,
-      });
-      pdfAttachment = { filename, content: Buffer.from(pdf) };
-    } catch (error) {
-      request.log.error('Failed to render proposal PDF for email attachment; sending without it', {
-        proposalId,
-        error: serializeError(error),
-      });
+    if (includePdf) {
+      try {
+        // Reuses the R2-cached copy when the share page prewarmed it, so a send right
+        // after publishing is near-instant instead of a fresh render.
+        const { filename, pdf } = await getOrRenderProposalPdf({
+          id: proposalId,
+          title: proposalTitle,
+          language: lang,
+          updatedAt: proposal.updatedAt,
+        });
+        pdfAttachment = { filename, content: Buffer.from(pdf) };
+      } catch (error) {
+        request.log.error('Failed to render proposal PDF for email attachment; sending without it', {
+          proposalId,
+          error: serializeError(error),
+        });
+      }
     }
 
     // Assemble the final attachment list: the proposal PDF first, then any files

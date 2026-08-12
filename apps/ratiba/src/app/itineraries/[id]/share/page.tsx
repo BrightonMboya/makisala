@@ -103,6 +103,7 @@ export default function SharePage() {
   // Share-email composer state (react-email editor body + additional attachments).
   const [emailBodyJson, setEmailBodyJson] = useState<EditorNode | null>(null);
   const [emailAttachments, setEmailAttachments] = useState<EmailAttachment[]>([]);
+  const [includePdfAttachment, setIncludePdfAttachment] = useState(true);
   const [previewHtml, setPreviewHtml] = useState('');
   const [previewLoading, setPreviewLoading] = useState(false);
   // Imperative handle to the editor: renders current HTML + inserts variables.
@@ -375,6 +376,7 @@ export default function SharePage() {
           subject: emailSubject,
           isTest,
           bodyHtml,
+          includePdf: includePdfAttachment,
         }),
       });
 
@@ -709,11 +711,6 @@ export default function SharePage() {
             </div>
           </div>
 
-          <p className="px-1 text-xs text-stone-400">
-            Highlighted fields (client name, proposal title, dates, and link) are filled in
-            automatically when you send. Use the Preview tab to see exactly what the client gets.
-          </p>
-
           {/* Attachments */}
           <div className="rounded-xl border border-stone-200 bg-white p-6 shadow-sm">
             <h3 className="mb-4 flex items-center gap-2 text-lg font-semibold text-stone-900">
@@ -724,6 +721,8 @@ export default function SharePage() {
               proposalId={proposalId}
               value={emailAttachments}
               onChange={handleAttachmentsChange}
+              includePdf={includePdfAttachment}
+              onIncludePdfChange={setIncludePdfAttachment}
             />
           </div>
 
@@ -772,7 +771,7 @@ export default function SharePage() {
             <div className="mt-1 text-xs text-stone-500">
               <span className="font-medium">Subject:</span> {emailSubject || 'Your Travel Proposal'}
             </div>
-            {emailAttachments.length > 0 && (
+            {(emailAttachments.length > 0 || includePdfAttachment) && (
               <div className="mt-2 flex flex-wrap items-center gap-1.5">
                 <Paperclip className="h-3 w-3 text-stone-400" />
                 {emailAttachments.map((a) => (
@@ -783,7 +782,9 @@ export default function SharePage() {
                     {a.filename}
                   </span>
                 ))}
-                <span className="text-xs text-stone-400">+ proposal PDF</span>
+                {includePdfAttachment && (
+                  <span className="text-xs text-stone-400">+ proposal PDF</span>
+                )}
               </div>
             )}
           </div>
