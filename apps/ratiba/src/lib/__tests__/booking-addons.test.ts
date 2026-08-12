@@ -49,6 +49,7 @@ const addOns: BookingAddOns = {
       images: [],
       additionalPrice: 200,
       priceBasis: 'per_person',
+      customUnitLabel: null,
       roomCount: 2,
     },
     {
@@ -62,6 +63,7 @@ const addOns: BookingAddOns = {
       images: [],
       additionalPrice: -150,
       priceBasis: 'flat',
+      customUnitLabel: null,
       roomCount: 2,
     },
   ],
@@ -237,6 +239,20 @@ describe('alternative price basis', () => {
     const s = select({ alternativeByDayId: { 'day-2': 'alt-cheaper' } });
     const { lines } = priceSelections(addOns, s, 4);
     expect(lines[0]?.detail).toBeNull();
+    expect(lines[0]?.quantity).toBe(1);
+  });
+
+  test('custom is charged once, however large the party, and shows its own label', () => {
+    const custom: BookingAddOns = {
+      ...addOns,
+      alternatives: [
+        { ...addOns.alternatives[0]!, priceBasis: 'custom', customUnitLabel: 'per vehicle' },
+      ],
+    };
+    const s = select({ alternativeByDayId: { 'day-1': 'alt-upgrade' } });
+    const { lines, addOnTotal } = priceSelections(custom, s, 4);
+    expect(addOnTotal).toBe(200);
+    expect(lines[0]?.detail).toBe('per vehicle');
     expect(lines[0]?.quantity).toBe(1);
   });
 });

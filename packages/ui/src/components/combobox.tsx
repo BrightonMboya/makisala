@@ -86,7 +86,11 @@ export function Combobox({
             <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
                 <Command shouldFilter={false}>
                     <CommandInput
-                        placeholder={`Search ${placeholder.toLowerCase()}...`}
+                        placeholder={
+                            creatable
+                                ? `Search or create ${placeholder.toLowerCase()}...`
+                                : `Search ${placeholder.toLowerCase()}...`
+                        }
                         value={searchValue}
                         onValueChange={setSearchValue}
                     />

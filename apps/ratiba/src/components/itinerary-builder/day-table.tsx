@@ -642,6 +642,7 @@ function SortableDayRow({
                           type="number"
                           min={1}
                           value={room.pax || ''}
+                          onFocus={(e) => e.target.select()}
                           onChange={(e) =>
                             updateRoom(idx, { pax: parseInt(e.target.value, 10) || 0 })
                           }

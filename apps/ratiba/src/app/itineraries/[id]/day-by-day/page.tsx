@@ -189,6 +189,7 @@ export default function DayByDayPage() {
                       min={1}
                       className="w-20 border-stone-200 bg-stone-50"
                       value={group.count}
+                      onFocus={(e) => e.target.select()}
                       onChange={(e) => updateGroup(group.id, 'count', parseInt(e.target.value) || 1)}
                     />
                     <Select

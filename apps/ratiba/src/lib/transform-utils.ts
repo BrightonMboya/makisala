@@ -41,8 +41,8 @@ function mealSummaryText(meals: AccommodationAlternative['meals']): string | und
  *
  * The unit comes from `priceBasis`, the same field the booking page bills on,
  * so the proposal and the checkout can never quote different units for the
- * same lodge. The old free-text `priceUnitLabel` is deliberately ignored: it
- * was display-only and routinely disagreed with what was charged.
+ * same lodge. `priceUnitLabel` is only consulted for the `custom` basis, where
+ * it *is* the unit rather than a disagreeing description of it.
  */
 function priceDeltaLabel(alt: AccommodationAlternative): string | undefined {
   const amount = alt.additionalPrice;
@@ -54,7 +54,9 @@ function priceDeltaLabel(alt: AccommodationAlternative): string | undefined {
       ? ' per person'
       : alt.priceBasis === 'per_room'
         ? ' per room'
-        : '';
+        : alt.priceBasis === 'custom' && alt.priceUnitLabel
+          ? ` ${alt.priceUnitLabel}`
+          : '';
   return `${sign}$${abs.toLocaleString()}${unit}`;
 }
 

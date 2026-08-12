@@ -49,6 +49,15 @@ const EXTRA_UNIT_PRESETS = [
   { value: 'free', label: 'Free' },
 ];
 
+// Preset pricing units for accommodation alternatives. Same creatable-combobox
+// pattern as EXTRA_UNIT_PRESETS: anything the user types becomes a `custom`
+// basis with that text as the unit shown to the client.
+const ALT_UNIT_PRESETS = [
+  { value: 'flat', label: 'Total for the night' },
+  { value: 'per_person', label: 'Per person' },
+  { value: 'per_room', label: 'Per room' },
+];
+
 const CATEGORY_META: Record<LineSource, { label: string; icon: typeof Building }> = {
   accommodation: { label: 'Accommodation', icon: Building },
   park_fee: { label: 'Park fees', icon: TreePine },
@@ -653,7 +662,11 @@ function AccommodationAlternativesSection({
     (day.alternatives ?? []).map((alt) => ({ day, alt })),
   );
 
-  if (rows.length === 0) return null;
+  // Same org-wide catalog of custom pricing units used for optional extras, so
+  // a unit typed here is also suggested there (and vice versa).
+  const utils = trpc.useUtils();
+  const { data: orgUnits = [] } = trpc.extraUnits.list.useQuery();
+  const createExtraUnit = trpc.extraUnits.create.useMutation();
 
   const updateAlt = (
     dayId: string,
@@ -673,6 +686,50 @@ function AccommodationAlternativesSection({
       ),
     );
   };
+
+  // The pricing unit is edited with a creatable combobox: the presets map to
+  // the known bases, and anything else typed is stored as a `custom` basis
+  // with that text as the unit label and persisted to the org catalog.
+  const handleAltUnitChange = (dayId: string, altId: string, value: string) => {
+    const isPreset = value === 'flat' || value === 'per_person' || value === 'per_room';
+    updateAlt(dayId, altId, {
+      priceBasis: isPreset ? (value as AccommodationAlternative['priceBasis']) : 'custom',
+      priceUnitLabel: isPreset ? null : value,
+    });
+    const custom = value.trim();
+    if (!isPreset && custom) {
+      createExtraUnit.mutate(
+        { name: custom },
+        { onSuccess: () => utils.extraUnits.list.invalidate() },
+      );
+    }
+  };
+
+  // Current combobox value for an alternative: the preset key, or the
+  // freeform label when it's a custom basis.
+  const altUnitValue = (alt: AccommodationAlternative): string =>
+    alt.priceBasis === 'custom'
+      ? (alt.priceUnitLabel?.trim() ?? '')
+      : (alt.priceBasis ?? 'flat');
+
+  // Combobox options: built-in presets, then the org's saved custom units,
+  // then any custom unit already used among these alternatives (so it shows
+  // before the catalog refetch lands). Deduped case-insensitively by label.
+  const altUnitItems = useMemo(() => {
+    const byLabel = new Map<string, { value: string; label: string }>();
+    for (const preset of ALT_UNIT_PRESETS) byLabel.set(preset.label.toLowerCase(), preset);
+    const add = (label: string) => {
+      const trimmed = label.trim();
+      if (trimmed && !byLabel.has(trimmed.toLowerCase())) {
+        byLabel.set(trimmed.toLowerCase(), { value: trimmed, label: trimmed });
+      }
+    };
+    for (const u of orgUnits) add(u.name);
+    for (const { alt } of rows) if (alt.priceBasis === 'custom' && alt.priceUnitLabel) add(alt.priceUnitLabel);
+    return Array.from(byLabel.values());
+  }, [orgUnits, rows]);
+
+  if (rows.length === 0) return null;
 
   return (
     <div className="rounded-xl border border-stone-200 bg-white shadow-sm">
@@ -728,24 +785,22 @@ function AccommodationAlternativesSection({
                 />
               </div>
               {/* Drives both the charge and the unit the client is shown, so
-                  the two cannot disagree. There used to be a free-text label
-                  beside this; it was what the client read while this was what
-                  they were billed. An alternative covers one night, so a
-                  multi-night swap is already one row per night: "per night"
+                  the two cannot disagree — including a typed-in custom unit,
+                  which bills once (like "total for the night") and shows
+                  exactly the text typed. An alternative covers one night, so
+                  a multi-night swap is already one row per night: "per night"
                   needs no option here. */}
-              <select
-                value={alt.priceBasis ?? 'flat'}
-                onChange={(e) =>
-                  updateAlt(day.id, alt.id, {
-                    priceBasis: e.target.value as 'flat' | 'per_person' | 'per_room',
-                  })
-                }
-                className="h-9 flex-1 rounded-md border border-stone-200 bg-stone-50 px-2 text-sm text-stone-700"
-              >
-                <option value="flat">total for the night</option>
-                <option value="per_person">per person</option>
-                <option value="per_room">per room</option>
-              </select>
+              <div className="flex-1">
+                <Combobox
+                  items={altUnitItems}
+                  value={altUnitValue(alt)}
+                  onChange={(val) => handleAltUnitChange(day.id, alt.id, val)}
+                  placeholder="Pricing unit"
+                  className="border-stone-200 bg-stone-50 shadow-none"
+                  creatable
+                  createLabel="Add unit"
+                />
+              </div>
             </div>
           </div>
         ))}

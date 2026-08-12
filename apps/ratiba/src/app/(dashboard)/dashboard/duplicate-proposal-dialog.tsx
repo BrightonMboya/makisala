@@ -84,7 +84,6 @@ export function DuplicateProposalDialog({
       newClientEmail: '',
       newClientPhone: '',
       tourTitle: defaultTitle,
-      travelers: 2,
       startDate: undefined,
     },
   });
@@ -259,8 +258,14 @@ export function DuplicateProposalDialog({
                       <Input
                         type="number"
                         min={1}
+                        placeholder="e.g. 2"
                         {...field}
-                        onChange={(e) => field.onChange(parseInt(e.target.value, 10) || 0)}
+                        value={field.value ?? ''}
+                        onChange={(e) =>
+                          field.onChange(
+                            e.target.value === '' ? undefined : parseInt(e.target.value, 10),
+                          )
+                        }
                       />
                     </FormControl>
                     <FormMessage />

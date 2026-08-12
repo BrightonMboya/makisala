@@ -54,7 +54,6 @@ export function NewRequestDialog({ open, onOpenChange, defaultClientId }: NewReq
       phone: '',
       tourTitle: '',
       tourType: 'Private Tour',
-      travelers: 2,
       selectedTourId: '',
     },
   });
@@ -289,10 +288,18 @@ export function NewRequestDialog({ open, onOpenChange, defaultClientId }: NewReq
                       <FormControl>
                         <Input
                           type="number"
+                          min={1}
+                          placeholder="e.g. 2"
                           {...field}
-                          onChange={(e) => field.onChange(parseInt(e.target.value))}
+                          value={field.value ?? ''}
+                          onChange={(e) =>
+                            field.onChange(
+                              e.target.value === '' ? undefined : parseInt(e.target.value, 10),
+                            )
+                          }
                         />
                       </FormControl>
+                      <FormMessage />
                     </FormItem>
                   )}
                 />

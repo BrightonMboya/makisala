@@ -350,13 +350,14 @@ export function BookingConfirm({
                                 <span className="flex flex-wrap items-baseline justify-between gap-2">
                                   <span className="text-sm font-medium text-stone-900">{alt.name}</span>
                                   {/* Unit comes from priceBasis, the same
-                                      field this is billed on. There used to be
-                                      a free-text label rendered underneath,
-                                      which could and did say "Per Person" over
-                                      an amount charged once. */}
+                                      field this is billed on — even for
+                                      `custom`, whose free-text label bills
+                                      once, same as `flat`. */}
                                   <span className="text-sm font-medium text-stone-700">
                                     {formatDelta(alt.additionalPrice)}
-                                    {alt.additionalPrice !== 0 ? basisSuffix(alt.priceBasis) : ''}
+                                    {alt.additionalPrice !== 0
+                                      ? basisSuffix(alt.priceBasis, alt.customUnitLabel)
+                                      : ''}
                                   </span>
                                 </span>
                                 {(alt.rooms || alt.meals) && (

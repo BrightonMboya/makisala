@@ -17,7 +17,7 @@ export type ActivityOffer = {
   priceUnit: AddOnUnit;
 };
 
-export type AlternativeBasis = 'flat' | 'per_person' | 'per_room';
+export type AlternativeBasis = 'flat' | 'per_person' | 'per_room' | 'custom';
 
 export type AlternativeOffer = {
   id: string;
@@ -32,11 +32,13 @@ export type AlternativeOffer = {
   /** Signed delta against the primary lodge: negative is cheaper. */
   additionalPrice: number;
   /**
-   * Sole input to both the arithmetic and the unit shown to the client. There
-   * is deliberately no free-text unit alongside it: the two used to be able to
-   * disagree, and the client reads the text while the invoice bills the basis.
+   * Sole input to the arithmetic and, for every basis except `custom`, to the
+   * unit shown to the client too — so the two can't disagree. `custom` bills
+   * once, like `flat`, and shows `customUnitLabel` as its free-text unit.
    */
   priceBasis: AlternativeBasis;
+  /** Free-text unit, used only when priceBasis is `custom`. */
+  customUnitLabel: string | null;
   /** Rooms in this alternative, the multiplier for `per_room`. */
   roomCount: number;
 };
@@ -99,17 +101,24 @@ function multiplier(
   return 1;
 }
 
-/** The unit shown beside an alternative's amount. Derived, never free text. */
-export function basisLabel(basis: AlternativeBasis, quantity: number): string | null {
+/** The unit shown beside an alternative's amount. Derived from priceBasis for
+ *  every basis except `custom`, which shows its own free-text label instead. */
+export function basisLabel(
+  basis: AlternativeBasis,
+  quantity: number,
+  customUnitLabel?: string | null,
+): string | null {
   if (basis === 'per_person') return `per person x ${quantity}`;
   if (basis === 'per_room') return `per room x ${quantity}`;
+  if (basis === 'custom') return customUnitLabel || null;
   return null;
 }
 
 /** Short form for the offer list, e.g. "+$450 per person". */
-export function basisSuffix(basis: AlternativeBasis): string {
+export function basisSuffix(basis: AlternativeBasis, customUnitLabel?: string | null): string {
   if (basis === 'per_person') return ' per person';
   if (basis === 'per_room') return ' per room';
+  if (basis === 'custom' && customUnitLabel) return ` ${customUnitLabel}`;
   return '';
 }
 
@@ -177,7 +186,7 @@ export function priceSelections(
       kind: 'alternative',
       id: alt.id,
       label: `Day ${alt.dayNumber}: ${alt.name}${alt.primaryName ? ` instead of ${alt.primaryName}` : ''}`,
-      detail: basisLabel(alt.priceBasis, qty),
+      detail: basisLabel(alt.priceBasis, qty, alt.customUnitLabel),
       amount: money(alt.additionalPrice * qty),
       unitAmount: alt.additionalPrice,
       quantity: qty,

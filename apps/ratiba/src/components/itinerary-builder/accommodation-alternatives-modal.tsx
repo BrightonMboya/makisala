@@ -319,6 +319,7 @@ function AlternativeRow({
                   type="number"
                   min={1}
                   value={room.pax || ''}
+                  onFocus={(e) => e.target.select()}
                   onChange={(e) => updateRoom(i, { pax: parseInt(e.target.value, 10) || 0 })}
                   className="h-8 w-12 shrink-0 rounded-md border border-stone-200 bg-white px-1 text-center text-xs text-stone-700"
                 />

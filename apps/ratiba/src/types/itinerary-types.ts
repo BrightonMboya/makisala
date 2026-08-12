@@ -52,11 +52,14 @@ export type AccommodationAlternative = {
   images?: string[] | null;
   // --- Pricing (set on the pricing step) ---
   additionalPrice?: number | null;
-  /** @deprecated Superseded by priceBasis, which drives both label and price. */
+  // Free-text unit label, used only when priceBasis is 'custom' (e.g. "per
+  // vehicle"). Ignored for every other basis, where the label is derived from
+  // priceBasis so it can never disagree with what's actually charged.
   priceUnitLabel?: string | null;
   // How the delta scales. An alternative covers one night, so "per night" is
-  // the flat case; `rooms` gives the count for "per_room".
-  priceBasis?: 'flat' | 'per_person' | 'per_room';
+  // the flat case; `rooms` gives the count for "per_room"; `custom` bills once
+  // like `flat` but shows `priceUnitLabel` instead.
+  priceBasis?: 'flat' | 'per_person' | 'per_room' | 'custom';
   hideInQuote?: boolean; // keep it in the builder but omit from the client quote
 };
 

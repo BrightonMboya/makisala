@@ -149,9 +149,9 @@ interface BuilderDay {
     meals?: { breakfast: boolean; lunch: boolean; dinner: boolean };
     mealOptions?: string[];
     additionalPrice?: number | null;
-    /** @deprecated Only ever round-tripped now, never written by the editor. */
+    /** Free-text unit, used only when priceBasis is 'custom'. */
     priceUnitLabel?: string | null;
-    priceBasis?: 'flat' | 'per_person' | 'per_room';
+    priceBasis?: 'flat' | 'per_person' | 'per_room' | 'custom';
     hideInQuote?: boolean;
   }>;
   activities?: BuilderActivity[];
@@ -361,6 +361,7 @@ export const proposalsRouter = router({
           tourTitle: true,
           status: true,
           startDate: true,
+          createdAt: true,
           updatedAt: true,
           travelerGroups: true,
         },
@@ -388,6 +389,9 @@ export const proposalsRouter = router({
         travelers: number;
         emailStatus: string | null;
         updatedAt: string;
+        // Most recently created proposal in the group, so adding a new proposal
+        // to an existing client bumps them back to the top of the list.
+        latestCreatedAt: string;
       };
       type OrphanRow = {
         kind: 'proposal';
@@ -398,6 +402,7 @@ export const proposalsRouter = router({
         travelers: number;
         emailStatus: string | null;
         updatedAt: string;
+        latestCreatedAt: string;
       };
 
       // Group every matching proposal by client; orphans (no client) stay separate.
@@ -413,10 +418,9 @@ export const proposalsRouter = router({
         }
       }
 
-      // The list surfaces upcoming departures first, so a client is represented by
-      // their next trip: the soonest proposal starting today or later. With none
-      // upcoming, fall back to their most recent past trip, then (no dates at all)
-      // the most recently edited proposal.
+      // A client's card is represented by their next trip: the soonest proposal
+      // starting today or later. With none upcoming, fall back to their most
+      // recent past trip, then (no dates at all) the most recently edited proposal.
       const startOfToday = (() => {
         const d = new Date();
         d.setUTCHours(0, 0, 0, 0);
@@ -444,6 +448,10 @@ export const proposalsRouter = router({
       const clientRows: ClientRow[] = [];
       for (const [clientId, list] of byClient) {
         const featured = pickFeatured(list);
+        const latestCreatedAt = list.reduce(
+          (latest, p) => (ms(p.createdAt)! > ms(latest)! ? p.createdAt : latest),
+          list[0]!.createdAt,
+        );
         clientRows.push({
           kind: 'client',
           clientId,
@@ -457,6 +465,7 @@ export const proposalsRouter = router({
           travelers: sumTravelers(featured.travelerGroups),
           emailStatus: null,
           updatedAt: featured.updatedAt,
+          latestCreatedAt,
         });
       }
 
@@ -469,26 +478,14 @@ export const proposalsRouter = router({
         travelers: sumTravelers(p.travelerGroups),
         emailStatus: null,
         updatedAt: p.updatedAt,
+        latestCreatedAt: p.createdAt,
       }));
 
-      const depDate = (it: ClientRow | OrphanRow): string | null =>
-        it.kind === 'client' ? it.featuredStartDate : it.startDate;
-      // 0 = upcoming (today or later), 1 = past, 2 = no date. Lower sorts first.
-      const depRank = (it: ClientRow | OrphanRow): number => {
-        const t = ms(depDate(it));
-        if (t === null) return 2;
-        return t >= startOfToday ? 0 : 1;
-      };
-
-      const all = [...clientRows, ...orphanRows].sort((a, b) => {
-        const ra = depRank(a);
-        const rb = depRank(b);
-        if (ra !== rb) return ra - rb;
-        if (ra === 0) return ms(depDate(a))! - ms(depDate(b))!; // soonest upcoming first
-        if (ra === 1) return ms(depDate(b))! - ms(depDate(a))!; // most recent past first
-        // No departure date: most recently edited first.
-        return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
-      });
+      // Newest-added first: a client whose proposal was just created (or who
+      // just got a fresh proposal added) jumps to the top of the list.
+      const all = [...clientRows, ...orphanRows].sort(
+        (a, b) => ms(b.latestCreatedAt)! - ms(a.latestCreatedAt)!,
+      );
 
       const totalCount = all.length;
       const totalPages = Math.ceil(totalCount / input.pageSize);

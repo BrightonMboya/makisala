@@ -27,7 +27,7 @@ function mealsLabel(meals?: { breakfast: boolean; lunch: boolean; dinner: boolea
  * before that ran, not an operator choosing flat.
  */
 function normalizeBasis(basis: unknown): AlternativeBasis {
-  return basis === 'per_person' || basis === 'per_room' ? basis : 'flat';
+  return basis === 'per_person' || basis === 'per_room' || basis === 'custom' ? basis : 'flat';
 }
 
 function roomsLabel(rooms?: Array<{ roomType: string | null; pax: number }> | null): string | null {
@@ -107,6 +107,7 @@ export async function loadBookingAddOns(
         images: [],
         additionalPrice: alt.additionalPrice ?? 0,
         priceBasis: normalizeBasis(alt.priceBasis),
+        customUnitLabel: alt.priceBasis === 'custom' ? (alt.priceUnitLabel ?? null) : null,
         roomCount: alt.rooms?.length ?? 1,
       });
     }
