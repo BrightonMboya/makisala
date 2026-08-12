@@ -1,3 +1,5 @@
+import { isCJKLanguage } from '@/lib/language';
+
 /**
  * Design tokens for the proposal PDF. Everything visual resolves through here so
  * the document can be re-skinned per operator later: `organizations` has no brand
@@ -5,6 +7,8 @@
  * lands, build a palette with `paletteFromAccent` and pass it to renderProposalPdf.
  * No page component should hardcode a hex.
  */
+
+export { isCJKLanguage };
 
 export interface PdfPalette {
   /** Dominant brand colour: header bars, day labels, footers, rules. */
@@ -92,6 +96,22 @@ export const FONT = {
   display: 'Outfit',
   body: 'Inter',
 } as const;
+
+/**
+ * Outfit/Inter carry no CJK glyphs, and react-pdf can't fall back to a system font
+ * the way a browser would — an unregistered glyph just renders as nothing. Chinese
+ * content swaps both roles to the one CJK family registered in fonts.ts; there's no
+ * separate display cut, so headings and body share it.
+ */
+export const FONT_CJK = {
+  display: 'NotoSansSC',
+  body: 'NotoSansSC',
+} as const;
+
+/** Resolves the font family for a role against the document's content language. */
+export function fontForLanguage(language: string, role: keyof typeof FONT): string {
+  return isCJKLanguage(language) ? FONT_CJK[role] : FONT[role];
+}
 
 export const SPACE = {
   xs: 3,

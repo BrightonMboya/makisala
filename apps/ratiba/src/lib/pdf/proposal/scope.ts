@@ -26,6 +26,8 @@ export interface PdfDocScope {
   photoPlans: DayPhotoPlans;
   /** Right-hand footer text, e.g. the operator's name. */
   brandName: string;
+  /** Content language, e.g. 'zh'. Drives font family (fonts.ts) and UI labels (labels.ts). */
+  language: string;
 }
 
 let current: PdfDocScope | null = null;

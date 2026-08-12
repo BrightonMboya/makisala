@@ -10,6 +10,8 @@ import {
   SPACE,
   Small,
   TYPE,
+  useFont,
+  useLabels,
   usePdfDoc,
 } from '../primitives';
 import { PHOTO_TILE } from '../theme';
@@ -72,6 +74,9 @@ function photoRows(photos: string[]): string[][] {
 
 export function AlternativesPage({ data }: { data: ItineraryData }) {
   const { palette } = usePdfDoc();
+  const displayFont = useFont('display');
+  const bodyFont = useFont('body');
+  const labels = useLabels();
 
   const days = data.itinerary.filter(
     (day) => hasRealAccommodation(day) && (day.accommodationAlternatives?.length ?? 0) > 0,
@@ -80,7 +85,7 @@ export function AlternativesPage({ data }: { data: ItineraryData }) {
 
   return (
     <PdfPage>
-      <DisplayTitle>Alternative Accommodations</DisplayTitle>
+      <DisplayTitle>{labels.alternativeAccommodations}</DisplayTitle>
       <View style={{ height: SPACE.lg }} />
 
       {days.map((day) => {
@@ -93,13 +98,13 @@ export function AlternativesPage({ data }: { data: ItineraryData }) {
             <View style={[styles.dayHeader, { backgroundColor: palette.brand }]}>
               <Text
                 style={{
-                  fontFamily: 'Inter',
+                  fontFamily: bodyFont,
                   fontSize: TYPE.small,
                   fontWeight: 600,
                   color: palette.onBrand,
                 }}
               >
-                Accommodation · Day {day.day}
+                {labels.accommodationDay(day.day)}
               </Text>
               <Small color={palette.brandTint}>{day.destination ?? ''}</Small>
             </View>
@@ -109,7 +114,7 @@ export function AlternativesPage({ data }: { data: ItineraryData }) {
               <View style={{ flex: 1 }}>
                 <Text
                   style={{
-                    fontFamily: 'Outfit',
+                    fontFamily: displayFont,
                     fontSize: TYPE.h2,
                     fontWeight: 600,
                     color: palette.ink,
@@ -117,9 +122,11 @@ export function AlternativesPage({ data }: { data: ItineraryData }) {
                 >
                   {day.accommodation}
                 </Text>
-                <Small>Meal Plan: {day.meals}</Small>
+                <Small>
+                  {labels.mealPlanColon} {day.meals}
+                </Small>
               </View>
-              <Label>Booked</Label>
+              <Label>{labels.booked}</Label>
             </View>
             <Rule />
 
@@ -137,7 +144,7 @@ export function AlternativesPage({ data }: { data: ItineraryData }) {
                     <View style={styles.altBody}>
                       <Text
                         style={{
-                          fontFamily: 'Outfit',
+                          fontFamily: displayFont,
                           fontSize: TYPE.h3,
                           fontWeight: 600,
                           color: palette.ink,
@@ -147,13 +154,13 @@ export function AlternativesPage({ data }: { data: ItineraryData }) {
                       </Text>
                       {alternative.rooms ? (
                         <View style={styles.detail}>
-                          <Small color={palette.muted}>Rooms:</Small>
+                          <Small color={palette.muted}>{labels.roomsColon}</Small>
                           <Small color={palette.body}>{alternative.rooms}</Small>
                         </View>
                       ) : null}
                       {alternative.meals ? (
                         <View style={styles.detail}>
-                          <Small color={palette.muted}>Meal Plan:</Small>
+                          <Small color={palette.muted}>{labels.mealPlanColon}</Small>
                           <Small color={palette.body}>{alternative.meals}</Small>
                         </View>
                       ) : null}
@@ -162,7 +169,7 @@ export function AlternativesPage({ data }: { data: ItineraryData }) {
                       <View style={styles.price}>
                         <Text
                           style={{
-                            fontFamily: 'Outfit',
+                            fontFamily: displayFont,
                             fontSize: TYPE.h2,
                             fontWeight: 700,
                             color: palette.brand,

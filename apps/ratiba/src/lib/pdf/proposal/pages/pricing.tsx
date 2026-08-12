@@ -1,6 +1,7 @@
 import { Link, StyleSheet, Text, View } from '@react-pdf/renderer';
 import { env } from '@/lib/env';
 import type { ItineraryData } from '@/types/itinerary-types';
+import { isCJKLanguage } from '../theme';
 import {
   Body,
   DisplayTitle,
@@ -12,6 +13,8 @@ import {
   SectionLabel,
   Small,
   TYPE,
+  useFont,
+  useLabels,
   usePdfDoc,
 } from '../primitives';
 import { travelerLabel } from '../helpers';
@@ -69,9 +72,9 @@ function bookingUrl(id: string): string {
   return `${env.NEXT_PUBLIC_APP_URL}/proposal/${id}/book`;
 }
 
-function money(value: number, currency: string): string {
+function money(value: number, currency: string, language: string): string {
   try {
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat(isCJKLanguage(language) ? 'zh-CN' : 'en-US', {
       style: 'currency',
       currency,
       maximumFractionDigits: 2,
@@ -83,11 +86,12 @@ function money(value: number, currency: string): string {
 
 function List({ title, items }: { title: string; items: string[] }) {
   const { palette } = usePdfDoc();
+  const displayFont = useFont('display');
   if (items.length === 0) return null;
   return (
     <View style={{ gap: SPACE.sm }}>
       <Text
-        style={{ fontFamily: 'Outfit', fontSize: TYPE.h2, fontWeight: 600, color: palette.ink }}
+        style={{ fontFamily: displayFont, fontSize: TYPE.h2, fontWeight: 600, color: palette.ink }}
       >
         {title}
       </Text>
@@ -104,7 +108,10 @@ function List({ title, items }: { title: string; items: string[] }) {
 }
 
 export function PricingPage({ data }: { data: ItineraryData }) {
-  const { palette } = usePdfDoc();
+  const { palette, language } = usePdfDoc();
+  const displayFont = useFont('display');
+  const bodyFont = useFont('body');
+  const labels = useLabels();
   const { pricing } = data;
   const overview = data.tripOverview;
   const travelers = travelerLabel(data);
@@ -114,25 +121,25 @@ export function PricingPage({ data }: { data: ItineraryData }) {
   return (
     <PdfPage padded={false}>
       <View style={[styles.header, { backgroundColor: palette.brandDeep }]}>
-        <SectionLabel onDark>Pricing</SectionLabel>
+        <SectionLabel onDark>{labels.pricing}</SectionLabel>
         <DisplayTitle color={palette.onBrand}>
-          {data.clientName ? `Proposal for ${data.clientName}` : 'Proposal'}
+          {data.clientName ? labels.proposalFor(data.clientName) : labels.proposal}
         </DisplayTitle>
         <View style={styles.meta}>
-          <MetaItem label="Tour Length" value={data.duration} onDark />
+          <MetaItem label={labels.tourLength} value={data.duration} onDark />
           {overview?.travelDates?.start ? (
-            <MetaItem label="Start Tour" value={overview.travelDates.start} onDark />
+            <MetaItem label={labels.startTour} value={overview.travelDates.start} onDark />
           ) : null}
           {overview?.travelDates?.end ? (
-            <MetaItem label="End Tour" value={overview.travelDates.end} onDark />
+            <MetaItem label={labels.endTour} value={overview.travelDates.end} onDark />
           ) : null}
-          {travelers ? <MetaItem label="Travelers" value={travelers} onDark /> : null}
+          {travelers ? <MetaItem label={labels.travelers} value={travelers} onDark /> : null}
         </View>
       </View>
 
       <View style={styles.columns}>
         <View style={styles.main}>
-          <SectionLabel>Breakdown of Costs</SectionLabel>
+          <SectionLabel>{labels.breakdownOfCosts}</SectionLabel>
           <View style={{ height: SPACE.md }} />
           <Rule />
           {breakdown.map((row, i) => (
@@ -141,7 +148,7 @@ export function PricingPage({ data }: { data: ItineraryData }) {
                 <View style={styles.rowLabel}>
                   <Text
                     style={{
-                      fontFamily: 'Inter',
+                      fontFamily: bodyFont,
                       fontSize: TYPE.body,
                       fontWeight: 600,
                       color: palette.ink,
@@ -152,11 +159,11 @@ export function PricingPage({ data }: { data: ItineraryData }) {
                 </View>
                 <View style={styles.rowQty}>
                   <Small color={palette.muted}>
-                    {row.quantity}x {money(row.unitPrice, pricing.currency)}
+                    {row.quantity}x {money(row.unitPrice, pricing.currency, language)}
                   </Small>
                 </View>
                 <View style={styles.rowTotal}>
-                  <Small color={palette.ink}>{money(row.lineTotal, pricing.currency)}</Small>
+                  <Small color={palette.ink}>{money(row.lineTotal, pricing.currency, language)}</Small>
                 </View>
               </View>
               <Rule />
@@ -166,17 +173,17 @@ export function PricingPage({ data }: { data: ItineraryData }) {
           <View style={styles.totalRow}>
             <Text
               style={{
-                fontFamily: 'Outfit',
+                fontFamily: displayFont,
                 fontSize: TYPE.h2,
                 fontWeight: 600,
                 color: palette.ink,
               }}
             >
-              Total in {pricing.currency}
+              {labels.totalIn(pricing.currency)}
             </Text>
             <Text
               style={{
-                fontFamily: 'Outfit',
+                fontFamily: displayFont,
                 fontSize: TYPE.h1,
                 fontWeight: 700,
                 color: palette.brand,
@@ -187,13 +194,15 @@ export function PricingPage({ data }: { data: ItineraryData }) {
           </View>
           {pricing.perPerson ? (
             <View style={{ alignItems: 'flex-end' }}>
-              <Small>{pricing.perPerson} per person</Small>
+              <Small>
+                {pricing.perPerson} {labels.perPerson}
+              </Small>
             </View>
           ) : null}
 
           {extras.length > 0 ? (
             <View style={{ marginTop: SPACE.xl, gap: SPACE.sm }}>
-              <SectionLabel>Optional, not included</SectionLabel>
+              <SectionLabel>{labels.optionalNotIncluded}</SectionLabel>
               <View style={{ height: SPACE.xs }} />
               <Rule />
               {extras.map((extra, i) => (
@@ -205,7 +214,7 @@ export function PricingPage({ data }: { data: ItineraryData }) {
                     <View style={{ width: 120, alignItems: 'flex-end' }}>
                       <Text
                         style={{
-                          fontFamily: 'Inter',
+                          fontFamily: bodyFont,
                           fontSize: TYPE.small,
                           fontWeight: 600,
                           color: palette.ink,
@@ -223,17 +232,19 @@ export function PricingPage({ data }: { data: ItineraryData }) {
           ) : null}
 
           <Link src={bookingUrl(data.id)} style={[styles.cta, { backgroundColor: palette.brand }]}>
-            <Text style={[styles.ctaText, { color: palette.onBrand }]}>Confirm Proposal</Text>
+            <Text style={[styles.ctaText, { color: palette.onBrand, fontFamily: displayFont }]}>
+              {labels.confirmProposal}
+            </Text>
           </Link>
           <View style={{ marginTop: SPACE.xs }}>
-            <Small color={palette.muted}>Opens your proposal online to confirm these dates.</Small>
+            <Small color={palette.muted}>{labels.opensOnline}</Small>
           </View>
         </View>
 
         <View style={[styles.sidebar, { backgroundColor: palette.brandTint }]}>
-          <List title="Included" items={data.includedItems} />
+          <List title={labels.included} items={data.includedItems} />
           {data.excludedItems.length > 0 ? <View style={{ height: SPACE.md }} /> : null}
-          <List title="Excluded" items={data.excludedItems} />
+          <List title={labels.excluded} items={data.excludedItems} />
         </View>
       </View>
     </PdfPage>
@@ -247,12 +258,13 @@ export function PricingPage({ data }: { data: ItineraryData }) {
  * unwrappable block, which silently drops terms from a quote.
  */
 export function TermsPage({ data }: { data: ItineraryData }) {
+  const labels = useLabels();
   const terms = data.organization?.paymentTerms;
   if (!terms) return null;
 
   return (
     <PdfPage>
-      <SectionLabel>Payment Terms</SectionLabel>
+      <SectionLabel>{labels.paymentTerms}</SectionLabel>
       <View style={{ height: SPACE.md }} />
       <Body>{terms}</Body>
     </PdfPage>

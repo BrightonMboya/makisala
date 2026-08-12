@@ -39,6 +39,7 @@ export async function renderProposalPdf(
       images,
       photoPlans,
       brandName: data.organization?.name ?? '',
+      language: data.language,
     },
     () => pdf(<ProposalDocument data={data} {...documentProps} />),
   );

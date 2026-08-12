@@ -5,6 +5,7 @@ import type {
   ItineraryData,
   ThemeAccommodationAlternative,
 } from '@/types/itinerary-types';
+import { isCJKLanguage } from '@/lib/language';
 
 /** Data shaping shared by the proposal PDF's page archetypes. */
 
@@ -212,5 +213,6 @@ export function planAllDayPhotos(
 export function travelerLabel(data: ItineraryData): string {
   const count = data.tripOverview?.travelerCount;
   if (!count) return '';
+  if (isCJKLanguage(data.language)) return `${count} 人`;
   return `${count} ${count === 1 ? 'Adult' : 'Adults'}`;
 }

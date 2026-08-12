@@ -12,6 +12,8 @@ import {
   SectionLabel,
   Small,
   TYPE,
+  useFont,
+  useLabels,
   usePdfDoc,
 } from '../primitives';
 import { hasRealAccommodation, mealLines } from '../helpers';
@@ -59,6 +61,9 @@ const styles = StyleSheet.create({
 
 export function SummaryPage({ data }: { data: ItineraryData }) {
   const { palette } = usePdfDoc();
+  const displayFont = useFont('display');
+  const bodyFont = useFont('body');
+  const labels = useLabels();
   const overview = data.tripOverview;
   const destinations = overview?.destinations ?? [];
 
@@ -66,15 +71,15 @@ export function SummaryPage({ data }: { data: ItineraryData }) {
     <PdfPage padded={false}>
       <View style={[styles.header, { backgroundColor: palette.brandDeep }]}>
         <View style={styles.headerText}>
-          <SectionLabel onDark>Summary</SectionLabel>
+          <SectionLabel onDark>{labels.summary}</SectionLabel>
           <DisplayTitle size={TYPE.display} color={palette.onBrand}>
             {data.title}
           </DisplayTitle>
           <View style={styles.dates}>
             {overview?.travelDates?.start ? (
               <View style={{ gap: 2 }}>
-                <Label color={palette.brandTint}>Start</Label>
-                <Text style={{ fontFamily: 'Inter', fontSize: TYPE.small, color: palette.onBrand }}>
+                <Label color={palette.brandTint}>{labels.start}</Label>
+                <Text style={{ fontFamily: bodyFont, fontSize: TYPE.small, color: palette.onBrand }}>
                   {overview.travelDates.start}
                   {overview.startCity ? `, ${overview.startCity}` : ''}
                 </Text>
@@ -82,8 +87,8 @@ export function SummaryPage({ data }: { data: ItineraryData }) {
             ) : null}
             {overview?.travelDates?.end ? (
               <View style={{ gap: 2 }}>
-                <Label color={palette.brandTint}>End</Label>
-                <Text style={{ fontFamily: 'Inter', fontSize: TYPE.small, color: palette.onBrand }}>
+                <Label color={palette.brandTint}>{labels.end}</Label>
+                <Text style={{ fontFamily: bodyFont, fontSize: TYPE.small, color: palette.onBrand }}>
                   {overview.travelDates.end}
                   {overview.endCity ? `, ${overview.endCity}` : ''}
                 </Text>
@@ -96,27 +101,29 @@ export function SummaryPage({ data }: { data: ItineraryData }) {
 
       <View style={styles.columns}>
         <View style={styles.main}>
-          <SectionLabel>Day by Day</SectionLabel>
+          <SectionLabel>{labels.dayByDay}</SectionLabel>
           <View style={{ height: SPACE.xs }} />
           {data.itinerary.map((day) => (
             <View key={day.day} style={styles.dayRow} wrap={false}>
               <View style={styles.dayHead}>
                 <View style={[styles.dayChip, { backgroundColor: palette.brand }]}>
-                  <Text style={[styles.dayChipText, { color: palette.onBrand }]}>
-                    Day {day.day}
+                  <Text
+                    style={[styles.dayChipText, { color: palette.onBrand, fontFamily: bodyFont }]}
+                  >
+                    {labels.dayChip(day.day)}
                   </Text>
                 </View>
-                <Text style={[styles.dayTitle, { color: palette.ink }]}>
+                <Text style={[styles.dayTitle, { color: palette.ink, fontFamily: displayFont }]}>
                   {day.destination || day.title}
                 </Text>
               </View>
               <View style={styles.detailRow}>
                 <View style={styles.detailLabel}>
-                  <Small color={palette.muted}>Stay</Small>
+                  <Small color={palette.muted}>{labels.stay}</Small>
                 </View>
                 <View style={styles.detailValue}>
                   <Small color={palette.ink}>
-                    {hasRealAccommodation(day) ? day.accommodation : 'No accommodation'}
+                    {hasRealAccommodation(day) ? day.accommodation : labels.noAccommodation}
                   </Small>
                   {hasRealAccommodation(day) && day.rooms ? (
                     <Small color={palette.muted}>{day.rooms}</Small>
@@ -125,10 +132,10 @@ export function SummaryPage({ data }: { data: ItineraryData }) {
               </View>
               <View style={styles.detailRow}>
                 <View style={styles.detailLabel}>
-                  <Small color={palette.muted}>Meals</Small>
+                  <Small color={palette.muted}>{labels.mealsLabel}</Small>
                 </View>
                 <View style={styles.detailValue}>
-                  <Small color={palette.ink}>{mealLines(day).join(' · ') || 'None'}</Small>
+                  <Small color={palette.ink}>{mealLines(day).join(' · ') || labels.none}</Small>
                 </View>
               </View>
               <Rule style={{ marginTop: SPACE.sm }} />
@@ -137,7 +144,7 @@ export function SummaryPage({ data }: { data: ItineraryData }) {
         </View>
 
         <View style={[styles.sidebar, { backgroundColor: palette.brandTint }]}>
-          <SectionLabel>Highlights</SectionLabel>
+          <SectionLabel>{labels.highlights}</SectionLabel>
           <View style={{ gap: SPACE.sm }}>
             {destinations.map((destination) => (
               <View key={destination} style={styles.highlight}>

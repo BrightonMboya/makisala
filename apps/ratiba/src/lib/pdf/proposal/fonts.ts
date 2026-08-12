@@ -46,6 +46,21 @@ export function registerProposalFonts(): void {
     ],
   });
 
+  // CJK fallback for zh proposals (see theme.ts's resolveFont). Only two cuts —
+  // Noto has no medium/semibold static instance here, so those weights fall back
+  // to regular via fontWeight coercion, same as the Inter/Outfit "closest match"
+  // behaviour react-pdf already does when a requested weight isn't registered.
+  // Registration is metadata-only: react-pdf reads the ~10MB files off disk lazily,
+  // the first time a glyph in this family is actually laid out, so an English
+  // proposal never touches them.
+  Font.register({
+    family: 'NotoSansSC',
+    fonts: [
+      { src: file('NotoSansSC-Regular.ttf'), fontWeight: 400 },
+      { src: file('NotoSansSC-Bold.ttf'), fontWeight: 700 },
+    ],
+  });
+
   // Proposal copy is full of place names, and react-pdf's default hyphenation
   // splits them mid-word. A ragged right edge beats "Ngoron-goro".
   Font.registerHyphenationCallback((word) => [word]);

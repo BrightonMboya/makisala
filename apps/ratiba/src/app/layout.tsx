@@ -5,20 +5,32 @@ import './globals.css';
 import { Providers } from '@/components/providers';
 import { env } from '@/lib/env';
 
+// Inter/Outfit/Cormorant carry no CJK glyphs. Unlike the PDF (react-pdf has no
+// glyph fallback — see lib/pdf/proposal/fonts.ts), a browser does substitute
+// automatically, but only from whatever's installed; naming the common CJK system
+// fonts up front means a Chinese proposal gets a real typeface immediately rather
+// than whatever the OS guesses.
+//
+// Next's font loader statically analyzes these call arguments at build time, so
+// the fallback list has to be a literal here — a shared constant reference fails
+// with "Font loader values must be explicitly written literals."
 const inter = Inter({
   variable: '--font-sans',
   subsets: ['latin'],
+  fallback: ['PingFang SC', 'Microsoft YaHei', 'Noto Sans SC', 'sans-serif'],
 });
 
 const cormorant = Cormorant_Garamond({
   variable: '--font-serif',
   subsets: ['latin'],
   weight: ['300', '400', '500', '600', '700'],
+  fallback: ['PingFang SC', 'Microsoft YaHei', 'Noto Sans SC', 'sans-serif'],
 });
 
 const outfit = Outfit({
   variable: '--font-heading',
   subsets: ['latin'],
+  fallback: ['PingFang SC', 'Microsoft YaHei', 'Noto Sans SC', 'sans-serif'],
 });
 
 export const metadata: Metadata = {

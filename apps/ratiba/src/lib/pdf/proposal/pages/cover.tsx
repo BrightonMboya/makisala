@@ -11,6 +11,8 @@ import {
   SPACE,
   Scrim,
   TYPE,
+  useFont,
+  useLabels,
   usePdfDoc,
 } from '../primitives';
 import { travelerLabel } from '../helpers';
@@ -59,6 +61,9 @@ export interface CoverPageProps {
 
 export function CoverPage({ data, letter = [] }: CoverPageProps) {
   const { palette } = usePdfDoc();
+  const displayFont = useFont('display');
+  const bodyFont = useFont('body');
+  const labels = useLabels();
   const org = data.organization;
   const overview = data.tripOverview;
   const travelers = travelerLabel(data);
@@ -71,7 +76,7 @@ export function CoverPage({ data, letter = [] }: CoverPageProps) {
         ) : (
           <Text
             style={{
-              fontFamily: 'Outfit',
+              fontFamily: displayFont,
               fontSize: TYPE.h2,
               fontWeight: 700,
               color: palette.brandDeep,
@@ -81,13 +86,15 @@ export function CoverPage({ data, letter = [] }: CoverPageProps) {
           </Text>
         )}
         <View style={styles.meta}>
-          {overview?.tourType ? <MetaItem label="Tour Type" value={overview.tourType} /> : null}
-          <MetaItem label="Tour Length" value={data.duration} />
+          {overview?.tourType ? (
+            <MetaItem label={labels.tourType} value={overview.tourType} />
+          ) : null}
+          <MetaItem label={labels.tourLength} value={data.duration} />
           {overview?.travelDates?.start ? (
-            <MetaItem label="Start Tour" value={overview.travelDates.start} />
+            <MetaItem label={labels.startTour} value={overview.travelDates.start} />
           ) : null}
           {overview?.travelDates?.end ? (
-            <MetaItem label="End Tour" value={overview.travelDates.end} />
+            <MetaItem label={labels.endTour} value={overview.travelDates.end} />
           ) : null}
         </View>
       </View>
@@ -98,13 +105,13 @@ export function CoverPage({ data, letter = [] }: CoverPageProps) {
         <View style={styles.heroOverlay}>
           {data.clientName ? (
             <View style={styles.quoteLine}>
-              <Text style={[styles.quoteText, { color: palette.onBrand }]}>
-                Quote for {data.clientName}
+              <Text style={[styles.quoteText, { color: palette.onBrand, fontFamily: displayFont }]}>
+                {labels.quoteFor(data.clientName)}
               </Text>
               {travelers ? (
                 <Text
                   style={{
-                    fontFamily: 'Inter',
+                    fontFamily: bodyFont,
                     fontSize: TYPE.small,
                     color: palette.onBrand,
                     opacity: 0.85,
@@ -125,13 +132,13 @@ export function CoverPage({ data, letter = [] }: CoverPageProps) {
         {data.clientName ? (
           <Text
             style={{
-              fontFamily: 'Inter',
+              fontFamily: bodyFont,
               fontSize: TYPE.body,
               fontWeight: 600,
               color: palette.ink,
             }}
           >
-            Dear {data.clientName},
+            {labels.dearName(data.clientName)}
           </Text>
         ) : null}
         {letter.map((paragraph, i) => (
@@ -139,8 +146,8 @@ export function CoverPage({ data, letter = [] }: CoverPageProps) {
         ))}
 
         <View style={styles.signOff}>
-          <Body>We hope to hear from you soon.</Body>
-          <Body>Best regards,</Body>
+          <Body>{labels.hopeToHear}</Body>
+          <Body>{labels.bestRegards}</Body>
         </View>
 
         {org ? (
@@ -149,7 +156,7 @@ export function CoverPage({ data, letter = [] }: CoverPageProps) {
             <View style={styles.contactLines}>
               <Text
                 style={{
-                  fontFamily: 'Inter',
+                  fontFamily: bodyFont,
                   fontSize: TYPE.body,
                   fontWeight: 600,
                   color: palette.ink,

@@ -1,4 +1,5 @@
 import { addDays, format } from 'date-fns';
+import { zhCN } from 'date-fns/locale';
 import type {
   Accommodation,
   AccommodationAlternative,
@@ -17,6 +18,7 @@ import type {
 import type { Proposal } from '@repo/db/schema';
 import { getPublicUrl } from '@/lib/storage';
 import { capitalize } from '@/lib/utils';
+import { isCJKLanguage } from '@/lib/language';
 import {
   calculatePricing,
   formatDuration,
@@ -117,6 +119,7 @@ function getDayDestinationName(day: ProposalDay): string {
 export function transformProposalToItineraryData(
   proposal: ProposalInput,
   translation?: Record<string, any> | null,
+  language = 'en',
 ): ItineraryData {
   const proposalDays = proposal.days || [];
   const startDate = proposal.startDate ? new Date(proposal.startDate) : undefined;
@@ -125,8 +128,12 @@ export function transformProposalToItineraryData(
   const extras: ExtraOption[] = (proposal.extras as any) || [];
   const inclusions: string[] = translation?.inclusions || proposal.inclusions || [];
   const exclusions: string[] = translation?.exclusions || proposal.exclusions || [];
+  const isZh = isCJKLanguage(language);
   const tourTitle =
-    translation?.tourTitle || proposal.tourTitle || proposal.name || 'Safari Adventure';
+    translation?.tourTitle ||
+    proposal.tourTitle ||
+    proposal.name ||
+    (isZh ? '野生动物园探险之旅' : 'Safari Adventure');
   const clientName = proposal.client?.name || '';
 
   // Determine location from countries array or fallback
@@ -136,12 +143,16 @@ export function transformProposalToItineraryData(
       ? countries
           .map((c: string) => c.charAt(0).toUpperCase() + c.slice(1).toLowerCase())
           .join(' & ')
-      : 'East Africa';
+      : isZh
+        ? '东非'
+        : 'East Africa';
 
   // Convert days from relational data
   const itinerary: ThemeDay[] = proposalDays.map((day, index) => {
     const currentDate = startDate ? addDays(startDate, index) : new Date();
-    const dateStr = format(currentDate, 'MMMM d, yyyy');
+    const dateStr = isZh
+      ? format(currentDate, 'yyyy年M月d日', { locale: zhCN })
+      : format(currentDate, 'MMMM d, yyyy');
 
     // Find translated day content if available
     const translatedDay = translation?.days?.find((td: any) => td.dayNumber === day.dayNumber);
@@ -295,7 +306,7 @@ export function transformProposalToItineraryData(
       ];
     } else if (!day.nationalPark && day.destinationLat && day.destinationLng) {
       destinationKey = `${day.destinationLat},${day.destinationLng}`;
-      name = day.destinationName || 'Destination';
+      name = day.destinationName || (isZh ? '目的地' : 'Destination');
       coordinates = [parseFloat(day.destinationLng), parseFloat(day.destinationLat)];
     }
 
@@ -340,7 +351,7 @@ export function transformProposalToItineraryData(
   );
   const pricing = calculatePricing(pricingRows, extras, travelerGroups, activityOptions);
 
-  const duration = `${proposalDays.length} Days`;
+  const duration = isZh ? `${proposalDays.length} 天` : `${proposalDays.length} Days`;
 
   const totalTravelers = travelerGroups.reduce((acc, g) => acc + g.count, 0);
 
@@ -361,14 +372,14 @@ export function transformProposalToItineraryData(
   const startLocation: Location | undefined =
     proposal.startCityLat && proposal.startCityLng
       ? {
-          name: proposal.startCity || 'Start',
+          name: proposal.startCity || (isZh ? '出发点' : 'Start'),
           coordinates: [parseFloat(proposal.startCityLng), parseFloat(proposal.startCityLat)],
         }
       : undefined;
   const endLocation: Location | undefined =
     proposal.endCityLat && proposal.endCityLng
       ? {
-          name: proposal.endCity || 'End',
+          name: proposal.endCity || (isZh ? '终点' : 'End'),
           coordinates: [parseFloat(proposal.endCityLng), parseFloat(proposal.endCityLat)],
         }
       : undefined;
@@ -409,8 +420,9 @@ export function transformProposalToItineraryData(
 
   return {
     id: proposal.id,
+    language,
     title: tourTitle,
-    subtitle: `${duration} Safari Adventure`,
+    subtitle: isZh ? `${duration}野生动物园探险之旅` : `${duration} Safari Adventure`,
     clientName,
     duration,
     location,

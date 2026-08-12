@@ -14,6 +14,8 @@ import {
   SectionLabel,
   Small,
   TYPE,
+  useFont,
+  useLabels,
   usePdfDoc,
 } from '../primitives';
 
@@ -76,6 +78,8 @@ export interface AboutPageProps {
 
 export function AboutPage({ data, contact }: AboutPageProps) {
   const { palette } = usePdfDoc();
+  const displayFont = useFont('display');
+  const labels = useLabels();
   const org = data.organization;
   if (!org) return null;
 
@@ -107,7 +111,7 @@ export function AboutPage({ data, contact }: AboutPageProps) {
         <Scrim height="70%" />
         <View style={styles.heroTitle}>
           <DisplayTitle size={TYPE.cover} color={palette.onBrand}>
-            About Us
+            {labels.aboutUs}
           </DisplayTitle>
         </View>
       </View>
@@ -115,13 +119,13 @@ export function AboutPage({ data, contact }: AboutPageProps) {
       <View style={[styles.bar, { backgroundColor: palette.brand }]}>
         <Text
           style={{
-            fontFamily: 'Outfit',
+            fontFamily: displayFont,
             fontSize: TYPE.h1,
             fontWeight: 600,
             color: palette.onBrand,
           }}
         >
-          We, {org.name}
+          {labels.weOrg(org.name)}
         </Text>
         {org.logoUrl ? <LogoChip src={org.logoUrl} width={52} height={26} /> : null}
       </View>
@@ -132,12 +136,12 @@ export function AboutPage({ data, contact }: AboutPageProps) {
 
           {reviews.length > 0 ? (
             <View style={{ gap: SPACE.sm, marginTop: SPACE.sm }}>
-              <SectionLabel>Reviewed on</SectionLabel>
+              <SectionLabel>{labels.reviewedOn}</SectionLabel>
               {reviews.map((review) => (
                 <View key={review.platform} style={styles.reviewRow}>
                   <Text
                     style={{
-                      fontFamily: 'Outfit',
+                      fontFamily: displayFont,
                       fontSize: TYPE.h2,
                       fontWeight: 700,
                       color: palette.brand,
@@ -148,7 +152,11 @@ export function AboutPage({ data, contact }: AboutPageProps) {
                   <Small color={palette.ink}>
                     {PLATFORM_LABEL[review.platform] ?? review.platform}
                   </Small>
-                  {review.reviewCount ? <Small>· {review.reviewCount} reviews</Small> : null}
+                  {review.reviewCount ? (
+                    <Small>
+                      · {review.reviewCount} {labels.reviewsSuffix}
+                    </Small>
+                  ) : null}
                 </View>
               ))}
             </View>
@@ -160,13 +168,17 @@ export function AboutPage({ data, contact }: AboutPageProps) {
               heading over a fact the client already knows. */}
           {contactEntries.length > 0 ? (
             <>
-              <SectionLabel>Contact Us</SectionLabel>
+              <SectionLabel>{labels.contactUs}</SectionLabel>
               <View>
-                {details.address ? <ContactRow label="Address" value={details.address} /> : null}
-                {data.location ? <ContactRow label="Country" value={data.location} /> : null}
-                {details.phone ? <ContactRow label="Phone" value={details.phone} /> : null}
-                {details.email ? <ContactRow label="Email" value={details.email} /> : null}
-                {details.website ? <ContactRow label="Website" value={details.website} /> : null}
+                {details.address ? (
+                  <ContactRow label={labels.address} value={details.address} />
+                ) : null}
+                {data.location ? <ContactRow label={labels.country} value={data.location} /> : null}
+                {details.phone ? <ContactRow label={labels.phone} value={details.phone} /> : null}
+                {details.email ? <ContactRow label={labels.email} value={details.email} /> : null}
+                {details.website ? (
+                  <ContactRow label={labels.website} value={details.website} />
+                ) : null}
               </View>
             </>
           ) : null}
@@ -175,7 +187,7 @@ export function AboutPage({ data, contact }: AboutPageProps) {
             <>
               {contactEntries.length > 0 ? <Rule /> : null}
               <View style={{ gap: SPACE.xs }}>
-                <Label>Follow us on</Label>
+                <Label>{labels.followUsOn}</Label>
                 {socialEntries.map(([platform, handle]) => (
                   <ContactRow
                     key={platform}

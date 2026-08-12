@@ -12,8 +12,9 @@ import {
   View,
 } from '@react-pdf/renderer';
 import type { Style } from '@react-pdf/types';
-import { CONTENT_WIDTH, FONT, LEADING, PAGE, SPACE, TYPE } from './theme';
+import { CONTENT_WIDTH, FONT, fontForLanguage, LEADING, PAGE, SPACE, TYPE } from './theme';
 import { usePalette, usePdfDoc } from './scope';
+import { getLabels, type Labels } from './labels';
 
 /**
  * Every page archetype composes these; none should reach for a raw hex or font
@@ -21,6 +22,21 @@ import { usePalette, usePdfDoc } from './scope';
  */
 
 export { usePalette, usePdfDoc };
+
+/**
+ * The font family for a role, resolved against the document's content language.
+ * `FONT.display`/`FONT.body` are baked into module-level StyleSheets that can't see
+ * the render scope, so every Text style that reaches for a family — whether via
+ * those tokens or a raw 'Outfit'/'Inter' literal — merges this in as an override.
+ */
+export function useFont(role: keyof typeof FONT): string {
+  return fontForLanguage(usePdfDoc().language, role);
+}
+
+/** UI chrome strings (section headings, meta labels) for the document's content language. */
+export function useLabels(): Labels {
+  return getLabels(usePdfDoc().language);
+}
 
 // ---------- photo ----------
 
@@ -70,6 +86,7 @@ export interface PhotoProps {
 export function Photo({ src, style, fit = 'cover', tag, caption }: PhotoProps) {
   const { images, palette } = usePdfDoc();
   const image = src ? images.get(src) : undefined;
+  const bodyFont = useFont('body');
 
   return (
     <View style={[photoStyles.wrap, ...(Array.isArray(style) ? style : [style ?? {}])]}>
@@ -80,12 +97,16 @@ export function Photo({ src, style, fit = 'cover', tag, caption }: PhotoProps) {
       )}
       {tag ? (
         <View style={[photoStyles.tag, { backgroundColor: palette.paper }]}>
-          <Text style={[photoStyles.tagText, { color: palette.ink }]}>{tag}</Text>
+          <Text style={[photoStyles.tagText, { color: palette.ink, fontFamily: bodyFont }]}>
+            {tag}
+          </Text>
         </View>
       ) : null}
       {caption ? (
         <View style={[photoStyles.caption, { backgroundColor: palette.brandDeep }]}>
-          <Text style={[photoStyles.captionText, { color: palette.onBrand }]}>{caption}</Text>
+          <Text style={[photoStyles.captionText, { color: palette.onBrand, fontFamily: bodyFont }]}>
+            {caption}
+          </Text>
         </View>
       ) : null}
     </View>
@@ -196,13 +217,15 @@ export function PdfPage({
   style,
 }: PdfPageProps) {
   const { palette, brandName } = usePdfDoc();
+  const bodyFont = useFont('body');
+  const labels = useLabels();
 
   return (
     <Page
       size="A4"
       style={[
         pageStyles.page,
-        { backgroundColor: background ?? palette.paper },
+        { fontFamily: bodyFont, backgroundColor: background ?? palette.paper },
         padded
           ? {
               paddingTop: PAGE.marginTop,
@@ -218,10 +241,12 @@ export function PdfPage({
       {footer ? (
         <View style={pageStyles.footer} fixed>
           <Text
-            style={[pageStyles.footerText, { color: palette.muted }]}
-            render={({ pageNumber }) => `Page ${pageNumber}`}
+            style={[pageStyles.footerText, { color: palette.muted, fontFamily: bodyFont }]}
+            render={({ pageNumber }) => labels.pageFooter(pageNumber)}
           />
-          <Text style={[pageStyles.footerBrand, { color: palette.brand }]}>{brandName}</Text>
+          <Text style={[pageStyles.footerBrand, { color: palette.brand, fontFamily: bodyFont }]}>
+            {brandName}
+          </Text>
         </View>
       ) : null}
     </Page>
@@ -265,7 +290,9 @@ export function SectionLabel({ children, onDark }: { children: ReactNode; onDark
   return (
     <View style={textStyles.sectionLabel}>
       <View style={[textStyles.sectionRule, { backgroundColor: color }]} />
-      <Text style={[textStyles.sectionText, { color }]}>{children}</Text>
+      <Text style={[textStyles.sectionText, { color, fontFamily: useFont('display') }]}>
+        {children}
+      </Text>
     </View>
   );
 }
@@ -284,7 +311,11 @@ export function DisplayTitle({
   const palette = usePalette();
   return (
     <Text
-      style={[textStyles.display, { fontSize: size, color: color ?? palette.ink }, style ?? {}]}
+      style={[
+        textStyles.display,
+        { fontSize: size, color: color ?? palette.ink, fontFamily: useFont('display') },
+        style ?? {},
+      ]}
     >
       {children}
     </Text>
@@ -293,17 +324,29 @@ export function DisplayTitle({
 
 export function Heading({ children, color }: { children: ReactNode; color?: string }) {
   const palette = usePalette();
-  return <Text style={[textStyles.h1, { color: color ?? palette.ink }]}>{children}</Text>;
+  return (
+    <Text style={[textStyles.h1, { color: color ?? palette.ink, fontFamily: useFont('display') }]}>
+      {children}
+    </Text>
+  );
 }
 
 export function Subheading({ children, color }: { children: ReactNode; color?: string }) {
   const palette = usePalette();
-  return <Text style={[textStyles.h3, { color: color ?? palette.ink }]}>{children}</Text>;
+  return (
+    <Text style={[textStyles.h3, { color: color ?? palette.ink, fontFamily: useFont('display') }]}>
+      {children}
+    </Text>
+  );
 }
 
 export function Label({ children, color }: { children: ReactNode; color?: string }) {
   const palette = usePalette();
-  return <Text style={[textStyles.label, { color: color ?? palette.muted }]}>{children}</Text>;
+  return (
+    <Text style={[textStyles.label, { color: color ?? palette.muted, fontFamily: useFont('body') }]}>
+      {children}
+    </Text>
+  );
 }
 
 export function Body({
@@ -317,7 +360,15 @@ export function Body({
 }) {
   const palette = usePalette();
   return (
-    <Text style={[textStyles.body, { color: color ?? palette.body }, style ?? {}]}>{children}</Text>
+    <Text
+      style={[
+        textStyles.body,
+        { color: color ?? palette.body, fontFamily: useFont('body') },
+        style ?? {},
+      ]}
+    >
+      {children}
+    </Text>
   );
 }
 
@@ -332,7 +383,13 @@ export function Small({
 }) {
   const palette = usePalette();
   return (
-    <Text style={[textStyles.small, { color: color ?? palette.muted }, style ?? {}]}>
+    <Text
+      style={[
+        textStyles.small,
+        { color: color ?? palette.muted, fontFamily: useFont('body') },
+        style ?? {},
+      ]}
+    >
       {children}
     </Text>
   );
@@ -361,7 +418,9 @@ export function Badge({ children }: { children: ReactNode }) {
   const palette = usePalette();
   return (
     <View style={[partStyles.badge, { borderColor: palette.hairline }]}>
-      <Text style={[partStyles.badgeText, { color: palette.body }]}>{children}</Text>
+      <Text style={[partStyles.badgeText, { color: palette.body, fontFamily: useFont('body') }]}>
+        {children}
+      </Text>
     </View>
   );
 }
@@ -390,7 +449,11 @@ export function MetaItem({
       <Text
         style={[
           textStyles.small,
-          { color: onDark ? palette.onBrand : palette.ink, fontWeight: 500 },
+          {
+            color: onDark ? palette.onBrand : palette.ink,
+            fontWeight: 500,
+            fontFamily: useFont('body'),
+          },
         ]}
       >
         {value}

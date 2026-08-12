@@ -40,7 +40,7 @@ export async function renderProposalPdf(
       ? null
       : await trpc.translations.getTranslation({ proposalId: target.id, language });
 
-  const data = transformProposalToItineraryData(proposal, translation);
+  const data = transformProposalToItineraryData(proposal, translation, language);
   const pdf = await renderProposalDocument(data);
 
   return { filename: proposalPdfFilename(target.title), pdf };

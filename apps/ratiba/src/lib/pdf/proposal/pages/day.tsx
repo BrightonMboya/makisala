@@ -14,6 +14,8 @@ import {
   SectionLabel,
   Small,
   TYPE,
+  useFont,
+  useLabels,
   usePdfDoc,
 } from '../primitives';
 import { PHOTO_TILE } from '../theme';
@@ -86,12 +88,22 @@ const styles = StyleSheet.create({
 
 function DayEyebrow({ day, onDark }: { day: Day; onDark?: boolean }) {
   const { palette } = usePdfDoc();
+  const displayFont = useFont('display');
+  const bodyFont = useFont('body');
+  const labels = useLabels();
   const color = onDark ? palette.onBrand : palette.brand;
   return (
     <View style={styles.dayLine}>
       <View style={{ width: 22, height: 1, backgroundColor: color }} />
-      <Text style={[styles.dayNumber, { color }]}>Day {day.day}</Text>
-      <Text style={[styles.dayDate, { color: onDark ? palette.brandTint : palette.muted }]}>
+      <Text style={[styles.dayNumber, { color, fontFamily: displayFont }]}>
+        {labels.dayChip(day.day)}
+      </Text>
+      <Text
+        style={[
+          styles.dayDate,
+          { color: onDark ? palette.brandTint : palette.muted, fontFamily: bodyFont },
+        ]}
+      >
         {day.date}
       </Text>
     </View>
@@ -101,6 +113,8 @@ function DayEyebrow({ day, onDark }: { day: Day; onDark?: boolean }) {
 /** Collage intro: the destination, day title, lodge bar, and day description. */
 export function DayIntroPage({ day }: { day: Day }) {
   const { palette } = usePdfDoc();
+  const displayFont = useFont('display');
+  const labels = useLabels();
   const photos = usePhotoPlan(day).intro;
   const [lead, ...rest] = photos;
 
@@ -144,10 +158,10 @@ export function DayIntroPage({ day }: { day: Day }) {
 
       {hasRealAccommodation(day) ? (
         <View style={[styles.bar, { backgroundColor: palette.brand }]}>
-          <Label color={palette.brandTint}>Accommodation</Label>
+          <Label color={palette.brandTint}>{labels.accommodation}</Label>
           <Text
             style={{
-              fontFamily: 'Outfit',
+              fontFamily: displayFont,
               fontSize: TYPE.h1,
               fontWeight: 600,
               color: palette.onBrand,
@@ -183,6 +197,9 @@ export function DayIntroPage({ day }: { day: Day }) {
 /** Detail: the lodge on the left, the day's activities on the right. */
 export function DayDetailPage({ data, day }: { data: ItineraryData; day: Day }) {
   const { palette } = usePdfDoc();
+  const displayFont = useFont('display');
+  const bodyFont = useFont('body');
+  const labels = useLabels();
   const accommodation = accommodationFor(data, day);
   const groups = groupByMoment(day.activities);
   const meals = mealLines(day);
@@ -193,18 +210,22 @@ export function DayDetailPage({ data, day }: { data: ItineraryData; day: Day }) 
     <PdfPage>
       <View style={styles.detailHead}>
         <View style={{ width: 22, height: 1, backgroundColor: palette.brand }} />
-        <Text style={[styles.dayNumber, { color: palette.brand }]}>Day {day.day}</Text>
-        <Text style={[styles.dayDate, { color: palette.muted }]}>{day.date}</Text>
+        <Text style={[styles.dayNumber, { color: palette.brand, fontFamily: displayFont }]}>
+          {labels.dayChip(day.day)}
+        </Text>
+        <Text style={[styles.dayDate, { color: palette.muted, fontFamily: bodyFont }]}>
+          {day.date}
+        </Text>
       </View>
 
       <View style={styles.columns}>
         <View style={styles.col}>
           {hasRealAccommodation(day) ? (
             <>
-              <SectionLabel>Accommodation</SectionLabel>
+              <SectionLabel>{labels.accommodation}</SectionLabel>
               <Text
                 style={{
-                  fontFamily: 'Outfit',
+                  fontFamily: displayFont,
                   fontSize: TYPE.h1,
                   fontWeight: 600,
                   color: palette.ink,
@@ -215,7 +236,7 @@ export function DayDetailPage({ data, day }: { data: ItineraryData; day: Day }) 
               {accommodation?.location ? <Badge>{accommodation.location}</Badge> : null}
               {day.rooms ? (
                 <View style={styles.detail}>
-                  <Small color={palette.muted}>Rooms: </Small>
+                  <Small color={palette.muted}>{labels.rooms}</Small>
                   <Small color={palette.body}>{day.rooms}</Small>
                 </View>
               ) : null}
@@ -229,10 +250,7 @@ export function DayDetailPage({ data, day }: { data: ItineraryData; day: Day }) 
                     marginTop: 2,
                   }}
                 >
-                  <Small color={palette.brandDeep}>
-                    {alternatives.length} alternative{alternatives.length === 1 ? '' : 's'} for this
-                    night. See Alternative Accommodations.
-                  </Small>
+                  <Small color={palette.brandDeep}>{labels.altAvailable(alternatives.length)}</Small>
                 </View>
               ) : null}
               {photos.map((url) => (
@@ -241,21 +259,21 @@ export function DayDetailPage({ data, day }: { data: ItineraryData; day: Day }) 
             </>
           ) : (
             <>
-              <SectionLabel>Accommodation</SectionLabel>
-              <Body>No accommodation on this night.</Body>
+              <SectionLabel>{labels.accommodation}</SectionLabel>
+              <Body>{labels.noAccommodationNight}</Body>
             </>
           )}
         </View>
 
         <View style={styles.col}>
-          <SectionLabel>Activities</SectionLabel>
+          <SectionLabel>{labels.activities}</SectionLabel>
           <View style={{ height: SPACE.xs }} />
           {groups.map((group, i) => (
             <View key={`${group.moment}-${i}`} style={styles.group} wrap={false}>
               {group.moment ? (
                 <Text
                   style={{
-                    fontFamily: 'Inter',
+                    fontFamily: bodyFont,
                     fontSize: TYPE.small,
                     fontWeight: 700,
                     color: palette.ink,
@@ -280,7 +298,7 @@ export function DayDetailPage({ data, day }: { data: ItineraryData; day: Day }) 
             <View wrap={false}>
               <Text
                 style={{
-                  fontFamily: 'Inter',
+                  fontFamily: bodyFont,
                   fontSize: TYPE.small,
                   fontWeight: 700,
                   color: palette.ink,
@@ -288,7 +306,7 @@ export function DayDetailPage({ data, day }: { data: ItineraryData; day: Day }) 
                   marginBottom: 3,
                 }}
               >
-                Meal Plan: Day {day.day}
+                {labels.mealPlanDay(day.day)}
               </Text>
               {meals.map((meal) => (
                 <View key={meal} style={styles.activity}>

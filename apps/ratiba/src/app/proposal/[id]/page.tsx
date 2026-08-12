@@ -95,6 +95,7 @@ export default async function ItineraryPage({ params, searchParams }: Props) {
     const transformedData = transformProposalToItineraryData(
       proposal,
       activeLang !== 'en' ? (translation as Record<string, any> | null) : null,
+      activeLang,
     );
     const orgPlan = orgId ? await getOrgPlan(orgId) : null;
 

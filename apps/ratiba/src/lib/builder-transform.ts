@@ -294,6 +294,7 @@ export function transformBuilderToItineraryData(params: {
 
   return {
     id: 'preview',
+    language: 'en',
     title: tourTitle || 'Safari Adventure',
     subtitle: `${duration} Safari Adventure`,
     clientName,

@@ -42,8 +42,10 @@ import Link from 'next/link';
  * The attached PDF is rendered by react-pdf, which has no per-glyph font fallback:
  * a character missing from the fonts in src/lib/pdf/proposal/fonts renders as
  * mojibake rather than falling back the way a browser would. Those fonts cover
- * Western European Latin only, so anything needing Cyrillic, CJK, Devanagari, or
- * even Polish/Turkish accents (ż ł ę, ğ ş) silently garbles the client's copy.
+ * Western European Latin only, plus Simplified Chinese (NotoSansSC, resolved by
+ * language in lib/pdf/proposal/theme.ts), so anything else needing Cyrillic,
+ * Devanagari, or even Polish/Turkish accents (ż ł ę, ğ ş) would silently garble
+ * the client's copy.
  *
  * Adding a language here therefore means registering a font that covers its script
  * first. Arabic and Hebrew additionally need bidi and shaping, which react-pdf gets
@@ -51,6 +53,7 @@ import Link from 'next/link';
  */
 const LANGUAGES = [
   { code: 'en', label: 'English (default)' },
+  { code: 'zh', label: 'Chinese (Simplified)' },
   { code: 'fr', label: 'French' },
   { code: 'de', label: 'German' },
   { code: 'es', label: 'Spanish' },

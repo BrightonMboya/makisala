@@ -83,7 +83,7 @@ export async function GET(req: Request) {
   const translation =
     language === 'en' ? null : await trpc.translations.getTranslation({ proposalId: id, language });
 
-  const data = transformProposalToItineraryData(proposal, translation);
+  const data = transformProposalToItineraryData(proposal, translation, language);
 
   if (params.get('debug')) return NextResponse.json(await debugImages(data));
 

@@ -12,6 +12,8 @@ import {
   SectionLabel,
   Small,
   TYPE,
+  useFont,
+  useLabels,
   usePdfDoc,
 } from '../primitives';
 import { hasRealAccommodation } from '../helpers';
@@ -80,6 +82,7 @@ function Pin({
   size?: number;
 }) {
   const { palette } = usePdfDoc();
+  const bodyFont = useFont('body');
   const { xPct, yPct } = plan.project(coord);
   // A day-range label ("11-12") is wider than a single index digit — grow the pin
   // into a pill instead of clipping/wrapping text inside a fixed-size circle.
@@ -104,13 +107,16 @@ function Pin({
         },
       ]}
     >
-      <Text style={[styles.pinText, { color: palette.onBrand }]}>{label}</Text>
+      <Text style={[styles.pinText, { color: palette.onBrand, fontFamily: bodyFont }]}>
+        {label}
+      </Text>
     </View>
   );
 }
 
 export function MapPage({ data }: { data: ItineraryData }) {
   const { palette } = usePdfDoc();
+  const labels = useLabels();
   const coords = routeCoords(data.mapData);
   if (coords.length === 0) return null;
 
@@ -125,9 +131,9 @@ export function MapPage({ data }: { data: ItineraryData }) {
 
   return (
     <PdfPage>
-      <SectionLabel>Map</SectionLabel>
+      <SectionLabel>{labels.map}</SectionLabel>
       <View style={{ height: SPACE.sm }} />
-      <DisplayTitle>Route overview per day</DisplayTitle>
+      <DisplayTitle>{labels.routeOverview}</DisplayTitle>
       <View style={{ height: SPACE.lg }} />
 
       <View style={styles.map}>
@@ -155,7 +161,7 @@ export function MapPage({ data }: { data: ItineraryData }) {
           <Pin
             plan={plan}
             coord={data.mapData.startLocation.coordinates as LngLat}
-            label="GO"
+            label={labels.goPin}
             background={palette.brandDeep}
             size={16}
           />
@@ -173,7 +179,7 @@ export function MapPage({ data }: { data: ItineraryData }) {
           <Pin
             plan={plan}
             coord={data.mapData.endLocation.coordinates as LngLat}
-            label="END"
+            label={labels.endPin}
             background={palette.ink}
             size={16}
           />
@@ -185,7 +191,7 @@ export function MapPage({ data }: { data: ItineraryData }) {
       {data.mapData.startLocation ? (
         <View style={styles.legendRow}>
           <View style={styles.legendDay}>
-            <Label>Start</Label>
+            <Label>{labels.start}</Label>
           </View>
           <View style={styles.legendPlace}>
             <Small color={palette.ink}>{data.mapData.startLocation.name}</Small>
@@ -197,13 +203,13 @@ export function MapPage({ data }: { data: ItineraryData }) {
       <Rule />
       <View style={styles.legendRow}>
         <View style={styles.legendDay}>
-          <Label>Day</Label>
+          <Label>{labels.day}</Label>
         </View>
         <View style={styles.legendPlace}>
-          <Label>Destination</Label>
+          <Label>{labels.destination}</Label>
         </View>
         <View style={styles.legendStay}>
-          <Label>Accommodation</Label>
+          <Label>{labels.accommodation}</Label>
         </View>
       </View>
       <Rule />
@@ -211,14 +217,14 @@ export function MapPage({ data }: { data: ItineraryData }) {
       {data.itinerary.map((day) => (
         <View key={day.day} style={styles.legendRow}>
           <View style={styles.legendDay}>
-            <Small color={palette.muted}>Day {day.day}</Small>
+            <Small color={palette.muted}>{labels.dayChip(day.day)}</Small>
           </View>
           <View style={styles.legendPlace}>
             <Small color={palette.ink}>{day.destination || day.title}</Small>
           </View>
           <View style={styles.legendStay}>
             <Small color={palette.body}>
-              {hasRealAccommodation(day) ? day.accommodation : 'No accommodation'}
+              {hasRealAccommodation(day) ? day.accommodation : labels.noAccommodation}
             </Small>
           </View>
         </View>
@@ -229,7 +235,7 @@ export function MapPage({ data }: { data: ItineraryData }) {
           <Rule />
           <View style={styles.legendRow}>
             <View style={styles.legendDay}>
-              <Label>End</Label>
+              <Label>{labels.end}</Label>
             </View>
             <View style={styles.legendPlace}>
               <Small color={palette.ink}>{data.mapData.endLocation.name}</Small>

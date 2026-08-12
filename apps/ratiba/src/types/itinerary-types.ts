@@ -318,6 +318,8 @@ export interface ThemeTransportation {
 
 export interface ItineraryData {
   id: string;
+  /** BCP-47ish language tag content was translated into (e.g. 'zh'); 'en' when untranslated. */
+  language: string;
   title: string;
   subtitle: string;
   clientName?: string;
