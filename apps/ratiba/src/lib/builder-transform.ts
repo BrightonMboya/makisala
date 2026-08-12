@@ -204,21 +204,39 @@ export function transformBuilderToItineraryData(params: {
   );
   const pricing = calculatePricing(pricingRows, extras, travelerGroups, activityOptions);
 
-  // Generate map data
-  const mapLocations: Location[] = [];
-  const seenDestinations = new Set<string>();
+  // Generate map data. Only collapse a *consecutive* run of days spent at the same
+  // destination into one marker (not every occurrence in the trip — a later
+  // return visit is a separate stop) and carry the day range through as `dayLabel`
+  // so the marker/tooltip can say "Day 1-2" instead of just a running pin index.
+  const mapLocationDrafts: {
+    name: string;
+    coordinates: [number, number];
+    destinationKey: string;
+    dayStart: number;
+    dayEnd: number;
+  }[] = [];
 
   days.forEach((day) => {
-    if (day.destination && !seenDestinations.has(day.destination)) {
-      seenDestinations.add(day.destination);
-      if (day.destinationLat != null && day.destinationLng != null) {
-        mapLocations.push({
-          name: day.destinationName || day.destination,
-          coordinates: [day.destinationLng, day.destinationLat],
-        });
-      }
+    if (!day.destination || day.destinationLat == null || day.destinationLng == null) return;
+    const last = mapLocationDrafts[mapLocationDrafts.length - 1];
+    if (last && last.destinationKey === day.destination) {
+      last.dayEnd = day.dayNumber;
+    } else {
+      mapLocationDrafts.push({
+        name: day.destinationName || day.destination,
+        coordinates: [day.destinationLng, day.destinationLat],
+        destinationKey: day.destination,
+        dayStart: day.dayNumber,
+        dayEnd: day.dayNumber,
+      });
     }
   });
+
+  const mapLocations: Location[] = mapLocationDrafts.map((d) => ({
+    name: d.name,
+    coordinates: d.coordinates,
+    dayLabel: d.dayStart === d.dayEnd ? `Day ${d.dayStart}` : `Day ${d.dayStart}-${d.dayEnd}`,
+  }));
 
   const duration = `${days.length} Days`;
 

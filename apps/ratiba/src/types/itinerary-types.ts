@@ -252,6 +252,9 @@ export interface Day {
 export interface Location {
   name: string;
   coordinates: [number, number];
+  // "Day 1" or "Day 1-2" for a run of consecutive days spent at this destination.
+  // Absent on start/end locations, which aren't tied to a specific day.
+  dayLabel?: string;
 }
 
 export interface Accommodation {

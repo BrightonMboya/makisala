@@ -268,33 +268,58 @@ export function transformProposalToItineraryData(
     });
   });
 
-  // Generate map data from destinations
-  const mapLocations: Location[] = [];
-  const seenDestinations = new Set<string>();
+  // Generate map data from destinations. Only collapse a *consecutive* run of days
+  // spent at the same destination into one marker (not every occurrence in the
+  // trip — a later return visit is a separate stop) and carry the day range
+  // through as `dayLabel` so the marker/tooltip can say "Day 1-2" instead of just
+  // a running pin index.
+  const mapLocationDrafts: {
+    name: string;
+    coordinates: [number, number];
+    destinationKey: string;
+    dayStart: number;
+    dayEnd: number;
+  }[] = [];
 
   proposalDays.forEach((day) => {
-    if (day.nationalPark && !seenDestinations.has(day.nationalPark.id)) {
-      seenDestinations.add(day.nationalPark.id);
-      if (day.nationalPark.latitude && day.nationalPark.longitude) {
-        mapLocations.push({
-          name: day.nationalPark.name,
-          coordinates: [
-            parseFloat(day.nationalPark.longitude),
-            parseFloat(day.nationalPark.latitude),
-          ],
-        });
-      }
+    let destinationKey: string | null = null;
+    let name = '';
+    let coordinates: [number, number] | null = null;
+
+    if (day.nationalPark && day.nationalPark.latitude && day.nationalPark.longitude) {
+      destinationKey = day.nationalPark.id;
+      name = day.nationalPark.name;
+      coordinates = [
+        parseFloat(day.nationalPark.longitude),
+        parseFloat(day.nationalPark.latitude),
+      ];
     } else if (!day.nationalPark && day.destinationLat && day.destinationLng) {
-      const key = `${day.destinationLat},${day.destinationLng}`;
-      if (!seenDestinations.has(key)) {
-        seenDestinations.add(key);
-        mapLocations.push({
-          name: day.destinationName || 'Destination',
-          coordinates: [parseFloat(day.destinationLng), parseFloat(day.destinationLat)],
-        });
-      }
+      destinationKey = `${day.destinationLat},${day.destinationLng}`;
+      name = day.destinationName || 'Destination';
+      coordinates = [parseFloat(day.destinationLng), parseFloat(day.destinationLat)];
+    }
+
+    if (!destinationKey || !coordinates) return;
+
+    const last = mapLocationDrafts[mapLocationDrafts.length - 1];
+    if (last && last.destinationKey === destinationKey) {
+      last.dayEnd = day.dayNumber;
+    } else {
+      mapLocationDrafts.push({
+        name,
+        coordinates,
+        destinationKey,
+        dayStart: day.dayNumber,
+        dayEnd: day.dayNumber,
+      });
     }
   });
+
+  const mapLocations: Location[] = mapLocationDrafts.map((d) => ({
+    name: d.name,
+    coordinates: d.coordinates,
+    dayLabel: d.dayStart === d.dayEnd ? `Day ${d.dayStart}` : `Day ${d.dayStart}-${d.dayEnd}`,
+  }));
 
   const heroImage =
     proposal.heroImage ||

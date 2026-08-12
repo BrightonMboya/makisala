@@ -84,12 +84,14 @@ function TripMap({ data }: { data: ItineraryData['mapData'] }) {
         {locations.map((loc, idx) => (
           <MapMarker key={loc.name} longitude={loc.coordinates[0]} latitude={loc.coordinates[1]}>
             <MarkerContent>
-              <div className="flex h-6 w-6 items-center justify-center rounded-full border-2 border-white bg-stone-800 text-[10px] font-bold text-white shadow-md">
-                {idx + 1}
+              <div className="flex h-6 min-w-6 items-center justify-center rounded-full border-2 border-white bg-stone-800 px-1 text-[10px] font-bold whitespace-nowrap text-white shadow-md">
+                {loc.dayLabel ? loc.dayLabel.replace('Day ', '') : idx + 1}
               </div>
             </MarkerContent>
             <MarkerTooltip>
-              <span className="text-xs font-medium">{loc.name}</span>
+              <span className="text-xs font-medium">
+                {loc.dayLabel ? `${loc.dayLabel} · ${loc.name}` : loc.name}
+              </span>
             </MarkerTooltip>
           </MapMarker>
         ))}
@@ -567,7 +569,9 @@ export default function SafariPortalTheme({ data }: { data: ItineraryData }) {
             <div className="space-y-6">
               {data.mapData.locations.map((loc, i) => (
                 <div key={i} className="flex items-center gap-4">
-                  <span className="font-serif text-2xl text-stone-300 italic">0{i + 1}</span>
+                  <span className="font-serif text-2xl text-stone-300 italic">
+                    {loc.dayLabel || `0${i + 1}`}
+                  </span>
                   <div className="h-px flex-1 bg-stone-200" />
                   <span className="text-sm font-bold tracking-[0.2em] text-stone-600 uppercase">
                     {loc.name}

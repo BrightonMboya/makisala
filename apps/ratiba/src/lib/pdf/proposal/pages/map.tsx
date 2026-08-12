@@ -58,7 +58,7 @@ export function mapImageUrl(data: ItineraryData): string | null {
 
 const styles = StyleSheet.create({
   map: { width: '100%', aspectRatio: MAP_W / MAP_H, position: 'relative' },
-  pin: { position: 'absolute', alignItems: 'center', justifyContent: 'center', borderRadius: 8 },
+  pin: { position: 'absolute', alignItems: 'center', justifyContent: 'center' },
   pinText: { fontFamily: 'Inter', fontSize: 5.5, fontWeight: 700 },
   legendRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 4 },
   legendDay: { width: 46 },
@@ -81,6 +81,9 @@ function Pin({
 }) {
   const { palette } = usePdfDoc();
   const { xPct, yPct } = plan.project(coord);
+  // A day-range label ("11-12") is wider than a single index digit — grow the pin
+  // into a pill instead of clipping/wrapping text inside a fixed-size circle.
+  const width = label.length > 2 ? size + (label.length - 2) * 4 : size;
   return (
     <View
       style={[
@@ -90,10 +93,11 @@ function Pin({
           top: `${yPct}%`,
           // Percentage offsets resolve against the parent, so the pin is centred on
           // its point by pulling back half its own size.
-          marginLeft: -size / 2,
+          marginLeft: -width / 2,
           marginTop: -size / 2,
-          width: size,
+          width,
           height: size,
+          borderRadius: size / 2,
           backgroundColor: background,
           borderWidth: 1.25,
           borderColor: palette.paper,
@@ -161,7 +165,7 @@ export function MapPage({ data }: { data: ItineraryData }) {
             key={location.name}
             plan={plan}
             coord={location.coordinates as LngLat}
-            label={String(index + 1)}
+            label={location.dayLabel ? location.dayLabel.replace('Day ', '') : String(index + 1)}
             background={palette.brand}
           />
         ))}

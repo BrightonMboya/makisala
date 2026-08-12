@@ -245,6 +245,9 @@ function JourneyMap({ data, className }: { data: ItineraryData['mapData']; class
             <MarkerContent>
               <div className="h-3 w-3 rounded-full bg-stone-800 ring-4 ring-stone-800/20" />
             </MarkerContent>
+            <MarkerTooltip className="bg-white text-stone-900 shadow-lg">
+              <span className="text-sm font-medium">Start: {startLocation.name}</span>
+            </MarkerTooltip>
           </MapMarker>
         )}
         {locations.map((loc, idx) => (
@@ -255,13 +258,15 @@ function JourneyMap({ data, className }: { data: ItineraryData['mapData']; class
           >
             <MarkerContent>
               <div className="relative">
-                <div className="flex h-8 w-8 items-center justify-center rounded-full border border-stone-200 bg-white text-xs font-semibold text-stone-800 shadow-lg">
-                  {idx + 1}
+                <div className="flex h-8 min-w-8 items-center justify-center rounded-full border border-stone-200 bg-white px-1.5 text-xs font-semibold whitespace-nowrap text-stone-800 shadow-lg">
+                  {loc.dayLabel ? loc.dayLabel.replace('Day ', '') : idx + 1}
                 </div>
               </div>
             </MarkerContent>
             <MarkerTooltip className="bg-white text-stone-900 shadow-lg">
-              <span className="text-sm font-medium">{loc.name}</span>
+              <span className="text-sm font-medium">
+                {loc.dayLabel ? `${loc.dayLabel} · ${loc.name}` : loc.name}
+              </span>
             </MarkerTooltip>
           </MapMarker>
         ))}
@@ -270,6 +275,9 @@ function JourneyMap({ data, className }: { data: ItineraryData['mapData']; class
             <MarkerContent>
               <div className="h-3 w-3 rounded-full bg-stone-400 ring-4 ring-stone-400/20" />
             </MarkerContent>
+            <MarkerTooltip className="bg-white text-stone-900 shadow-lg">
+              <span className="text-sm font-medium">End: {endLocation.name}</span>
+            </MarkerTooltip>
           </MapMarker>
         )}
       </Map>

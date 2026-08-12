@@ -99,7 +99,7 @@ function TripMap({ data }: { data: ItineraryData['mapData'] }) {
         <MapMarker key={loc.name} longitude={loc.coordinates[0]} latitude={loc.coordinates[1]}>
           <MarkerContent>
             <motion.div
-              className="flex h-5 w-5 items-center justify-center rounded-full border-2 border-white bg-green-400 text-[9px] font-bold text-neutral-900 shadow-md"
+              className="flex h-5 min-w-5 items-center justify-center rounded-full border-2 border-white bg-green-400 px-1 text-[9px] font-bold whitespace-nowrap text-neutral-900 shadow-md"
               initial={{ scale: 0 }}
               animate={{ scale: 1 }}
               transition={{
@@ -109,11 +109,13 @@ function TripMap({ data }: { data: ItineraryData['mapData'] }) {
                 delay: idx * 0.3,
               }}
             >
-              {idx + 1}
+              {loc.dayLabel ? loc.dayLabel.replace('Day ', '') : idx + 1}
             </motion.div>
           </MarkerContent>
           <MarkerTooltip className="bg-white text-stone-900 shadow-lg">
-            <span className="text-xs font-medium">{loc.name}</span>
+            <span className="text-xs font-medium">
+              {loc.dayLabel ? `${loc.dayLabel} · ${loc.name}` : loc.name}
+            </span>
           </MarkerTooltip>
         </MapMarker>
       ))}
