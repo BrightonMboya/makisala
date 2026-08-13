@@ -6,6 +6,7 @@ export interface InvoiceFormLineItem {
   description?: string | null;
   quantity: number;
   unitPrice: number;
+  included?: boolean | null;
 }
 
 export interface InvoiceFormValues {
@@ -31,6 +32,7 @@ export function toFormLineItems(items: InvoiceLineItem[]): InvoiceFormLineItem[]
     description: item.description ?? null,
     quantity: item.quantity,
     unitPrice: item.unitPriceCents / 100,
+    included: item.included ?? true,
   }));
 }
 
@@ -41,6 +43,7 @@ export function toWireLineItems(items: InvoiceFormLineItem[]): InvoiceLineItem[]
     description: item.description ?? null,
     quantity: item.quantity,
     unitPriceCents: Math.round((item.unitPrice ?? 0) * 100),
+    included: item.included ?? true,
   }));
 }
 

@@ -13,7 +13,8 @@ export function Summary() {
   const currency = (useWatch({ control, name: 'currency' }) as string) || 'USD';
 
   const subtotal = lineItems.reduce(
-    (acc, item) => acc + (item?.quantity ?? 0) * (item?.unitPrice ?? 0),
+    (acc, item) =>
+      acc + (item?.included === false ? 0 : (item?.quantity ?? 0) * (item?.unitPrice ?? 0)),
     0,
   );
   const tax = taxRatePct && taxRatePct > 0 ? (subtotal * taxRatePct) / 100 : 0;

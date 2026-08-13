@@ -10,6 +10,7 @@ import type {
 } from '@repo/db/schema';
 import { lineTotalCents } from '@/lib/invoices/seed-from-proposal';
 import { ViewBeacon } from '@/components/tracking/view-beacon';
+import { cn } from '@/lib/utils';
 
 type Props = {
   params: Promise<{ token: string }>;
@@ -164,27 +165,42 @@ export default async function PublicInvoicePage({ params }: Props) {
                 </tr>
               </thead>
               <tbody>
-                {lineItems.map((item, index) => (
-                  <tr key={`${item.id}-${index}`} className="align-top">
-                    <td className="py-1.5 pr-4">
-                      <div className="font-mono text-[11px] text-neutral-950">{item.name}</div>
-                      {item.description ? (
-                        <div className="font-mono text-[11px] text-[#878787]">
-                          {item.description}
+                {lineItems.map((item, index) => {
+                  const included = item.included !== false;
+                  return (
+                    <tr key={`${item.id}-${index}`} className={cn('align-top', !included && 'opacity-50')}>
+                      <td className="py-1.5 pr-4">
+                        <div className="font-mono text-[11px] text-neutral-950">
+                          {item.name}
+                          {!included ? (
+                            <span className="ml-2 font-mono text-[10px] tracking-wide text-[#878787] uppercase">
+                              Not included
+                            </span>
+                          ) : null}
                         </div>
-                      ) : null}
-                    </td>
-                    <td className="py-1.5 text-right font-mono text-[11px] text-neutral-950">
-                      {item.quantity}
-                    </td>
-                    <td className="py-1.5 text-right font-mono text-[11px] text-neutral-950">
-                      {formatMoney(item.unitPriceCents, invoice.currency)}
-                    </td>
-                    <td className="py-1.5 text-right font-mono text-[11px] text-neutral-950">
-                      {formatMoney(lineTotalCents(item), invoice.currency)}
-                    </td>
-                  </tr>
-                ))}
+                        {item.description ? (
+                          <div className="font-mono text-[11px] text-[#878787]">
+                            {item.description}
+                          </div>
+                        ) : null}
+                      </td>
+                      <td className="py-1.5 text-right font-mono text-[11px] text-neutral-950">
+                        {item.quantity}
+                      </td>
+                      <td className="py-1.5 text-right font-mono text-[11px] text-neutral-950">
+                        {formatMoney(item.unitPriceCents, invoice.currency)}
+                      </td>
+                      <td
+                        className={cn(
+                          'py-1.5 text-right font-mono text-[11px] text-neutral-950',
+                          !included && 'line-through',
+                        )}
+                      >
+                        {formatMoney(lineTotalCents(item), invoice.currency)}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
 

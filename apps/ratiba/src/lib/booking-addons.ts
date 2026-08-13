@@ -137,6 +137,66 @@ export type AddOnLine = {
   onRequest: boolean;
 };
 
+function activityLine(a: ActivityOffer, travelerCount: number): AddOnLine {
+  if (a.price == null) {
+    return {
+      kind: 'activity',
+      id: a.id,
+      label: `${a.name} (Day ${a.dayNumber})`,
+      detail: null,
+      amount: 0,
+      unitAmount: 0,
+      quantity: 1,
+      onRequest: true,
+    };
+  }
+  const qty = multiplier(a.priceUnit, travelerCount);
+  return {
+    kind: 'activity',
+    id: a.id,
+    label: `${a.name} (Day ${a.dayNumber})`,
+    detail: a.priceUnit === 'per_person' ? `per person x ${qty}` : 'per group',
+    amount: money(a.price * qty),
+    unitAmount: a.price,
+    quantity: qty,
+    onRequest: false,
+  };
+}
+
+function alternativeLine(alt: AlternativeOffer, travelerCount: number): AddOnLine {
+  const qty = multiplier(alt.priceBasis, travelerCount, alt.roomCount);
+  return {
+    kind: 'alternative',
+    id: alt.id,
+    label: `Day ${alt.dayNumber}: ${alt.name}${alt.primaryName ? ` instead of ${alt.primaryName}` : ''}`,
+    detail: basisLabel(alt.priceBasis, qty, alt.customUnitLabel),
+    amount: money(alt.additionalPrice * qty),
+    unitAmount: alt.additionalPrice,
+    quantity: qty,
+    onRequest: false,
+  };
+}
+
+function extraLine(e: ExtraOffer, travelerCount: number): AddOnLine {
+  const price = e.unit === 'free' ? 0 : e.price;
+  const qty = multiplier(e.unit, travelerCount);
+  let detail: string | null = null;
+  if (e.unit === 'per_person') detail = `per person x ${qty}`;
+  else if (e.unit === 'per_group') detail = 'per group';
+  else if (e.unit === 'custom') detail = e.customUnitLabel;
+  else if (e.unit === 'free') detail = 'Free';
+  return {
+    kind: 'extra',
+    id: e.id,
+    label: e.name,
+    detail,
+    amount: money(price * qty),
+    unitAmount: price,
+    quantity: qty,
+    onRequest: false,
+  };
+}
+
 /**
  * Unknown ids are ignored rather than throwing: the client may hold a stale
  * page after the operator edited the proposal, and dropping the vanished
@@ -151,72 +211,35 @@ export function priceSelections(
 
   for (const id of selections.activityIds) {
     const a = addOns.activities.find((x) => x.id === id);
-    if (!a) continue;
-    if (a.price == null) {
-      lines.push({
-        kind: 'activity',
-        id: a.id,
-        label: `${a.name} (Day ${a.dayNumber})`,
-        detail: null,
-        amount: 0,
-        unitAmount: 0,
-        quantity: 1,
-        onRequest: true,
-      });
-      continue;
-    }
-    const qty = multiplier(a.priceUnit, travelerCount);
-    lines.push({
-      kind: 'activity',
-      id: a.id,
-      label: `${a.name} (Day ${a.dayNumber})`,
-      detail: a.priceUnit === 'per_person' ? `per person x ${qty}` : 'per group',
-      amount: money(a.price * qty),
-      unitAmount: a.price,
-      quantity: qty,
-      onRequest: false,
-    });
+    if (a) lines.push(activityLine(a, travelerCount));
   }
 
   for (const [dayId, altId] of Object.entries(selections.alternativeByDayId)) {
     const alt = addOns.alternatives.find((x) => x.dayId === dayId && x.id === altId);
-    if (!alt) continue;
-    const qty = multiplier(alt.priceBasis, travelerCount, alt.roomCount);
-    lines.push({
-      kind: 'alternative',
-      id: alt.id,
-      label: `Day ${alt.dayNumber}: ${alt.name}${alt.primaryName ? ` instead of ${alt.primaryName}` : ''}`,
-      detail: basisLabel(alt.priceBasis, qty, alt.customUnitLabel),
-      amount: money(alt.additionalPrice * qty),
-      unitAmount: alt.additionalPrice,
-      quantity: qty,
-      onRequest: false,
-    });
+    if (alt) lines.push(alternativeLine(alt, travelerCount));
   }
 
   for (const id of selections.extraIds) {
     const e = addOns.extras.find((x) => x.id === id);
-    if (!e) continue;
-    const price = e.unit === 'free' ? 0 : e.price;
-    const qty = multiplier(e.unit, travelerCount);
-    let detail: string | null = null;
-    if (e.unit === 'per_person') detail = `per person x ${qty}`;
-    else if (e.unit === 'per_group') detail = 'per group';
-    else if (e.unit === 'custom') detail = e.customUnitLabel;
-    else if (e.unit === 'free') detail = 'Free';
-    lines.push({
-      kind: 'extra',
-      id: e.id,
-      label: e.name,
-      detail,
-      amount: money(price * qty),
-      unitAmount: price,
-      quantity: qty,
-      onRequest: false,
-    });
+    if (e) lines.push(extraLine(e, travelerCount));
   }
 
   return { lines, addOnTotal: money(lines.reduce((acc, l) => acc + l.amount, 0)) };
+}
+
+/**
+ * Every optional activity, alternative lodge, and extra offered on the
+ * proposal — not just what the client picked. Used when an operator builds
+ * an invoice directly: they see the full catalog and choose per-line what to
+ * bill, rather than being limited to the client's (possibly incomplete or
+ * still-changing) booking-page selections.
+ */
+export function priceAllOffers(addOns: BookingAddOns, travelerCount: number): AddOnLine[] {
+  return [
+    ...addOns.activities.map((a) => activityLine(a, travelerCount)),
+    ...addOns.alternatives.map((alt) => alternativeLine(alt, travelerCount)),
+    ...addOns.extras.map((e) => extraLine(e, travelerCount)),
+  ];
 }
 
 export function computeBookingTotal(

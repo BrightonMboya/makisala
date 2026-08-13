@@ -8,7 +8,9 @@ import { sendInvoiceShareEmail } from '@repo/resend';
 import { recordSentEmail } from '@repo/db';
 import { router, protectedProcedure, publicProcedure, escapeLikeQuery } from '../init';
 import { getNextInvoiceNumber } from '@/lib/invoices/numbering';
-import { buildLineItemsFromProposal, computeTotals } from '@/lib/invoices/seed-from-proposal';
+import { buildCheckoutLineItems, computeTotals } from '@/lib/invoices/seed-from-proposal';
+import { priceAllOffers } from '@/lib/booking-addons';
+import { loadBookingAddOns } from '../lib/booking-addons';
 import {
   getOrgPaymentMethodSnapshot,
   resolveInvoicePaymentMethods,
@@ -23,6 +25,7 @@ const lineItemSchema = z.object({
   description: z.string().max(2000).nullish(),
   quantity: z.number().min(0),
   unitPriceCents: z.number().int(),
+  included: z.boolean().nullish(),
 });
 
 const partySchema = z
@@ -148,10 +151,16 @@ export const invoicesRouter = router({
         throw new TRPCError({ code: 'NOT_FOUND', message: 'Proposal not found' });
       }
 
-      const lineItems = buildLineItemsFromProposal({
-        pricingRows: proposal.pricingRows,
-        extras: proposal.extras,
-      });
+      // Show every optional activity, alternative lodge, and extra offered on
+      // the proposal — not just whatever the client happened to pick on the
+      // booking page. The operator decides per-line what actually gets
+      // billed via each line's `included` toggle (all start unchecked).
+      const addOns = await loadBookingAddOns(ctx.db, proposal.id, ctx.orgId);
+      const groups = (proposal.travelerGroups as Array<{ count: number }>) || [];
+      const travelerCount = groups.reduce((acc, g) => acc + g.count, 0);
+      const lines = priceAllOffers(addOns, travelerCount);
+      const lineItems: InvoiceLineItem[] = buildCheckoutLineItems(proposal.pricingRows, lines);
+
       const { subtotalCents, taxCents, totalCents } = computeTotals(
         lineItems,
         input.taxRatePct,

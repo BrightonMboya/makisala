@@ -4,6 +4,7 @@ import {
   formatDelta,
   formatLineAmount,
   parseSelections,
+  priceAllOffers,
   priceSelections,
   EMPTY_SELECTIONS,
   type BookingAddOns,
@@ -254,6 +255,37 @@ describe('alternative price basis', () => {
     expect(addOnTotal).toBe(200);
     expect(lines[0]?.detail).toBe('per vehicle');
     expect(lines[0]?.quantity).toBe(1);
+  });
+});
+
+describe('priceAllOffers', () => {
+  test('returns a line for every offer in the catalog, regardless of selection', () => {
+    const lines = priceAllOffers(addOns, 4);
+    expect(lines).toHaveLength(8); // 3 activities + 2 alternatives + 3 extras
+    expect(lines.map((l) => l.id)).toEqual([
+      'act-balloon',
+      'act-group',
+      'act-unpriced',
+      'alt-upgrade',
+      'alt-cheaper',
+      'ex-transfer',
+      'ex-insurance',
+      'ex-free',
+    ]);
+  });
+
+  test('each line prices the same as it would via priceSelections', () => {
+    const lines = priceAllOffers(addOns, 4);
+    const balloon = lines.find((l) => l.id === 'act-balloon');
+    expect(balloon?.amount).toBe(2200);
+    const upgrade = lines.find((l) => l.id === 'alt-upgrade');
+    expect(upgrade?.amount).toBe(800);
+    const unpriced = lines.find((l) => l.id === 'act-unpriced');
+    expect(unpriced?.onRequest).toBe(true);
+  });
+
+  test('an empty catalog returns no lines', () => {
+    expect(priceAllOffers({ activities: [], alternatives: [], extras: [] }, 4)).toHaveLength(0);
   });
 });
 

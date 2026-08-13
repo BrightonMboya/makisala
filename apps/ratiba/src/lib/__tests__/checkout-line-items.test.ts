@@ -38,6 +38,7 @@ describe('buildCheckoutLineItems', () => {
       description: 'Balloon safari (Day 2)',
       quantity: 2,
       unitPriceCents: 55000,
+      included: false,
     });
   });
 
@@ -71,6 +72,7 @@ describe('buildCheckoutLineItems', () => {
       description: 'Day 1: Gran Melia instead of Buhoma Lodge',
       quantity: 1,
       unitPriceCents: 30000,
+      included: false,
     });
     expect(items[1]).toMatchObject({
       name: 'Optional extra',
@@ -108,8 +110,9 @@ describe('buildCheckoutLineItems', () => {
     expect(items).toHaveLength(0);
   });
 
-  test('totals match the base itinerary plus selected add-ons', () => {
-    // Base 2*2500 + 1*1500 = 6500, plus a per-person extra 3 x 300 = 900.
+  test('optional add-ons default to excluded, so totals start at just the base itinerary', () => {
+    // Base 2*2500 + 1*1500 = 6500. The per-person extra (3 x 300 = 900) is
+    // built with included: false, so it does not count until toggled on.
     const addOns: AddOnLine[] = [
       {
         kind: 'extra',
@@ -123,6 +126,27 @@ describe('buildCheckoutLineItems', () => {
       },
     ];
     const items = buildCheckoutLineItems(rows, addOns);
+    const { subtotalCents, totalCents } = computeTotals(items, null);
+    expect(subtotalCents).toBe(650000);
+    expect(totalCents).toBe(650000);
+  });
+
+  test('computeTotals folds a line back into the total once included is toggled on', () => {
+    const addOns: AddOnLine[] = [
+      {
+        kind: 'extra',
+        id: 'ex-1',
+        label: 'Insurance',
+        detail: 'per person x 3',
+        amount: 900,
+        unitAmount: 300,
+        quantity: 3,
+        onRequest: false,
+      },
+    ];
+    const items = buildCheckoutLineItems(rows, addOns).map((item) =>
+      item.id === 'extra-ex-1' ? { ...item, included: true } : item,
+    );
     const { subtotalCents, totalCents } = computeTotals(items, null);
     expect(subtotalCents).toBe(740000);
     expect(totalCents).toBe(740000);

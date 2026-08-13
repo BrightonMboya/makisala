@@ -2,52 +2,11 @@ import type { InvoiceLineItem } from '@repo/db/schema';
 import type { AddOnLine } from '@/lib/booking-addons';
 
 type PricingRow = { id: string; count: number; type: string; unitPrice: number };
-type Extra = { id: string; name: string; price: number; selected: boolean };
-
-interface ProposalSeed {
-  pricingRows?: PricingRow[] | null;
-  extras?: Extra[] | null;
-}
 
 /**
- * Builds invoice line items from a proposal's pricingRows + selected extras.
+ * Line items from a proposal's pricingRows (the base itinerary) plus a set of
+ * priced add-on lines (optional activities, alternative lodges, extras).
  * Proposal pricing is stored in dollars (float); invoice line items store cents.
- */
-export function buildLineItemsFromProposal(proposal: ProposalSeed): InvoiceLineItem[] {
-  const items: InvoiceLineItem[] = [];
-
-  for (const row of proposal.pricingRows ?? []) {
-    if (!row || row.count <= 0) continue;
-    items.push({
-      // Namespace the source id: pricingRows and extras can share raw ids (e.g. "1"),
-      // and invoice line-item ids must be unique across the merged list.
-      id: `row-${row.id}`,
-      name: row.type || 'Traveler',
-      quantity: row.count,
-      unitPriceCents: Math.round((row.unitPrice || 0) * 100),
-    });
-  }
-
-  for (const extra of proposal.extras ?? []) {
-    if (!extra?.name?.trim()) continue;
-    items.push({
-      id: `extra-${extra.id}`,
-      name: extra.name || 'Extra',
-      quantity: 1,
-      unitPriceCents: Math.round((extra.price || 0) * 100),
-    });
-  }
-
-  return items;
-}
-
-/**
- * Line items for the invoice a traveler generates by confirming: the base
- * itinerary plus only the add-ons they selected.
- *
- * Unlike {@link buildLineItemsFromProposal}, this must not pull the proposal's
- * full `extras` list. Extras are opt-in on the booking page, so billing every
- * offered one would not match the total the client agreed to.
  */
 export function buildCheckoutLineItems(
   pricingRows: PricingRow[] | null | undefined,
@@ -77,6 +36,8 @@ export function buildCheckoutLineItems(
       description: description || undefined,
       quantity: line.quantity,
       unitPriceCents: Math.round(line.unitAmount * 100),
+      // Optional line: the operator opts it into the total per-invoice, not billed by default.
+      included: false,
     });
   }
 
@@ -103,7 +64,10 @@ export function computeTotals(
   lineItems: InvoiceLineItem[],
   taxRatePct: number | null | undefined,
 ) {
-  const subtotalCents = lineItems.reduce((sum, item) => sum + lineTotalCents(item), 0);
+  const subtotalCents = lineItems.reduce(
+    (sum, item) => sum + (item.included === false ? 0 : lineTotalCents(item)),
+    0,
+  );
   const taxCents = taxRatePct ? Math.round((subtotalCents * taxRatePct) / 100) : 0;
   const totalCents = subtotalCents + taxCents;
   return { subtotalCents, taxCents, totalCents };

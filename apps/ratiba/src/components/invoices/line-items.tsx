@@ -72,6 +72,7 @@ export function LineItems({ readOnly }: { readOnly?: boolean }) {
               name: '',
               quantity: 1,
               unitPrice: 0,
+              included: true,
             })
           }
           className="flex items-center gap-1.5 font-mono text-[11px] text-[#878787] hover:text-foreground"
@@ -109,6 +110,11 @@ function LineItemRow({
     control,
     name: `lineItems.${index}.unitPrice`,
   }) as number;
+  const includedValue = useWatch({
+    control,
+    name: `lineItems.${index}.included`,
+  }) as boolean | null | undefined;
+  const included = includedValue !== false;
 
   const lineTotalDollars = (quantity ?? 0) * (unitPrice ?? 0);
 
@@ -131,27 +137,79 @@ function LineItemRow({
         </button>
       ) : null}
 
-      <Controller
-        control={control}
-        name={`lineItems.${index}.name`}
-        render={({ field }) => (
-          <input
-            type="text"
-            value={field.value ?? ''}
-            disabled={readOnly}
-            placeholder="Item name"
-            onChange={field.onChange}
-            className="w-full border-none bg-transparent p-0 text-[11px] text-foreground outline-none placeholder:text-[#878787]/60 focus:ring-0 disabled:opacity-60"
+      <div className="min-w-0">
+        <div className="flex items-center gap-2">
+          <Controller
+            control={control}
+            name={`lineItems.${index}.name`}
+            render={({ field }) => (
+              <input
+                type="text"
+                value={field.value ?? ''}
+                disabled={readOnly}
+                placeholder="Item name"
+                onChange={field.onChange}
+                className="w-full min-w-0 flex-1 border-none bg-transparent p-0 text-[11px] text-foreground outline-none placeholder:text-[#878787]/60 focus:ring-0 disabled:opacity-60"
+              />
+            )}
           />
-        )}
-      />
+
+          <Controller
+            control={control}
+            name={`lineItems.${index}.included`}
+            render={({ field }) => {
+              const isIncluded = field.value !== false;
+              return (
+                <button
+                  type="button"
+                  disabled={readOnly}
+                  onClick={() => field.onChange(!isIncluded)}
+                  aria-pressed={isIncluded}
+                  className={cn(
+                    'shrink-0 rounded-full border px-2 py-0.5 font-mono text-[9px] tracking-wide uppercase transition-colors',
+                    isIncluded
+                      ? 'border-transparent text-[#878787] opacity-0 group-hover:opacity-100 hover:border-[#878787]/30 hover:text-foreground'
+                      : 'border-amber-300 bg-amber-50 text-amber-700',
+                    readOnly && 'pointer-events-none',
+                  )}
+                >
+                  {isIncluded ? 'Included' : 'Not included'}
+                </button>
+              );
+            }}
+          />
+        </div>
+
+        <Controller
+          control={control}
+          name={`lineItems.${index}.description`}
+          render={({ field }) => (
+            <input
+              type="text"
+              value={field.value ?? ''}
+              disabled={readOnly}
+              placeholder="Add description"
+              onChange={field.onChange}
+              className={cn(
+                'mt-0.5 w-full border-none bg-transparent p-0 font-mono text-[10px] text-[#878787] outline-none placeholder:text-[#878787]/40 focus:ring-0 disabled:opacity-60',
+                readOnly && !field.value && 'hidden',
+              )}
+            />
+          )}
+        />
+      </div>
 
       <QuantityInput name={`lineItems.${index}.quantity`} disabled={readOnly} />
 
       <AmountInput name={`lineItems.${index}.unitPrice`} disabled={readOnly} />
 
       <div className="text-right">
-        <span className="font-mono text-[11px] text-foreground">
+        <span
+          className={cn(
+            'font-mono text-[11px] text-foreground',
+            !included && 'text-[#878787] line-through',
+          )}
+        >
           {formatMoney(lineTotalDollars, currency)}
         </span>
       </div>

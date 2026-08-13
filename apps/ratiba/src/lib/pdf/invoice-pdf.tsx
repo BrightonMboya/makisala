@@ -118,6 +118,19 @@ const styles = StyleSheet.create({
     fontSize: 9,
     color: TEXT,
   },
+  rowExcluded: {
+    opacity: 0.5,
+  },
+  cellTextExcluded: {
+    textDecoration: 'line-through',
+  },
+  notIncludedTag: {
+    fontSize: 7,
+    color: MUTED,
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
+    marginLeft: 6,
+  },
   // summary
   summaryWrap: {
     flexDirection: 'row',
@@ -333,10 +346,17 @@ export function InvoicePdfDocument({ invoice, logoSrc }: InvoicePdfProps) {
         </View>
         {lineItems.map((item, index) => {
           const lineTotal = lineTotalCents(item);
+          const included = item.included !== false;
           return (
-            <View key={`${item.id}-${index}`} style={styles.row}>
+            <View
+              key={`${item.id}-${index}`}
+              style={included ? styles.row : [styles.row, styles.rowExcluded]}
+            >
               <View style={styles.cellDesc}>
-                <Text style={styles.itemName}>{item.name}</Text>
+                <Text style={styles.itemName}>
+                  {item.name}
+                  {!included ? <Text style={styles.notIncludedTag}>Not included</Text> : null}
+                </Text>
                 {item.description ? (
                   <Text style={styles.itemDesc}>{item.description}</Text>
                 ) : null}
@@ -345,7 +365,13 @@ export function InvoicePdfDocument({ invoice, logoSrc }: InvoicePdfProps) {
               <Text style={[styles.cellText, styles.cellPrice]}>
                 {formatMoney(item.unitPriceCents, invoice.currency)}
               </Text>
-              <Text style={[styles.cellText, styles.cellTotal]}>
+              <Text
+                style={
+                  included
+                    ? [styles.cellText, styles.cellTotal]
+                    : [styles.cellText, styles.cellTotal, styles.cellTextExcluded]
+                }
+              >
                 {formatMoney(lineTotal, invoice.currency)}
               </Text>
             </View>

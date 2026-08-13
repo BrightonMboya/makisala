@@ -1480,6 +1480,8 @@ export interface InvoiceLineItem {
   description?: string | null;
   quantity: number;
   unitPriceCents: number;
+  /** Whether this line counts toward the invoice subtotal. Missing/true = included. */
+  included?: boolean | null;
 }
 
 export interface InvoicePartyDetails {
