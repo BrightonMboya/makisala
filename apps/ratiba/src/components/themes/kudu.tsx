@@ -137,6 +137,20 @@ function TripMap({ data }: { data: ItineraryData['mapData'] }) {
   );
 }
 
+// Scroll-triggered reveal animations only make sense on the desktop split-pane
+// layout; on mobile they just make content flicker in/out as the user scrolls.
+function useIsDesktop() {
+  const [isDesktop, setIsDesktop] = React.useState(false);
+  React.useEffect(() => {
+    const mq = window.matchMedia('(min-width: 1024px)');
+    const update = () => setIsDesktop(mq.matches);
+    update();
+    mq.addEventListener('change', update);
+    return () => mq.removeEventListener('change', update);
+  }, []);
+  return isDesktop;
+}
+
 // --- FULL SCREEN SNAP SECTION ---
 const NarrativeSection = ({
   children,
@@ -145,6 +159,7 @@ const NarrativeSection = ({
   imageRight = true,
   isPricing = false,
   onImageChange,
+  imageCaption,
 }: {
   children: React.ReactNode;
   imageUrl?: string;
@@ -152,9 +167,11 @@ const NarrativeSection = ({
   imageRight?: boolean;
   isPricing?: boolean;
   onImageChange?: () => void;
+  imageCaption?: string;
 }) => {
   const containerRef = useRef(null);
   const [isImageHovered, setIsImageHovered] = React.useState(false);
+  const isDesktop = useIsDesktop();
   const { scrollYProgress } = useScroll({
     target: containerRef,
     offset: ['start end', 'end start'],
@@ -185,29 +202,30 @@ const NarrativeSection = ({
   return (
     <section
       ref={containerRef}
-      className="relative flex h-screen w-full snap-start snap-always flex-col overflow-hidden border-b border-black/5 bg-[#F4F4F1] lg:flex-row"
+      className="relative flex min-h-screen w-full flex-col overflow-visible border-b border-black/5 bg-[#F4F4F1] lg:h-screen lg:flex-row lg:snap-start lg:snap-always lg:overflow-hidden"
     >
       {isPricing ? (
-        <div className="flex h-full w-full items-center justify-center bg-[#141A13] p-8 text-white md:p-24">
+        <div className="flex min-h-screen w-full flex-col items-center justify-center bg-[#141A13] p-8 py-20 text-white md:p-24 lg:h-full lg:flex-row lg:py-0">
           {children}
         </div>
       ) : (
         <>
           <div
-            className={`z-20 flex h-full w-full flex-col justify-center px-8 md:px-16 lg:w-1/2 lg:px-24 ${imageRight ? 'order-1' : 'order-2'}`}
+            className={`z-20 order-1 flex w-full flex-col justify-center px-8 py-14 md:px-16 lg:h-full lg:w-1/2 lg:min-h-0 lg:justify-start lg:overflow-y-auto lg:px-24 lg:py-16 ${imageRight ? 'lg:order-1' : 'lg:order-2'}`}
           >
             <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
+              initial={isDesktop ? { opacity: 0, y: 30 } : false}
+              whileInView={isDesktop ? { opacity: 1, y: 0 } : undefined}
               viewport={{ once: false, amount: 0.5 }}
               transition={{ duration: 1, ease: [0.19, 1, 0.22, 1] }}
+              className="lg:my-auto"
             >
               {children}
             </motion.div>
           </div>
 
           <div
-            className={`group relative h-full w-full overflow-hidden lg:w-1/2 ${imageRight ? 'order-2' : 'order-1'}`}
+            className={`group relative order-2 h-[45vh] min-h-[280px] w-full overflow-hidden lg:h-full lg:min-h-0 lg:w-1/2 ${imageRight ? 'lg:order-2' : 'lg:order-1'}`}
             onMouseEnter={() => onImageChange && setIsImageHovered(true)}
             onMouseLeave={() => setIsImageHovered(false)}
           >
@@ -238,7 +256,17 @@ const NarrativeSection = ({
             </motion.div>
 
             {/* Subtle gradient overlay for depth */}
-            <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-black/5 via-transparent to-black/10" />
+            <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-black/5 via-transparent to-black/30" />
+
+            {/* Caption: what this image is (accommodation name) */}
+            {imageCaption && (
+              <div className="pointer-events-none absolute bottom-4 left-4 z-20 flex items-center gap-2 rounded-full border border-white/20 bg-black/50 px-4 py-2 backdrop-blur-md">
+                <Home size={12} className="shrink-0 text-white/80" />
+                <span className="text-[10px] font-bold tracking-[0.2em] text-white uppercase">
+                  {imageCaption}
+                </span>
+              </div>
+            )}
 
             {/* Prev/Next arrows */}
             {images.length > 1 && (
@@ -249,7 +277,7 @@ const NarrativeSection = ({
                     goToPrev();
                   }}
                   aria-label="Previous image"
-                  className="absolute top-1/2 left-5 z-40 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/30 bg-black/20 text-white opacity-0 backdrop-blur-md transition-all duration-300 group-hover:opacity-100 hover:bg-black/40"
+                  className="absolute top-1/2 left-5 z-40 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/30 bg-black/20 text-white opacity-100 backdrop-blur-md transition-all duration-300 hover:bg-black/40 lg:opacity-0 lg:group-hover:opacity-100"
                 >
                   <ChevronLeft className="h-5 w-5" />
                 </button>
@@ -259,10 +287,22 @@ const NarrativeSection = ({
                     goToNext();
                   }}
                   aria-label="Next image"
-                  className="absolute top-1/2 right-5 z-40 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/30 bg-black/20 text-white opacity-0 backdrop-blur-md transition-all duration-300 group-hover:opacity-100 hover:bg-black/40"
+                  className="absolute top-1/2 right-5 z-40 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/30 bg-black/20 text-white opacity-100 backdrop-blur-md transition-all duration-300 hover:bg-black/40 lg:opacity-0 lg:group-hover:opacity-100"
                 >
                   <ChevronRight className="h-5 w-5" />
                 </button>
+
+                {/* Dot indicators */}
+                <div className="absolute right-4 bottom-4 z-20 flex gap-1.5">
+                  {images.map((_, i) => (
+                    <span
+                      key={i}
+                      className={`h-1.5 rounded-full transition-all duration-300 ${
+                        i === currentIndex ? 'w-4 bg-white' : 'w-1.5 bg-white/40'
+                      }`}
+                    />
+                  ))}
+                </div>
               </>
             )}
 
@@ -328,7 +368,7 @@ export default function KuduTheme({ data, onHeroImageChange, onDayImageChange }:
   // Print surface: swap the WebGL route map for a static raster and size-cap images.
 
   return (
-    <div className="h-screen snap-y snap-mandatory overflow-y-scroll scroll-smooth bg-[#F4F4F1] selection:bg-emerald-800 selection:text-white">
+    <div className="h-screen overflow-y-scroll scroll-smooth bg-[#F4F4F1] selection:bg-emerald-800 selection:text-white lg:snap-y lg:snap-mandatory">
       {/* 1. INTRODUCTION: HERO */}
       <NarrativeSection
         imageUrl={heroImage ?? ''}
@@ -352,7 +392,7 @@ export default function KuduTheme({ data, onHeroImageChange, onDayImageChange }:
             Prepared for {clientName}
           </p>
         )}
-        <h1 className="mb-8 font-serif text-6xl leading-tight font-black text-slate-900 md:text-7xl">
+        <h1 className="mb-8 font-serif text-4xl leading-tight font-black text-slate-900 sm:text-5xl md:text-7xl">
           {title}
         </h1>
         <div className="prose prose-lg border-l-2 border-emerald-800/30 py-2 pl-8 text-slate-700">
@@ -435,6 +475,7 @@ export default function KuduTheme({ data, onHeroImageChange, onDayImageChange }:
             key={day.day}
             imageUrls={dayImages}
             imageRight={!isRight}
+            imageCaption={day.accommodation}
             onImageChange={
               onDayImageChange
                 ? () => {
@@ -449,7 +490,7 @@ export default function KuduTheme({ data, onHeroImageChange, onDayImageChange }:
             <div className="mb-4 text-xs font-bold tracking-[0.4em] text-emerald-800 uppercase">
               Day {String(day.day).padStart(2, '0')} — {day.date}
             </div>
-            <h2 className="mb-4 font-serif text-4xl font-bold text-slate-900 md:text-5xl">
+            <h2 className="mb-4 font-serif text-3xl font-bold text-slate-900 sm:text-4xl md:text-5xl">
               {day.title}
             </h2>
 
@@ -458,7 +499,7 @@ export default function KuduTheme({ data, onHeroImageChange, onDayImageChange }:
             )}
 
             {/* Activities with timeline */}
-            <div className="mb-6 max-h-[40vh] overflow-y-auto pr-2">
+            <div className="mb-6 lg:max-h-[40vh] lg:overflow-y-auto lg:pr-2">
               <div className="border-l border-emerald-800/20 pl-6">
                 {day.activities.map((act, actIdx) => (
                   <div key={actIdx} className="relative py-3">
@@ -582,21 +623,23 @@ export default function KuduTheme({ data, onHeroImageChange, onDayImageChange }:
 
       {/* 4. PRICING SECTION */}
       <NarrativeSection isPricing>
-        <div className="grid w-full max-w-6xl items-start gap-16 lg:grid-cols-2">
+        <div className="grid w-full max-w-6xl items-start gap-10 lg:grid-cols-2 lg:gap-16">
           <div>
             <div className="mb-6 flex gap-1 text-yellow-500">
               {[...Array(5)].map((_, i) => (
                 <Star key={i} size={16} fill="currentColor" />
               ))}
             </div>
-            <h2 className="mb-8 font-serif text-5xl font-black tracking-tighter">The Investment</h2>
+            <h2 className="mb-8 font-serif text-3xl font-black tracking-tighter sm:text-4xl lg:text-5xl">
+              The Investment
+            </h2>
 
             {/* Inclusions */}
             <div className="mb-8">
               <h3 className="mb-4 text-[10px] font-bold tracking-[0.3em] text-emerald-500 uppercase">
                 Inclusions
               </h3>
-              <div className="max-h-[35vh] space-y-3 overflow-y-auto pr-2 text-white/70">
+              <div className="space-y-3 text-white/70 lg:max-h-[35vh] lg:overflow-y-auto lg:pr-2">
                 {includedItems &&
                   includedItems.map((inc, i) => (
                     <div key={i} className="flex items-start gap-3 border-b border-white/5 pb-2">
@@ -613,7 +656,7 @@ export default function KuduTheme({ data, onHeroImageChange, onDayImageChange }:
                 <h3 className="mb-4 text-[10px] font-bold tracking-[0.3em] text-white/40 uppercase">
                   Exclusions
                 </h3>
-                <div className="max-h-[20vh] space-y-3 overflow-y-auto pr-2 text-white/50">
+                <div className="space-y-3 text-white/50 lg:max-h-[20vh] lg:overflow-y-auto lg:pr-2">
                   {excludedItems.map((exc, i) => (
                     <div key={i} className="flex items-start gap-3 border-b border-white/5 pb-2">
                       <XCircle size={14} className="mt-0.5 shrink-0 text-white/30" />
@@ -714,7 +757,7 @@ export default function KuduTheme({ data, onHeroImageChange, onDayImageChange }:
         organization?.paymentTerms ||
         hasAgencyTrust(organization)) && (
         <NarrativeSection imageUrl={heroImage ?? ''} imageRight={true}>
-          <div className="max-h-[80vh] overflow-y-auto pr-2">
+          <div className="lg:max-h-[80vh] lg:overflow-y-auto lg:pr-2">
             {organization?.aboutDescription && (
               <div className="mb-10">
                 <h2 className="mb-6 font-serif text-4xl font-bold text-slate-900">
