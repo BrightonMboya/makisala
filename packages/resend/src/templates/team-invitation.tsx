@@ -42,7 +42,7 @@ export function renderTeamInvitationEmail(props: TeamInvitationEmailProps): stri
     </h1>
 
     <p style="font-size: 16px; margin-bottom: 20px;">
-      <strong>${escapeHtml(inviterName)}</strong> has invited you to join <strong>${escapeHtml(organizationName)}</strong> on Makisala.
+      <strong>${escapeHtml(inviterName)}</strong> has invited you to join <strong>${escapeHtml(organizationName)}</strong> on Ratiba.
     </p>
 
     <div style="background-color: #f8f9fa; border-left: 4px solid #15803d; padding: 15px; margin-bottom: 25px; border-radius: 4px;">
