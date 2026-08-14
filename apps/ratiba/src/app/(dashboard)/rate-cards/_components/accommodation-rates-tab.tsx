@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Button } from '@repo/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@repo/ui/card';
 import { toast } from '@repo/ui/toast';
@@ -70,6 +70,9 @@ export function AccommodationRatesTab() {
   const [newMeal, setNewMeal] = useState<MealPlan>('fb');
   const [newBasis, setNewBasis] = useState<RateBasis>('per_person');
   const [newCapacity, setNewCapacity] = useState<string>('');
+
+  const [showAllSeasons, setShowAllSeasons] = useState(false);
+  useEffect(() => setShowAllSeasons(false), [active?.id]);
 
   const searchCacheRef = useRef<Map<string, string>>(new Map());
 
@@ -192,6 +195,11 @@ export function AccommodationRatesTab() {
   // One column per distinct season NAME. A name can cover several date bands
   // (e.g. "High" = Jun-Oct and Dec-Jan), so each column maps to all its band ids
   // and a price written to the column applies to every band.
+  //
+  // Seasons are shared org-wide (not per-hotel), so with many hotels each
+  // defining its own precise seasons, the full list can get long. Only show
+  // columns this hotel actually has rates in; fall back to every season for a
+  // brand-new hotel with no rates yet, so initial setup still has columns to fill.
   const seasonGroups = useMemo(() => {
     const order: string[] = [];
     const byName = new Map<string, string[]>();
@@ -202,8 +210,21 @@ export function AccommodationRatesTab() {
       }
       byName.get(s.name)!.push(s.id);
     }
-    return order.map((name) => ({ name, ids: byName.get(name)! }));
-  }, [seasons]);
+    const all = order.map((name) => ({ name, ids: byName.get(name)! }));
+    if (showAllSeasons || rates.length === 0) return all;
+    const usedSeasonIds = new Set(rates.map((r) => r.seasonId));
+    const used = all.filter((g) => g.ids.some((id) => usedSeasonIds.has(id)));
+    return used.length > 0 ? used : all;
+  }, [seasons, rates, showAllSeasons]);
+
+  const hiddenSeasonCount = useMemo(() => {
+    if (showAllSeasons || rates.length === 0) return 0;
+    const shown = new Set(seasonGroups.map((g) => g.name));
+    const byName = new Set(seasons.map((s) => s.name));
+    let count = 0;
+    for (const name of byName) if (!shown.has(name)) count++;
+    return count;
+  }, [seasons, seasonGroups, showAllSeasons, rates.length]);
 
   const cellValue = (ids: string[], rt: string, mp: MealPlan) => {
     for (const id of ids) {
@@ -407,6 +428,22 @@ export function AccommodationRatesTab() {
 
         {active && seasons.length > 0 && !ratesLoading && (
           <div className="space-y-3">
+            {(hiddenSeasonCount > 0 || showAllSeasons) && (
+              <div className="flex items-center justify-between rounded-md border border-stone-200 bg-stone-50 px-3 py-1.5 text-xs text-stone-500">
+                <span>
+                  {showAllSeasons
+                    ? 'Showing every season in the org, including ones this hotel doesn’t use.'
+                    : `${hiddenSeasonCount} season${hiddenSeasonCount === 1 ? '' : 's'} from other hotels hidden.`}
+                </span>
+                <button
+                  type="button"
+                  className="font-medium text-emerald-700 hover:underline"
+                  onClick={() => setShowAllSeasons((v) => !v)}
+                >
+                  {showAllSeasons ? 'Show only this hotel’s seasons' : 'Show all seasons'}
+                </button>
+              </div>
+            )}
             <div className="overflow-x-auto rounded-md border border-stone-200">
               <table className="w-full border-collapse text-sm">
                 <thead className="bg-stone-50 text-xs font-semibold uppercase tracking-wide text-stone-500">
