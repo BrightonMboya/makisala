@@ -72,7 +72,6 @@ export function AccommodationRatesTab() {
   const [newCapacity, setNewCapacity] = useState<string>('');
 
   const [showAllSeasons, setShowAllSeasons] = useState(false);
-  useEffect(() => setShowAllSeasons(false), [active?.id]);
 
   const searchCacheRef = useRef<Map<string, string>>(new Map());
 
@@ -88,6 +87,7 @@ export function AccommodationRatesTab() {
   }, [allRates]);
 
   const active = selected ?? hotelsWithRates[0] ?? null;
+  useEffect(() => setShowAllSeasons(false), [active?.id]);
 
   const pills = useMemo(() => {
     const list = [...hotelsWithRates];
