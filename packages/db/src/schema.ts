@@ -806,6 +806,9 @@ export const proposals = pgTable('proposals', {
   endCityLng: numeric('end_city_lng', { precision: 10, scale: 7 }),
   pickupPoint: text('pickup_point'),
   transferIncluded: text('transfer_included'),
+  // Operator-selected display currency for this proposal's pricing (USD/EUR).
+  // Display-only: no conversion, amounts are entered as-is in this currency.
+  currency: text('currency').notNull().default('USD'),
   // Pricing data stored as JSON for flexibility
   pricingRows:
     json('pricing_rows').$type<
@@ -1809,6 +1812,15 @@ export const accommodationRates = pgTable(
     rateBasis: RateBasis('rate_basis').notNull().default('per_person'),
     maxOccupancy: integer('max_occupancy'),
     currency: text('currency').notNull().default('USD'),
+    // Per-person rates only. perPaxRate is the 1st/2nd-adult (double-occupancy)
+    // price; these are optional % of perPaxRate applied to any adult beyond that
+    // base 2, and to any child, matching how hotel contracts commonly quote a
+    // flat extra-adult/child discount (e.g. F-Zeen's "Ad3+ 70%, Ch 50%" table).
+    // Null (the default) means "not modeled" - the pricing engine falls back to
+    // charging every occupant the full perPaxRate, i.e. today's existing
+    // flat-multiply behavior, unchanged.
+    additionalAdultPct: numeric('additional_adult_pct', { precision: 5, scale: 2 }),
+    additionalChildPct: numeric('additional_child_pct', { precision: 5, scale: 2 }),
     createdAt: timestamp('created_at').defaultNow().notNull(),
     updatedAt: timestamp('updated_at').defaultNow().notNull(),
   },

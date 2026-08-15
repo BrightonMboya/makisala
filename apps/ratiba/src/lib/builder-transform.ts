@@ -53,6 +53,7 @@ export function transformBuilderToItineraryData(params: {
   endCityCoordinates?: [number, number] | null;
   tourType?: string;
   country?: string;
+  currency?: string;
   accommodationsMap: Record<
     string,
     {
@@ -83,6 +84,7 @@ export function transformBuilderToItineraryData(params: {
     endCityCoordinates,
     tourType,
     country: countryParam,
+    currency,
     accommodationsMap,
     organization,
   } = params;
@@ -202,7 +204,7 @@ export function transformBuilderToItineraryData(params: {
         priceUnit: a.priceUnit ?? null,
       })),
   );
-  const pricing = calculatePricing(pricingRows, extras, travelerGroups, activityOptions);
+  const pricing = calculatePricing(pricingRows, extras, travelerGroups, activityOptions, currency);
 
   // Generate map data. Only collapse a *consecutive* run of days spent at the same
   // destination into one marker (not every occurrence in the trip — a later

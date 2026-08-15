@@ -71,6 +71,7 @@ export function BuilderProvider({
   const [markupPct, setMarkupPct] = useState<number>(30);
   const [pickupTransferId, setPickupTransferId] = useState<string | null>(null);
   const [dropoffTransferId, setDropoffTransferId] = useState<string | null>(null);
+  const [currency, setCurrency] = useState<'USD' | 'EUR'>('USD');
 
   // Theme
   const [selectedTheme, setSelectedTheme] = useState<ThemeType>('minimalistic');
@@ -164,6 +165,7 @@ export function BuilderProvider({
         setPickupTransferId(initialData.pickupTransferRateId);
       if (initialData.dropoffTransferRateId !== undefined)
         setDropoffTransferId(initialData.dropoffTransferRateId);
+      if (initialData.currency === 'EUR') setCurrency('EUR');
 
       // Add other fields as needed
       if (initialData.theme) setSelectedTheme(initialData.theme);
@@ -259,6 +261,8 @@ export function BuilderProvider({
         setPickupTransferId,
         dropoffTransferId,
         setDropoffTransferId,
+        currency,
+        setCurrency,
         selectedTheme,
         setSelectedTheme,
         heroImage,

@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Button } from '@repo/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@repo/ui/card';
 import { toast } from '@repo/ui/toast';
-import { Loader2, Plus, Trash2, X } from 'lucide-react';
+import { Loader2, Plus, Search, Trash2, X } from 'lucide-react';
 import { trpc } from '@/lib/trpc';
 import { cn } from '@/lib/utils';
 import { AsyncCombobox } from '@/components/itinerary-builder/async-combobox';
@@ -22,7 +22,18 @@ const BASIS_LABEL: Record<RateBasis, string> = {
   per_room: 'Per room',
 };
 
-type RoomConfig = { basis: RateBasis; maxOccupancy: number | null };
+// Occupant %s of the base perPaxRate, for per_person rooms only: one rate for
+// any adult beyond the base 2, one for any child. Null = not modeled - that
+// slot is priced at 100% (see occupantSlotCost in pricing-engine).
+type OccupantPct = {
+  additionalAdultPct: number | null;
+  additionalChildPct: number | null;
+};
+const EMPTY_OCCUPANT_PCT: OccupantPct = {
+  additionalAdultPct: null,
+  additionalChildPct: null,
+};
+type RoomConfig = { basis: RateBasis; maxOccupancy: number | null } & OccupantPct;
 
 const labelFor = (rt: string) =>
   rt
@@ -47,6 +58,33 @@ const MEAL_FULL: Record<MealPlan, string> = {
 const rowKey = (rt: string, mp: MealPlan) => `${rt}|${mp}`;
 const cellKey = (seasonId: string, rt: string, mp: MealPlan) => `${seasonId}|${rt}|${mp}`;
 
+const MONTHS_SHORT = [
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'Jun',
+  'Jul',
+  'Aug',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dec',
+];
+
+// Season names carry a "<Hotel>: " prefix so they stay distinguishable in the
+// org-wide season list (seasons are shared, not per-hotel) - redundant once
+// you're already looking at one hotel's own sheet. Show the date range(s)
+// instead; the name is still available via the header's title tooltip.
+const formatDateRange = (band: {
+  startMonth: number;
+  startDay: number;
+  endMonth: number;
+  endDay: number;
+}) =>
+  `${band.startDay} ${MONTHS_SHORT[band.startMonth - 1]}–${band.endDay} ${MONTHS_SHORT[band.endMonth - 1]}`;
+
 const presetIndex = (rt: string) => {
   const i = (ROOM_PRESETS as readonly string[]).indexOf(rt);
   return i === -1 ? Number.MAX_SAFE_INTEGER : i;
@@ -62,6 +100,7 @@ export function AccommodationRatesTab() {
   const utils = trpc.useUtils();
   const [selected, setSelected] = useState<{ id: string; name: string } | null>(null);
   const [showAddHotel, setShowAddHotel] = useState(false);
+  const [hotelFilter, setHotelFilter] = useState('');
 
   const { data: seasons = [] } = trpc.rateCards.seasons.list.useQuery();
   const { data: allRates = [] } = trpc.rateCards.accommodationRates.listAll.useQuery();
@@ -72,6 +111,11 @@ export function AccommodationRatesTab() {
   const [newCapacity, setNewCapacity] = useState<string>('');
 
   const [showAllSeasons, setShowAllSeasons] = useState(false);
+  // "Add extra per person" checkbox, per room type - reveals the additional-
+  // adult/child % inputs. Unchecked rooms with nothing configured start
+  // collapsed; a room that already has a % set (e.g. from an earlier session)
+  // starts expanded so the existing config stays visible.
+  const [extraPersonOpen, setExtraPersonOpen] = useState<Record<string, boolean>>({});
 
   const searchCacheRef = useRef<Map<string, string>>(new Map());
 
@@ -94,6 +138,20 @@ export function AccommodationRatesTab() {
     if (selected && !list.some((h) => h.id === selected.id)) list.unshift(selected);
     return list;
   }, [hotelsWithRates, selected]);
+
+  // The full pill wall doesn't scale as the hotel list grows - filter to a
+  // search match, but always keep the active hotel visible so switching away
+  // and back doesn't lose your place.
+  const visiblePills = useMemo(() => {
+    const query = hotelFilter.trim().toLowerCase();
+    if (!query) return active ? pills.filter((h) => h.id === active.id) : [];
+    const matches = pills.filter((h) => h.name.toLowerCase().includes(query));
+    if (active && !matches.some((h) => h.id === active.id)) {
+      const activePill = pills.find((h) => h.id === active.id);
+      if (activePill) matches.unshift(activePill);
+    }
+    return matches;
+  }, [pills, hotelFilter, active]);
 
   const { data: rates = [], isLoading: ratesLoading } =
     trpc.rateCards.accommodationRates.listByAccommodation.useQuery(
@@ -142,14 +200,24 @@ export function AccommodationRatesTab() {
   // on the rate rows; local edits override until the refetch catches up.
   const [roomConfig, setRoomConfig] = useState<Record<string, RoomConfig>>({});
 
+  const numOrNull = (v: unknown) => (v == null ? null : Number(v));
+
   const serverConfig = useMemo(() => {
     const m = new Map<string, RoomConfig>();
     for (const r of rates) {
       const rt = r.roomType;
       if (!m.has(rt)) {
+        const row = r as unknown as {
+          rateBasis?: RateBasis;
+          maxOccupancy?: number | null;
+          additionalAdultPct?: unknown;
+          additionalChildPct?: unknown;
+        };
         m.set(rt, {
-          basis: ((r as { rateBasis?: RateBasis }).rateBasis ?? 'per_person') as RateBasis,
-          maxOccupancy: (r as { maxOccupancy?: number | null }).maxOccupancy ?? null,
+          basis: (row.rateBasis ?? 'per_person') as RateBasis,
+          maxOccupancy: row.maxOccupancy ?? null,
+          additionalAdultPct: numOrNull(row.additionalAdultPct),
+          additionalChildPct: numOrNull(row.additionalChildPct),
         });
       }
     }
@@ -157,27 +225,41 @@ export function AccommodationRatesTab() {
   }, [rates]);
 
   const cfgFor = (rt: string): RoomConfig =>
-    roomConfig[rt] ?? serverConfig.get(rt) ?? { basis: 'per_person', maxOccupancy: null };
+    roomConfig[rt] ??
+    serverConfig.get(rt) ?? { basis: 'per_person', maxOccupancy: null, ...EMPTY_OCCUPANT_PCT };
   const rtHasRows = (rt: string) => rates.some((r) => r.roomType === rt);
 
-  const changeBasis = (rt: string, basis: RateBasis) => {
-    const maxOccupancy = basis === 'per_room' ? cfgFor(rt).maxOccupancy : null;
-    setRoomConfig((p) => ({ ...p, [rt]: { basis, maxOccupancy } }));
-    if (active && rtHasRows(rt)) {
-      setBasis.mutate({ accommodationId: active.id, roomType: rt, rateBasis: basis, maxOccupancy });
-    }
-  };
-
-  const changeCapacity = (rt: string, maxOccupancy: number | null) => {
-    setRoomConfig((p) => ({ ...p, [rt]: { basis: 'per_room', maxOccupancy } }));
+  const pushConfig = (rt: string, cfg: RoomConfig) => {
+    setRoomConfig((p) => ({ ...p, [rt]: cfg }));
     if (active && rtHasRows(rt)) {
       setBasis.mutate({
         accommodationId: active.id,
         roomType: rt,
-        rateBasis: 'per_room',
-        maxOccupancy,
+        rateBasis: cfg.basis,
+        maxOccupancy: cfg.maxOccupancy,
+        additionalAdultPct: cfg.additionalAdultPct,
+        additionalChildPct: cfg.additionalChildPct,
       });
     }
+  };
+
+  const changeBasis = (rt: string, basis: RateBasis) => {
+    const cfg = cfgFor(rt);
+    pushConfig(rt, { ...cfg, basis, maxOccupancy: basis === 'per_room' ? cfg.maxOccupancy : null });
+  };
+
+  const changeCapacity = (rt: string, maxOccupancy: number | null) => {
+    pushConfig(rt, { ...cfgFor(rt), basis: 'per_room', maxOccupancy });
+  };
+
+  const changeOccupantPct = (rt: string, field: keyof OccupantPct, value: number | null) => {
+    pushConfig(rt, { ...cfgFor(rt), [field]: value });
+  };
+
+  const toggleExtraPerson = (rt: string, open: boolean) => {
+    setExtraPersonOpen((p) => ({ ...p, [rt]: open }));
+    if (!open)
+      pushConfig(rt, { ...cfgFor(rt), additionalAdultPct: null, additionalChildPct: null });
   };
 
   // Map of cell -> existing rate row.
@@ -203,14 +285,25 @@ export function AccommodationRatesTab() {
   const seasonGroups = useMemo(() => {
     const order: string[] = [];
     const byName = new Map<string, string[]>();
+    const bandsByName = new Map<string, (typeof seasons)[number][]>();
     for (const s of seasons) {
       if (!byName.has(s.name)) {
         byName.set(s.name, []);
+        bandsByName.set(s.name, []);
         order.push(s.name);
       }
       byName.get(s.name)!.push(s.id);
+      bandsByName.get(s.name)!.push(s);
     }
-    const all = order.map((name) => ({ name, ids: byName.get(name)! }));
+    const all = order.map((name) => {
+      const bands = bandsByName.get(name)!;
+      const dateLabel = bands
+        .slice()
+        .sort((a, b) => a.startMonth - b.startMonth || a.startDay - b.startDay)
+        .map(formatDateRange)
+        .join(' & ');
+      return { name, ids: byName.get(name)!, dateLabel };
+    });
     if (showAllSeasons || rates.length === 0) return all;
     const usedSeasonIds = new Set(rates.map((r) => r.seasonId));
     const used = all.filter((g) => g.ids.some((id) => usedSeasonIds.has(id)));
@@ -309,16 +402,18 @@ export function AccommodationRatesTab() {
       return;
     }
     setExtraRows((prev) => [...prev, k]);
+    const maxOccupancy = newBasis === 'per_room' ? capacity : null;
     setRoomConfig((p) => ({
       ...p,
-      [trimmed]: { basis: newBasis, maxOccupancy: newBasis === 'per_room' ? capacity : null },
+      [trimmed]: { basis: newBasis, maxOccupancy, ...EMPTY_OCCUPANT_PCT },
     }));
     if (active && rtHasRows(trimmed)) {
       setBasis.mutate({
         accommodationId: active.id,
         roomType: trimmed,
         rateBasis: newBasis,
-        maxOccupancy: newBasis === 'per_room' ? capacity : null,
+        maxOccupancy,
+        ...EMPTY_OCCUPANT_PCT,
       });
     }
     setNewRoom('');
@@ -340,77 +435,97 @@ export function AccommodationRatesTab() {
         <CardDescription>
           Pick a hotel, then fill its STO sheet: room &amp; meal plan down the side, seasons across
           the top. Rooms are free-form, so camps with named suites (e.g. &quot;Lagoon View&quot;,
-          &quot;Savannah Panoramic&quot;) can record them alongside the generic single/double labels.
-          Rates are per person sharing by default; switch a room type to per room below if a hotel
-          charges a flat room price.
+          &quot;Savannah Panoramic&quot;) can record them alongside the generic single/double
+          labels. Rates are per person sharing by default; switch a room type to per room below if a
+          hotel charges a flat room price.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-5">
         {/* Hotel selector */}
-        <div className="flex flex-wrap items-center gap-2">
-          {pills.map((h) => (
-            <button
-              key={h.id}
-              onClick={() => selectHotel(h.id, h.name)}
-              className={cn(
-                'rounded-full border px-3 py-1.5 text-sm transition-colors',
-                active?.id === h.id
-                  ? 'border-emerald-300 bg-emerald-50 font-medium text-emerald-900'
-                  : 'border-stone-200 text-stone-600 hover:border-stone-300 hover:bg-stone-50',
-              )}
-            >
-              {h.name}
-            </button>
-          ))}
-
-          {showAddHotel ? (
-            <div className="flex items-center gap-1">
-              <div className="w-64">
-                <AsyncCombobox
-                  value={null}
-                  onChange={(id) => {
-                    if (!id) return;
-                    const name = searchCacheRef.current.get(id);
-                    if (name) {
-                      selectHotel(id, name);
-                    } else {
-                      utils.accommodations.getLookup
-                        .fetch({ id })
-                        .then((a) => a && selectHotel(a.id, a.name));
-                    }
-                  }}
-                  onSearch={async (q) => {
-                    const res = await utils.accommodations.search.fetch({ query: q, limit: 10 });
-                    res.forEach((a) => searchCacheRef.current.set(a.id, a.name));
-                    return res.map((a) => ({ value: a.id, label: a.name }));
-                  }}
-                  placeholder="Search hotels"
-                  className="w-full"
-                />
-              </div>
+        <div className="space-y-2">
+          <div className="relative w-full max-w-xs">
+            <Search className="pointer-events-none absolute top-1/2 left-2.5 h-4 w-4 -translate-y-1/2 text-stone-400" />
+            <input
+              type="text"
+              value={hotelFilter}
+              onChange={(e) => setHotelFilter(e.target.value)}
+              placeholder={`Search ${pills.length} hotel${pills.length === 1 ? '' : 's'}...`}
+              className="h-9 w-full rounded-md border border-stone-200 bg-white pr-3 pl-8 text-sm placeholder:text-stone-400 focus:border-emerald-400 focus:outline-none"
+            />
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            {visiblePills.map((h) => (
               <button
-                onClick={() => setShowAddHotel(false)}
-                className="text-stone-400 hover:text-stone-600"
+                key={h.id}
+                onClick={() => selectHotel(h.id, h.name)}
+                className={cn(
+                  'rounded-full border px-3 py-1.5 text-sm transition-colors',
+                  active?.id === h.id
+                    ? 'border-emerald-300 bg-emerald-50 font-medium text-emerald-900'
+                    : 'border-stone-200 text-stone-600 hover:border-stone-300 hover:bg-stone-50',
+                )}
               >
-                <X className="h-4 w-4" />
+                {h.name}
               </button>
-            </div>
-          ) : (
-            <button
-              onClick={() => setShowAddHotel(true)}
-              className="flex items-center gap-1 rounded-full border border-dashed border-stone-300 px-3 py-1.5 text-sm text-stone-500 hover:border-stone-400 hover:bg-stone-50"
-            >
-              <Plus className="h-3.5 w-3.5" />
-              Add hotel
-            </button>
-          )}
+            ))}
+            {!hotelFilter.trim() && pills.length > visiblePills.length && (
+              <span className="text-xs text-stone-400">
+                {pills.length - visiblePills.length} more — type to search
+              </span>
+            )}
+            {hotelFilter.trim() && visiblePills.length === 0 && (
+              <span className="text-xs text-stone-400">
+                No hotels match &quot;{hotelFilter}&quot;
+              </span>
+            )}
+
+            {showAddHotel ? (
+              <div className="flex items-center gap-1">
+                <div className="w-64">
+                  <AsyncCombobox
+                    value={null}
+                    onChange={(id) => {
+                      if (!id) return;
+                      const name = searchCacheRef.current.get(id);
+                      if (name) {
+                        selectHotel(id, name);
+                      } else {
+                        utils.accommodations.getLookup
+                          .fetch({ id })
+                          .then((a) => a && selectHotel(a.id, a.name));
+                      }
+                    }}
+                    onSearch={async (q) => {
+                      const res = await utils.accommodations.search.fetch({ query: q, limit: 10 });
+                      res.forEach((a) => searchCacheRef.current.set(a.id, a.name));
+                      return res.map((a) => ({ value: a.id, label: a.name }));
+                    }}
+                    placeholder="Search hotels"
+                    className="w-full"
+                  />
+                </div>
+                <button
+                  onClick={() => setShowAddHotel(false)}
+                  className="text-stone-400 hover:text-stone-600"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => setShowAddHotel(true)}
+                className="flex items-center gap-1 rounded-full border border-dashed border-stone-300 px-3 py-1.5 text-sm text-stone-500 hover:border-stone-400 hover:bg-stone-50"
+              >
+                <Plus className="h-3.5 w-3.5" />
+                Add hotel
+              </button>
+            )}
+          </div>
         </div>
 
         {!active && (
           <div className="rounded-md border border-dashed border-stone-200 px-4 py-10 text-center">
-            <p className="text-sm text-stone-500">
-              Add a hotel to start recording its rates.
-            </p>
+            <p className="text-sm text-stone-500">Add a hotel to start recording its rates.</p>
           </div>
         )}
 
@@ -446,14 +561,14 @@ export function AccommodationRatesTab() {
             )}
             <div className="overflow-x-auto rounded-md border border-stone-200">
               <table className="w-full border-collapse text-sm">
-                <thead className="bg-stone-50 text-xs font-semibold uppercase tracking-wide text-stone-500">
+                <thead className="bg-stone-50 text-xs font-semibold tracking-wide text-stone-500 uppercase">
                   <tr>
                     <th className="sticky left-0 z-10 bg-stone-50 px-3 py-2 text-left">
                       Room / Meal
                     </th>
                     {seasonGroups.map((g) => (
-                      <th key={g.name} className="px-3 py-2 text-center">
-                        {g.name}
+                      <th key={g.name} className="px-3 py-2 text-center" title={g.name}>
+                        {g.dateLabel}
                       </th>
                     ))}
                     <th className="w-10 px-2 py-2" />
@@ -463,8 +578,7 @@ export function AccommodationRatesTab() {
                   {rows.map((row) => (
                     <tr key={row.key}>
                       <td className="sticky left-0 z-10 bg-white px-3 py-1.5 whitespace-nowrap text-stone-700">
-                        {labelFor(row.rt)}{' '}
-                        <span className="text-stone-400">·</span>{' '}
+                        {labelFor(row.rt)} <span className="text-stone-400">·</span>{' '}
                         <span title={MEAL_FULL[row.mp]}>{MEAL_LABEL[row.mp]}</span>
                       </td>
                       {seasonGroups.map((g) => (
@@ -503,12 +617,15 @@ export function AccommodationRatesTab() {
             {/* Per room-type pricing basis */}
             {roomTypesInSheet.length > 0 && (
               <div className="rounded-md border border-stone-200 p-3">
-                <p className="mb-2 text-[11px] font-medium uppercase tracking-wide text-stone-500">
+                <p className="mb-2 text-[11px] font-medium tracking-wide text-stone-500 uppercase">
                   Pricing basis (per room type)
                 </p>
                 <div className="space-y-2">
                   {roomTypesInSheet.map((rt) => {
                     const cfg = cfgFor(rt);
+                    const isExtraOpen =
+                      extraPersonOpen[rt] ??
+                      (cfg.additionalAdultPct != null || cfg.additionalChildPct != null);
                     return (
                       <div key={rt} className="flex flex-wrap items-center gap-2 text-sm">
                         <span className="min-w-[3.5rem] text-stone-700">{labelFor(rt)}</span>
@@ -551,10 +668,41 @@ export function AccommodationRatesTab() {
                             ? 'price is per traveler sharing'
                             : 'flat price for the whole room'}
                         </span>
+                        {cfg.basis === 'per_person' && (
+                          <div className="flex w-full flex-wrap items-center gap-2 pl-[3.5rem]">
+                            <label className="flex items-center gap-1.5 text-xs text-stone-500">
+                              <input
+                                type="checkbox"
+                                checked={isExtraOpen}
+                                onChange={(e) => toggleExtraPerson(rt, e.target.checked)}
+                                className="h-3.5 w-3.5 rounded border-stone-300"
+                              />
+                              Add extra per person
+                            </label>
+                            {isExtraOpen && (
+                              <>
+                                <PctInput
+                                  label="Additional adult"
+                                  value={cfg.additionalAdultPct}
+                                  onChange={(v) => changeOccupantPct(rt, 'additionalAdultPct', v)}
+                                />
+                                <PctInput
+                                  label="Additional child"
+                                  value={cfg.additionalChildPct}
+                                  onChange={(v) => changeOccupantPct(rt, 'additionalChildPct', v)}
+                                />
+                              </>
+                            )}
+                          </div>
+                        )}
                       </div>
                     );
                   })}
                 </div>
+                <p className="mt-2 text-[11px] text-stone-400">
+                  Leave blank where a hotel doesn&apos;t discount that occupant slot — it&apos;s
+                  then charged the full per-person rate, same as every room without this set.
+                </p>
               </div>
             )}
 
@@ -562,7 +710,7 @@ export function AccommodationRatesTab() {
             <div className="space-y-2 rounded-md border border-stone-200 bg-stone-50/50 p-3">
               <div className="flex flex-wrap items-end gap-2">
                 <div className="min-w-[12rem] flex-1">
-                  <label className="mb-1 block text-[11px] font-medium uppercase tracking-wide text-stone-500">
+                  <label className="mb-1 block text-[11px] font-medium tracking-wide text-stone-500 uppercase">
                     Room name
                   </label>
                   <input
@@ -580,7 +728,7 @@ export function AccommodationRatesTab() {
                   />
                 </div>
                 <div>
-                  <label className="mb-1 block text-[11px] font-medium uppercase tracking-wide text-stone-500">
+                  <label className="mb-1 block text-[11px] font-medium tracking-wide text-stone-500 uppercase">
                     Meal plan
                   </label>
                   <select
@@ -596,7 +744,7 @@ export function AccommodationRatesTab() {
                   </select>
                 </div>
                 <div>
-                  <label className="mb-1 block text-[11px] font-medium uppercase tracking-wide text-stone-500">
+                  <label className="mb-1 block text-[11px] font-medium tracking-wide text-stone-500 uppercase">
                     Basis
                   </label>
                   <select
@@ -613,7 +761,7 @@ export function AccommodationRatesTab() {
                 </div>
                 {newBasis === 'per_room' && (
                   <div>
-                    <label className="mb-1 block text-[11px] font-medium uppercase tracking-wide text-stone-500">
+                    <label className="mb-1 block text-[11px] font-medium tracking-wide text-stone-500 uppercase">
                       Max occupancy
                     </label>
                     <input
@@ -664,7 +812,7 @@ function RateCell({
 }) {
   return (
     <div className="relative mx-auto w-24">
-      <span className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-xs text-stone-400">
+      <span className="pointer-events-none absolute top-1/2 left-2 -translate-y-1/2 text-xs text-stone-400">
         $
       </span>
       <input
@@ -678,8 +826,43 @@ function RateCell({
           const current = value ?? '';
           if (String(raw) !== String(current)) onCommit(raw);
         }}
-        className="h-9 w-full rounded-md border border-stone-200 bg-white pl-5 pr-2 text-right text-sm tabular-nums placeholder:text-stone-300 focus:border-emerald-400 focus:outline-none"
+        className="h-9 w-full rounded-md border border-stone-200 bg-white pr-2 pl-5 text-right text-sm tabular-nums placeholder:text-stone-300 focus:border-emerald-400 focus:outline-none"
       />
     </div>
+  );
+}
+
+function PctInput({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: number | null;
+  onChange: (v: number | null) => void;
+}) {
+  return (
+    <label className="flex items-center gap-1 text-xs text-stone-500">
+      {label}
+      <div className="relative w-14">
+        <input
+          key={value ?? 'empty'}
+          type="number"
+          min={0}
+          max={100}
+          defaultValue={value ?? ''}
+          placeholder="100"
+          onBlur={(e) => {
+            const raw = e.target.value.trim();
+            const parsed = raw === '' ? null : Number(raw);
+            if (parsed !== value) onChange(parsed);
+          }}
+          className="h-7 w-full rounded-md border border-stone-200 bg-white pr-4 pl-1.5 text-right text-xs tabular-nums placeholder:text-stone-300 focus:border-emerald-400 focus:outline-none"
+        />
+        <span className="pointer-events-none absolute top-1/2 right-1.5 -translate-y-1/2 text-[10px] text-stone-400">
+          %
+        </span>
+      </div>
+    </label>
   );
 }

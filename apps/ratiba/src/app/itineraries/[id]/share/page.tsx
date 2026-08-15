@@ -93,6 +93,7 @@ export default function SharePage() {
     markupPct,
     pickupTransferId,
     dropoffTransferId,
+    currency,
   } = useBuilder();
 
   const [activeTab, setActiveTab] = useState<'edit' | 'preview'>('edit');
@@ -292,6 +293,7 @@ export default function SharePage() {
         markupPct,
         pickupTransferRateId: pickupTransferId,
         dropoffTransferRateId: dropoffTransferId,
+        currency,
       };
 
       return await saveProposalMutation.mutateAsync({

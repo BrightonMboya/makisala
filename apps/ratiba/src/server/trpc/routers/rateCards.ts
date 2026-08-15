@@ -226,6 +226,8 @@ const accommodationRatesRouter = router({
         rateBasis: accommodationRates.rateBasis,
         maxOccupancy: accommodationRates.maxOccupancy,
         currency: accommodationRates.currency,
+        additionalAdultPct: accommodationRates.additionalAdultPct,
+        additionalChildPct: accommodationRates.additionalChildPct,
       })
       .from(accommodationRates)
       .leftJoin(accommodations, eq(accommodations.id, accommodationRates.accommodationId))
@@ -286,8 +288,8 @@ const accommodationRatesRouter = router({
       return row;
     }),
 
-  // Basis + capacity are properties of a (hotel, room type), so set them across
-  // every rate row for that room type at once.
+  // Basis, capacity, and occupant-slot %s are all properties of a (hotel, room
+  // type), so set them across every rate row for that room type at once.
   setRoomTypeBasis: adminProcedure
     .input(
       z.object({
@@ -295,14 +297,19 @@ const accommodationRatesRouter = router({
         roomType: z.string().min(1).max(100),
         rateBasis: z.enum(RATE_BASES),
         maxOccupancy: z.number().int().positive().nullable(),
+        additionalAdultPct: z.number().min(0).max(100).nullable(),
+        additionalChildPct: z.number().min(0).max(100).nullable(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
+      const pct = (v: number | null) => (v === null ? null : String(v));
       await ctx.db
         .update(accommodationRates)
         .set({
           rateBasis: input.rateBasis,
           maxOccupancy: input.rateBasis === 'per_room' ? input.maxOccupancy : null,
+          additionalAdultPct: pct(input.additionalAdultPct),
+          additionalChildPct: pct(input.additionalChildPct),
           updatedAt: new Date(),
         })
         .where(

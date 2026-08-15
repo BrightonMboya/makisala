@@ -38,8 +38,11 @@ import { trpc } from '@/lib/trpc';
 import { addDays } from 'date-fns';
 import type { ParkFeeCategory, PricingBreakdown, WarningKind } from '@/lib/pricing-engine';
 import { deriveMealPlan } from '@/lib/pricing-engine';
+import { formatMoney } from '@/components/invoices/form-types';
 
 type LineSource = 'accommodation' | 'park_fee' | 'activity' | 'vehicle' | 'transfer';
+
+const CURRENCY_SYMBOLS: Record<'USD' | 'EUR', string> = { USD: '$', EUR: '€' };
 
 // Preset pricing units for optional extras. The combobox is creatable, so users
 // can also type any custom unit (e.g. "per night", "per vehicle").
@@ -93,6 +96,8 @@ export default function PricingPage() {
     setDays,
     travelerGroups,
     startDate,
+    currency,
+    setCurrency,
   } = useBuilder();
 
   const handleAddRow = () => {
@@ -264,6 +269,7 @@ export default function PricingPage() {
       rooms: (d.rooms ?? []).map((r) => ({
         roomType: (r.roomType ?? null) as 'single' | 'double' | 'triple' | 'quad' | 'family' | null,
         pax: r.pax,
+        children: r.children ?? 0,
       })),
       parkId:
         d.destination &&
@@ -289,7 +295,7 @@ export default function PricingPage() {
       pickupTransferId,
       dropoffTransferId,
       markupPct,
-      currency: 'USD',
+      currency,
     },
     {
       enabled: useAutoPricing && dayInputs.length > 0 && totalPax > 0,
@@ -342,26 +348,36 @@ export default function PricingPage() {
           <h2 className="font-serif text-3xl font-bold text-stone-900">Pricing & Inclusions</h2>
           <p className="mt-1 text-stone-500">Manage trip costs and optional add-ons.</p>
         </div>
-        <div className="flex flex-col items-end gap-1 rounded-lg border border-stone-200 bg-white px-4 py-2 text-sm shadow-sm">
-          <div className="flex items-center gap-4">
-            <span className="font-bold text-stone-700">Total Quote Value:</span>
-            {grandTotal == null ? (
-              <span className="flex items-center gap-2 text-sm font-medium text-stone-400">
-                <Calculator className="h-3.5 w-3.5 animate-pulse" />
-                Computing…
-              </span>
-            ) : (
-              <span className="text-xl font-bold text-green-700">
-                $ {grandTotal.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+        <div className="flex items-center gap-3">
+          <Select value={currency} onValueChange={(v) => setCurrency(v as 'USD' | 'EUR')}>
+            <SelectTrigger className="w-20">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="USD">USD</SelectItem>
+              <SelectItem value="EUR">EUR</SelectItem>
+            </SelectContent>
+          </Select>
+          <div className="flex flex-col items-end gap-1 rounded-lg border border-stone-200 bg-white px-4 py-2 text-sm shadow-sm">
+            <div className="flex items-center gap-4">
+              <span className="font-bold text-stone-700">Total Quote Value:</span>
+              {grandTotal == null ? (
+                <span className="flex items-center gap-2 text-sm font-medium text-stone-400">
+                  <Calculator className="h-3.5 w-3.5 animate-pulse" />
+                  Computing…
+                </span>
+              ) : (
+                <span className="text-xl font-bold text-green-700">
+                  {formatMoney(grandTotal, currency)}
+                </span>
+              )}
+            </div>
+            {extrasTotal > 0 && (
+              <span className="text-xs font-medium text-stone-500">
+                + {formatMoney(extrasTotal, currency)} in optional add-ons
               </span>
             )}
           </div>
-          {extrasTotal > 0 && (
-            <span className="text-xs font-medium text-stone-500">
-              + ${extrasTotal.toLocaleString('en-US', { minimumFractionDigits: 2 })} in optional
-              add-ons
-            </span>
-          )}
         </div>
       </div>
 
@@ -404,6 +420,7 @@ export default function PricingPage() {
             totalPax={totalPax}
             computeQuery={computeQuery}
             groupedLines={groupedLines}
+            currency={currency}
           />
         ) : (
           <ManualPricingSection
@@ -411,12 +428,13 @@ export default function PricingPage() {
             onAddRow={handleAddRow}
             onRemoveRow={handleRemoveRow}
             onUpdateRow={handleUpdateRow}
+            currency={currency}
           />
         )}
       </div>
 
       {/* Accommodation Alternatives — only shown when at least one day has them */}
-      <AccommodationAlternativesSection days={days} setDays={setDays} />
+      <AccommodationAlternativesSection days={days} setDays={setDays} currency={currency} />
 
       {/* Extras Section */}
       <div className="rounded-xl border border-stone-200 bg-white shadow-sm">
@@ -449,7 +467,7 @@ export default function PricingPage() {
               <div className="col-span-3">
                 <div className="relative">
                   <span className="absolute top-2.5 left-3 text-sm font-medium text-stone-500">
-                    $
+                    {CURRENCY_SYMBOLS[currency]}
                   </span>
                   <Input
                     type="number"
@@ -510,7 +528,7 @@ export default function PricingPage() {
                   ) : (
                     <div className="relative">
                       <span className="absolute top-2.5 left-3 text-sm font-medium text-stone-500">
-                        $
+                        {CURRENCY_SYMBOLS[currency]}
                       </span>
                       <Input
                         type="number"
@@ -653,9 +671,11 @@ function mealSummary(meals: AccommodationAlternative['meals']): string {
 function AccommodationAlternativesSection({
   days,
   setDays,
+  currency,
 }: {
   days: BuilderDay[];
   setDays: React.Dispatch<React.SetStateAction<BuilderDay[]>>;
+  currency: 'USD' | 'EUR';
 }) {
   // Flatten every alternative across days, keeping its day for context.
   const rows = days.flatMap((day) =>
@@ -771,7 +791,7 @@ function AccommodationAlternativesSection({
 
             <div className="flex items-center gap-2 md:col-span-5">
               <div className="relative w-32">
-                <span className="absolute top-2.5 left-3 text-sm font-medium text-stone-500">$</span>
+                <span className="absolute top-2.5 left-3 text-sm font-medium text-stone-500">{CURRENCY_SYMBOLS[currency]}</span>
                 <Input
                   type="number"
                   value={alt.additionalPrice ?? ''}
@@ -828,6 +848,7 @@ function AutoPricingSection({
   totalPax,
   computeQuery,
   groupedLines,
+  currency,
 }: {
   vehicleId: string | null;
   setVehicleId: (v: string | null) => void;
@@ -852,6 +873,7 @@ function AutoPricingSection({
     subtotal: number;
     items: PricingBreakdown['lineItems'];
   }>;
+  currency: 'USD' | 'EUR';
 }) {
   return (
     <div className="space-y-5 p-6">
@@ -979,7 +1001,7 @@ function AutoPricingSection({
                       {meta.label}
                     </span>
                     <span className="text-sm font-medium text-stone-700">
-                      ${group.subtotal.toLocaleString()}
+                      {formatMoney(group.subtotal, currency)}
                     </span>
                   </div>
                   <table className="w-full text-sm">
@@ -996,10 +1018,10 @@ function AutoPricingSection({
                             {li.quantity > 1 ? `× ${li.quantity}` : ''}
                           </td>
                           <td className="w-24 px-4 py-2 text-right text-stone-500">
-                            ${li.unitCost.toLocaleString()}
+                            {formatMoney(li.unitCost, currency)}
                           </td>
                           <td className="w-24 px-4 py-2 text-right font-medium text-stone-800">
-                            ${li.totalCost.toLocaleString()}
+                            {formatMoney(li.totalCost, currency)}
                           </td>
                         </tr>
                       ))}
@@ -1017,7 +1039,7 @@ function AutoPricingSection({
                 <tr className="border-b border-stone-100">
                   <td className="px-4 py-2 font-semibold text-stone-700">Cost subtotal</td>
                   <td className="w-32 px-4 py-2 text-right font-semibold text-stone-700">
-                    ${computeQuery.data.costSubtotal.toLocaleString()}
+                    {formatMoney(computeQuery.data.costSubtotal, currency)}
                   </td>
                 </tr>
                 <tr className="border-b border-stone-100">
@@ -1025,13 +1047,13 @@ function AutoPricingSection({
                     Markup ({computeQuery.data.markupPct}%)
                   </td>
                   <td className="px-4 py-2 text-right text-stone-600">
-                    ${computeQuery.data.markupAmount.toLocaleString()}
+                    {formatMoney(computeQuery.data.markupAmount, currency)}
                   </td>
                 </tr>
                 <tr className="bg-emerald-50/40">
                   <td className="px-4 py-3 text-base font-bold text-emerald-700">Sell total</td>
                   <td className="px-4 py-3 text-right text-lg font-bold text-emerald-700">
-                    ${computeQuery.data.sellTotal.toLocaleString()}
+                    {formatMoney(computeQuery.data.sellTotal, currency)}
                   </td>
                 </tr>
                 <tr>
@@ -1039,7 +1061,7 @@ function AutoPricingSection({
                     Per pax (× {computeQuery.data.pax})
                   </td>
                   <td className="px-4 py-2 text-right text-sm font-medium text-stone-600">
-                    ${computeQuery.data.sellPerPax.toLocaleString()}
+                    {formatMoney(computeQuery.data.sellPerPax, currency)}
                   </td>
                 </tr>
               </tbody>
@@ -1058,11 +1080,13 @@ function ManualPricingSection({
   onAddRow,
   onRemoveRow,
   onUpdateRow,
+  currency,
 }: {
   pricingRows: PricingRow[];
   onAddRow: () => void;
   onRemoveRow: (id: string) => void;
   onUpdateRow: (id: string, field: keyof PricingRow, value: any) => void;
+  currency: 'USD' | 'EUR';
 }) {
   return (
     <>
@@ -1109,7 +1133,7 @@ function ManualPricingSection({
             <div className="col-span-3">
               <div className="relative">
                 <span className="absolute top-2.5 left-3 text-sm font-medium text-stone-500">
-                  $
+                  {CURRENCY_SYMBOLS[currency]}
                 </span>
                 <Input
                   type="number"
@@ -1125,10 +1149,7 @@ function ManualPricingSection({
             </div>
             <div className="col-span-4 flex items-center justify-between pl-4">
               <span className="text-lg font-bold text-stone-900">
-                ${' '}
-                {(row.count * row.unitPrice).toLocaleString('en-US', {
-                  minimumFractionDigits: 2,
-                })}
+                {formatMoney(row.count * row.unitPrice, currency)}
               </span>
               <button
                 className="rounded-md p-2 text-stone-400 transition-colors hover:bg-red-50 hover:text-red-500"
@@ -1162,6 +1183,7 @@ const WARNING_FIX: Record<WarningKind, { tab: string | null; label: string } | n
   missing_room_meal: { tab: null, label: 'Set in day-by-day' },
   room_pax_mismatch: { tab: null, label: 'Check room mix' },
   missing_room_capacity: { tab: 'hotels', label: 'Set room capacity' },
+  room_over_capacity: { tab: null, label: 'Split into another room' },
   no_season: { tab: 'seasons', label: 'Add season band' },
   missing_hotel_rate: { tab: 'hotels', label: 'Add hotel rate' },
   missing_park_fee: { tab: 'parks', label: 'Add park fee' },

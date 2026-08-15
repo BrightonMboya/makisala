@@ -252,19 +252,22 @@ export function computeBookingTotal(
   return { lines, addOnTotal, total: money(baseTotal + addOnTotal) };
 }
 
+const CURRENCY_SYMBOLS: Record<string, string> = { USD: '$', EUR: '€' };
+
 /** Formats a signed delta for display, e.g. "+$450" / "-$200" / "Included". */
-export function formatDelta(amount: number): string {
+export function formatDelta(amount: number, currency: string = 'USD'): string {
   if (amount === 0) return 'No change';
   const sign = amount > 0 ? '+' : '-';
-  return `${sign}$${Math.abs(Math.round(amount)).toLocaleString()}`;
+  const symbol = CURRENCY_SYMBOLS[currency] ?? `${currency} `;
+  return `${sign}${symbol}${Math.abs(Math.round(amount)).toLocaleString()}`;
 }
 
 /** What a priced line reads as in the summary. Zero-cost extras are free, not
  *  "no change" — that phrasing only makes sense for a lodge swap. */
-export function formatLineAmount(line: AddOnLine): string {
+export function formatLineAmount(line: AddOnLine, currency: string = 'USD'): string {
   if (line.onRequest) return 'On request';
   if (line.amount === 0 && line.kind !== 'alternative') return 'Free';
-  return formatDelta(line.amount);
+  return formatDelta(line.amount, currency);
 }
 
 /** Ids repeated in one list would price and invoice the same option twice, so

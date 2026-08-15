@@ -194,7 +194,7 @@ export const invoicesRouter = router({
           clientId: proposal.client?.id ?? null,
           number,
           title: input.title ?? null,
-          currency: 'USD',
+          currency: proposal.currency ?? 'USD',
           lineItems,
           subtotalCents,
           taxRatePct: input.taxRatePct ? String(input.taxRatePct) : null,

@@ -23,6 +23,7 @@ type Props = {
   travelerCount: number;
   startDate: string | null;
   totalPrice: number | null;
+  currency: string;
   organization: { name: string; logoUrl: string | null } | null;
   paymentMethods: PaymentMethod[];
   /** Proposal already confirmed on a previous visit. */
@@ -53,14 +54,17 @@ function formatDate(value: string | null): string | null {
   return d.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
 }
 
+const CURRENCY_SYMBOLS: Record<string, string> = { USD: '$', EUR: '€' };
+
 /**
  * Whole dollars when the amount is whole, cents when it isn't. Rounding a
  * $13,180.50 total to "$13,181" on the page while the invoice PDF says
  * $13,180.50 reads as two different prices for the same booking.
  */
-function money(n: number): string {
+function money(n: number, currency: string): string {
   const whole = Number.isInteger(n);
-  return `$${n.toLocaleString('en-US', {
+  const symbol = CURRENCY_SYMBOLS[currency] ?? `${currency} `;
+  return `${symbol}${n.toLocaleString('en-US', {
     minimumFractionDigits: whole ? 0 : 2,
     maximumFractionDigits: whole ? 0 : 2,
   })}`;
@@ -115,6 +119,7 @@ export function BookingConfirm({
   travelerCount,
   startDate,
   totalPrice,
+  currency,
   organization,
   paymentMethods,
   alreadyConfirmed,
@@ -222,7 +227,7 @@ export function BookingConfirm({
         {displayTotal > 0 && (
           <div>
             <p className="text-xs tracking-wide text-stone-400 uppercase">Total</p>
-            <p className="mt-1 text-sm font-medium text-stone-800">{money(displayTotal)}</p>
+            <p className="mt-1 text-sm font-medium text-stone-800">{money(displayTotal, currency)}</p>
           </div>
         )}
       </div>
@@ -262,7 +267,7 @@ export function BookingConfirm({
                           <span className="text-sm font-medium text-stone-700">
                             {a.price == null
                               ? 'On request'
-                              : `+${money(a.price)}${a.priceUnit === 'per_person' ? ' pp' : ''}`}
+                              : `+${money(a.price, currency)}${a.priceUnit === 'per_person' ? ' pp' : ''}`}
                           </span>
                         </span>
                         <span className="mt-0.5 block text-xs text-stone-400">Day {a.dayNumber}</span>
@@ -354,7 +359,7 @@ export function BookingConfirm({
                                       `custom`, whose free-text label bills
                                       once, same as `flat`. */}
                                   <span className="text-sm font-medium text-stone-700">
-                                    {formatDelta(alt.additionalPrice)}
+                                    {formatDelta(alt.additionalPrice, currency)}
                                     {alt.additionalPrice !== 0
                                       ? basisSuffix(alt.priceBasis, alt.customUnitLabel)
                                       : ''}
@@ -387,7 +392,7 @@ export function BookingConfirm({
                   const label =
                     e.unit === 'free'
                       ? 'Free'
-                      : `+${money(e.price)}${e.unit === 'per_person' ? ' pp' : ''}`;
+                      : `+${money(e.price, currency)}${e.unit === 'per_person' ? ' pp' : ''}`;
                   return (
                     <label
                       key={e.id}
@@ -426,7 +431,7 @@ export function BookingConfirm({
           <dl className="space-y-2 text-sm">
             <div className="flex justify-between gap-4">
               <dt className="text-stone-600">Itinerary as quoted</dt>
-              <dd className="font-medium text-stone-800">{money(baseTotal)}</dd>
+              <dd className="font-medium text-stone-800">{money(baseTotal, currency)}</dd>
             </div>
             {lines.map((l) => (
               <div key={`${l.kind}-${l.id}`} className="flex justify-between gap-4">
@@ -434,17 +439,17 @@ export function BookingConfirm({
                   {l.label}
                   {l.detail && <span className="ml-1 text-xs text-stone-400">({l.detail})</span>}
                 </dt>
-                <dd className="shrink-0 font-medium text-stone-800">{formatLineAmount(l)}</dd>
+                <dd className="shrink-0 font-medium text-stone-800">{formatLineAmount(l, currency)}</dd>
               </div>
             ))}
             <div className="flex justify-between gap-4 border-t border-stone-200 pt-3">
               <dt className="font-semibold text-stone-900">Total</dt>
-              <dd className="font-semibold text-stone-900">{money(displayTotal)}</dd>
+              <dd className="font-semibold text-stone-900">{money(displayTotal, currency)}</dd>
             </div>
           </dl>
           {addOnTotal !== 0 && !confirmed && (
             <p className="mt-3 text-xs text-stone-500">
-              {formatDelta(addOnTotal)} against the original quote.
+              {formatDelta(addOnTotal, currency)} against the original quote.
             </p>
           )}
           {lines.some((l) => l.onRequest) && (
@@ -490,7 +495,7 @@ export function BookingConfirm({
             {confirmMutation.isPending
               ? 'Confirming...'
               : displayTotal > 0
-                ? `Confirm booking · ${money(displayTotal)}`
+                ? `Confirm booking · ${money(displayTotal, currency)}`
                 : 'Confirm booking'}
           </button>
           <p className="mt-3 text-center text-xs text-stone-400">

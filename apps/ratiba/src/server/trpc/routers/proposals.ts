@@ -173,6 +173,7 @@ interface BuilderData {
   markupPct?: number | string | null;
   pickupTransferRateId?: string | null;
   dropoffTransferRateId?: string | null;
+  currency?: 'USD' | 'EUR' | null;
   days?: BuilderDay[];
 }
 
@@ -951,6 +952,7 @@ export const proposalsRouter = router({
           markupPct: true,
           pickupTransferRateId: true,
           dropoffTransferRateId: true,
+          currency: true,
           theme: true,
           heroImage: true,
           language: true,
@@ -1101,6 +1103,7 @@ export const proposalsRouter = router({
             : String(builderData.markupPct),
         pickupTransferRateId: builderData.pickupTransferRateId ?? null,
         dropoffTransferRateId: builderData.dropoffTransferRateId ?? null,
+        currency: builderData.currency === 'EUR' ? 'EUR' : 'USD',
         status: input.status || 'draft',
         updatedAt: new Date().toISOString(),
       };
@@ -1138,6 +1141,7 @@ export const proposalsRouter = router({
             markupPct: proposalData.markupPct,
             pickupTransferRateId: proposalData.pickupTransferRateId,
             dropoffTransferRateId: proposalData.dropoffTransferRateId,
+            currency: proposalData.currency,
             status: proposalData.status || 'draft',
             updatedAt: new Date().toISOString(),
           })
@@ -1172,6 +1176,7 @@ export const proposalsRouter = router({
               markupPct: proposalData.markupPct,
               pickupTransferRateId: proposalData.pickupTransferRateId,
               dropoffTransferRateId: proposalData.dropoffTransferRateId,
+              currency: proposalData.currency,
               status: proposalData.status || 'draft',
               updatedAt: new Date().toISOString(),
             },
@@ -1770,6 +1775,7 @@ export const proposalsRouter = router({
           organizationId: true,
           clientSelections: true,
           confirmedTotal: true,
+          currency: true,
         },
         with: {
           organization: { columns: { name: true, logoUrl: true } },
@@ -1837,6 +1843,7 @@ export const proposalsRouter = router({
         status: proposal.status,
         travelerCount,
         totalPrice: total > 0 ? total : null,
+        currency: proposal.currency ?? 'USD',
         organization: proposal.organization
           ? { name: proposal.organization.name, logoUrl: proposal.organization.logoUrl }
           : null,

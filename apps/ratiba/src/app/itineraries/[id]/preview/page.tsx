@@ -74,6 +74,7 @@ export default function PreviewPage() {
     markupPct,
     pickupTransferId,
     dropoffTransferId,
+    currency,
   } = useBuilder();
 
   const router = useRouter();
@@ -220,6 +221,7 @@ export default function PreviewPage() {
       country: countries.length > 0
         ? countries.map((c: string) => c.charAt(0).toUpperCase() + c.slice(1).toLowerCase()).join(' & ')
         : country || undefined,
+      currency,
       accommodationsMap,
       organization: orgSettings ? {
         name: orgSettings.name,
@@ -246,6 +248,7 @@ export default function PreviewPage() {
     endCityCoordinates,
     tourType,
     country,
+    currency,
     accommodationsMap,
     orgSettings,
   ]);
@@ -283,6 +286,7 @@ export default function PreviewPage() {
         markupPct,
         pickupTransferRateId: pickupTransferId,
         dropoffTransferRateId: dropoffTransferId,
+        currency,
       };
 
       return await saveProposalMutation.mutateAsync({

@@ -111,6 +111,7 @@ function Header() {
     markupPct,
     pickupTransferId,
     dropoffTransferId,
+    currency,
   } = useBuilder();
 
   const params = useParams();
@@ -158,6 +159,7 @@ function Header() {
         markupPct,
         pickupTransferRateId: pickupTransferId,
         dropoffTransferRateId: dropoffTransferId,
+        currency,
       };
 
       return await saveProposalMutation.mutateAsync({
@@ -409,6 +411,7 @@ function BuilderLayoutInner({ children }: { children: React.ReactNode }) {
         markupPct: (proposal as any).markupPct ?? null,
         pickupTransferRateId: (proposal as any).pickupTransferRateId ?? null,
         dropoffTransferRateId: (proposal as any).dropoffTransferRateId ?? null,
+        currency: (proposal as any).currency === 'EUR' ? 'EUR' : 'USD',
         selectedTheme: proposal.theme || 'minimalistic',
         heroImage: proposal.heroImage || null,
         days: (proposal.days || []).map((day: any) => ({

@@ -7,6 +7,7 @@ import type {
   TransportModeType,
   TravelerGroup,
 } from '@/types/itinerary-types';
+import { formatMoney } from '@/components/invoices/form-types';
 
 const titleCaseWords = (s: string) =>
   s
@@ -149,6 +150,7 @@ export function calculatePricing(
   extras: ExtraOption[],
   travelerGroups: TravelerGroup[],
   activityOptions: ActivityOptionInput[] = [],
+  currency: string = 'USD',
 ): ItineraryData['pricing'] {
   // Extras are NOT rolled into the main safari total. They are surfaced
   // separately as optional add-ons the client can choose to add on top.
@@ -175,7 +177,7 @@ export function calculatePricing(
       // Legacy extras (no priceUnit) and free ones render without a suffix.
       return {
         label: e.name,
-        price: isFree ? 'Free' : `$${Math.round(e.price).toLocaleString()}`,
+        price: isFree ? 'Free' : formatMoney(e.price, currency, 0),
         unit: isFree ? undefined : unit,
       };
     });
@@ -190,7 +192,7 @@ export function calculatePricing(
       const label = `Day ${a.dayNumber}: ${a.name}${a.location ? `, ${a.location}` : ''}`;
       return {
         label,
-        price: price == null || Number.isNaN(price) ? 'On request' : `$${Math.round(price).toLocaleString()}`,
+        price: price == null || Number.isNaN(price) ? 'On request' : formatMoney(price, currency, 0),
         unit: price == null || Number.isNaN(price) ? undefined : a.priceUnit === 'per_group' ? 'per group' : 'per person',
       };
     });
@@ -198,9 +200,9 @@ export function calculatePricing(
   const allExtras = [...activityExtras, ...optionalExtras];
 
   return {
-    total: `$${Math.round(totalPrice).toLocaleString()}`,
-    perPerson: `$${Math.round(perPerson).toLocaleString()}`,
-    currency: 'USD',
+    total: formatMoney(totalPrice, currency, 0),
+    perPerson: formatMoney(perPerson, currency, 0),
+    currency,
     breakdown: breakdown.length > 0 ? breakdown : undefined,
     extras: allExtras.length > 0 ? allExtras : undefined,
   };

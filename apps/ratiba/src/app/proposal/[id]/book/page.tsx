@@ -80,6 +80,7 @@ export default async function BookingPage({ params }: Props) {
         travelerCount={booking.travelerCount}
         startDate={booking.startDate}
         totalPrice={booking.totalPrice}
+        currency={booking.currency}
         organization={booking.organization}
         paymentMethods={booking.paymentMethods as PaymentMethod[]}
         alreadyConfirmed={alreadyConfirmed}

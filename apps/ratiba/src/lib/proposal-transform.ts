@@ -349,7 +349,7 @@ export function transformProposalToItineraryData(
         priceUnit: a.priceUnit ?? null,
       })),
   );
-  const pricing = calculatePricing(pricingRows, extras, travelerGroups, activityOptions);
+  const pricing = calculatePricing(pricingRows, extras, travelerGroups, activityOptions, proposal.currency ?? 'USD');
 
   const duration = isZh ? `${proposalDays.length} 天` : `${proposalDays.length} Days`;
 

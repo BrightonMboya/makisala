@@ -33,6 +33,7 @@ const PARK_FEE_CATEGORIES = [
 const roomNightSchema = z.object({
   roomType: z.string().min(1).nullable(),
   pax: z.number().int().nonnegative(),
+  children: z.number().int().nonnegative().optional(),
 });
 
 const activityInputSchema = z.object({
@@ -146,6 +147,7 @@ export const pricingRouter = router({
           rooms: d.rooms.map((r) => ({
             roomType: r.roomType,
             pax: r.pax,
+            children: r.children ?? 0,
           })),
           parkId: d.parkId,
           destinationName: d.destinationName ?? null,
@@ -184,6 +186,8 @@ export const pricingRouter = router({
         perPaxRate: Number(r.perPaxRate),
         rateBasis: r.rateBasis,
         maxOccupancy: r.maxOccupancy,
+        additionalAdultPct: r.additionalAdultPct == null ? null : Number(r.additionalAdultPct),
+        additionalChildPct: r.additionalChildPct == null ? null : Number(r.additionalChildPct),
       })),
       parkFeeRates: parkRows.map((r) => ({
         parkId: r.parkId,

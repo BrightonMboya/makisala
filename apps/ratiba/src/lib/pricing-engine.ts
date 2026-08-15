@@ -57,6 +57,32 @@ export interface AccommodationRate {
   perPaxRate: number;
   rateBasis: RateBasis;
   maxOccupancy: number | null;
+  // Per-person rates only: % of perPaxRate applied to any adult beyond the
+  // 1st/2nd (which are always 100% = perPaxRate itself), and to any child.
+  // Null = not modeled, falls back to 100% (today's flat-multiply behavior).
+  additionalAdultPct: number | null;
+  additionalChildPct: number | null;
+}
+
+// Cost of one room's occupants at a per_person rate, applying the extra-adult
+// and child %s beyond the 1st/2nd adult (the perPaxRate baseline). `children`
+// is a subset of `pax`; unset/0 means every occupant is priced as an adult
+// slot, and no % configured defaults to 100% - together these mean a rate with
+// neither column set reduces to exactly perPaxRate * pax, i.e. the
+// pre-existing flat-multiply behavior is unchanged.
+export function occupantSlotCost(
+  rate: Pick<AccommodationRate, 'perPaxRate' | 'additionalAdultPct' | 'additionalChildPct'>,
+  pax: number,
+  children: number,
+): number {
+  const adults = Math.max(0, pax - Math.max(0, children));
+  const pct = (p: number | null) => (p ?? 100) / 100;
+  let total = 0;
+  for (let i = 1; i <= adults; i++) {
+    total += rate.perPaxRate * (i <= 2 ? 1 : pct(rate.additionalAdultPct));
+  }
+  total += Math.max(0, children) * rate.perPaxRate * pct(rate.additionalChildPct);
+  return total;
 }
 
 export interface ParkFeeRate {
@@ -109,6 +135,9 @@ export interface DayActivityInput {
 export interface RoomNight {
   roomType: RoomType | null;
   pax: number;
+  // Subset of pax that are children, for occupant-slot pricing (see
+  // occupantSlotCost). Unset/0 means every occupant prices as an adult slot.
+  children?: number;
 }
 
 export interface ItineraryDayInput {
@@ -159,6 +188,7 @@ export type WarningKind =
   | 'missing_room_meal'
   | 'room_pax_mismatch'
   | 'missing_room_capacity'
+  | 'room_over_capacity'
   | 'no_season'
   | 'missing_hotel_rate'
   | 'missing_park_fee'
@@ -188,6 +218,18 @@ export interface PricingBreakdown {
 
 // Pad MM-DD into a numeric value for cyclical comparison.
 const md = (month: number, day: number) => month * 100 + day;
+
+// Seasons are shared org-wide, not per-hotel/park/activity, so a broad season
+// belonging to one entity (e.g. Chumbe's Jun-Sep "High") can outrank a narrower
+// season belonging to a different entity (e.g. Aluna's Jul-Aug "High Summer") on
+// the same date. Restrict candidates to the seasons the specific entity actually
+// has rates under before resolving, falling back to the full list only if it has
+// none (so a not-yet-priced entity still gets a season for a useful warning).
+function ownedSeasons(seasons: SeasonBand[], ownedIds: Set<string>): SeasonBand[] {
+  if (ownedIds.size === 0) return seasons;
+  const filtered = seasons.filter((s) => ownedIds.has(s.id));
+  return filtered.length > 0 ? filtered : seasons;
+}
 
 // Resolve a date to a season band. Season bands can wrap across the year
 // boundary (e.g. Dec 20 - Jan 5). Highest-priority match wins on overlap.
@@ -250,7 +292,12 @@ export function computePricing(input: PricingInput): PricingBreakdown {
       });
       continue;
     }
-    const season = resolveSeason(day.date, input.seasons);
+    const accommodationSeasonIds = new Set(
+      input.accommodationRates
+        .filter((r) => r.accommodationId === day.accommodationId)
+        .map((r) => r.seasonId),
+    );
+    const season = resolveSeason(day.date, ownedSeasons(input.seasons, accommodationSeasonIds));
     if (!season) {
       warnings.push({
         kind: 'no_season',
@@ -304,12 +351,22 @@ export function computePricing(input: PricingInput): PricingBreakdown {
           source: 'accommodation',
         });
       } else {
+        if (rate.maxOccupancy && rate.maxOccupancy > 0 && room.pax > rate.maxOccupancy) {
+          warnings.push({
+            kind: 'room_over_capacity',
+            dayNumber: day.dayNumber,
+            message: `${hotelName} (Day ${day.dayNumber}): ${room.roomType} sleeps ${rate.maxOccupancy} max, but ${room.pax} were assigned to it — split into another room`,
+          });
+        }
+        // Occupant-slot pricing (see occupantSlotCost): reduces to
+        // perPaxRate * room.pax when no slot %s are configured on the rate.
+        const totalCost = num(occupantSlotCost(rate, room.pax, room.children ?? 0));
         lineItems.push({
           label: `${hotelName} (Day ${day.dayNumber}) — ${room.roomType}/${day.mealPlan}`,
           dayNumber: day.dayNumber,
           quantity: room.pax,
-          unitCost: rate.perPaxRate,
-          totalCost: num(rate.perPaxRate * room.pax),
+          unitCost: room.pax > 0 ? num(totalCost / room.pax) : rate.perPaxRate,
+          totalCost,
           source: 'accommodation',
         });
       }
@@ -340,7 +397,12 @@ export function computePricing(input: PricingInput): PricingBreakdown {
 
   for (const { day, parkId } of daysWithParkId) {
     if (!parkId) continue;
-    const season = resolveSeason(day.date, input.seasons);
+    const parkSeasonIds = new Set(
+      input.parkFeeRates
+        .filter((r): r is ParkFeeRate & { seasonId: string } => r.parkId === parkId && r.seasonId !== null)
+        .map((r) => r.seasonId),
+    );
+    const season = resolveSeason(day.date, ownedSeasons(input.seasons, parkSeasonIds));
     for (const segment of segments) {
       if (segment.count <= 0) continue;
       // park fees: season-specific row preferred, fall back to season-less (year-round)
@@ -428,14 +490,21 @@ export function computePricing(input: PricingInput): PricingBreakdown {
   const normalizeName = (s: string) => s.trim().toLowerCase();
   for (const day of input.days) {
     if (!day.activities || day.activities.length === 0) continue;
-    const season = resolveSeason(day.date, input.seasons);
     for (const activity of day.activities) {
       if (activity.isOptional) continue;
       const nameKey = activity.name ? normalizeName(activity.name) : null;
       if (!activity.libraryId && !nameKey) continue;
       const matches = (r: ActivityRate) =>
-        (activity.libraryId && r.activityId === activity.libraryId) ||
-        (!activity.libraryId && nameKey && normalizeName(r.activityName) === nameKey);
+        Boolean(
+          (activity.libraryId && r.activityId === activity.libraryId) ||
+            (!activity.libraryId && nameKey && normalizeName(r.activityName) === nameKey),
+        );
+      const activitySeasonIds = new Set(
+        input.activityRates
+          .filter((r): r is ActivityRate & { seasonId: string } => matches(r) && r.seasonId !== null)
+          .map((r) => r.seasonId),
+      );
+      const season = resolveSeason(day.date, ownedSeasons(input.seasons, activitySeasonIds));
       const rate =
         input.activityRates.find((r) => matches(r) && r.seasonId === (season?.id ?? null)) ??
         input.activityRates.find((r) => matches(r) && r.seasonId === null);

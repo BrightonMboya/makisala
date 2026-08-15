@@ -643,11 +643,27 @@ function SortableDayRow({
                           min={1}
                           value={room.pax || ''}
                           onFocus={(e) => e.target.select()}
-                          onChange={(e) =>
-                            updateRoom(idx, { pax: parseInt(e.target.value, 10) || 0 })
-                          }
+                          onChange={(e) => {
+                            const pax = parseInt(e.target.value, 10) || 0;
+                            const children = Math.min(room.children ?? 0, pax);
+                            updateRoom(idx, { pax, children });
+                          }}
                           className="h-8 w-12 shrink-0 rounded-md border border-stone-200 bg-white px-1 text-center text-xs text-stone-700"
                           title="Travelers in this room type"
+                        />
+                        <input
+                          type="number"
+                          min={0}
+                          max={room.pax || 0}
+                          value={room.children || ''}
+                          onFocus={(e) => e.target.select()}
+                          onChange={(e) => {
+                            const children = Math.min(parseInt(e.target.value, 10) || 0, room.pax || 0);
+                            updateRoom(idx, { children });
+                          }}
+                          placeholder="0"
+                          className="h-8 w-10 shrink-0 rounded-md border border-stone-200 bg-white px-1 text-center text-xs text-stone-500"
+                          title="Of those travelers, how many are children — used for child room-rate discounts where the hotel has them configured"
                         />
                         {rooms.length > 1 && (
                           <button

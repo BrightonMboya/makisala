@@ -31,6 +31,8 @@ export type MealPlanOption = 'ro' | 'bb' | 'hb' | 'fb';
 export type RoomAllocation = {
   roomType: RoomTypeOption | null;
   pax: number;
+  // Subset of pax that are children (occupant-slot pricing). Unset/0 = all adults.
+  children?: number;
 };
 
 // An alternative accommodation offered for a night: a lodge the client can pick
@@ -192,6 +194,8 @@ export type BuilderContextType = {
   setPickupTransferId: React.Dispatch<React.SetStateAction<string | null>>;
   dropoffTransferId: string | null;
   setDropoffTransferId: React.Dispatch<React.SetStateAction<string | null>>;
+  currency: 'USD' | 'EUR';
+  setCurrency: React.Dispatch<React.SetStateAction<'USD' | 'EUR'>>;
 
   // Inclusions & Exclusions
   inclusions: string[];
