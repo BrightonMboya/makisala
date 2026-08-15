@@ -220,7 +220,11 @@ export function transformProposalToItineraryData(
       : undefined;
 
     // Stored alternatives carry their own lodge name, so no id→name resolver is needed.
-    const accommodationAlternatives = toThemeAlternatives(day.alternatives);
+    const accommodationAlternatives = toThemeAlternatives(
+      day.alternatives,
+      undefined,
+      proposal.currency ?? 'USD',
+    );
 
     // One `proposalAccommodations` row per room line in the night's mix (see the
     // `save` mutation), so every entry — not just [0] — has to be read to recover

@@ -45,7 +45,7 @@ function mealSummaryText(meals: AccommodationAlternative['meals']): string | und
  * same lodge. `priceUnitLabel` is only consulted for the `custom` basis, where
  * it *is* the unit rather than a disagreeing description of it.
  */
-function priceDeltaLabel(alt: AccommodationAlternative): string | undefined {
+function priceDeltaLabel(alt: AccommodationAlternative, currency: string): string | undefined {
   const amount = alt.additionalPrice;
   if (amount == null || amount === 0) return undefined;
   const sign = amount < 0 ? '−' : '+'; // real minus sign for display
@@ -58,7 +58,7 @@ function priceDeltaLabel(alt: AccommodationAlternative): string | undefined {
         : alt.priceBasis === 'custom' && alt.priceUnitLabel
           ? ` ${alt.priceUnitLabel}`
           : '';
-  return `${sign}$${abs.toLocaleString()}${unit}`;
+  return `${sign}${formatMoney(abs, currency, 0)}${unit}`;
 }
 
 /**
@@ -72,6 +72,7 @@ function priceDeltaLabel(alt: AccommodationAlternative): string | undefined {
 export function toThemeAlternatives(
   alternatives: AccommodationAlternative[] | undefined | null,
   resolve?: (id: string) => { name?: string; images?: string[] } | undefined,
+  currency: string = 'USD',
 ): ThemeAccommodationAlternative[] | undefined {
   if (!alternatives || alternatives.length === 0) return undefined;
   const out = alternatives
@@ -85,7 +86,7 @@ export function toThemeAlternatives(
         name,
         rooms: roomSummaryText(alt.rooms),
         meals: mealSummaryText(alt.meals),
-        priceLabel: priceDeltaLabel(alt),
+        priceLabel: priceDeltaLabel(alt, currency),
         images: images && images.length > 0 ? images : undefined,
       } satisfies ThemeAccommodationAlternative;
     });

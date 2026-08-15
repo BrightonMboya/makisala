@@ -142,10 +142,14 @@ export function transformBuilderToItineraryData(params: {
         }
       : undefined;
 
-    const accommodationAlternatives = toThemeAlternatives(day.alternatives, (accId) => {
-      const acc = accommodationsMap[accId];
-      return acc ? { name: acc.name, images: acc.images } : undefined;
-    });
+    const accommodationAlternatives = toThemeAlternatives(
+      day.alternatives,
+      (accId) => {
+        const acc = accommodationsMap[accId];
+        return acc ? { name: acc.name, images: acc.images } : undefined;
+      },
+      currency ?? 'USD',
+    );
 
     const rooms = roomSummaryText(day.rooms);
 

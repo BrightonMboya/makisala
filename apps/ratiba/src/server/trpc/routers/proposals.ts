@@ -28,6 +28,7 @@ import { loadBookingAddOns } from '../lib/booking-addons';
 import { computeBookingTotal, parseSelections, type Selections } from '@/lib/booking-addons';
 import { buildCheckoutLineItems, computeTotals } from '@/lib/invoices/seed-from-proposal';
 import { getNextInvoiceNumber } from '@/lib/invoices/numbering';
+import { formatMoney } from '@/components/invoices/form-types';
 import { getOrgPaymentMethodSnapshot } from '@/lib/invoices/payment-methods';
 import { checkFeatureAccess, getOrgPlan, ALLOWED_THEMES_BY_TIER } from '@/lib/plans';
 import {
@@ -1563,7 +1564,8 @@ export const proposalsRouter = router({
       const addOns = await loadBookingAddOns(ctx.db, proposal.id, proposal.organizationId);
       const { lines, total } = computeBookingTotal(baseTotal, addOns, selections, travelerCount);
 
-      const totalPrice = total > 0 ? `$${total.toLocaleString()}` : undefined;
+      const currency = proposal.currency ?? 'USD';
+      const totalPrice = total > 0 ? formatMoney(total, currency, 0) : undefined;
 
       // No availability check exists in the booking flow, so a swap may be a
       // lodge we cannot hold. Surfaced in the email, not blocked.
@@ -1614,13 +1616,13 @@ export const proposalsRouter = router({
         totalPrice,
         recipientEmail: proposal.organization.notificationEmail,
         orgSlug: proposal.organization.slug,
-        baseTotal: baseTotal > 0 ? `$${baseTotal.toLocaleString()}` : undefined,
+        baseTotal: baseTotal > 0 ? formatMoney(baseTotal, currency, 0) : undefined,
         addOns: lines.map((l) => ({
           label: l.label,
           detail: l.detail,
           amount: l.onRequest
             ? 'On request'
-            : `${l.amount < 0 ? '-' : '+'}$${Math.abs(Math.round(l.amount)).toLocaleString()}`,
+            : `${l.amount < 0 ? '-' : '+'}${formatMoney(Math.abs(Math.round(l.amount)), currency, 0)}`,
           needsReview: l.kind === 'alternative' || l.onRequest,
         })),
         lodgeChangeCount: lodgeChanges.length,
