@@ -21,6 +21,7 @@ import type { ItineraryData } from '@/types/itinerary-types';
 import { formatActivityTiming } from '@/lib/utils';
 import { AccommodationAlternativesBlock } from '@/components/themes/AccommodationAlternativesBlock';
 import { AgencyTrust, hasAgencyTrust } from '@/components/proposal/AgencyTrust';
+import { formatMoney } from '@/components/invoices/form-types';
 
 // --- TRIP MAP COMPONENT ---
 function TripMap({ data }: { data: ItineraryData['mapData'] }) {
@@ -690,10 +691,10 @@ export default function KuduTheme({ data, onHeroImageChange, onDayImageChange }:
                     <div key={i} className="flex items-center justify-between text-xs text-white/60">
                       <span className="tracking-wider uppercase">
                         {item.quantity > 1
-                          ? `${item.quantity}x ${item.label} @ $${item.unitPrice.toLocaleString()}`
+                          ? `${item.quantity}x ${item.label} @ ${formatMoney(item.unitPrice, pricing.currency, 0)}`
                           : item.label}
                       </span>
-                      <span>${item.lineTotal.toLocaleString()}</span>
+                      <span>{formatMoney(item.lineTotal, pricing.currency, 0)}</span>
                     </div>
                   ))}
                 </div>

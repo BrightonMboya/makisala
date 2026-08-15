@@ -39,6 +39,7 @@ import type { ItineraryData } from '@/types/itinerary-types';
 import { capitalize, cn, formatActivityTiming } from '@/lib/utils';
 import { AccommodationAlternativesBlock } from '@/components/themes/AccommodationAlternativesBlock';
 import { AgencyTrust, hasAgencyTrust } from '@/components/proposal/AgencyTrust';
+import { formatMoney } from '@/components/invoices/form-types';
 
 function joinList(items: string[]): string {
   if (items.length <= 2) return items.join(' & ');
@@ -815,10 +816,10 @@ const PricingSection = ({ data }: { data: ItineraryData }) => (
                 <div key={i} className="flex items-center justify-between text-sm font-light text-stone-400">
                   <span>
                     {item.quantity > 1
-                      ? `${item.quantity}x ${item.label} @ $${item.unitPrice.toLocaleString()}`
+                      ? `${item.quantity}x ${item.label} @ ${formatMoney(item.unitPrice, data.pricing.currency, 0)}`
                       : item.label}
                   </span>
-                  <span>${item.lineTotal.toLocaleString()}</span>
+                  <span>{formatMoney(item.lineTotal, data.pricing.currency, 0)}</span>
                 </div>
               ))}
             </div>
