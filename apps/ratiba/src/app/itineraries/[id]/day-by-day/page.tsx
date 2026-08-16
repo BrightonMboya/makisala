@@ -5,7 +5,7 @@ import { ArrowRight, CheckCircle, Plus, Users, X } from 'lucide-react';
 import { DayTable } from '@/components/itinerary-builder/day-table';
 import { DatePicker } from '@repo/ui/date-picker';
 import { Input } from '@repo/ui/input';
-import React, { useCallback, useEffect, useRef } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 import { addDays, format } from 'date-fns';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
@@ -17,6 +17,11 @@ import { useBuilder } from '@/components/itinerary-builder/builder-context';
 import { CreatableAsyncCombobox } from '@/components/itinerary-builder/creatable-async-combobox';
 import { searchPlaces, parseGeoValue, buildGeoValue } from '@/lib/geocoding';
 import { CountryPicker } from '@/components/itinerary-builder/country-picker';
+import { trpc } from '@/lib/trpc';
+
+// Built-in traveler categories. Orgs can add their own (e.g. "Infant", "Guide"),
+// persisted in traveler_category_library so they're available on every itinerary.
+const TRAVELER_CATEGORIES = ['Adult', 'Senior', 'Child', 'Baby'] as const;
 
 export default function DayByDayPage() {
   const params = useParams();
@@ -65,6 +70,38 @@ export default function DayByDayPage() {
 
   const removeGroup = (id: string) => {
     setTravelerGroups((groups: TravelerGroup[]) => groups.filter((g) => g.id !== id));
+  };
+
+  // Org-wide custom traveler categories, persisted so a category created on
+  // any itinerary is available on every itinerary (and on the pricing page).
+  const utils = trpc.useUtils();
+  const { data: orgTravelerCategories } = trpc.travelerCategories.list.useQuery();
+  const createTravelerCategory = trpc.travelerCategories.create.useMutation();
+
+  // Category options = the canonical set, plus the org's saved custom
+  // categories, plus any category already used in this itinerary's traveler
+  // groups (so it shows before the catalog refetch lands).
+  const travelerCategoryItems = useMemo(() => {
+    const set = new Set<string>(TRAVELER_CATEGORIES);
+    orgTravelerCategories?.forEach((c) => set.add(c.name));
+    travelerGroups.forEach((g) => set.add(g.type));
+    return Array.from(set).map((v) => ({ value: v, label: v }));
+  }, [orgTravelerCategories, travelerGroups]);
+
+  // Persist a category org-wide the first time it's used. Canonical categories
+  // are built in and never stored; anything else is upserted (unique on
+  // org+name), then the list is refreshed for other itineraries.
+  const canonicalTravelerCategories = useMemo(() => new Set<string>(TRAVELER_CATEGORIES), []);
+  const handleTravelerTypeChange = (groupId: string, value: string) => {
+    updateGroup(groupId, 'type', value);
+    const trimmed = value.trim();
+    const existing = new Set(orgTravelerCategories?.map((c) => c.name) ?? []);
+    if (trimmed && !canonicalTravelerCategories.has(trimmed) && !existing.has(trimmed)) {
+      createTravelerCategory.mutate(
+        { name: trimmed },
+        { onSuccess: () => utils.travelerCategories.list.invalidate() },
+      );
+    }
   };
 
   const searchCities = useCallback(
@@ -192,20 +229,15 @@ export default function DayByDayPage() {
                       onFocus={(e) => e.target.select()}
                       onChange={(e) => updateGroup(group.id, 'count', parseInt(e.target.value) || 1)}
                     />
-                    <Select
+                    <Combobox
+                      items={travelerCategoryItems}
                       value={group.type}
-                      onValueChange={(value) => updateGroup(group.id, 'type', value)}
-                    >
-                      <SelectTrigger className="flex-1 border-stone-200 bg-stone-50">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Adult">Adult</SelectItem>
-                        <SelectItem value="Senior">Senior</SelectItem>
-                        <SelectItem value="Child">Child</SelectItem>
-                        <SelectItem value="Baby">Baby</SelectItem>
-                      </SelectContent>
-                    </Select>
+                      onChange={(value) => handleTravelerTypeChange(group.id, value)}
+                      placeholder="Category"
+                      creatable
+                      createLabel="Add category"
+                      className="flex-1 border-stone-200 bg-stone-50"
+                    />
                     {travelerGroups.length > 1 && (
                       <Button
                         variant="ghost"

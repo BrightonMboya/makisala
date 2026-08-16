@@ -103,12 +103,12 @@ export type BuilderDay = {
   } | null;
 };
 
-export type TravelerType = 'Adult' | 'Senior' | 'Child' | 'Baby';
-
 export type TravelerGroup = {
   id: string;
   count: number;
-  type: TravelerType;
+  // Adult / Senior / Child / Baby are the built-in presets; orgs can add
+  // their own custom categories (stored in traveler_category_library).
+  type: string;
 };
 
 export type PricingRow = {

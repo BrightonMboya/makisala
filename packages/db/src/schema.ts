@@ -1451,6 +1451,35 @@ export const extraUnitLibraryRelations = relations(extraUnitLibrary, ({ one }) =
   }),
 }));
 
+// A per-organization catalog of custom traveler categories (e.g. "Infant",
+// "Guide") that operators add on the fly in the traveler group editors. The
+// canonical categories (Adult, Senior, Child, Baby) live in the client; this
+// table only stores an org's custom additions, mirroring moment_library /
+// extra_unit_library.
+export const travelerCategoryLibrary = pgTable(
+  'traveler_category_library',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    name: text('name').notNull(),
+    organizationId: uuid('organization_id').references(() => organizations.id, {
+      onDelete: 'cascade',
+    }),
+    isGlobal: boolean('is_global').default(false).notNull(),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+  },
+  (t) => [
+    // One row per (org, name) so create-on-the-fly can upsert in a single round trip.
+    uniqueIndex('traveler_category_library_org_name_unique').on(t.organizationId, t.name),
+  ],
+);
+
+export const travelerCategoryLibraryRelations = relations(travelerCategoryLibrary, ({ one }) => ({
+  organization: one(organizations, {
+    fields: [travelerCategoryLibrary.organizationId],
+    references: [organizations.id],
+  }),
+}));
+
 // A shared, cross-organization catalog of inclusion/exclusion phrases ("Beer,
 // wine", "Park Fees", "International Flights") typed on the pricing page.
 // Unlike the libraries above, this one is global with no per-org rows: the

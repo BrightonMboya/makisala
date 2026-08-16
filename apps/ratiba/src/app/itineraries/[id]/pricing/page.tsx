@@ -61,6 +61,11 @@ const ALT_UNIT_PRESETS = [
   { value: 'per_room', label: 'Per room' },
 ];
 
+// Built-in traveler categories for manual pricing rows. Orgs can add their own
+// (e.g. "Infant", "Guide"), persisted in traveler_category_library so they're
+// available on every itinerary (and in the Day-by-Day traveler groups).
+const TRAVELER_CATEGORIES = ['Adult', 'Senior', 'Child', 'Baby'] as const;
+
 const CATEGORY_META: Record<LineSource, { label: string; icon: typeof Building }> = {
   accommodation: { label: 'Accommodation', icon: Building },
   park_fee: { label: 'Park fees', icon: TreePine },
@@ -1088,6 +1093,32 @@ function ManualPricingSection({
   onUpdateRow: (id: string, field: keyof PricingRow, value: any) => void;
   currency: 'USD' | 'EUR';
 }) {
+  // Same org-wide catalog of custom traveler categories used in the Day-by-Day
+  // traveler groups, so a category typed here is also suggested there.
+  const utils = trpc.useUtils();
+  const { data: orgTravelerCategories } = trpc.travelerCategories.list.useQuery();
+  const createTravelerCategory = trpc.travelerCategories.create.useMutation();
+
+  const travelerCategoryItems = useMemo(() => {
+    const set = new Set<string>(TRAVELER_CATEGORIES);
+    orgTravelerCategories?.forEach((c) => set.add(c.name));
+    pricingRows.forEach((row) => set.add(row.type));
+    return Array.from(set).map((v) => ({ value: v, label: v }));
+  }, [orgTravelerCategories, pricingRows]);
+
+  const canonicalTravelerCategories = useMemo(() => new Set<string>(TRAVELER_CATEGORIES), []);
+  const handleTravelerTypeChange = (rowId: string, value: string) => {
+    onUpdateRow(rowId, 'type', value);
+    const trimmed = value.trim();
+    const existing = new Set(orgTravelerCategories?.map((c) => c.name) ?? []);
+    if (trimmed && !canonicalTravelerCategories.has(trimmed) && !existing.has(trimmed)) {
+      createTravelerCategory.mutate(
+        { name: trimmed },
+        { onSuccess: () => utils.travelerCategories.list.invalidate() },
+      );
+    }
+  };
+
   return (
     <>
       <div className="grid grid-cols-12 gap-4 border-b border-stone-100 bg-stone-50/30 px-6 py-3 text-xs font-bold tracking-wide text-stone-500 uppercase">
@@ -1117,17 +1148,15 @@ function ManualPricingSection({
               </Select>
               <span className="text-sm text-stone-400">x</span>
               <div className="flex-1">
-                <Select value={row.type} onValueChange={(val) => onUpdateRow(row.id, 'type', val)}>
-                  <SelectTrigger className="border-stone-200 bg-stone-50 shadow-none">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Adult">Adult</SelectItem>
-                    <SelectItem value="Senior">Senior</SelectItem>
-                    <SelectItem value="Child">Child</SelectItem>
-                    <SelectItem value="Baby">Baby</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Combobox
+                  items={travelerCategoryItems}
+                  value={row.type}
+                  onChange={(val) => handleTravelerTypeChange(row.id, val)}
+                  placeholder="Category"
+                  creatable
+                  createLabel="Add category"
+                  className="border-stone-200 bg-stone-50 shadow-none"
+                />
               </div>
             </div>
             <div className="col-span-3">
