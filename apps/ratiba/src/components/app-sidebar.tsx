@@ -126,21 +126,25 @@ export function AppSidebar({ serverData }: { serverData?: SidebarServerData | nu
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild tooltip={orgName}>
-              <Link href="/dashboard">
+              <Link href="/dashboard" className={orgLogo ? 'justify-center' : undefined}>
                 <div
-                  className={`flex aspect-square size-10 shrink-0 items-center justify-center overflow-hidden rounded-full group-data-[collapsible=icon]:size-8 ${
-                    orgLogo ? 'border-2 border-stone-200' : 'bg-green-100'
+                  className={`flex h-10 max-w-[9.5rem] shrink-0 items-center justify-center overflow-hidden group-data-[collapsible=icon]:h-8 group-data-[collapsible=icon]:max-w-8 ${
+                    orgLogo
+                      ? 'w-auto rounded-md border-2 border-stone-200 bg-white px-1'
+                      : 'aspect-square w-10 rounded-full bg-green-100 group-data-[collapsible=icon]:w-8'
                   }`}
                 >
                   {orgLogo ? (
-                    <img src={orgLogo} alt={orgName} className="size-full object-cover" />
+                    <img src={orgLogo} alt={orgName} className="h-full w-auto object-contain" />
                   ) : (
                     <span className="font-serif text-lg font-bold text-green-800">{orgInitial}</span>
                   )}
                 </div>
-                <span className="truncate font-serif text-lg font-bold text-green-800 group-data-[collapsible=icon]:hidden">
-                  {orgName}
-                </span>
+                {!orgLogo && (
+                  <span className="truncate font-serif text-lg font-bold text-green-800 group-data-[collapsible=icon]:hidden">
+                    {orgName}
+                  </span>
+                )}
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>

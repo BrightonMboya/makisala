@@ -170,6 +170,7 @@ interface BuilderData {
   inclusions?: string[] | null;
   exclusions?: string[] | null;
   useAutoPricing?: boolean | null;
+  pricingOverrides?: Record<string, number> | null;
   vehicleId?: string | null;
   markupPct?: number | string | null;
   pickupTransferRateId?: string | null;
@@ -949,6 +950,7 @@ export const proposalsRouter = router({
           inclusions: true,
           exclusions: true,
           useAutoPricing: true,
+          pricingOverrides: true,
           vehicleId: true,
           markupPct: true,
           pickupTransferRateId: true,
@@ -1097,6 +1099,7 @@ export const proposalsRouter = router({
         inclusions: builderData.inclusions || null,
         exclusions: builderData.exclusions || null,
         useAutoPricing: builderData.useAutoPricing ?? false,
+        pricingOverrides: builderData.pricingOverrides || null,
         vehicleId: builderData.vehicleId ?? null,
         markupPct:
           builderData.markupPct == null || builderData.markupPct === ''
@@ -1138,6 +1141,7 @@ export const proposalsRouter = router({
             inclusions: proposalData.inclusions || null,
             exclusions: proposalData.exclusions || null,
             useAutoPricing: proposalData.useAutoPricing,
+            pricingOverrides: proposalData.pricingOverrides,
             vehicleId: proposalData.vehicleId,
             markupPct: proposalData.markupPct,
             pickupTransferRateId: proposalData.pickupTransferRateId,
@@ -1173,6 +1177,7 @@ export const proposalsRouter = router({
               inclusions: proposalData.inclusions || null,
               exclusions: proposalData.exclusions || null,
               useAutoPricing: proposalData.useAutoPricing,
+              pricingOverrides: proposalData.pricingOverrides,
               vehicleId: proposalData.vehicleId,
               markupPct: proposalData.markupPct,
               pickupTransferRateId: proposalData.pickupTransferRateId,
@@ -1973,6 +1978,7 @@ export const proposalsRouter = router({
           inclusions: original.inclusions,
           exclusions: original.exclusions,
           useAutoPricing: original.useAutoPricing,
+          pricingOverrides: original.pricingOverrides,
           vehicleId: original.vehicleId,
           markupPct: original.markupPct,
           pickupTransferRateId: original.pickupTransferRateId,
@@ -2052,6 +2058,7 @@ export const proposalsRouter = router({
           inclusions: original.inclusions,
           exclusions: original.exclusions,
           useAutoPricing: original.useAutoPricing,
+          pricingOverrides: original.pricingOverrides,
           vehicleId: original.vehicleId,
           markupPct: original.markupPct,
           pickupTransferRateId: original.pickupTransferRateId,

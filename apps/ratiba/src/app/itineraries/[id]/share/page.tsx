@@ -94,6 +94,7 @@ export default function SharePage() {
     pickupTransferId,
     dropoffTransferId,
     currency,
+    pricingOverrides,
   } = useBuilder();
 
   const [activeTab, setActiveTab] = useState<'edit' | 'preview'>('edit');
@@ -289,6 +290,7 @@ export default function SharePage() {
         heroImage,
         countries,
         useAutoPricing,
+        pricingOverrides,
         vehicleId,
         markupPct,
         pickupTransferRateId: pickupTransferId,

@@ -75,6 +75,7 @@ export default function PreviewPage() {
     pickupTransferId,
     dropoffTransferId,
     currency,
+    pricingOverrides,
   } = useBuilder();
 
   const router = useRouter();
@@ -282,6 +283,7 @@ export default function PreviewPage() {
         selectedTheme,
         heroImage,
         useAutoPricing,
+        pricingOverrides,
         vehicleId,
         markupPct,
         pickupTransferRateId: pickupTransferId,

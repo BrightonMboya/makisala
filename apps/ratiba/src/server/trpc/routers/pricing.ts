@@ -71,6 +71,7 @@ const computeInputSchema = z.object({
   dropoffTransferId: z.string().uuid().nullable(),
   markupPct: z.number().nonnegative().max(1000),
   currency: z.string().length(3).default('USD'),
+  overrides: z.record(z.string(), z.number()).nullish(),
 });
 
 export const pricingRouter = router({
@@ -168,6 +169,7 @@ export const pricingRouter = router({
       dropoffTransferId: input.dropoffTransferId,
       markupPct: input.markupPct,
       currency: input.currency || settingsRow[0]?.defaultCurrency || 'USD',
+      overrides: input.overrides ?? null,
       seasons: seasonRows.map((s) => ({
         id: s.id,
         name: s.name,

@@ -158,7 +158,9 @@ export default function WorkspaceStepPage() {
           />
           <div className="flex items-center gap-4 rounded-xl border border-stone-200 bg-stone-50 p-3">
             {logoUrl ? (
-              <img src={logoUrl} alt="Organization logo" className="h-16 w-16 rounded-full border border-stone-200 object-cover" />
+              <div className="flex h-16 max-w-[180px] items-center justify-center rounded-lg border border-stone-200 bg-white px-2">
+                <img src={logoUrl} alt="Organization logo" className="h-full w-auto object-contain" />
+              </div>
             ) : (
               <div className="flex h-16 w-16 items-center justify-center rounded-full border border-dashed border-stone-300 bg-white text-xl font-semibold text-stone-400">
                 {agencyName?.[0]?.toUpperCase() || '?'}

@@ -86,7 +86,8 @@ export const accommodationsRouter = router({
 
       const conditions = [accVisibleWhere(orgId)];
       if (input?.query) {
-        conditions.push(ilike(accommodations.name, `%${escapeLikeQuery(input.query)}%`));
+        const like = `%${escapeLikeQuery(input.query)}%`;
+        conditions.push(or(ilike(accommodations.name, like), ilike(accommodations.slug, like))!);
       }
 
       const whereClause = and(...conditions);
@@ -216,8 +217,12 @@ export const accommodationsRouter = router({
         },
         });
       }
+      const searchLike = `%${escapeLikeQuery(trimmed)}%`;
       return ctx.db.query.accommodations.findMany({
-        where: and(ilike(accommodations.name, `%${escapeLikeQuery(trimmed)}%`), accVisibleWhere(orgId)),
+        where: and(
+          or(ilike(accommodations.name, searchLike), ilike(accommodations.slug, searchLike)),
+          accVisibleWhere(orgId),
+        ),
         limit: input.limit,
         with: {
           images: {

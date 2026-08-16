@@ -738,13 +738,15 @@ export default function KuduTheme({ data, onHeroImageChange, onDayImageChange }:
             {organization?.name && (
               <div className="mt-4 flex items-center justify-center gap-2">
                 {organization.logoUrl && (
-                  <Image
-                    src={organization.logoUrl}
-                    alt={organization.name}
-                    width={24}
-                    height={24}
-                    className="rounded-full object-cover"
-                  />
+                  <span className="flex h-6 max-w-[6.5rem] items-center overflow-hidden">
+                    <Image
+                      src={organization.logoUrl}
+                      alt={organization.name}
+                      width={104}
+                      height={24}
+                      className="h-full w-auto object-contain"
+                    />
+                  </span>
                 )}
                 <span className="text-[10px] text-white/30">by {organization.name}</span>
               </div>

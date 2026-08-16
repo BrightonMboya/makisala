@@ -30,7 +30,7 @@ export function RateCardsShell({ defaultTab }: { defaultTab: SectionKey }) {
   const { data: activityRates = [] } = trpc.rateCards.activityRates.listAll.useQuery();
   const { data: vehicles = [] } = trpc.rateCards.vehicles.list.useQuery();
   const { data: transfers = [] } = trpc.rateCards.transferRates.list.useQuery();
-  const { data: seasons = [] } = trpc.rateCards.seasons.list.useQuery();
+  const { data: hasSeasons = false } = trpc.rateCards.seasons.hasAny.useQuery();
 
   const hotelCount = new Set(hotelRates.map((r) => r.accommodationId)).size;
   const parkCount = new Set(parkRates.map((r) => r.parkId)).size;
@@ -78,8 +78,8 @@ export function RateCardsShell({ defaultTab }: { defaultTab: SectionKey }) {
     {
       key: 'seasons',
       label: 'Seasons & Defaults',
-      done: seasons.length > 0,
-      hint: seasons.length > 0 ? `${seasons.length} seasons` : 'Define date bands',
+      done: hasSeasons,
+      hint: hasSeasons ? 'Season calendar' : 'Define date bands',
     },
   ];
 

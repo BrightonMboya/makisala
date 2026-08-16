@@ -885,13 +885,15 @@ export default function MinimalisticTheme({ data, onHeroImageChange, onDayImageC
                   <div className="border-t border-stone-100 pt-6">
                     <div className="flex items-center gap-3">
                       {data.organization.logoUrl && (
-                        <Image
-                          src={data.organization.logoUrl}
-                          alt={data.organization.name}
-                          width={32}
-                          height={32}
-                          className="rounded-full object-cover"
-                        />
+                        <span className="flex h-8 max-w-[8.5rem] items-center overflow-hidden">
+                          <Image
+                            src={data.organization.logoUrl}
+                            alt={data.organization.name}
+                            width={136}
+                            height={32}
+                            className="h-full w-auto object-contain"
+                          />
+                        </span>
                       )}
                       <div>
                         <span className="block text-[10px] tracking-wider text-stone-400 uppercase">

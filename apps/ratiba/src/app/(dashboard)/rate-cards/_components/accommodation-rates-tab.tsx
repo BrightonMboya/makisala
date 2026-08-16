@@ -110,7 +110,6 @@ export function AccommodationRatesTab() {
   const [newBasis, setNewBasis] = useState<RateBasis>('per_person');
   const [newCapacity, setNewCapacity] = useState<string>('');
 
-  const [showAllSeasons, setShowAllSeasons] = useState(false);
   // "Add extra per person" checkbox, per room type - reveals the additional-
   // adult/child % inputs. Unchecked rooms with nothing configured start
   // collapsed; a room that already has a % set (e.g. from an earlier session)
@@ -131,7 +130,6 @@ export function AccommodationRatesTab() {
   }, [allRates]);
 
   const active = selected ?? hotelsWithRates[0] ?? null;
-  useEffect(() => setShowAllSeasons(false), [active?.id]);
 
   const pills = useMemo(() => {
     const list = [...hotelsWithRates];
@@ -304,20 +302,11 @@ export function AccommodationRatesTab() {
         .join(' & ');
       return { name, ids: byName.get(name)!, dateLabel };
     });
-    if (showAllSeasons || rates.length === 0) return all;
+    if (rates.length === 0) return all;
     const usedSeasonIds = new Set(rates.map((r) => r.seasonId));
     const used = all.filter((g) => g.ids.some((id) => usedSeasonIds.has(id)));
     return used.length > 0 ? used : all;
-  }, [seasons, rates, showAllSeasons]);
-
-  const hiddenSeasonCount = useMemo(() => {
-    if (showAllSeasons || rates.length === 0) return 0;
-    const shown = new Set(seasonGroups.map((g) => g.name));
-    const byName = new Set(seasons.map((s) => s.name));
-    let count = 0;
-    for (const name of byName) if (!shown.has(name)) count++;
-    return count;
-  }, [seasons, seasonGroups, showAllSeasons, rates.length]);
+  }, [seasons, rates]);
 
   const cellValue = (ids: string[], rt: string, mp: MealPlan) => {
     for (const id of ids) {
@@ -543,22 +532,6 @@ export function AccommodationRatesTab() {
 
         {active && seasons.length > 0 && !ratesLoading && (
           <div className="space-y-3">
-            {(hiddenSeasonCount > 0 || showAllSeasons) && (
-              <div className="flex items-center justify-between rounded-md border border-stone-200 bg-stone-50 px-3 py-1.5 text-xs text-stone-500">
-                <span>
-                  {showAllSeasons
-                    ? 'Showing every season in the org, including ones this hotel doesn’t use.'
-                    : `${hiddenSeasonCount} season${hiddenSeasonCount === 1 ? '' : 's'} from other hotels hidden.`}
-                </span>
-                <button
-                  type="button"
-                  className="font-medium text-emerald-700 hover:underline"
-                  onClick={() => setShowAllSeasons((v) => !v)}
-                >
-                  {showAllSeasons ? 'Show only this hotel’s seasons' : 'Show all seasons'}
-                </button>
-              </div>
-            )}
             <div className="overflow-x-auto rounded-md border border-stone-200">
               <table className="w-full border-collapse text-sm">
                 <thead className="bg-stone-50 text-xs font-semibold tracking-wide text-stone-500 uppercase">

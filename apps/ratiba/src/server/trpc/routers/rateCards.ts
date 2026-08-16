@@ -48,6 +48,58 @@ const seasonsRouter = router({
       .orderBy(asc(seasons.priority), asc(seasons.startMonth), asc(seasons.startDay)),
   ),
 
+  // Cheap existence check for cold-start UI - avoids pulling the whole
+  // (potentially 1000+ row) org season list just to know whether to show
+  // the "seed defaults" CTA.
+  hasAny: protectedProcedure.query(async ({ ctx }) => {
+    const [row] = await ctx.db
+      .select({ id: seasons.id })
+      .from(seasons)
+      .where(eq(seasons.organizationId, ctx.orgId))
+      .limit(1);
+    return !!row;
+  }),
+
+  // Seasons are stored org-wide, but in practice each hotel ends up with its
+  // own bands (named "<Hotel>: <Label>"), so "this hotel's seasons" isn't a
+  // real column - it's derived: seasons already used by this hotel's rates,
+  // plus any band whose name carries this hotel's prefix (covers a
+  // freshly-added band that has no rate cell filled in yet).
+  listForAccommodation: protectedProcedure
+    .input(z.object({ accommodationId: z.string().uuid() }))
+    .query(async ({ ctx, input }) => {
+      const [acc] = await ctx.db
+        .select({ name: accommodations.name })
+        .from(accommodations)
+        .where(eq(accommodations.id, input.accommodationId));
+      if (!acc) return [];
+
+      const used = await ctx.db
+        .select({ seasonId: accommodationRates.seasonId })
+        .from(accommodationRates)
+        .where(
+          and(
+            eq(accommodationRates.organizationId, ctx.orgId),
+            eq(accommodationRates.accommodationId, input.accommodationId),
+          ),
+        );
+      const usedIds = new Set(used.map((r) => r.seasonId));
+
+      const prefix = `${acc.name.toLowerCase()}:`;
+      const all = await ctx.db
+        .select()
+        .from(seasons)
+        .where(eq(seasons.organizationId, ctx.orgId));
+      return all
+        .filter((s) => usedIds.has(s.id) || s.name.toLowerCase().startsWith(prefix))
+        .sort(
+          (a, b) =>
+            a.priority - b.priority ||
+            a.startMonth - b.startMonth ||
+            a.startDay - b.startDay,
+        );
+    }),
+
   create: adminProcedure
     .input(
       z

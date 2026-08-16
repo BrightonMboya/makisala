@@ -112,6 +112,7 @@ function Header() {
     pickupTransferId,
     dropoffTransferId,
     currency,
+    pricingOverrides,
   } = useBuilder();
 
   const params = useParams();
@@ -155,6 +156,7 @@ function Header() {
         selectedTheme,
         heroImage,
         useAutoPricing,
+        pricingOverrides,
         vehicleId,
         markupPct,
         pickupTransferRateId: pickupTransferId,
@@ -407,6 +409,7 @@ function BuilderLayoutInner({ children }: { children: React.ReactNode }) {
         inclusions: proposal.inclusions || [],
         exclusions: proposal.exclusions || [],
         useAutoPricing: (proposal as any).useAutoPricing ?? false,
+        pricingOverrides: (proposal as any).pricingOverrides ?? {},
         vehicleId: (proposal as any).vehicleId ?? null,
         markupPct: (proposal as any).markupPct ?? null,
         pickupTransferRateId: (proposal as any).pickupTransferRateId ?? null,

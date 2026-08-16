@@ -18,7 +18,6 @@ import {
   MapPin,
   Mountain,
   Plane,
-  Star,
   Tent,
   Trees,
   UtensilsCrossed,
@@ -1384,10 +1383,10 @@ const Footer = ({ data }: { data: ItineraryData }) => (
           )}
           {data.organization?.paymentTerms && (
             <div>
-              <p className="mb-4 text-xs font-light tracking-[0.3em] text-stone-500 uppercase">
+              <p className="mb-4 text-xs font-light tracking-[0.3em] text-stone-400 uppercase">
                 Payment Terms & Conditions
               </p>
-              <p className="text-sm leading-relaxed font-light whitespace-pre-line text-stone-500">
+              <p className="text-sm leading-relaxed font-light whitespace-pre-line text-stone-300">
                 {data.organization.paymentTerms}
               </p>
             </div>
@@ -1401,23 +1400,21 @@ const Footer = ({ data }: { data: ItineraryData }) => (
       <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-6 md:flex-row">
         <div className="flex items-center gap-4">
           {data.organization?.logoUrl && (
-            <Image
-              src={data.organization.logoUrl}
-              alt={data.organization.name || ''}
-              width={32}
-              height={32}
-              className="h-8 w-8 rounded-full object-cover opacity-70"
-            />
+            <span className="flex h-8 max-w-[8.5rem] items-center overflow-hidden opacity-70">
+              <Image
+                src={data.organization.logoUrl}
+                alt={data.organization.name || ''}
+                width={136}
+                height={32}
+                className="h-full w-auto object-contain"
+              />
+            </span>
           )}
           {data.organization?.name && (
             <p className="text-sm font-light text-stone-500">
               Crafted with care by {data.organization.name}
             </p>
           )}
-        </div>
-        <div className="flex items-center gap-2 text-stone-600">
-          <Star className="h-4 w-4" />
-          <span className="text-sm font-light">Extraordinary journeys, extraordinary memories</span>
         </div>
       </div>
     </div>

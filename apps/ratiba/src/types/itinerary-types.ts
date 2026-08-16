@@ -196,6 +196,9 @@ export type BuilderContextType = {
   setDropoffTransferId: React.Dispatch<React.SetStateAction<string | null>>;
   currency: 'USD' | 'EUR';
   setCurrency: React.Dispatch<React.SetStateAction<'USD' | 'EUR'>>;
+  // Manual per-line overrides on the auto-computed breakdown, keyed by LineItem.key.
+  pricingOverrides: Record<string, number>;
+  setPricingOverrides: React.Dispatch<React.SetStateAction<Record<string, number>>>;
 
   // Inclusions & Exclusions
   inclusions: string[];

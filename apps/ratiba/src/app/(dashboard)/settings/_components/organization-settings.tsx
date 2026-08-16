@@ -359,11 +359,13 @@ export function OrganizationSettings({ organization }: Props) {
                       />
                       <div className="flex items-center gap-5">
                         {field.value ? (
-                          <img
-                            src={field.value}
-                            alt="Logo preview"
-                            className="h-20 w-20 rounded-full border-2 border-stone-200 object-cover"
-                          />
+                          <div className="flex h-20 max-w-[220px] items-center justify-center rounded-lg border-2 border-stone-200 bg-white px-2">
+                            <img
+                              src={field.value}
+                              alt="Logo preview"
+                              className="h-full w-auto object-contain"
+                            />
+                          </div>
                         ) : (
                           <div className="flex h-20 w-20 items-center justify-center rounded-full border-2 border-dashed border-stone-300 bg-stone-50 text-2xl font-bold text-stone-400">
                             {organization.name[0]?.toUpperCase()}

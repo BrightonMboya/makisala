@@ -103,7 +103,19 @@ export default function PricingPage() {
     startDate,
     currency,
     setCurrency,
+    pricingOverrides,
+    setPricingOverrides,
   } = useBuilder();
+
+  const setLineOverride = (key: string, value: number) => {
+    setPricingOverrides({ ...pricingOverrides, [key]: value });
+  };
+
+  const clearLineOverride = (key: string) => {
+    const next = { ...pricingOverrides };
+    delete next[key];
+    setPricingOverrides(next);
+  };
 
   const handleAddRow = () => {
     setPricingRows([
@@ -301,6 +313,7 @@ export default function PricingPage() {
       dropoffTransferId,
       markupPct,
       currency,
+      overrides: pricingOverrides,
     },
     {
       enabled: useAutoPricing && dayInputs.length > 0 && totalPax > 0,
@@ -426,6 +439,8 @@ export default function PricingPage() {
             computeQuery={computeQuery}
             groupedLines={groupedLines}
             currency={currency}
+            onSetLineOverride={setLineOverride}
+            onClearLineOverride={clearLineOverride}
           />
         ) : (
           <ManualPricingSection
@@ -854,6 +869,8 @@ function AutoPricingSection({
   computeQuery,
   groupedLines,
   currency,
+  onSetLineOverride,
+  onClearLineOverride,
 }: {
   vehicleId: string | null;
   setVehicleId: (v: string | null) => void;
@@ -879,6 +896,8 @@ function AutoPricingSection({
     items: PricingBreakdown['lineItems'];
   }>;
   currency: 'USD' | 'EUR';
+  onSetLineOverride: (key: string, value: number) => void;
+  onClearLineOverride: (key: string) => void;
 }) {
   return (
     <div className="space-y-5 p-6">
@@ -1022,11 +1041,25 @@ function AutoPricingSection({
                           <td className="w-20 px-4 py-2 text-right text-stone-500">
                             {li.quantity > 1 ? `× ${li.quantity}` : ''}
                           </td>
-                          <td className="w-24 px-4 py-2 text-right text-stone-500">
-                            {formatMoney(li.unitCost, currency)}
+                          <td className="w-28 px-4 py-2 text-right text-stone-500">
+                            <EditableLineAmount
+                              value={li.unitCost}
+                              currency={currency}
+                              overridden={li.overridden}
+                              originalValue={li.originalUnitCost}
+                              onChange={(v) => onSetLineOverride(li.key, v)}
+                              onReset={() => onClearLineOverride(li.key)}
+                            />
                           </td>
-                          <td className="w-24 px-4 py-2 text-right font-medium text-stone-800">
-                            {formatMoney(li.totalCost, currency)}
+                          <td className="w-28 px-4 py-2 text-right font-medium text-stone-800">
+                            <EditableLineAmount
+                              value={li.totalCost}
+                              currency={currency}
+                              overridden={li.overridden}
+                              originalValue={li.originalTotalCost}
+                              onChange={(v) => onSetLineOverride(li.key, v / (li.quantity || 1))}
+                              onReset={() => onClearLineOverride(li.key)}
+                            />
                           </td>
                         </tr>
                       ))}
@@ -1221,6 +1254,85 @@ const WARNING_FIX: Record<WarningKind, { tab: string | null; label: string } | n
   missing_vehicle: { tab: 'vehicles', label: 'Check vehicle' },
   missing_transfer: { tab: 'transfers', label: 'Check transfer' },
 };
+
+// A computed line total that the operator can click to override with a manual
+// number (e.g. to fill in a "rate not configured" row on the spot). Shows a
+// pencil + reset-to-computed control once overridden.
+function EditableLineAmount({
+  value,
+  currency,
+  overridden,
+  originalValue,
+  onChange,
+  onReset,
+}: {
+  value: number;
+  currency: 'USD' | 'EUR';
+  overridden?: boolean;
+  originalValue?: number;
+  onChange: (value: number) => void;
+  onReset: () => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(String(value));
+
+  if (editing) {
+    return (
+      <Input
+        autoFocus
+        type="number"
+        step="0.01"
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={() => {
+          const n = Number(draft);
+          if (!Number.isNaN(n)) onChange(n);
+          setEditing(false);
+        }}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') e.currentTarget.blur();
+          if (e.key === 'Escape') setEditing(false);
+        }}
+        className="h-7 w-24 border-stone-200 bg-white text-right shadow-none"
+      />
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      className={cn(
+        'group inline-flex items-center gap-1.5 rounded px-1 py-0.5 hover:bg-stone-100',
+        overridden && 'text-blue-700',
+      )}
+      title={
+        overridden
+          ? `Manually set — computed value was ${formatMoney(originalValue ?? 0, currency)}`
+          : 'Click to override this amount'
+      }
+      onClick={() => {
+        setDraft(String(value));
+        setEditing(true);
+      }}
+    >
+      {overridden && <Pencil className="h-3 w-3 opacity-60" />}
+      {formatMoney(value, currency)}
+      {overridden && (
+        <span
+          role="button"
+          tabIndex={0}
+          onClick={(e) => {
+            e.stopPropagation();
+            onReset();
+          }}
+          className="text-stone-400 opacity-0 group-hover:opacity-100 hover:text-stone-700"
+        >
+          <X className="h-3 w-3" />
+        </span>
+      )}
+    </button>
+  );
+}
 
 function WarningsList({ warnings }: { warnings: PricingBreakdown['warnings'] }) {
   return (

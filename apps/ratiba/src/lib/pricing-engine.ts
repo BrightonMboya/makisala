@@ -163,6 +163,12 @@ export interface PricingInput {
   dropoffTransferId: string | null;
   markupPct: number; // e.g. 30 => +30%
   currency: string;
+  // Operator-entered per-unit rate per line, keyed by LineItem.key (e.g. to
+  // fill in a "rate not configured" row, or correct a computed rate) without
+  // needing a rate card entry or dropping out of auto pricing. Stored as a
+  // rate rather than a flat total so totalCost = quantity * rate stays
+  // correct if the line's quantity (pax, rooms, days…) changes later.
+  overrides?: Record<string, number> | null;
 
   // Rate-card data
   seasons: SeasonBand[];
@@ -175,6 +181,10 @@ export interface PricingInput {
 }
 
 export interface LineItem {
+  // Stable identity for this line, derived from the underlying entities (not
+  // the display label) so a manual override in `PricingInput.overrides`
+  // survives itinerary wording changes. Unique within one computePricing() call.
+  key: string;
   label: string;
   dayNumber?: number;
   quantity: number;
@@ -182,6 +192,12 @@ export interface LineItem {
   totalCost: number;
   source: 'accommodation' | 'park_fee' | 'activity' | 'vehicle' | 'transfer';
   missing?: string; // human-readable note if a rate could not be found
+  // Set when unitCost/totalCost were replaced by an entry in PricingInput.overrides.
+  overridden?: boolean;
+  // The engine-computed values before the override was applied (only present
+  // when overridden is true), so the UI can offer "reset to computed".
+  originalUnitCost?: number;
+  originalTotalCost?: number;
 }
 
 export type WarningKind =
@@ -201,6 +217,9 @@ export interface PricingWarning {
   kind: WarningKind;
   message: string;
   dayNumber?: number;
+  // For the "missing rate" kinds, the LineItem.key this warning is about — lets
+  // the override pass suppress the warning once the operator fills the line in.
+  key?: string;
 }
 
 export interface PricingBreakdown {
@@ -306,7 +325,8 @@ export function computePricing(input: PricingInput): PricingBreakdown {
       });
       continue;
     }
-    for (const room of validRooms) {
+    for (const [roomIndex, room] of validRooms.entries()) {
+      const roomKey = `acc:${day.accommodationId}:${day.dayNumber}:${room.roomType}:${day.mealPlan}:${roomIndex}`;
       const rate = input.accommodationRates.find(
         (r) =>
           r.accommodationId === day.accommodationId &&
@@ -319,8 +339,10 @@ export function computePricing(input: PricingInput): PricingBreakdown {
           kind: 'missing_hotel_rate',
           dayNumber: day.dayNumber,
           message: `${hotelName} (Day ${day.dayNumber}): no rate for ${room.roomType}/${day.mealPlan} in ${season.name}`,
+          key: roomKey,
         });
         lineItems.push({
+          key: roomKey,
           label: `${hotelName} (Day ${day.dayNumber}) — ${room.roomType}/${day.mealPlan}`,
           dayNumber: day.dayNumber,
           quantity: room.pax,
@@ -343,6 +365,7 @@ export function computePricing(input: PricingInput): PricingBreakdown {
         }
         const roomsNeeded = capacity ? Math.max(1, Math.ceil(room.pax / capacity)) : 1;
         lineItems.push({
+          key: roomKey,
           label: `${hotelName} (Day ${day.dayNumber}) — ${room.roomType}/${day.mealPlan} (per room)`,
           dayNumber: day.dayNumber,
           quantity: roomsNeeded,
@@ -362,6 +385,7 @@ export function computePricing(input: PricingInput): PricingBreakdown {
         // perPaxRate * room.pax when no slot %s are configured on the rate.
         const totalCost = num(occupantSlotCost(rate, room.pax, room.children ?? 0));
         lineItems.push({
+          key: roomKey,
           label: `${hotelName} (Day ${day.dayNumber}) — ${room.roomType}/${day.mealPlan}`,
           dayNumber: day.dayNumber,
           quantity: room.pax,
@@ -429,6 +453,7 @@ export function computePricing(input: PricingInput): PricingBreakdown {
         ? `${parkLabel} (Day ${day.dayNumber}) — ${parkCategoryLabel(segment.category)}`
         : `${parkLabel} (Day ${day.dayNumber})`;
       lineItems.push({
+        key: `park:${parkId}:${day.dayNumber}:${segment.category}`,
         label,
         dayNumber: day.dayNumber,
         quantity: segment.count,
@@ -473,6 +498,7 @@ export function computePricing(input: PricingInput): PricingBreakdown {
         const occurrences = fee.chargeBasis === 'per_vehicle_per_day' ? dayCount : 1;
         const totalCost = num(fee.rate * occurrences);
         lineItems.push({
+          key: `park_ancillary:${parkId}:${fee.name}`,
           label:
             fee.chargeBasis === 'per_vehicle_per_day'
               ? `${fee.parkName || 'Park'} — ${fee.name} (${occurrences} day${occurrences === 1 ? '' : 's'})`
@@ -488,9 +514,13 @@ export function computePricing(input: PricingInput): PricingBreakdown {
   }
 
   const normalizeName = (s: string) => s.trim().toLowerCase();
+  // Game drives (morning/night/guided/…) are already paid for through the
+  // vehicle-per-day rate and park fees — there's no separate supplier rate to
+  // configure, so don't warn the operator to add one or zero the line out.
+  const isGameDrive = (s: string) => /game\s*drives?/i.test(s);
   for (const day of input.days) {
     if (!day.activities || day.activities.length === 0) continue;
-    for (const activity of day.activities) {
+    for (const [activityIndex, activity] of day.activities.entries()) {
       if (activity.isOptional) continue;
       const nameKey = activity.name ? normalizeName(activity.name) : null;
       if (!activity.libraryId && !nameKey) continue;
@@ -509,16 +539,35 @@ export function computePricing(input: PricingInput): PricingBreakdown {
         input.activityRates.find((r) => matches(r) && r.seasonId === (season?.id ?? null)) ??
         input.activityRates.find((r) => matches(r) && r.seasonId === null);
       const activityLabel = activity.name?.trim() || rate?.activityName?.trim() || 'Activity';
+      const activityKey = `activity:${activity.libraryId ?? nameKey}:${day.dayNumber}:${activityIndex}`;
       if (!rate) {
+        // No rate object exists yet, so the per-person-vs-per-group basis is
+        // unknown — assume per-person (the common case) so quantity is real
+        // and a unit-rate override (see below) multiplies out correctly.
+        if (isGameDrive(activityLabel)) {
+          lineItems.push({
+            key: activityKey,
+            label: `${activityLabel} (Day ${day.dayNumber})`,
+            dayNumber: day.dayNumber,
+            quantity: pax,
+            unitCost: 0,
+            totalCost: 0,
+            source: 'activity',
+            missing: 'included in vehicle & park fees',
+          });
+          continue;
+        }
         warnings.push({
           kind: 'missing_activity_rate',
           dayNumber: day.dayNumber,
           message: `Day ${day.dayNumber}: no rate for "${activityLabel}"`,
+          key: activityKey,
         });
         lineItems.push({
+          key: activityKey,
           label: `${activityLabel} (Day ${day.dayNumber})`,
           dayNumber: day.dayNumber,
-          quantity: 0,
+          quantity: pax,
           unitCost: 0,
           totalCost: 0,
           source: 'activity',
@@ -528,6 +577,7 @@ export function computePricing(input: PricingInput): PricingBreakdown {
       }
       if (rate.chargeBasis === 'per_group') {
         lineItems.push({
+          key: activityKey,
           label: `${activityLabel} (Day ${day.dayNumber}) — per group`,
           dayNumber: day.dayNumber,
           quantity: 1,
@@ -537,6 +587,7 @@ export function computePricing(input: PricingInput): PricingBreakdown {
         });
       } else {
         lineItems.push({
+          key: activityKey,
           label: `${activityLabel} (Day ${day.dayNumber})`,
           dayNumber: day.dayNumber,
           quantity: pax,
@@ -559,6 +610,7 @@ export function computePricing(input: PricingInput): PricingBreakdown {
     } else {
       const total = vehicle.perDayRate * tripDays;
       lineItems.push({
+        key: 'vehicle',
         label: `Vehicle + driver + fuel (${tripDays} days)`,
         quantity: tripDays,
         unitCost: vehicle.perDayRate,
@@ -569,7 +621,11 @@ export function computePricing(input: PricingInput): PricingBreakdown {
   }
 
   // ---------- Transfers ----------
-  for (const transferId of [input.pickupTransferId, input.dropoffTransferId]) {
+  const transferLegs: Array<{ leg: 'pickup' | 'dropoff'; transferId: string | null }> = [
+    { leg: 'pickup', transferId: input.pickupTransferId },
+    { leg: 'dropoff', transferId: input.dropoffTransferId },
+  ];
+  for (const { leg, transferId } of transferLegs) {
     if (!transferId) continue;
     const transfer = input.transferRates.find((t) => t.id === transferId);
     if (!transfer) {
@@ -581,6 +637,7 @@ export function computePricing(input: PricingInput): PricingBreakdown {
     }
     const total = transfer.mode === 'per_pax' ? transfer.rate * pax : transfer.rate;
     lineItems.push({
+      key: `transfer:${leg}`,
       label: transfer.name,
       quantity: transfer.mode === 'per_pax' ? pax : 1,
       unitCost: transfer.rate,
@@ -588,6 +645,29 @@ export function computePricing(input: PricingInput): PricingBreakdown {
       source: 'transfer',
     });
   }
+
+  // ---------- Manual overrides ----------
+  // Applied last, by LineItem.key, so they win over whatever the rate cards
+  // computed (or didn't) for that line. Stored as a rate (not a flat total) so
+  // totalCost = quantity * rate stays correct if quantity (pax, rooms,
+  // days…) changes later. Once a line is overridden, its "missing rate"
+  // warning no longer applies — the operator has priced it.
+  const overriddenKeys = new Set<string>();
+  if (input.overrides) {
+    for (const li of lineItems) {
+      if (!Object.prototype.hasOwnProperty.call(input.overrides, li.key)) continue;
+      const rate = input.overrides[li.key]!;
+      li.originalUnitCost = li.unitCost;
+      li.originalTotalCost = li.totalCost;
+      li.unitCost = rate;
+      li.totalCost = num((li.quantity || 1) * rate);
+      li.overridden = true;
+      li.missing = undefined;
+      overriddenKeys.add(li.key);
+    }
+  }
+  const activeWarnings =
+    overriddenKeys.size === 0 ? warnings : warnings.filter((w) => !(w.key && overriddenKeys.has(w.key)));
 
   // ---------- Totals ----------
   const costSubtotal = num(lineItems.reduce((sum, l) => sum + l.totalCost, 0));
@@ -606,6 +686,6 @@ export function computePricing(input: PricingInput): PricingBreakdown {
     costPerPax,
     sellPerPax,
     pax,
-    warnings,
+    warnings: activeWarnings,
   };
 }

@@ -846,6 +846,11 @@ export const proposals = pgTable('proposals', {
   // fetched server-side and passed to Resend at send time. See EmailAttachment.
   emailAttachments: jsonb('email_attachments').$type<EmailAttachment[]>(),
   // ----- Pricing engine (rate-card-driven) -----
+  // Manual per-line overrides on top of the auto-computed breakdown, keyed by
+  // the LineItem's stable `key` (see pricing-engine.ts) -> operator-entered
+  // total cost for that line. Lets an operator correct/fill in a line (e.g. a
+  // "rate not configured" row) without dropping out of auto pricing entirely.
+  pricingOverrides: json('pricing_overrides').$type<Record<string, number>>(),
   useAutoPricing: boolean('use_auto_pricing').default(false).notNull(),
   vehicleId: uuid('vehicle_id').references((): any => vehicles.id, { onDelete: 'set null' }),
   markupPct: numeric('markup_pct', { precision: 6, scale: 2 }),
