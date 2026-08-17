@@ -53,7 +53,13 @@ export const auth = betterAuth({
   emailVerification: {
     sendVerificationEmail: async ({ user, url }) => {
       const verificationUrl = new URL(url);
-      verificationUrl.searchParams.set('callbackURL', '/onboarding?verified=true');
+      // better-auth defaults callbackURL to '/' when the caller doesn't pass one.
+      // Only fall back to the onboarding redirect in that case, otherwise respect
+      // whatever callbackURL the client set (e.g. one carrying an invite token).
+      const callbackURL = verificationUrl.searchParams.get('callbackURL');
+      if (!callbackURL || callbackURL === '/') {
+        verificationUrl.searchParams.set('callbackURL', '/onboarding?verified=true');
+      }
 
       // Use setImmediate to fully decouple email sending from request timing
       // This prevents timing attacks by ensuring consistent response times

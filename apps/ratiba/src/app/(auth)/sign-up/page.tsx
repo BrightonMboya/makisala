@@ -72,6 +72,10 @@ function SignUpForm() {
         },
     })
 
+    const verificationCallbackURL = inviteToken
+        ? `/onboarding?verified=true&invite=${inviteToken}`
+        : '/onboarding?verified=true'
+
     async function onSubmit(data: SignUpFormSchema) {
         startTransition(async () => {
             await authClient.signUp.email(
@@ -79,6 +83,7 @@ function SignUpForm() {
                     email: data.email,
                     password: data.password,
                     name: data.name,
+                    callbackURL: verificationCallbackURL,
                 },
                 {
                     onSuccess: async () => {
@@ -128,7 +133,7 @@ function SignUpForm() {
                             startTransition(async () => {
                                 await authClient.sendVerificationEmail({
                                     email: signupComplete,
-                                    callbackURL: '/onboarding?verified=true',
+                                    callbackURL: verificationCallbackURL,
                                 })
                                 toast('Email sent!', {
                                     description: 'A new verification link has been sent.',

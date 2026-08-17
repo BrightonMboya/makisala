@@ -2,7 +2,20 @@ import { redirect } from 'next/navigation';
 import { createServerCaller } from '@/server/trpc/caller';
 import { checkOnboardingStatus, getNextStep } from '@/lib/onboarding';
 
-export default async function OnboardingIndexPage() {
+export default async function OnboardingIndexPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ invite?: string }>;
+}) {
+  const { invite } = await searchParams;
+
+  // Invited users land here straight from the email-verification link. Hand off
+  // to the invite page, which already handles session/email matching, accepting
+  // the invitation, and setting the active organization before redirecting.
+  if (invite) {
+    redirect(`/invite/${invite}`);
+  }
+
   const trpc = await createServerCaller();
   const data = await trpc.onboarding.getData().catch(() => null);
 
