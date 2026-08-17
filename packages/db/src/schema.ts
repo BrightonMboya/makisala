@@ -851,6 +851,12 @@ export const proposals = pgTable('proposals', {
   // total cost for that line. Lets an operator correct/fill in a line (e.g. a
   // "rate not configured" row) without dropping out of auto pricing entirely.
   pricingOverrides: json('pricing_overrides').$type<Record<string, number>>(),
+  // Operator-only extra cost lines with no day-by-day counterpart (e.g. a
+  // concession fee, an extra transfer beyond pickup/dropoff). Counted into the
+  // auto-pricing total but never surfaced in client-facing proposal views. A
+  // snapshot at add-time (see InternalCostLine) - not linked back to whatever
+  // rate-card row it may have been pre-filled from.
+  internalCostLines: jsonb('internal_cost_lines').$type<InternalCostLine[]>(),
   useAutoPricing: boolean('use_auto_pricing').default(false).notNull(),
   vehicleId: uuid('vehicle_id').references((): any => vehicles.id, { onDelete: 'set null' }),
   markupPct: numeric('markup_pct', { precision: 6, scale: 2 }),
@@ -900,6 +906,15 @@ export interface EmailAttachment {
   filename: string;
   size: number;
   contentType: string;
+}
+
+// An operator-added cost line with no day-by-day counterpart (see
+// proposals.internalCostLines). `amount` is the final line total, already
+// pax-multiplied at add-time if it was pre-filled from a per-person rate.
+export interface InternalCostLine {
+  id: string;
+  label: string;
+  amount: number;
 }
 
 // ---------- PROPOSAL DAYS ----------

@@ -9,6 +9,7 @@ import type {
   ExtraOption,
   ThemeType,
 } from '@/types/itinerary-types';
+import type { InternalCostLine } from '@repo/db/schema';
 
 const BuilderContext = createContext<BuilderContextType | undefined>(undefined);
 
@@ -73,6 +74,7 @@ export function BuilderProvider({
   const [dropoffTransferId, setDropoffTransferId] = useState<string | null>(null);
   const [currency, setCurrency] = useState<'USD' | 'EUR'>('USD');
   const [pricingOverrides, setPricingOverrides] = useState<Record<string, number>>({});
+  const [internalCostLines, setInternalCostLines] = useState<InternalCostLine[]>([]);
 
   // Theme
   const [selectedTheme, setSelectedTheme] = useState<ThemeType>('minimalistic');
@@ -168,6 +170,7 @@ export function BuilderProvider({
         setDropoffTransferId(initialData.dropoffTransferRateId);
       if (initialData.currency === 'EUR') setCurrency('EUR');
       if (initialData.pricingOverrides) setPricingOverrides(initialData.pricingOverrides);
+      if (initialData.internalCostLines) setInternalCostLines(initialData.internalCostLines);
 
       // Add other fields as needed
       if (initialData.theme) setSelectedTheme(initialData.theme);
@@ -267,6 +270,8 @@ export function BuilderProvider({
         setCurrency,
         pricingOverrides,
         setPricingOverrides,
+        internalCostLines,
+        setInternalCostLines,
         selectedTheme,
         setSelectedTheme,
         heroImage,

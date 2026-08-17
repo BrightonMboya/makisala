@@ -9,6 +9,8 @@
 // loads the rate data and feeds it in.
 // ============================================================
 
+import type { InternalCostLine } from '@repo/db/schema';
+
 export type RoomType = string;
 export type MealPlan = 'ro' | 'bb' | 'hb' | 'fb';
 
@@ -169,6 +171,9 @@ export interface PricingInput {
   // rate rather than a flat total so totalCost = quantity * rate stays
   // correct if the line's quantity (pax, rooms, days…) changes later.
   overrides?: Record<string, number> | null;
+  // Operator-added lines with no day-by-day counterpart (e.g. a concession
+  // fee, an extra transfer). Counted into the total; see InternalCostLine.
+  internalCostLines?: InternalCostLine[] | null;
 
   // Rate-card data
   seasons: SeasonBand[];
@@ -190,7 +195,7 @@ export interface LineItem {
   quantity: number;
   unitCost: number;
   totalCost: number;
-  source: 'accommodation' | 'park_fee' | 'activity' | 'vehicle' | 'transfer';
+  source: 'accommodation' | 'park_fee' | 'activity' | 'vehicle' | 'transfer' | 'internal';
   missing?: string; // human-readable note if a rate could not be found
   // Set when unitCost/totalCost were replaced by an entry in PricingInput.overrides.
   overridden?: boolean;
@@ -643,6 +648,22 @@ export function computePricing(input: PricingInput): PricingBreakdown {
       unitCost: transfer.rate,
       totalCost: num(total),
       source: 'transfer',
+    });
+  }
+
+  // ---------- Internal cost lines ----------
+  // Operator-only lines with no day-by-day counterpart (e.g. a concession fee,
+  // an extra transfer beyond pickup/dropoff). Quantity is always 1 - `amount`
+  // is the final total, already pax-multiplied at add-time if it came from a
+  // per-person/per-pax rate.
+  for (const line of input.internalCostLines ?? []) {
+    lineItems.push({
+      key: `internal:${line.id}`,
+      label: line.label,
+      quantity: 1,
+      unitCost: line.amount,
+      totalCost: num(line.amount),
+      source: 'internal',
     });
   }
 

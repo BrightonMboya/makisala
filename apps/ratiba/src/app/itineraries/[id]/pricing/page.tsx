@@ -13,6 +13,7 @@ import {
   Car,
   Check,
   Loader2,
+  Lock,
   Pencil,
   Plane,
   Plus,
@@ -40,7 +41,7 @@ import type { ParkFeeCategory, PricingBreakdown, WarningKind } from '@/lib/prici
 import { deriveMealPlan } from '@/lib/pricing-engine';
 import { formatMoney } from '@/components/invoices/form-types';
 
-type LineSource = 'accommodation' | 'park_fee' | 'activity' | 'vehicle' | 'transfer';
+type LineSource = 'accommodation' | 'park_fee' | 'activity' | 'vehicle' | 'transfer' | 'internal';
 
 const CURRENCY_SYMBOLS: Record<'USD' | 'EUR', string> = { USD: '$', EUR: '€' };
 
@@ -72,6 +73,7 @@ const CATEGORY_META: Record<LineSource, { label: string; icon: typeof Building }
   activity: { label: 'Activities', icon: Sparkles },
   vehicle: { label: 'Vehicle', icon: Car },
   transfer: { label: 'Transfers', icon: Plane },
+  internal: { label: 'Internal costs (operator only)', icon: Lock },
 };
 
 export default function PricingPage() {
@@ -105,6 +107,8 @@ export default function PricingPage() {
     setCurrency,
     pricingOverrides,
     setPricingOverrides,
+    internalCostLines,
+    setInternalCostLines,
   } = useBuilder();
 
   const setLineOverride = (key: string, value: number) => {
@@ -115,6 +119,18 @@ export default function PricingPage() {
     const next = { ...pricingOverrides };
     delete next[key];
     setPricingOverrides(next);
+  };
+
+  const addInternalCostLine = (label: string, amount: number) => {
+    setInternalCostLines([...internalCostLines, { id: crypto.randomUUID(), label, amount }]);
+  };
+
+  const updateInternalCostLine = (id: string, amount: number) => {
+    setInternalCostLines(internalCostLines.map((l) => (l.id === id ? { ...l, amount } : l)));
+  };
+
+  const deleteInternalCostLine = (id: string) => {
+    setInternalCostLines(internalCostLines.filter((l) => l.id !== id));
   };
 
   const handleAddRow = () => {
@@ -314,6 +330,7 @@ export default function PricingPage() {
       markupPct,
       currency,
       overrides: pricingOverrides,
+      internalCostLines,
     },
     {
       enabled: useAutoPricing && dayInputs.length > 0 && totalPax > 0,
@@ -322,6 +339,7 @@ export default function PricingPage() {
 
   const { data: vehicles = [] } = trpc.rateCards.vehicles.list.useQuery();
   const { data: transferOptions = [] } = trpc.rateCards.transferRates.list.useQuery();
+  const { data: activityRateOptions = [] } = trpc.rateCards.activityRates.listAll.useQuery();
   const { data: pricingDefaults } = trpc.rateCards.settings.get.useQuery();
 
   // Group line items by category for the breakdown view.
@@ -432,6 +450,7 @@ export default function PricingPage() {
             setMarkupPct={setMarkupPct}
             vehicles={vehicles}
             transferOptions={transferOptions}
+            activityRateOptions={activityRateOptions}
             pricingDefaults={pricingDefaults}
             startDate={startDate}
             dayInputs={dayInputs}
@@ -441,6 +460,9 @@ export default function PricingPage() {
             currency={currency}
             onSetLineOverride={setLineOverride}
             onClearLineOverride={clearLineOverride}
+            onAddInternalCostLine={addInternalCostLine}
+            onUpdateInternalCostLine={updateInternalCostLine}
+            onDeleteInternalCostLine={deleteInternalCostLine}
           />
         ) : (
           <ManualPricingSection
@@ -862,6 +884,7 @@ function AutoPricingSection({
   setMarkupPct,
   vehicles,
   transferOptions,
+  activityRateOptions,
   pricingDefaults,
   startDate,
   dayInputs,
@@ -871,6 +894,9 @@ function AutoPricingSection({
   currency,
   onSetLineOverride,
   onClearLineOverride,
+  onAddInternalCostLine,
+  onUpdateInternalCostLine,
+  onDeleteInternalCostLine,
 }: {
   vehicleId: string | null;
   setVehicleId: (v: string | null) => void;
@@ -881,7 +907,20 @@ function AutoPricingSection({
   markupPct: number;
   setMarkupPct: (v: number) => void;
   vehicles: Array<{ id: string; name: string; perDayRate: string | number }>;
-  transferOptions: Array<{ id: string; name: string; mode: 'per_vehicle' | 'per_pax' }>;
+  transferOptions: Array<{
+    id: string;
+    name: string;
+    mode: 'per_vehicle' | 'per_pax';
+    rate: string | number;
+    currency: string;
+  }>;
+  activityRateOptions: Array<{
+    id: string;
+    activityName: string | null;
+    chargeBasis: 'per_person' | 'per_group';
+    rate: string | number;
+    currency: string;
+  }>;
   pricingDefaults: { defaultMarkupPct: string | number } | null | undefined;
   startDate: Date | undefined;
   dayInputs: Array<unknown>;
@@ -898,7 +937,63 @@ function AutoPricingSection({
   currency: 'USD' | 'EUR';
   onSetLineOverride: (key: string, value: number) => void;
   onClearLineOverride: (key: string) => void;
+  onAddInternalCostLine: (label: string, amount: number) => void;
+  onUpdateInternalCostLine: (id: string, amount: number) => void;
+  onDeleteInternalCostLine: (id: string) => void;
 }) {
+  const internalLines = computeQuery.data?.lineItems.filter((li) => li.source === 'internal') ?? [];
+  const internalSubtotal = internalLines.reduce((sum, li) => sum + li.totalCost, 0);
+  const [internalPickerValue, setInternalPickerValue] = useState<string | null>(null);
+  const [showCustomInternalForm, setShowCustomInternalForm] = useState(false);
+  const [customLabel, setCustomLabel] = useState('');
+  const [customAmount, setCustomAmount] = useState('');
+
+  const internalPickerItems = [
+    { value: '__custom__', label: 'Custom (type your own)' },
+    ...activityRateOptions.map((a) => ({
+      value: `activity:${a.id}`,
+      label: `${a.activityName?.trim() || 'Activity'} — ${
+        a.chargeBasis === 'per_person' ? 'per person' : 'per group'
+      } (${formatMoney(Number(a.rate), currency)})`,
+    })),
+    ...transferOptions.map((t) => ({
+      value: `transfer:${t.id}`,
+      label: `${t.name} (${t.mode === 'per_pax' ? 'per pax' : 'flat'}, ${formatMoney(Number(t.rate), currency)})`,
+    })),
+  ];
+
+  const handleInternalPick = (picked: string) => {
+    if (picked === '__custom__') {
+      setShowCustomInternalForm(true);
+      setInternalPickerValue(null);
+      return;
+    }
+    if (picked.startsWith('activity:')) {
+      const rateId = picked.slice('activity:'.length);
+      const rate = activityRateOptions.find((a) => a.id === rateId);
+      if (rate) {
+        const amount = rate.chargeBasis === 'per_person' ? Number(rate.rate) * totalPax : Number(rate.rate);
+        onAddInternalCostLine(rate.activityName?.trim() || 'Activity', amount);
+      }
+    } else if (picked.startsWith('transfer:')) {
+      const rateId = picked.slice('transfer:'.length);
+      const rate = transferOptions.find((t) => t.id === rateId);
+      if (rate) {
+        const amount = rate.mode === 'per_pax' ? Number(rate.rate) * totalPax : Number(rate.rate);
+        onAddInternalCostLine(rate.name, amount);
+      }
+    }
+    setInternalPickerValue(null);
+  };
+
+  const handleAddCustomInternalLine = () => {
+    if (!customLabel.trim()) return;
+    onAddInternalCostLine(customLabel.trim(), Number(customAmount) || 0);
+    setCustomLabel('');
+    setCustomAmount('');
+    setShowCustomInternalForm(false);
+  };
+
   return (
     <div className="space-y-5 p-6">
       {/* Trip-wide auto settings */}
@@ -1030,8 +1125,8 @@ function AutoPricingSection({
                   </div>
                   <table className="w-full text-sm">
                     <tbody className="divide-y divide-stone-100">
-                      {group.items.map((li, i) => (
-                        <tr key={i}>
+                      {group.items.map((li) => (
+                        <tr key={li.key}>
                           <td className="px-4 py-2 text-stone-700">
                             {li.label}
                             {li.missing && (
@@ -1068,6 +1163,81 @@ function AutoPricingSection({
                 </div>
               );
             })}
+          </div>
+
+          {/* Internal cost lines — operator-only, never shown to the client */}
+          <div className="overflow-hidden rounded-md border border-stone-200">
+            <div className="flex items-center justify-between bg-stone-50 px-4 py-2">
+              <span className="flex items-center gap-2 text-sm font-semibold text-stone-700">
+                <Lock className="h-4 w-4 text-stone-500" />
+                Internal costs (operator only)
+              </span>
+              <span className="text-sm font-medium text-stone-700">
+                {formatMoney(internalSubtotal, currency)}
+              </span>
+            </div>
+            {internalLines.length > 0 && (
+              <table className="w-full text-sm">
+                <tbody className="divide-y divide-stone-100">
+                  {internalLines.map((li) => (
+                    <tr key={li.key}>
+                      <td className="px-4 py-2 text-stone-700">{li.label}</td>
+                      <td className="w-28 px-4 py-2 text-right font-medium text-stone-800">
+                        <EditableLineAmount
+                          value={li.totalCost}
+                          currency={currency}
+                          alwaysShowDelete
+                          onChange={(v) => onUpdateInternalCostLine(li.key.slice('internal:'.length), v)}
+                          onReset={() => onDeleteInternalCostLine(li.key.slice('internal:'.length))}
+                        />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+            <div className="space-y-2 p-3">
+              {showCustomInternalForm ? (
+                <div className="flex items-center gap-2">
+                  <Input
+                    placeholder="Label, e.g. Zanzibar concession fee"
+                    value={customLabel}
+                    onChange={(e) => setCustomLabel(e.target.value)}
+                    className="h-8"
+                  />
+                  <Input
+                    type="number"
+                    step="0.01"
+                    placeholder="Amount"
+                    value={customAmount}
+                    onChange={(e) => setCustomAmount(e.target.value)}
+                    className="h-8 w-28"
+                  />
+                  <Button size="sm" onClick={handleAddCustomInternalLine}>
+                    Add
+                  </Button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowCustomInternalForm(false);
+                      setCustomLabel('');
+                      setCustomAmount('');
+                    }}
+                    className="text-stone-400 hover:text-stone-600"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+              ) : (
+                <Combobox
+                  items={internalPickerItems}
+                  value={internalPickerValue}
+                  onChange={handleInternalPick}
+                  placeholder="Add an internal cost line..."
+                  className="w-full max-w-sm"
+                />
+              )}
+            </div>
           </div>
 
           {/* Totals card */}
@@ -1265,6 +1435,7 @@ function EditableLineAmount({
   originalValue,
   onChange,
   onReset,
+  alwaysShowDelete,
 }: {
   value: number;
   currency: 'USD' | 'EUR';
@@ -1272,6 +1443,9 @@ function EditableLineAmount({
   originalValue?: number;
   onChange: (value: number) => void;
   onReset: () => void;
+  // For lines with no "computed" baseline (e.g. internal cost lines) - shows
+  // the delete affordance unconditionally instead of only after an override.
+  alwaysShowDelete?: boolean;
 }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(String(value));
@@ -1317,7 +1491,7 @@ function EditableLineAmount({
     >
       {overridden && <Pencil className="h-3 w-3 opacity-60" />}
       {formatMoney(value, currency)}
-      {overridden && (
+      {(overridden || alwaysShowDelete) && (
         <span
           role="button"
           tabIndex={0}

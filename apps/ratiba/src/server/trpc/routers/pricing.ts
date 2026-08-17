@@ -72,6 +72,9 @@ const computeInputSchema = z.object({
   markupPct: z.number().nonnegative().max(1000),
   currency: z.string().length(3).default('USD'),
   overrides: z.record(z.string(), z.number()).nullish(),
+  internalCostLines: z
+    .array(z.object({ id: z.string(), label: z.string().min(1), amount: z.number() }))
+    .nullish(),
 });
 
 export const pricingRouter = router({
@@ -170,6 +173,7 @@ export const pricingRouter = router({
       markupPct: input.markupPct,
       currency: input.currency || settingsRow[0]?.defaultCurrency || 'USD',
       overrides: input.overrides ?? null,
+      internalCostLines: input.internalCostLines ?? null,
       seasons: seasonRows.map((s) => ({
         id: s.id,
         name: s.name,

@@ -1,4 +1,5 @@
 import type React from 'react';
+import type { InternalCostLine } from '@repo/db/schema';
 
 // ========== BUILDER TYPES (for form/state management) ==========
 export type BuilderActivity = {
@@ -199,6 +200,11 @@ export type BuilderContextType = {
   // Manual per-line overrides on the auto-computed breakdown, keyed by LineItem.key.
   pricingOverrides: Record<string, number>;
   setPricingOverrides: React.Dispatch<React.SetStateAction<Record<string, number>>>;
+  // Operator-only extra cost lines with no day-by-day counterpart (e.g. a
+  // concession fee, an extra transfer). Counted into the total, never shown
+  // in client-facing proposal views.
+  internalCostLines: InternalCostLine[];
+  setInternalCostLines: React.Dispatch<React.SetStateAction<InternalCostLine[]>>;
 
   // Inclusions & Exclusions
   inclusions: string[];
