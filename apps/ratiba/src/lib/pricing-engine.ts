@@ -288,7 +288,8 @@ function normalizeParkName(s: string): string {
     .trim();
 }
 
-const PROTECTED_AREA_RE = /\b(national\s+park|conservation\s+area|national\s+reserve|game\s+reserve)\b/i;
+const PROTECTED_AREA_RE =
+  /\b(national\s+park|conservation\s+area|national\s+reserve|game\s+reserve)\b/i;
 
 function resolveParkIdByName(destinationName: string, parkFeeRates: ParkFeeRate[]): string | null {
   // normalizeParkName strips the "National Park"/"Conservation Area"/etc.
@@ -449,7 +450,10 @@ export function computePricing(input: PricingInput): PricingBreakdown {
     if (!parkId) continue;
     const parkSeasonIds = new Set(
       input.parkFeeRates
-        .filter((r): r is ParkFeeRate & { seasonId: string } => r.parkId === parkId && r.seasonId !== null)
+        .filter(
+          (r): r is ParkFeeRate & { seasonId: string } =>
+            r.parkId === parkId && r.seasonId !== null,
+        )
         .map((r) => r.seasonId),
     );
     const season = resolveSeason(day.date, ownedSeasons(input.seasons, parkSeasonIds));
@@ -524,7 +528,9 @@ export function computePricing(input: PricingInput): PricingBreakdown {
         const occurrences = fee.chargeBasis === 'per_vehicle_per_day' ? dayCount : 1;
         const totalCost = num(fee.rate * occurrences * vehicleCount);
         const occurrenceLabel =
-          fee.chargeBasis === 'per_vehicle_per_day' ? `${occurrences} day${occurrences === 1 ? '' : 's'}` : null;
+          fee.chargeBasis === 'per_vehicle_per_day'
+            ? `${occurrences} day${occurrences === 1 ? '' : 's'}`
+            : null;
         const vehicleLabel = vehicleCount > 1 ? `${vehicleCount} vehicles` : null;
         const suffix = [occurrenceLabel, vehicleLabel].filter(Boolean).join(' × ');
         lineItems.push({
@@ -557,11 +563,13 @@ export function computePricing(input: PricingInput): PricingBreakdown {
       const matches = (r: ActivityRate) =>
         Boolean(
           (activity.libraryId && r.activityId === activity.libraryId) ||
-            (!activity.libraryId && nameKey && normalizeName(r.activityName) === nameKey),
+          (!activity.libraryId && nameKey && normalizeName(r.activityName) === nameKey),
         );
       const activitySeasonIds = new Set(
         input.activityRates
-          .filter((r): r is ActivityRate & { seasonId: string } => matches(r) && r.seasonId !== null)
+          .filter(
+            (r): r is ActivityRate & { seasonId: string } => matches(r) && r.seasonId !== null,
+          )
           .map((r) => r.seasonId),
       );
       const season = resolveSeason(day.date, ownedSeasons(input.seasons, activitySeasonIds));
@@ -668,16 +676,17 @@ export function computePricing(input: PricingInput): PricingBreakdown {
 
   // ---------- Internal cost lines ----------
   // Operator-only lines with no day-by-day counterpart (e.g. a concession fee,
-  // an extra transfer beyond pickup/dropoff). Quantity is always 1 - `amount`
-  // is the final total, already pax-multiplied at add-time if it came from a
-  // per-person/per-pax rate.
+  // an extra transfer beyond pickup/dropoff). `quantity` (e.g. pax count)
+  // defaults to 1 for rows saved before it existed, where `amount` was
+  // already the flat total.
   for (const line of input.internalCostLines ?? []) {
+    const quantity = line.quantity && line.quantity > 0 ? line.quantity : 1;
     lineItems.push({
       key: `internal:${line.id}`,
       label: line.label,
-      quantity: 1,
+      quantity,
       unitCost: line.amount,
-      totalCost: num(line.amount),
+      totalCost: num(line.amount * quantity),
       source: 'internal',
     });
   }
@@ -703,7 +712,9 @@ export function computePricing(input: PricingInput): PricingBreakdown {
     }
   }
   const activeWarnings =
-    overriddenKeys.size === 0 ? warnings : warnings.filter((w) => !(w.key && overriddenKeys.has(w.key)));
+    overriddenKeys.size === 0
+      ? warnings
+      : warnings.filter((w) => !(w.key && overriddenKeys.has(w.key)));
 
   // ---------- Totals ----------
   const costSubtotal = num(lineItems.reduce((sum, l) => sum + l.totalCost, 0));

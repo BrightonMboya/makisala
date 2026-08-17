@@ -98,10 +98,7 @@ export const ParkAncillaryChargeBasis = pgEnum('park_ancillary_charge_basis', [
   'per_vehicle_per_day',
   'per_vehicle_once_per_visit',
 ]);
-export const ActivityChargeBasis = pgEnum('activity_charge_basis', [
-  'per_person',
-  'per_group',
-]);
+export const ActivityChargeBasis = pgEnum('activity_charge_basis', ['per_person', 'per_group']);
 export const pages = pgTable('pages', {
   id: text().primaryKey().notNull(),
   title: text().notNull(),
@@ -587,7 +584,8 @@ export const accommodations = pgTable(
     // AI-generated content (merged from accommodation_content)
     enhancedDescription: text('enhanced_description'),
     amenities: json('amenities').$type<{ category: string; items: string[] }[]>(),
-    roomTypes: json('room_types').$type<{ name: string; description: string; capacity?: string }[]>(),
+    roomTypes:
+      json('room_types').$type<{ name: string; description: string; capacity?: string }[]>(),
     locationHighlights: text('location_highlights').array(),
     pricingInfo: text('pricing_info'),
     country: text('country'),
@@ -821,17 +819,16 @@ export const proposals = pgTable('proposals', {
     json('pricing_rows').$type<
       Array<{ id: string; count: number; type: string; unitPrice: number }>
     >(),
-  extras:
-    json('extras').$type<
-      Array<{
-        id: string;
-        name: string;
-        price: number;
-        priceUnit?: 'per_person' | 'per_group' | 'free' | 'custom';
-        customUnitLabel?: string;
-        selected: boolean;
-      }>
-    >(),
+  extras: json('extras').$type<
+    Array<{
+      id: string;
+      name: string;
+      price: number;
+      priceUnit?: 'per_person' | 'per_group' | 'free' | 'custom';
+      customUnitLabel?: string;
+      selected: boolean;
+    }>
+  >(),
   travelerGroups:
     json('traveler_groups').$type<Array<{ id: string; count: number; type: string }>>(),
   countries: text('countries').array(),
@@ -920,12 +917,15 @@ export interface EmailAttachment {
 }
 
 // An operator-added cost line with no day-by-day counterpart (see
-// proposals.internalCostLines). `amount` is the final line total, already
-// pax-multiplied at add-time if it was pre-filled from a per-person rate.
+// proposals.internalCostLines). `amount` is the per-unit cost; `quantity`
+// (e.g. number of pax) defaults to 1 when absent, so old rows saved before
+// quantity existed (where `amount` was already the flat total) still price
+// the same.
 export interface InternalCostLine {
   id: string;
   label: string;
   amount: number;
+  quantity?: number;
 }
 
 // ---------- PROPOSAL DAYS ----------
@@ -1044,7 +1044,10 @@ export const proposalMeals = pgTable('proposal_meals', {
   breakfast: boolean('breakfast').default(false).notNull(),
   lunch: boolean('lunch').default(false).notNull(),
   dinner: boolean('dinner').default(false).notNull(),
-  options: text('options').array().default(sql`ARRAY[]::text[]`).notNull(),
+  options: text('options')
+    .array()
+    .default(sql`ARRAY[]::text[]`)
+    .notNull(),
   createdAt: timestamp('created_at', { precision: 3, mode: 'string' })
     .default(sql`CURRENT_TIMESTAMP`)
     .notNull(),
@@ -1567,12 +1570,7 @@ export interface InvoicePaymentMethod {
   url?: string | null;
 }
 
-export const InvoiceStatus = pgEnum('invoice_status', [
-  'draft',
-  'sent',
-  'paid',
-  'void',
-]);
+export const InvoiceStatus = pgEnum('invoice_status', ['draft', 'sent', 'paid', 'void']);
 
 export const invoices = pgTable(
   'invoices',
@@ -1597,10 +1595,7 @@ export const invoices = pgTable(
     toDetails: json('to_details').$type<InvoicePartyDetails>(),
     // Snapshot of the org's payout methods at create/send time, frozen so a sent
     // invoice's payment instructions stay stable even if the org edits them later.
-    paymentMethods: json('payment_methods')
-      .$type<InvoicePaymentMethod[]>()
-      .default([])
-      .notNull(),
+    paymentMethods: json('payment_methods').$type<InvoicePaymentMethod[]>().default([]).notNull(),
     status: InvoiceStatus('status').default('draft').notNull(),
     amountPaidCents: integer('amount_paid_cents').default(0).notNull(),
     notes: text('notes'),

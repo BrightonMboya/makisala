@@ -12,6 +12,7 @@ import {
   vehicles,
 } from '@repo/db/schema';
 import { eq, inArray } from 'drizzle-orm';
+import { alias } from 'drizzle-orm/pg-core';
 import { protectedProcedure, router } from '../init';
 import {
   computePricing,
@@ -74,13 +75,32 @@ const computeInputSchema = z.object({
   currency: z.string().length(3).default('USD'),
   overrides: z.record(z.string(), z.number()).nullish(),
   internalCostLines: z
-    .array(z.object({ id: z.string(), label: z.string().min(1), amount: z.number() }))
+    .array(
+      z.object({
+        id: z.string(),
+        label: z.string().min(1),
+        amount: z.number(),
+        quantity: z.number().positive().optional(),
+      }),
+    )
     .nullish(),
 });
 
 export const pricingRouter = router({
   compute: protectedProcedure.input(computeInputSchema).query(async ({ ctx, input }) => {
     const orgId = ctx.orgId;
+
+    // Sub-regions (e.g. "Central Serengeti") can point at the actual
+    // fee-charging park via parentParkId, so an itinerary day picked from a
+    // zone/area destination still resolves to the right park_fee_rates row.
+    // Resolved below in the same parallel batch as everything else (a single
+    // self-join query) rather than as follow-up round-trips after — those
+    // used to run sequentially and were adding a couple hundred ms per
+    // compute call.
+    const dayParkIds = Array.from(
+      new Set(input.days.map((d) => d.parkId).filter((id): id is string => !!id)),
+    );
+    const parentParks = alias(nationalParks, 'parent_national_parks');
 
     // Load all rate-card data in parallel. Cheap reads, all org-scoped.
     const [
@@ -92,110 +112,98 @@ export const pricingRouter = router({
       vehicleRows,
       transferRows,
       settingsRow,
+      parkAliasRows,
     ] = await Promise.all([
-        ctx.db.select().from(seasons).where(eq(seasons.organizationId, orgId)),
-        ctx.db
-          .select()
-          .from(accommodationRates)
-          .where(eq(accommodationRates.organizationId, orgId)),
-        ctx.db
-          .select({
-            parkId: parkFeeRates.parkId,
-            parkName: nationalParks.name,
-            seasonId: parkFeeRates.seasonId,
-            category: parkFeeRates.category,
-            perPersonRate: parkFeeRates.perPersonRate,
-          })
-          .from(parkFeeRates)
-          .leftJoin(nationalParks, eq(nationalParks.id, parkFeeRates.parkId))
-          .where(eq(parkFeeRates.organizationId, orgId)),
-        ctx.db
-          .select({
-            parkId: parkAncillaryFees.parkId,
-            parkName: nationalParks.name,
-            seasonId: parkAncillaryFees.seasonId,
-            name: parkAncillaryFees.name,
-            chargeBasis: parkAncillaryFees.chargeBasis,
-            rate: parkAncillaryFees.rate,
-          })
-          .from(parkAncillaryFees)
-          .leftJoin(nationalParks, eq(nationalParks.id, parkAncillaryFees.parkId))
-          .where(eq(parkAncillaryFees.organizationId, orgId)),
-        ctx.db
-          .select({
-            activityId: activityRates.activityId,
-            activityName: activityLibrary.name,
-            seasonId: activityRates.seasonId,
-            chargeBasis: activityRates.chargeBasis,
-            rate: activityRates.rate,
-          })
-          .from(activityRates)
-          .leftJoin(activityLibrary, eq(activityLibrary.id, activityRates.activityId))
-          .where(eq(activityRates.organizationId, orgId)),
-        ctx.db.select().from(vehicles).where(eq(vehicles.organizationId, orgId)),
-        ctx.db.select().from(transferRates).where(eq(transferRates.organizationId, orgId)),
-        ctx.db
-          .select()
-          .from(pricingSettings)
-          .where(eq(pricingSettings.organizationId, orgId))
-          .limit(1),
-      ]);
-
-    // Sub-regions (e.g. "Central Serengeti") can point at the actual
-    // fee-charging park via parentParkId, so an itinerary day picked from a
-    // zone/area destination still resolves to the right park_fee_rates row.
-    // Falls back to the day's own park when it has no parent (a real park,
-    // or a plain city/landmark that was never meant to carry a park fee).
-    const dayParkIds = Array.from(
-      new Set(input.days.map((d) => d.parkId).filter((id): id is string => !!id)),
-    );
-    const parkAliasMap = new Map<string, { id: string; name: string }>();
-    if (dayParkIds.length > 0) {
-      const parkRowsForAlias = await ctx.db
-        .select({ id: nationalParks.id, name: nationalParks.name, parentParkId: nationalParks.parentParkId })
-        .from(nationalParks)
-        .where(inArray(nationalParks.id, dayParkIds));
-      const parentIds = Array.from(
-        new Set(parkRowsForAlias.map((r) => r.parentParkId).filter((id): id is string => !!id)),
-      );
-      const parentRows = parentIds.length
-        ? await ctx.db
-            .select({ id: nationalParks.id, name: nationalParks.name })
+      ctx.db.select().from(seasons).where(eq(seasons.organizationId, orgId)),
+      ctx.db.select().from(accommodationRates).where(eq(accommodationRates.organizationId, orgId)),
+      ctx.db
+        .select({
+          parkId: parkFeeRates.parkId,
+          parkName: nationalParks.name,
+          seasonId: parkFeeRates.seasonId,
+          category: parkFeeRates.category,
+          perPersonRate: parkFeeRates.perPersonRate,
+        })
+        .from(parkFeeRates)
+        .leftJoin(nationalParks, eq(nationalParks.id, parkFeeRates.parkId))
+        .where(eq(parkFeeRates.organizationId, orgId)),
+      ctx.db
+        .select({
+          parkId: parkAncillaryFees.parkId,
+          parkName: nationalParks.name,
+          seasonId: parkAncillaryFees.seasonId,
+          name: parkAncillaryFees.name,
+          chargeBasis: parkAncillaryFees.chargeBasis,
+          rate: parkAncillaryFees.rate,
+        })
+        .from(parkAncillaryFees)
+        .leftJoin(nationalParks, eq(nationalParks.id, parkAncillaryFees.parkId))
+        .where(eq(parkAncillaryFees.organizationId, orgId)),
+      ctx.db
+        .select({
+          activityId: activityRates.activityId,
+          activityName: activityLibrary.name,
+          seasonId: activityRates.seasonId,
+          chargeBasis: activityRates.chargeBasis,
+          rate: activityRates.rate,
+        })
+        .from(activityRates)
+        .leftJoin(activityLibrary, eq(activityLibrary.id, activityRates.activityId))
+        .where(eq(activityRates.organizationId, orgId)),
+      ctx.db.select().from(vehicles).where(eq(vehicles.organizationId, orgId)),
+      ctx.db.select().from(transferRates).where(eq(transferRates.organizationId, orgId)),
+      ctx.db
+        .select()
+        .from(pricingSettings)
+        .where(eq(pricingSettings.organizationId, orgId))
+        .limit(1),
+      dayParkIds.length > 0
+        ? ctx.db
+            .select({
+              id: nationalParks.id,
+              name: nationalParks.name,
+              parentId: parentParks.id,
+              parentName: parentParks.name,
+            })
             .from(nationalParks)
-            .where(inArray(nationalParks.id, parentIds))
-        : [];
-      const parentById = new Map(parentRows.map((p) => [p.id, p]));
-      for (const r of parkRowsForAlias) {
-        const parent = r.parentParkId ? parentById.get(r.parentParkId) : null;
-        parkAliasMap.set(r.id, parent ?? { id: r.id, name: r.name });
-      }
+            .leftJoin(parentParks, eq(nationalParks.parentParkId, parentParks.id))
+            .where(inArray(nationalParks.id, dayParkIds))
+        : Promise.resolve([]),
+    ]);
+
+    // Falls back to the day's own park when it has no parent (a real park, or
+    // a plain city/landmark that was never meant to carry a park fee).
+    const parkAliasMap = new Map<string, { id: string; name: string }>();
+    for (const r of parkAliasRows) {
+      parkAliasMap.set(
+        r.id,
+        r.parentId ? { id: r.parentId, name: r.parentName! } : { id: r.id, name: r.name },
+      );
     }
 
     return computePricing({
-      days: input.days.map(
-        (d): ItineraryDayInput => {
-          const canonicalPark = d.parkId ? parkAliasMap.get(d.parkId) : null;
-          return {
-            dayNumber: d.dayNumber,
-            date: d.date,
-            accommodationId: d.accommodationId,
-            accommodationName: d.accommodationName ?? null,
-            mealPlan: d.mealPlan as MealPlan | null,
-            rooms: d.rooms.map((r) => ({
-              roomType: r.roomType,
-              pax: r.pax,
-              children: r.children ?? 0,
-            })),
-            parkId: canonicalPark?.id ?? d.parkId,
-            destinationName: canonicalPark?.name ?? d.destinationName ?? null,
-            activities: d.activities.map((a) => ({
-              libraryId: a.libraryId ?? null,
-              name: a.name ?? null,
-              isOptional: a.isOptional ?? false,
-            })),
-          };
-        },
-      ),
+      days: input.days.map((d): ItineraryDayInput => {
+        const canonicalPark = d.parkId ? parkAliasMap.get(d.parkId) : null;
+        return {
+          dayNumber: d.dayNumber,
+          date: d.date,
+          accommodationId: d.accommodationId,
+          accommodationName: d.accommodationName ?? null,
+          mealPlan: d.mealPlan as MealPlan | null,
+          rooms: d.rooms.map((r) => ({
+            roomType: r.roomType,
+            pax: r.pax,
+            children: r.children ?? 0,
+          })),
+          parkId: canonicalPark?.id ?? d.parkId,
+          destinationName: canonicalPark?.name ?? d.destinationName ?? null,
+          activities: d.activities.map((a) => ({
+            libraryId: a.libraryId ?? null,
+            name: a.name ?? null,
+            isOptional: a.isOptional ?? false,
+          })),
+        };
+      }),
       pax: input.pax,
       travelerCategory: input.travelerCategory as ParkFeeCategory,
       travelerBreakdown: input.travelerBreakdown as

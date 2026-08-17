@@ -35,6 +35,7 @@ import type {
 } from '@/types/itinerary-types';
 import { useMemo, useState } from 'react';
 import { useDebounce } from '@repo/ui/use-debounce';
+import { keepPreviousData } from '@tanstack/react-query';
 import { trpc } from '@/lib/trpc';
 import { addDays } from 'date-fns';
 import type { ParkFeeCategory, PricingBreakdown, WarningKind } from '@/lib/pricing-engine';
@@ -123,12 +124,21 @@ export default function PricingPage() {
     setPricingOverrides(next);
   };
 
-  const addInternalCostLine = (label: string, amount: number) => {
-    setInternalCostLines([...internalCostLines, { id: crypto.randomUUID(), label, amount }]);
+  const addInternalCostLine = (label: string, amount: number, quantity = 1) => {
+    setInternalCostLines([
+      ...internalCostLines,
+      { id: crypto.randomUUID(), label, amount, quantity },
+    ]);
   };
 
   const updateInternalCostLine = (id: string, amount: number) => {
     setInternalCostLines(internalCostLines.map((l) => (l.id === id ? { ...l, amount } : l)));
+  };
+
+  const updateInternalCostLineQuantity = (id: string, quantity: number) => {
+    setInternalCostLines(
+      internalCostLines.map((l) => (l.id === id ? { ...l, quantity: Math.max(1, quantity) } : l)),
+    );
   };
 
   const deleteInternalCostLine = (id: string) => {
@@ -204,9 +214,7 @@ export default function PricingPage() {
         day.id === dayId
           ? {
               ...day,
-              activities: day.activities.map((a) =>
-                a.id === activityId ? { ...a, ...patch } : a,
-              ),
+              activities: day.activities.map((a) => (a.id === activityId ? { ...a, ...patch } : a)),
             }
           : day,
       ),
@@ -271,7 +279,8 @@ export default function PricingPage() {
       }
     };
     for (const u of orgUnits) add(u.name);
-    for (const e of extras) if (e.priceUnit === 'custom' && e.customUnitLabel) add(e.customUnitLabel);
+    for (const e of extras)
+      if (e.priceUnit === 'custom' && e.customUnitLabel) add(e.customUnitLabel);
     return Array.from(byLabel.values());
   }, [orgUnits, extras]);
 
@@ -337,6 +346,10 @@ export default function PricingPage() {
     },
     {
       enabled: useAutoPricing && dayInputs.length > 0 && totalPax > 0,
+      // Keep showing the last computed breakdown while a recompute is in
+      // flight (e.g. after a single field edit) instead of unmounting it —
+      // avoids the layout shift from the whole section disappearing/reappearing.
+      placeholderData: keepPreviousData,
     },
   );
 
@@ -467,6 +480,7 @@ export default function PricingPage() {
             onClearLineOverride={clearLineOverride}
             onAddInternalCostLine={addInternalCostLine}
             onUpdateInternalCostLine={updateInternalCostLine}
+            onUpdateInternalCostLineQuantity={updateInternalCostLineQuantity}
             onDeleteInternalCostLine={deleteInternalCostLine}
           />
         ) : (
@@ -701,7 +715,9 @@ const titleCaseWords = (s: string) =>
 function roomSummary(rooms: AccommodationAlternative['rooms']): string {
   if (!rooms || rooms.length === 0) return 'Rooms not set';
   return rooms
-    .map((r) => `${r.roomType ? titleCaseWords(r.roomType) : 'Room'}${r.pax ? ` · ${r.pax} pax` : ''}`)
+    .map(
+      (r) => `${r.roomType ? titleCaseWords(r.roomType) : 'Room'}${r.pax ? ` · ${r.pax} pax` : ''}`,
+    )
     .join(', ');
 }
 
@@ -725,9 +741,7 @@ function AccommodationAlternativesSection({
   currency: 'USD' | 'EUR';
 }) {
   // Flatten every alternative across days, keeping its day for context.
-  const rows = days.flatMap((day) =>
-    (day.alternatives ?? []).map((alt) => ({ day, alt })),
-  );
+  const rows = days.flatMap((day) => (day.alternatives ?? []).map((alt) => ({ day, alt })));
 
   // Same org-wide catalog of custom pricing units used for optional extras, so
   // a unit typed here is also suggested there (and vice versa).
@@ -735,11 +749,7 @@ function AccommodationAlternativesSection({
   const { data: orgUnits = [] } = trpc.extraUnits.list.useQuery();
   const createExtraUnit = trpc.extraUnits.create.useMutation();
 
-  const updateAlt = (
-    dayId: string,
-    altId: string,
-    patch: Partial<AccommodationAlternative>,
-  ) => {
+  const updateAlt = (dayId: string, altId: string, patch: Partial<AccommodationAlternative>) => {
     setDays((prev) =>
       prev.map((d) =>
         d.id === dayId
@@ -775,9 +785,7 @@ function AccommodationAlternativesSection({
   // Current combobox value for an alternative: the preset key, or the
   // freeform label when it's a custom basis.
   const altUnitValue = (alt: AccommodationAlternative): string =>
-    alt.priceBasis === 'custom'
-      ? (alt.priceUnitLabel?.trim() ?? '')
-      : (alt.priceBasis ?? 'flat');
+    alt.priceBasis === 'custom' ? (alt.priceUnitLabel?.trim() ?? '') : (alt.priceBasis ?? 'flat');
 
   // Combobox options: built-in presets, then the org's saved custom units,
   // then any custom unit already used among these alternatives (so it shows
@@ -792,7 +800,8 @@ function AccommodationAlternativesSection({
       }
     };
     for (const u of orgUnits) add(u.name);
-    for (const { alt } of rows) if (alt.priceBasis === 'custom' && alt.priceUnitLabel) add(alt.priceUnitLabel);
+    for (const { alt } of rows)
+      if (alt.priceBasis === 'custom' && alt.priceUnitLabel) add(alt.priceUnitLabel);
     return Array.from(byLabel.values());
   }, [orgUnits, rows]);
 
@@ -838,7 +847,9 @@ function AccommodationAlternativesSection({
 
             <div className="flex items-center gap-2 md:col-span-5">
               <div className="relative w-32">
-                <span className="absolute top-2.5 left-3 text-sm font-medium text-stone-500">{CURRENCY_SYMBOLS[currency]}</span>
+                <span className="absolute top-2.5 left-3 text-sm font-medium text-stone-500">
+                  {CURRENCY_SYMBOLS[currency]}
+                </span>
                 <Input
                   type="number"
                   value={alt.additionalPrice ?? ''}
@@ -903,6 +914,7 @@ function AutoPricingSection({
   onClearLineOverride,
   onAddInternalCostLine,
   onUpdateInternalCostLine,
+  onUpdateInternalCostLineQuantity,
   onDeleteInternalCostLine,
 }: {
   vehicleId: string | null;
@@ -936,6 +948,7 @@ function AutoPricingSection({
   totalPax: number;
   computeQuery: {
     isLoading: boolean;
+    isFetching: boolean;
     data: PricingBreakdown | undefined;
   };
   groupedLines: Array<{
@@ -946,8 +959,9 @@ function AutoPricingSection({
   currency: 'USD' | 'EUR';
   onSetLineOverride: (key: string, value: number) => void;
   onClearLineOverride: (key: string) => void;
-  onAddInternalCostLine: (label: string, amount: number) => void;
+  onAddInternalCostLine: (label: string, amount: number, quantity?: number) => void;
   onUpdateInternalCostLine: (id: string, amount: number) => void;
+  onUpdateInternalCostLineQuantity: (id: string, quantity: number) => void;
   onDeleteInternalCostLine: (id: string) => void;
 }) {
   const internalLines = computeQuery.data?.lineItems.filter((li) => li.source === 'internal') ?? [];
@@ -956,6 +970,7 @@ function AutoPricingSection({
   const [showCustomInternalForm, setShowCustomInternalForm] = useState(false);
   const [customLabel, setCustomLabel] = useState('');
   const [customAmount, setCustomAmount] = useState('');
+  const [customQuantity, setCustomQuantity] = useState('1');
 
   const internalPickerItems = [
     { value: '__custom__', label: 'Custom (type your own)' },
@@ -981,15 +996,18 @@ function AutoPricingSection({
       const rateId = picked.slice('activity:'.length);
       const rate = activityRateOptions.find((a) => a.id === rateId);
       if (rate) {
-        const amount = rate.chargeBasis === 'per_person' ? Number(rate.rate) * totalPax : Number(rate.rate);
-        onAddInternalCostLine(rate.activityName?.trim() || 'Activity', amount);
+        // Store the per-person rate as the unit cost with quantity = current
+        // pax count, rather than pre-multiplying into a flat total, so the
+        // operator can bump the quantity later without redoing the math.
+        const quantity = rate.chargeBasis === 'per_person' ? totalPax : 1;
+        onAddInternalCostLine(rate.activityName?.trim() || 'Activity', Number(rate.rate), quantity);
       }
     } else if (picked.startsWith('transfer:')) {
       const rateId = picked.slice('transfer:'.length);
       const rate = transferOptions.find((t) => t.id === rateId);
       if (rate) {
-        const amount = rate.mode === 'per_pax' ? Number(rate.rate) * totalPax : Number(rate.rate);
-        onAddInternalCostLine(rate.name, amount);
+        const quantity = rate.mode === 'per_pax' ? totalPax : 1;
+        onAddInternalCostLine(rate.name, Number(rate.rate), quantity);
       }
     }
     setInternalPickerValue(null);
@@ -997,9 +1015,14 @@ function AutoPricingSection({
 
   const handleAddCustomInternalLine = () => {
     if (!customLabel.trim()) return;
-    onAddInternalCostLine(customLabel.trim(), Number(customAmount) || 0);
+    onAddInternalCostLine(
+      customLabel.trim(),
+      Number(customAmount) || 0,
+      Math.max(1, Number(customQuantity) || 1),
+    );
     setCustomLabel('');
     setCustomAmount('');
+    setCustomQuantity('1');
     setShowCustomInternalForm(false);
   };
 
@@ -1119,181 +1142,233 @@ function AutoPricingSection({
       )}
 
       {computeQuery.data && (
-        <div className="space-y-3">
-          {computeQuery.data.warnings.length > 0 && (
-            <WarningsList warnings={computeQuery.data.warnings} />
+        <div className="relative space-y-3">
+          {computeQuery.isFetching && (
+            <div className="absolute top-0 right-0 flex items-center gap-1 text-xs text-stone-400">
+              <Loader2 className="h-3 w-3 animate-spin" />
+              Recalculating…
+            </div>
           )}
+          <div
+            className={cn('space-y-3 transition-opacity', computeQuery.isFetching && 'opacity-60')}
+          >
+            {computeQuery.data.warnings.length > 0 && (
+              <WarningsList warnings={computeQuery.data.warnings} />
+            )}
 
-          {/* Grouped breakdown */}
-          <div className="space-y-3">
-            {groupedLines.map((group) => {
-              const meta = CATEGORY_META[group.source];
-              const Icon = meta.icon;
-              return (
-                <div
-                  key={group.source}
-                  className="overflow-hidden rounded-md border border-stone-200"
-                >
-                  <div className="flex items-center justify-between bg-stone-50 px-4 py-2">
-                    <span className="flex items-center gap-2 text-sm font-semibold text-stone-700">
-                      <Icon className="h-4 w-4 text-stone-500" />
-                      {meta.label}
-                    </span>
-                    <span className="text-sm font-medium text-stone-700">
-                      {formatMoney(group.subtotal, currency)}
-                    </span>
+            {/* Grouped breakdown */}
+            <div className="space-y-3">
+              {groupedLines.map((group) => {
+                const meta = CATEGORY_META[group.source];
+                const Icon = meta.icon;
+                return (
+                  <div
+                    key={group.source}
+                    className="overflow-hidden rounded-md border border-stone-200"
+                  >
+                    <div className="flex items-center justify-between bg-stone-50 px-4 py-2">
+                      <span className="flex items-center gap-2 text-sm font-semibold text-stone-700">
+                        <Icon className="h-4 w-4 text-stone-500" />
+                        {meta.label}
+                      </span>
+                      <span className="text-sm font-medium text-stone-700">
+                        {formatMoney(group.subtotal, currency)}
+                      </span>
+                    </div>
+                    <table className="w-full text-sm">
+                      <tbody className="divide-y divide-stone-100">
+                        {group.items.map((li) => (
+                          <tr key={li.key}>
+                            <td className="px-4 py-2 text-stone-700">
+                              {li.label}
+                              {li.missing && (
+                                <span className="ml-2 text-xs text-amber-600">({li.missing})</span>
+                              )}
+                            </td>
+                            <td className="w-20 px-4 py-2 text-right text-stone-500">
+                              {li.quantity > 1 ? `× ${li.quantity}` : ''}
+                            </td>
+                            <td className="w-28 px-4 py-2 text-right text-stone-500">
+                              <EditableLineAmount
+                                value={li.unitCost}
+                                currency={currency}
+                                overridden={li.overridden}
+                                originalValue={li.originalUnitCost}
+                                onChange={(v) => onSetLineOverride(li.key, v)}
+                                onReset={() => onClearLineOverride(li.key)}
+                              />
+                            </td>
+                            <td className="w-28 px-4 py-2 text-right font-medium text-stone-800">
+                              <EditableLineAmount
+                                value={li.totalCost}
+                                currency={currency}
+                                overridden={li.overridden}
+                                originalValue={li.originalTotalCost}
+                                onChange={(v) => onSetLineOverride(li.key, v / (li.quantity || 1))}
+                                onReset={() => onClearLineOverride(li.key)}
+                              />
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
-                  <table className="w-full text-sm">
-                    <tbody className="divide-y divide-stone-100">
-                      {group.items.map((li) => (
+                );
+              })}
+            </div>
+
+            {/* Internal cost lines — operator-only, never shown to the client */}
+            <div className="overflow-hidden rounded-md border border-stone-200">
+              <div className="flex items-center justify-between bg-stone-50 px-4 py-2">
+                <span className="flex items-center gap-2 text-sm font-semibold text-stone-700">
+                  <Lock className="h-4 w-4 text-stone-500" />
+                  Internal costs (operator only)
+                </span>
+                <span className="text-sm font-medium text-stone-700">
+                  {formatMoney(internalSubtotal, currency)}
+                </span>
+              </div>
+              {internalLines.length > 0 && (
+                <table className="w-full text-sm">
+                  <tbody className="divide-y divide-stone-100">
+                    {internalLines.map((li) => {
+                      const id = li.key.slice('internal:'.length);
+                      return (
                         <tr key={li.key}>
-                          <td className="px-4 py-2 text-stone-700">
-                            {li.label}
-                            {li.missing && (
-                              <span className="ml-2 text-xs text-amber-600">({li.missing})</span>
-                            )}
-                          </td>
-                          <td className="w-20 px-4 py-2 text-right text-stone-500">
-                            {li.quantity > 1 ? `× ${li.quantity}` : ''}
+                          <td className="px-4 py-2 text-stone-700">{li.label}</td>
+                          <td className="w-20 px-2 py-2">
+                            <input
+                              type="number"
+                              min={1}
+                              step={1}
+                              value={li.quantity}
+                              onChange={(e) =>
+                                onUpdateInternalCostLineQuantity(
+                                  id,
+                                  Math.max(1, Number(e.target.value) || 1),
+                                )
+                              }
+                              title="Quantity (e.g. pax)"
+                              className="h-7 w-16 rounded-md border border-stone-200 bg-white px-1 text-center text-sm"
+                            />
                           </td>
                           <td className="w-28 px-4 py-2 text-right text-stone-500">
                             <EditableLineAmount
                               value={li.unitCost}
                               currency={currency}
-                              overridden={li.overridden}
-                              originalValue={li.originalUnitCost}
-                              onChange={(v) => onSetLineOverride(li.key, v)}
-                              onReset={() => onClearLineOverride(li.key)}
+                              onChange={(v) => onUpdateInternalCostLine(id, v)}
+                              onReset={() => {}}
                             />
                           </td>
                           <td className="w-28 px-4 py-2 text-right font-medium text-stone-800">
-                            <EditableLineAmount
-                              value={li.totalCost}
-                              currency={currency}
-                              overridden={li.overridden}
-                              originalValue={li.originalTotalCost}
-                              onChange={(v) => onSetLineOverride(li.key, v / (li.quantity || 1))}
-                              onReset={() => onClearLineOverride(li.key)}
-                            />
+                            {formatMoney(li.totalCost, currency)}
+                          </td>
+                          <td className="w-10 px-2 py-2 text-right">
+                            <button
+                              type="button"
+                              onClick={() => onDeleteInternalCostLine(id)}
+                              title="Remove line"
+                              className="rounded-md p-1.5 text-stone-400 transition-colors hover:bg-red-50 hover:text-red-500"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </button>
                           </td>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Internal cost lines — operator-only, never shown to the client */}
-          <div className="overflow-hidden rounded-md border border-stone-200">
-            <div className="flex items-center justify-between bg-stone-50 px-4 py-2">
-              <span className="flex items-center gap-2 text-sm font-semibold text-stone-700">
-                <Lock className="h-4 w-4 text-stone-500" />
-                Internal costs (operator only)
-              </span>
-              <span className="text-sm font-medium text-stone-700">
-                {formatMoney(internalSubtotal, currency)}
-              </span>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              )}
+              <div className="space-y-2 p-3">
+                {showCustomInternalForm ? (
+                  <div className="flex items-center gap-2">
+                    <Input
+                      placeholder="Label, e.g. Zanzibar concession fee"
+                      value={customLabel}
+                      onChange={(e) => setCustomLabel(e.target.value)}
+                      className="h-8"
+                    />
+                    <Input
+                      type="number"
+                      step="0.01"
+                      placeholder="Amount"
+                      value={customAmount}
+                      onChange={(e) => setCustomAmount(e.target.value)}
+                      className="h-8 w-28"
+                    />
+                    <Input
+                      type="number"
+                      min={1}
+                      step={1}
+                      placeholder="Qty"
+                      title="Quantity (e.g. pax)"
+                      value={customQuantity}
+                      onChange={(e) => setCustomQuantity(e.target.value)}
+                      className="h-8 w-16"
+                    />
+                    <Button size="sm" onClick={handleAddCustomInternalLine}>
+                      Add
+                    </Button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowCustomInternalForm(false);
+                        setCustomLabel('');
+                        setCustomAmount('');
+                        setCustomQuantity('1');
+                      }}
+                      className="text-stone-400 hover:text-stone-600"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                ) : (
+                  <Combobox
+                    items={internalPickerItems}
+                    value={internalPickerValue}
+                    onChange={handleInternalPick}
+                    placeholder="Add an internal cost line..."
+                    className="w-full max-w-sm"
+                  />
+                )}
+              </div>
             </div>
-            {internalLines.length > 0 && (
+
+            {/* Totals card */}
+            <div className="rounded-md border border-stone-200 bg-white">
               <table className="w-full text-sm">
-                <tbody className="divide-y divide-stone-100">
-                  {internalLines.map((li) => (
-                    <tr key={li.key}>
-                      <td className="px-4 py-2 text-stone-700">{li.label}</td>
-                      <td className="w-28 px-4 py-2 text-right font-medium text-stone-800">
-                        <EditableLineAmount
-                          value={li.totalCost}
-                          currency={currency}
-                          alwaysShowDelete
-                          onChange={(v) => onUpdateInternalCostLine(li.key.slice('internal:'.length), v)}
-                          onReset={() => onDeleteInternalCostLine(li.key.slice('internal:'.length))}
-                        />
-                      </td>
-                    </tr>
-                  ))}
+                <tbody>
+                  <tr className="border-b border-stone-100">
+                    <td className="px-4 py-2 font-semibold text-stone-700">Cost subtotal</td>
+                    <td className="w-32 px-4 py-2 text-right font-semibold text-stone-700">
+                      {formatMoney(computeQuery.data.costSubtotal, currency)}
+                    </td>
+                  </tr>
+                  <tr className="border-b border-stone-100">
+                    <td className="px-4 py-2 text-stone-600">
+                      Markup ({computeQuery.data.markupPct}%)
+                    </td>
+                    <td className="px-4 py-2 text-right text-stone-600">
+                      {formatMoney(computeQuery.data.markupAmount, currency)}
+                    </td>
+                  </tr>
+                  <tr className="bg-emerald-50/40">
+                    <td className="px-4 py-3 text-base font-bold text-emerald-700">Sell total</td>
+                    <td className="px-4 py-3 text-right text-lg font-bold text-emerald-700">
+                      {formatMoney(computeQuery.data.sellTotal, currency)}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td className="px-4 py-2 text-xs text-stone-500" colSpan={1}>
+                      Per pax (× {computeQuery.data.pax})
+                    </td>
+                    <td className="px-4 py-2 text-right text-sm font-medium text-stone-600">
+                      {formatMoney(computeQuery.data.sellPerPax, currency)}
+                    </td>
+                  </tr>
                 </tbody>
               </table>
-            )}
-            <div className="space-y-2 p-3">
-              {showCustomInternalForm ? (
-                <div className="flex items-center gap-2">
-                  <Input
-                    placeholder="Label, e.g. Zanzibar concession fee"
-                    value={customLabel}
-                    onChange={(e) => setCustomLabel(e.target.value)}
-                    className="h-8"
-                  />
-                  <Input
-                    type="number"
-                    step="0.01"
-                    placeholder="Amount"
-                    value={customAmount}
-                    onChange={(e) => setCustomAmount(e.target.value)}
-                    className="h-8 w-28"
-                  />
-                  <Button size="sm" onClick={handleAddCustomInternalLine}>
-                    Add
-                  </Button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setShowCustomInternalForm(false);
-                      setCustomLabel('');
-                      setCustomAmount('');
-                    }}
-                    className="text-stone-400 hover:text-stone-600"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
-                </div>
-              ) : (
-                <Combobox
-                  items={internalPickerItems}
-                  value={internalPickerValue}
-                  onChange={handleInternalPick}
-                  placeholder="Add an internal cost line..."
-                  className="w-full max-w-sm"
-                />
-              )}
             </div>
-          </div>
-
-          {/* Totals card */}
-          <div className="rounded-md border border-stone-200 bg-white">
-            <table className="w-full text-sm">
-              <tbody>
-                <tr className="border-b border-stone-100">
-                  <td className="px-4 py-2 font-semibold text-stone-700">Cost subtotal</td>
-                  <td className="w-32 px-4 py-2 text-right font-semibold text-stone-700">
-                    {formatMoney(computeQuery.data.costSubtotal, currency)}
-                  </td>
-                </tr>
-                <tr className="border-b border-stone-100">
-                  <td className="px-4 py-2 text-stone-600">
-                    Markup ({computeQuery.data.markupPct}%)
-                  </td>
-                  <td className="px-4 py-2 text-right text-stone-600">
-                    {formatMoney(computeQuery.data.markupAmount, currency)}
-                  </td>
-                </tr>
-                <tr className="bg-emerald-50/40">
-                  <td className="px-4 py-3 text-base font-bold text-emerald-700">Sell total</td>
-                  <td className="px-4 py-3 text-right text-lg font-bold text-emerald-700">
-                    {formatMoney(computeQuery.data.sellTotal, currency)}
-                  </td>
-                </tr>
-                <tr>
-                  <td className="px-4 py-2 text-xs text-stone-500" colSpan={1}>
-                    Per pax (× {computeQuery.data.pax})
-                  </td>
-                  <td className="px-4 py-2 text-right text-sm font-medium text-stone-600">
-                    {formatMoney(computeQuery.data.sellPerPax, currency)}
-                  </td>
-                </tr>
-              </tbody>
-            </table>
           </div>
         </div>
       )}
@@ -1392,7 +1467,11 @@ function ManualPricingSection({
                   value={row.unitPrice === 0 ? '' : row.unitPrice}
                   onChange={(e) => {
                     const parsed = parseFloat(e.target.value);
-                    onUpdateRow(row.id, 'unitPrice', e.target.value === '' || Number.isNaN(parsed) ? 0 : parsed);
+                    onUpdateRow(
+                      row.id,
+                      'unitPrice',
+                      e.target.value === '' || Number.isNaN(parsed) ? 0 : parsed,
+                    );
                   }}
                   placeholder="0.00"
                   className="border-stone-200 bg-stone-50 pl-7 shadow-none"
