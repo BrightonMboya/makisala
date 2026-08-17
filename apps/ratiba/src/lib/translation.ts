@@ -11,7 +11,7 @@ const MAX_CHARS_PER_BATCH = 9000;
 
 // Groq is still used for day-copy generation (generateDayCopy), not translation.
 const GROQ_URL = 'https://api.groq.com/openai/v1/chat/completions';
-const MODEL = 'llama-3.3-70b-versatile';
+const MODEL = 'openai/gpt-oss-120b';
 
 export interface TranslatableContent {
   tourTitle?: string | null;

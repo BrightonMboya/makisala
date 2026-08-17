@@ -1018,6 +1018,7 @@ export const TransportMode = pgEnum('transport_mode', [
   'road_4x4',
   'road_shuttle',
   'road_bus',
+  'mini_bus',
   'flight_domestic',
   'flight_bush',
 ]);
