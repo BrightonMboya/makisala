@@ -23,7 +23,7 @@ import {
   sendProposalShareEmail,
   sendProposalAcceptanceEmail,
 } from '@repo/resend';
-import { router, protectedProcedure, adminProcedure, publicProcedure, escapeLikeQuery } from '../init';
+import { router, protectedProcedure, adminProcedure, publicProcedure, escapeLikeQuery, type Context } from '../init';
 import { getHiddenImageIds } from '../lib/hidden-images';
 import { loadBookingAddOns } from '../lib/booking-addons';
 import { computeBookingTotal, parseSelections, type Selections } from '@/lib/booking-addons';
@@ -37,7 +37,8 @@ import {
   DEFAULT_DASHBOARD_STATUSES,
   isClientConfirmable,
 } from '@/lib/proposal-status';
-import { deriveMealPlan } from '@/lib/pricing-engine';
+import { deriveMealPlan, type ParkFeeCategory } from '@/lib/pricing-engine';
+import { computeOrgPricing, type OrgPricingDayInput } from '../lib/org-pricing';
 import { env } from '@/lib/env';
 import { getPublicUrl } from '@/lib/storage';
 import { log, serializeError } from '@/lib/logger';
@@ -220,9 +221,11 @@ interface BuilderDay {
   destinationLat?: number | null;
   destinationLng?: number | null;
   accommodation?: string;
+  accommodationName?: string | null;
   rooms?: Array<{
     roomType: string | null;
     pax: number;
+    children?: number;
   }>;
   alternatives?: Array<{
     id: string;
@@ -241,6 +244,95 @@ interface BuilderDay {
   meals?: { breakfast?: boolean; lunch?: boolean; dinner?: boolean };
   mealOptions?: string[];
   transfer?: BuilderTransfer;
+}
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+// When a proposal uses the rate-card auto-pricing engine, the builder only
+// ever shows the computed sell total/per-pax in its own UI — it never writes
+// that number into `pricingRows`, which is the field every display surface
+// (public proposal page, PDF export, operator preview) actually reads. Without
+// this, an auto-priced proposal saves with whatever `pricingRows` happened to
+// be in client state (often still the untouched "2 Adult @ $0" default),
+// showing $0 everywhere despite a correct total in the builder. Re-run the
+// same engine server-side at save time and reconcile `pricingRows` so every
+// consumer of the stored proposal agrees with the auto-priced total.
+async function reconcileAutoPricingRows(
+  db: Context['db'],
+  orgId: string,
+  builderData: BuilderData,
+): Promise<BuilderData['pricingRows']> {
+  const days = builderData.days ?? [];
+  const travelerGroups = builderData.travelerGroups ?? [];
+  const totalPax = travelerGroups.reduce((sum, g) => sum + g.count, 0);
+  if (!builderData.startDate || days.length === 0 || totalPax === 0) return null;
+
+  const startDate = new Date(builderData.startDate);
+  if (Number.isNaN(startDate.getTime())) return null;
+
+  const dayInputs: OrgPricingDayInput[] = days.map((d, idx) => {
+    const date = new Date(startDate);
+    date.setUTCDate(date.getUTCDate() + idx);
+    const isParkId = !!d.destination && UUID_RE.test(d.destination);
+    return {
+      dayNumber: d.dayNumber,
+      date,
+      accommodationId: d.accommodation ?? null,
+      accommodationName: d.accommodationName ?? null,
+      mealPlan: deriveMealPlan(d.meals),
+      rooms: (d.rooms ?? []).map((r) => ({
+        roomType: r.roomType,
+        pax: r.pax,
+        children: r.children ?? 0,
+      })),
+      parkId: isParkId ? d.destination! : null,
+      destinationName: d.destinationName ?? null,
+      activities: (d.activities ?? []).map((a) => ({
+        libraryId: a.libraryId ?? null,
+        name: a.name ?? null,
+        isOptional: a.isOptional ?? false,
+      })),
+    };
+  });
+
+  const travelerBreakdown: Array<{ category: ParkFeeCategory; count: number }> = [];
+  const counts = new Map<ParkFeeCategory, number>();
+  for (const g of travelerGroups) {
+    if (g.type === 'Baby') continue;
+    const category: ParkFeeCategory = g.type === 'Child' ? 'non_resident_child' : 'non_resident_adult';
+    counts.set(category, (counts.get(category) ?? 0) + g.count);
+  }
+  for (const [category, count] of counts) travelerBreakdown.push({ category, count });
+
+  const markupPct =
+    builderData.markupPct == null || builderData.markupPct === '' ? 0 : Number(builderData.markupPct);
+
+  try {
+    const breakdown = await computeOrgPricing(db, orgId, {
+      days: dayInputs,
+      pax: totalPax,
+      travelerCategory: 'non_resident_adult',
+      travelerBreakdown,
+      vehicleId: builderData.vehicleId ?? null,
+      vehicleCount: builderData.vehicleCount ?? 1,
+      pickupTransferId: builderData.pickupTransferRateId ?? null,
+      dropoffTransferId: builderData.dropoffTransferRateId ?? null,
+      markupPct,
+      currency: builderData.currency === 'EUR' ? 'EUR' : 'USD',
+      overrides: builderData.pricingOverrides ?? null,
+      internalCostLines: builderData.internalCostLines ?? null,
+    });
+
+    return travelerGroups.map((g) => ({
+      id: g.id,
+      count: g.count,
+      type: g.type,
+      unitPrice: breakdown.sellPerPax,
+    }));
+  } catch (err) {
+    log.error('Auto pricing reconciliation failed on proposal save', { orgId, error: serializeError(err) });
+    return null;
+  }
 }
 
 export const proposalsRouter = router({
@@ -1078,6 +1170,13 @@ export const proposalsRouter = router({
       const allowedThemes = plan ? ALLOWED_THEMES_BY_TIER[plan.effectiveTier] : ['minimalistic'];
       const validatedTheme = allowedThemes.includes(selectedTheme) ? selectedTheme : 'minimalistic';
 
+      // Auto-priced proposals never get their sell total written into
+      // pricingRows client-side (see reconcileAutoPricingRows above) — derive
+      // it here so the public page/PDF/preview don't show $0.
+      const reconciledPricingRows = builderData.useAutoPricing
+        ? await reconcileAutoPricingRows(ctx.db, ctx.orgId, builderData)
+        : null;
+
       const proposalData = {
         id: proposalId,
         name: input.name,
@@ -1097,7 +1196,7 @@ export const proposalsRouter = router({
         endCityLng: builderData.endCityLng || null,
         pickupPoint: builderData.pickupPoint || null,
         transferIncluded: builderData.transferIncluded || null,
-        pricingRows: builderData.pricingRows || null,
+        pricingRows: reconciledPricingRows || builderData.pricingRows || null,
         extras: builderData.extras || null,
         travelerGroups: builderData.travelerGroups || null,
         countries: builderData.countries || null,
