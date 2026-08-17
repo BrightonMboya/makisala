@@ -11,7 +11,7 @@ import {
   transferRates,
   vehicles,
 } from '@repo/db/schema';
-import { eq } from 'drizzle-orm';
+import { eq, inArray } from 'drizzle-orm';
 import { protectedProcedure, router } from '../init';
 import {
   computePricing,
@@ -67,6 +67,7 @@ const computeInputSchema = z.object({
     )
     .optional(),
   vehicleId: z.string().uuid().nullable(),
+  vehicleCount: z.number().int().positive().default(1),
   pickupTransferId: z.string().uuid().nullable(),
   dropoffTransferId: z.string().uuid().nullable(),
   markupPct: z.number().nonnegative().max(1000),
@@ -140,27 +141,60 @@ export const pricingRouter = router({
           .limit(1),
       ]);
 
+    // Sub-regions (e.g. "Central Serengeti") can point at the actual
+    // fee-charging park via parentParkId, so an itinerary day picked from a
+    // zone/area destination still resolves to the right park_fee_rates row.
+    // Falls back to the day's own park when it has no parent (a real park,
+    // or a plain city/landmark that was never meant to carry a park fee).
+    const dayParkIds = Array.from(
+      new Set(input.days.map((d) => d.parkId).filter((id): id is string => !!id)),
+    );
+    const parkAliasMap = new Map<string, { id: string; name: string }>();
+    if (dayParkIds.length > 0) {
+      const parkRowsForAlias = await ctx.db
+        .select({ id: nationalParks.id, name: nationalParks.name, parentParkId: nationalParks.parentParkId })
+        .from(nationalParks)
+        .where(inArray(nationalParks.id, dayParkIds));
+      const parentIds = Array.from(
+        new Set(parkRowsForAlias.map((r) => r.parentParkId).filter((id): id is string => !!id)),
+      );
+      const parentRows = parentIds.length
+        ? await ctx.db
+            .select({ id: nationalParks.id, name: nationalParks.name })
+            .from(nationalParks)
+            .where(inArray(nationalParks.id, parentIds))
+        : [];
+      const parentById = new Map(parentRows.map((p) => [p.id, p]));
+      for (const r of parkRowsForAlias) {
+        const parent = r.parentParkId ? parentById.get(r.parentParkId) : null;
+        parkAliasMap.set(r.id, parent ?? { id: r.id, name: r.name });
+      }
+    }
+
     return computePricing({
       days: input.days.map(
-        (d): ItineraryDayInput => ({
-          dayNumber: d.dayNumber,
-          date: d.date,
-          accommodationId: d.accommodationId,
-          accommodationName: d.accommodationName ?? null,
-          mealPlan: d.mealPlan as MealPlan | null,
-          rooms: d.rooms.map((r) => ({
-            roomType: r.roomType,
-            pax: r.pax,
-            children: r.children ?? 0,
-          })),
-          parkId: d.parkId,
-          destinationName: d.destinationName ?? null,
-          activities: d.activities.map((a) => ({
-            libraryId: a.libraryId ?? null,
-            name: a.name ?? null,
-            isOptional: a.isOptional ?? false,
-          })),
-        }),
+        (d): ItineraryDayInput => {
+          const canonicalPark = d.parkId ? parkAliasMap.get(d.parkId) : null;
+          return {
+            dayNumber: d.dayNumber,
+            date: d.date,
+            accommodationId: d.accommodationId,
+            accommodationName: d.accommodationName ?? null,
+            mealPlan: d.mealPlan as MealPlan | null,
+            rooms: d.rooms.map((r) => ({
+              roomType: r.roomType,
+              pax: r.pax,
+              children: r.children ?? 0,
+            })),
+            parkId: canonicalPark?.id ?? d.parkId,
+            destinationName: canonicalPark?.name ?? d.destinationName ?? null,
+            activities: d.activities.map((a) => ({
+              libraryId: a.libraryId ?? null,
+              name: a.name ?? null,
+              isOptional: a.isOptional ?? false,
+            })),
+          };
+        },
       ),
       pax: input.pax,
       travelerCategory: input.travelerCategory as ParkFeeCategory,
@@ -168,6 +202,7 @@ export const pricingRouter = router({
         | { category: ParkFeeCategory; count: number }[]
         | undefined,
       vehicleId: input.vehicleId,
+      vehicleCount: input.vehicleCount,
       pickupTransferId: input.pickupTransferId,
       dropoffTransferId: input.dropoffTransferId,
       markupPct: input.markupPct,

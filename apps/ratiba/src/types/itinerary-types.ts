@@ -189,6 +189,8 @@ export type BuilderContextType = {
   setUseAutoPricing: React.Dispatch<React.SetStateAction<boolean>>;
   vehicleId: string | null;
   setVehicleId: React.Dispatch<React.SetStateAction<string | null>>;
+  vehicleCount: number;
+  setVehicleCount: React.Dispatch<React.SetStateAction<number>>;
   markupPct: number;
   setMarkupPct: React.Dispatch<React.SetStateAction<number>>;
   pickupTransferId: string | null;

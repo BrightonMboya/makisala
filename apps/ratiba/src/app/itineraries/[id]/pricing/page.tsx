@@ -93,6 +93,8 @@ export default function PricingPage() {
     setUseAutoPricing,
     vehicleId,
     setVehicleId,
+    vehicleCount,
+    setVehicleCount,
     markupPct,
     setMarkupPct,
     pickupTransferId,
@@ -325,6 +327,7 @@ export default function PricingPage() {
       travelerCategory: 'non_resident_adult',
       travelerBreakdown,
       vehicleId,
+      vehicleCount,
       pickupTransferId,
       dropoffTransferId,
       markupPct,
@@ -442,6 +445,8 @@ export default function PricingPage() {
           <AutoPricingSection
             vehicleId={vehicleId}
             setVehicleId={setVehicleId}
+            vehicleCount={vehicleCount}
+            setVehicleCount={setVehicleCount}
             pickupTransferId={pickupTransferId}
             setPickupTransferId={setPickupTransferId}
             dropoffTransferId={dropoffTransferId}
@@ -876,6 +881,8 @@ function AccommodationAlternativesSection({
 function AutoPricingSection({
   vehicleId,
   setVehicleId,
+  vehicleCount,
+  setVehicleCount,
   pickupTransferId,
   setPickupTransferId,
   dropoffTransferId,
@@ -900,6 +907,8 @@ function AutoPricingSection({
 }: {
   vehicleId: string | null;
   setVehicleId: (v: string | null) => void;
+  vehicleCount: number;
+  setVehicleCount: (v: number) => void;
   pickupTransferId: string | null;
   setPickupTransferId: (v: string | null) => void;
   dropoffTransferId: string | null;
@@ -1002,18 +1011,29 @@ function AutoPricingSection({
           <label className="mb-1 block text-xs font-semibold tracking-wide text-stone-500 uppercase">
             Vehicle (per-day)
           </label>
-          <select
-            value={vehicleId ?? ''}
-            onChange={(e) => setVehicleId(e.target.value || null)}
-            className="h-9 w-full rounded-md border border-stone-200 bg-stone-50 px-2 text-sm"
-          >
-            <option value="">— none —</option>
-            {vehicles.map((v) => (
-              <option key={v.id} value={v.id}>
-                {v.name} (${Number(v.perDayRate)}/day)
-              </option>
-            ))}
-          </select>
+          <div className="flex gap-2">
+            <select
+              value={vehicleId ?? ''}
+              onChange={(e) => setVehicleId(e.target.value || null)}
+              className="h-9 w-full rounded-md border border-stone-200 bg-stone-50 px-2 text-sm"
+            >
+              <option value="">— none —</option>
+              {vehicles.map((v) => (
+                <option key={v.id} value={v.id}>
+                  {v.name} (${Number(v.perDayRate)}/day)
+                </option>
+              ))}
+            </select>
+            <input
+              type="number"
+              min={1}
+              step={1}
+              value={vehicleCount}
+              onChange={(e) => setVehicleCount(Math.max(1, Number(e.target.value) || 1))}
+              title="Number of vehicles"
+              className="h-9 w-16 shrink-0 rounded-md border border-stone-200 bg-stone-50 px-2 text-center text-sm"
+            />
+          </div>
         </div>
         <div>
           <label className="mb-1 block text-xs font-semibold tracking-wide text-stone-500 uppercase">
@@ -1415,7 +1435,6 @@ const WARNING_FIX: Record<WarningKind, { tab: string | null; label: string } | n
   missing_room_meal: { tab: null, label: 'Set in day-by-day' },
   room_pax_mismatch: { tab: null, label: 'Check room mix' },
   missing_room_capacity: { tab: 'hotels', label: 'Set room capacity' },
-  room_over_capacity: { tab: null, label: 'Split into another room' },
   no_season: { tab: 'seasons', label: 'Add season band' },
   missing_hotel_rate: { tab: 'hotels', label: 'Add hotel rate' },
   missing_park_fee: { tab: 'parks', label: 'Add park fee' },

@@ -1,4 +1,5 @@
 import {
+  type AnyPgColumn,
   boolean,
   index,
   integer,
@@ -705,6 +706,12 @@ export const nationalParks = pgTable('national_parks', {
   // TODO: this country field should be removed
   country: text().notNull(),
   destination_id: uuid().references(() => destinations.id),
+  // Points a sub-region/zone (e.g. "Central Serengeti") at the fee-charging
+  // park it's billed under (e.g. "Serengeti National Park"), so pricing can
+  // resolve the correct park_fee_rates without name-matching every alias.
+  parentParkId: uuid('parent_park_id').references((): AnyPgColumn => nationalParks.id, {
+    onDelete: 'set null',
+  }),
   latitude: numeric('latitude', { precision: 10, scale: 7 }),
   longitude: numeric('longitude', { precision: 10, scale: 7 }),
   overview_page_id: text().references(() => pages.id),
@@ -859,6 +866,10 @@ export const proposals = pgTable('proposals', {
   internalCostLines: jsonb('internal_cost_lines').$type<InternalCostLine[]>(),
   useAutoPricing: boolean('use_auto_pricing').default(false).notNull(),
   vehicleId: uuid('vehicle_id').references((): any => vehicles.id, { onDelete: 'set null' }),
+  // How many of that vehicle the trip uses (e.g. 2 Land Cruisers for a large
+  // group) — multiplies the vehicle-per-day line and any per-vehicle park
+  // ancillary fees (crater fees, vehicle entry fees, etc.).
+  vehicleCount: integer('vehicle_count').default(1).notNull(),
   markupPct: numeric('markup_pct', { precision: 6, scale: 2 }),
   pickupTransferRateId: uuid('pickup_transfer_rate_id').references((): any => transferRates.id, {
     onDelete: 'set null',

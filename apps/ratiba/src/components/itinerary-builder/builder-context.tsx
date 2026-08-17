@@ -45,9 +45,7 @@ export function BuilderProvider({
   const [pricingRows, setPricingRows] = useState<PricingRow[]>([
     { id: '1', count: 2, type: 'Adult', unitPrice: 0 },
   ]);
-  const [extras, setExtras] = useState<ExtraOption[]>([
-    { id: '1', name: 'Airport Transfer', price: 50, priceUnit: 'per_person', selected: false },
-  ]);
+  const [extras, setExtras] = useState<ExtraOption[]>([]);
 
   const [inclusions, setInclusions] = useState<string[]>([
     'All park fees and government taxes',
@@ -69,6 +67,7 @@ export function BuilderProvider({
   // Auto-pricing (rate-card driven) — kept in builder state; persistence comes later.
   const [useAutoPricing, setUseAutoPricing] = useState(false);
   const [vehicleId, setVehicleId] = useState<string | null>(null);
+  const [vehicleCount, setVehicleCount] = useState<number>(1);
   const [markupPct, setMarkupPct] = useState<number>(30);
   const [pickupTransferId, setPickupTransferId] = useState<string | null>(null);
   const [dropoffTransferId, setDropoffTransferId] = useState<string | null>(null);
@@ -163,6 +162,7 @@ export function BuilderProvider({
       // Auto-pricing fields from proposals table
       if (initialData.useAutoPricing != null) setUseAutoPricing(!!initialData.useAutoPricing);
       if (initialData.vehicleId !== undefined) setVehicleId(initialData.vehicleId);
+      if (initialData.vehicleCount != null) setVehicleCount(Number(initialData.vehicleCount));
       if (initialData.markupPct != null) setMarkupPct(Number(initialData.markupPct));
       if (initialData.pickupTransferRateId !== undefined)
         setPickupTransferId(initialData.pickupTransferRateId);
@@ -260,6 +260,8 @@ export function BuilderProvider({
         setUseAutoPricing,
         vehicleId,
         setVehicleId,
+        vehicleCount,
+        setVehicleCount,
         markupPct,
         setMarkupPct,
         pickupTransferId,

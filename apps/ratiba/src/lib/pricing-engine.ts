@@ -161,6 +161,10 @@ export interface PricingInput {
   travelerCategory: ParkFeeCategory;
   travelerBreakdown?: Array<{ category: ParkFeeCategory; count: number }>;
   vehicleId: string | null;
+  // How many of that vehicle the trip uses (e.g. 2 Land Cruisers for a large
+  // group). Multiplies the vehicle-per-day line and per-vehicle park
+  // ancillary fees (crater fees, vehicle entry fees, etc.). Defaults to 1.
+  vehicleCount: number;
   pickupTransferId: string | null;
   dropoffTransferId: string | null;
   markupPct: number; // e.g. 30 => +30%
@@ -209,7 +213,6 @@ export type WarningKind =
   | 'missing_room_meal'
   | 'room_pax_mismatch'
   | 'missing_room_capacity'
-  | 'room_over_capacity'
   | 'no_season'
   | 'missing_hotel_rate'
   | 'missing_park_fee'
@@ -285,7 +288,16 @@ function normalizeParkName(s: string): string {
     .trim();
 }
 
+const PROTECTED_AREA_RE = /\b(national\s+park|conservation\s+area|national\s+reserve|game\s+reserve)\b/i;
+
 function resolveParkIdByName(destinationName: string, parkFeeRates: ParkFeeRate[]): string | null {
+  // normalizeParkName strips the "National Park"/"Conservation Area"/etc.
+  // suffix from both sides before comparing, so a plain city day (e.g.
+  // "Arusha") would otherwise collide with a same-named protected area
+  // ("Arusha National Park"). Only attempt the match when the destination
+  // text itself names a protected area — city/transit days never resolve
+  // to a park and so never surface a park-fee warning.
+  if (!PROTECTED_AREA_RE.test(destinationName)) return null;
   const target = normalizeParkName(destinationName);
   if (!target) return null;
   for (const r of parkFeeRates) {
@@ -297,6 +309,7 @@ function resolveParkIdByName(destinationName: string, parkFeeRates: ParkFeeRate[
 
 export function computePricing(input: PricingInput): PricingBreakdown {
   const { pax, markupPct, currency } = input;
+  const vehicleCount = input.vehicleCount && input.vehicleCount > 0 ? input.vehicleCount : 1;
   const warnings: PricingWarning[] = [];
   const lineItems: LineItem[] = [];
   const tripDays = input.days.length;
@@ -379,14 +392,10 @@ export function computePricing(input: PricingInput): PricingBreakdown {
           source: 'accommodation',
         });
       } else {
-        if (rate.maxOccupancy && rate.maxOccupancy > 0 && room.pax > rate.maxOccupancy) {
-          warnings.push({
-            kind: 'room_over_capacity',
-            dayNumber: day.dayNumber,
-            message: `${hotelName} (Day ${day.dayNumber}): ${room.roomType} sleeps ${rate.maxOccupancy} max, but ${room.pax} were assigned to it — split into another room`,
-          });
-        }
-        // Occupant-slot pricing (see occupantSlotCost): reduces to
+        // Occupant-slot pricing (see occupantSlotCost): correctly prices any
+        // pax count on its own (extra-occupant % discounts apply per slot),
+        // regardless of the room's stated max occupancy, so no action is
+        // needed from the operator when a room mix exceeds it. Reduces to
         // perPaxRate * room.pax when no slot %s are configured on the rate.
         const totalCost = num(occupantSlotCost(rate, room.pax, room.children ?? 0));
         lineItems.push({
@@ -411,10 +420,22 @@ export function computePricing(input: PricingInput): PricingBreakdown {
     }
   }
 
+  // The destination field is shared between real fee-charging parks and
+  // plain cities/landmarks (e.g. "Arusha City") from the same catalog, and an
+  // operator can pick either one. Only treat a resolved park as fee-bearing
+  // when it actually has a configured rate somewhere — an entrance fee or a
+  // per-vehicle ancillary fee. That also covers fee-only sub-features like
+  // "Ngorongoro Crater", which has no entrance fee of its own but does carry
+  // a crater-descent ancillary fee.
+  const hasConfiguredParkRate = (parkId: string) =>
+    input.parkFeeRates.some((r) => r.parkId === parkId) ||
+    input.parkAncillaryFees.some((r) => r.parkId === parkId);
+
   const daysWithParkId = input.days.map((day) => {
-    const parkId =
+    const rawParkId =
       day.parkId ??
       (day.destinationName ? resolveParkIdByName(day.destinationName, input.parkFeeRates) : null);
+    const parkId = rawParkId && hasConfiguredParkRate(rawParkId) ? rawParkId : null;
     return { day, parkId };
   });
 
@@ -501,15 +522,18 @@ export function computePricing(input: PricingInput): PricingBreakdown {
       if (!firstEntry) continue;
       for (const fee of fees) {
         const occurrences = fee.chargeBasis === 'per_vehicle_per_day' ? dayCount : 1;
-        const totalCost = num(fee.rate * occurrences);
+        const totalCost = num(fee.rate * occurrences * vehicleCount);
+        const occurrenceLabel =
+          fee.chargeBasis === 'per_vehicle_per_day' ? `${occurrences} day${occurrences === 1 ? '' : 's'}` : null;
+        const vehicleLabel = vehicleCount > 1 ? `${vehicleCount} vehicles` : null;
+        const suffix = [occurrenceLabel, vehicleLabel].filter(Boolean).join(' × ');
         lineItems.push({
           key: `park_ancillary:${parkId}:${fee.name}`,
-          label:
-            fee.chargeBasis === 'per_vehicle_per_day'
-              ? `${fee.parkName || 'Park'} — ${fee.name} (${occurrences} day${occurrences === 1 ? '' : 's'})`
-              : `${fee.parkName || 'Park'} — ${fee.name}`,
+          label: suffix
+            ? `${fee.parkName || 'Park'} — ${fee.name} (${suffix})`
+            : `${fee.parkName || 'Park'} — ${fee.name}`,
           dayNumber: firstEntry.day.dayNumber,
-          quantity: occurrences,
+          quantity: occurrences * vehicleCount,
           unitCost: fee.rate,
           totalCost,
           source: 'park_fee',
@@ -521,12 +545,13 @@ export function computePricing(input: PricingInput): PricingBreakdown {
   const normalizeName = (s: string) => s.trim().toLowerCase();
   // Game drives (morning/night/guided/…) are already paid for through the
   // vehicle-per-day rate and park fees — there's no separate supplier rate to
-  // configure, so don't warn the operator to add one or zero the line out.
+  // configure, so skip them entirely rather than showing a $0 line or warning.
   const isGameDrive = (s: string) => /game\s*drives?/i.test(s);
   for (const day of input.days) {
     if (!day.activities || day.activities.length === 0) continue;
     for (const [activityIndex, activity] of day.activities.entries()) {
       if (activity.isOptional) continue;
+      if (activity.name && isGameDrive(activity.name)) continue;
       const nameKey = activity.name ? normalizeName(activity.name) : null;
       if (!activity.libraryId && !nameKey) continue;
       const matches = (r: ActivityRate) =>
@@ -549,19 +574,6 @@ export function computePricing(input: PricingInput): PricingBreakdown {
         // No rate object exists yet, so the per-person-vs-per-group basis is
         // unknown — assume per-person (the common case) so quantity is real
         // and a unit-rate override (see below) multiplies out correctly.
-        if (isGameDrive(activityLabel)) {
-          lineItems.push({
-            key: activityKey,
-            label: `${activityLabel} (Day ${day.dayNumber})`,
-            dayNumber: day.dayNumber,
-            quantity: pax,
-            unitCost: 0,
-            totalCost: 0,
-            source: 'activity',
-            missing: 'included in vehicle & park fees',
-          });
-          continue;
-        }
         warnings.push({
           kind: 'missing_activity_rate',
           dayNumber: day.dayNumber,
@@ -613,11 +625,14 @@ export function computePricing(input: PricingInput): PricingBreakdown {
         message: 'Vehicle selected but rate not found',
       });
     } else {
-      const total = vehicle.perDayRate * tripDays;
+      const total = vehicle.perDayRate * tripDays * vehicleCount;
       lineItems.push({
         key: 'vehicle',
-        label: `Vehicle + driver + fuel (${tripDays} days)`,
-        quantity: tripDays,
+        label:
+          vehicleCount > 1
+            ? `Vehicle + driver + fuel (${tripDays} days × ${vehicleCount} vehicles)`
+            : `Vehicle + driver + fuel (${tripDays} days)`,
+        quantity: tripDays * vehicleCount,
         unitCost: vehicle.perDayRate,
         totalCost: num(total),
         source: 'vehicle',

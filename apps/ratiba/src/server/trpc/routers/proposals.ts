@@ -174,6 +174,7 @@ interface BuilderData {
   pricingOverrides?: Record<string, number> | null;
   internalCostLines?: InternalCostLine[] | null;
   vehicleId?: string | null;
+  vehicleCount?: number | null;
   markupPct?: number | string | null;
   pickupTransferRateId?: string | null;
   dropoffTransferRateId?: string | null;
@@ -955,6 +956,7 @@ export const proposalsRouter = router({
           pricingOverrides: true,
           internalCostLines: true,
           vehicleId: true,
+          vehicleCount: true,
           markupPct: true,
           pickupTransferRateId: true,
           dropoffTransferRateId: true,
@@ -1105,6 +1107,7 @@ export const proposalsRouter = router({
         pricingOverrides: builderData.pricingOverrides || null,
         internalCostLines: builderData.internalCostLines || null,
         vehicleId: builderData.vehicleId ?? null,
+        vehicleCount: builderData.vehicleCount ?? 1,
         markupPct:
           builderData.markupPct == null || builderData.markupPct === ''
             ? null
@@ -1148,6 +1151,7 @@ export const proposalsRouter = router({
             pricingOverrides: proposalData.pricingOverrides,
             internalCostLines: proposalData.internalCostLines,
             vehicleId: proposalData.vehicleId,
+            vehicleCount: proposalData.vehicleCount,
             markupPct: proposalData.markupPct,
             pickupTransferRateId: proposalData.pickupTransferRateId,
             dropoffTransferRateId: proposalData.dropoffTransferRateId,
@@ -1185,6 +1189,7 @@ export const proposalsRouter = router({
               pricingOverrides: proposalData.pricingOverrides,
               internalCostLines: proposalData.internalCostLines,
               vehicleId: proposalData.vehicleId,
+              vehicleCount: proposalData.vehicleCount,
               markupPct: proposalData.markupPct,
               pickupTransferRateId: proposalData.pickupTransferRateId,
               dropoffTransferRateId: proposalData.dropoffTransferRateId,
@@ -1987,6 +1992,7 @@ export const proposalsRouter = router({
           pricingOverrides: original.pricingOverrides,
           internalCostLines: original.internalCostLines,
           vehicleId: original.vehicleId,
+          vehicleCount: original.vehicleCount,
           markupPct: original.markupPct,
           pickupTransferRateId: original.pickupTransferRateId,
           dropoffTransferRateId: original.dropoffTransferRateId,
@@ -2068,6 +2074,7 @@ export const proposalsRouter = router({
           pricingOverrides: original.pricingOverrides,
           internalCostLines: original.internalCostLines,
           vehicleId: original.vehicleId,
+          vehicleCount: original.vehicleCount,
           markupPct: original.markupPct,
           pickupTransferRateId: original.pickupTransferRateId,
           dropoffTransferRateId: original.dropoffTransferRateId,
