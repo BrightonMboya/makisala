@@ -87,6 +87,33 @@ export function occupantSlotCost(
   return total;
 }
 
+// Human-readable composition of an occupant-slot-priced room (see
+// occupantSlotCost), e.g. "2 adults + 2 extra adults @ 70%" — undefined when
+// the room reduces to a flat perPaxRate * pax (no extra-adult/child %s in
+// play), since there's nothing to explain in that case.
+function describeOccupantBreakdown(
+  rate: Pick<AccommodationRate, 'additionalAdultPct' | 'additionalChildPct'>,
+  pax: number,
+  children: number,
+): string | undefined {
+  const childCount = Math.max(0, Math.min(children, pax));
+  const adults = Math.max(0, pax - childCount);
+  if (adults <= 2 && childCount === 0) return undefined;
+  const parts: string[] = [];
+  const baseAdults = Math.min(adults, 2);
+  if (baseAdults > 0) parts.push(`${baseAdults} adult${baseAdults === 1 ? '' : 's'}`);
+  const extraAdults = adults - baseAdults;
+  if (extraAdults > 0) {
+    const pct = rate.additionalAdultPct ?? 100;
+    parts.push(`${extraAdults} extra adult${extraAdults === 1 ? '' : 's'} @ ${pct}%`);
+  }
+  if (childCount > 0) {
+    const pct = rate.additionalChildPct ?? 100;
+    parts.push(`${childCount} child${childCount === 1 ? '' : 'ren'} @ ${pct}%`);
+  }
+  return parts.join(' + ');
+}
+
 export interface ParkFeeRate {
   parkId: string;
   parkName: string;
@@ -201,6 +228,10 @@ export interface LineItem {
   totalCost: number;
   source: 'accommodation' | 'park_fee' | 'activity' | 'vehicle' | 'transfer' | 'internal';
   missing?: string; // human-readable note if a rate could not be found
+  // Set on occupant-slot-priced accommodation lines (see occupantSlotCost) when
+  // the total isn't a flat perPaxRate * pax — i.e. extra-adult and/or child %s
+  // actually applied — so the UI can show how the blended unitCost was made up.
+  occupantBreakdown?: string;
   // Set when unitCost/totalCost were replaced by an entry in PricingInput.overrides.
   overridden?: boolean;
   // The engine-computed values before the override was applied (only present
@@ -407,6 +438,7 @@ export function computePricing(input: PricingInput): PricingBreakdown {
           unitCost: room.pax > 0 ? num(totalCost / room.pax) : rate.perPaxRate,
           totalCost,
           source: 'accommodation',
+          occupantBreakdown: describeOccupantBreakdown(rate, room.pax, room.children ?? 0),
         });
       }
     }
@@ -446,8 +478,14 @@ export function computePricing(input: PricingInput): PricingBreakdown {
       : [{ category: input.travelerCategory, count: pax }];
   const showCategory = segments.filter((s) => s.count > 0).length > 1;
 
+  // Parks with zero parkFeeRates rows at all (only an ancillary fee, e.g. a
+  // crater-descent-only sub-feature) never charge an entrance fee — skip them
+  // here rather than warning "no park fee for category X" on every day/segment
+  // for a fee that was never meant to exist.
+  const parksWithAnyFeeRate = new Set(input.parkFeeRates.map((r) => r.parkId));
+
   for (const { day, parkId } of daysWithParkId) {
-    if (!parkId) continue;
+    if (!parkId || !parksWithAnyFeeRate.has(parkId)) continue;
     const parkSeasonIds = new Set(
       input.parkFeeRates
         .filter(
@@ -504,6 +542,22 @@ export function computePricing(input: PricingInput): PricingBreakdown {
       if (!firstDayByPark.has(entry.parkId)) firstDayByPark.set(entry.parkId, entry);
     }
 
+    // A "visit" is a contiguous run of days at the same park — an itinerary
+    // that loops back through a park later (e.g. Tarangire, then Ngorongoro,
+    // then Tarangire again) counts as two visits, so a once-per-visit gate
+    // fee (unlike a per-day fee) charges twice, not once for the whole trip.
+    const visitCountByPark = new Map<string, number>();
+    {
+      const orderedEntries = [...daysWithParkId].sort((a, b) => a.day.dayNumber - b.day.dayNumber);
+      let prevParkId: string | null = null;
+      for (const entry of orderedEntries) {
+        if (entry.parkId && entry.parkId !== prevParkId) {
+          visitCountByPark.set(entry.parkId, (visitCountByPark.get(entry.parkId) ?? 0) + 1);
+        }
+        prevParkId = entry.parkId;
+      }
+    }
+
     const feesByPark = new Map<string, ParkAncillaryFeeRate[]>();
     for (const fee of input.parkAncillaryFees) {
       const list = feesByPark.get(fee.parkId) ?? [];
@@ -525,12 +579,15 @@ export function computePricing(input: PricingInput): PricingBreakdown {
       const firstEntry = firstDayByPark.get(parkId);
       if (!firstEntry) continue;
       for (const fee of fees) {
-        const occurrences = fee.chargeBasis === 'per_vehicle_per_day' ? dayCount : 1;
+        const occurrences =
+          fee.chargeBasis === 'per_vehicle_per_day' ? dayCount : (visitCountByPark.get(parkId) ?? 1);
         const totalCost = num(fee.rate * occurrences * vehicleCount);
         const occurrenceLabel =
           fee.chargeBasis === 'per_vehicle_per_day'
             ? `${occurrences} day${occurrences === 1 ? '' : 's'}`
-            : null;
+            : occurrences > 1
+              ? `${occurrences} visits`
+              : null;
         const vehicleLabel = vehicleCount > 1 ? `${vehicleCount} vehicles` : null;
         const suffix = [occurrenceLabel, vehicleLabel].filter(Boolean).join(' × ');
         lineItems.push({
@@ -705,7 +762,10 @@ export function computePricing(input: PricingInput): PricingBreakdown {
       li.originalUnitCost = li.unitCost;
       li.originalTotalCost = li.totalCost;
       li.unitCost = rate;
-      li.totalCost = num((li.quantity || 1) * rate);
+      // quantity is always a resolved number by this point (never undefined) —
+      // multiply directly so a genuinely zero-quantity line (e.g. a vehicle
+      // selected with a zero-day trip) still overrides to $0, not to `rate`.
+      li.totalCost = num(li.quantity * rate);
       li.overridden = true;
       li.missing = undefined;
       overriddenKeys.add(li.key);

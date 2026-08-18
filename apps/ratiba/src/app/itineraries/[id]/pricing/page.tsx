@@ -1184,6 +1184,9 @@ function AutoPricingSection({
                               {li.missing && (
                                 <span className="ml-2 text-xs text-amber-600">({li.missing})</span>
                               )}
+                              {li.occupantBreakdown && (
+                                <div className="text-xs text-stone-400">{li.occupantBreakdown}</div>
+                              )}
                             </td>
                             <td className="w-20 px-4 py-2 text-right text-stone-500">
                               {li.quantity > 1 ? `× ${li.quantity}` : ''}

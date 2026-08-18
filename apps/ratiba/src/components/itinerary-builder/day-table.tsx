@@ -125,9 +125,7 @@ export function DayTable({
   };
 
   const handleSaveAlternatives = (dayId: string, alternatives: AccommodationAlternative[]) => {
-    setDays((prev) =>
-      prev.map((day) => (day.id === dayId ? { ...day, alternatives } : day)),
-    );
+    setDays((prev) => prev.map((day) => (day.id === dayId ? { ...day, alternatives } : day)));
     setAlternativesDayId(null);
   };
 
@@ -492,7 +490,15 @@ function SortableDayRow({
     } finally {
       setIsSuggesting(false);
     }
-  }, [day.destination, day.destinationName, day.dayNumber, day.activities, day.accommodationName, day.id, onUpdate]);
+  }, [
+    day.destination,
+    day.destinationName,
+    day.dayNumber,
+    day.activities,
+    day.accommodationName,
+    day.id,
+    onUpdate,
+  ]);
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -544,10 +550,7 @@ function SortableDayRow({
   };
   const addRoom = () => {
     const remaining = totalPax - assignedPax;
-    onUpdate(day.id, 'rooms', [
-      ...rooms,
-      { roomType: null, pax: remaining > 0 ? remaining : 1 },
-    ]);
+    onUpdate(day.id, 'rooms', [...rooms, { roomType: null, pax: remaining > 0 ? remaining : 1 }]);
   };
   const removeRoom = (index: number) => {
     onUpdate(
@@ -597,7 +600,7 @@ function SortableDayRow({
                     Board basis is taken from the Meal Plan (B/L/D) column. */}
                 <div>
                   <div className="mb-0.5 flex items-center justify-between">
-                    <label className="block text-[10px] font-medium uppercase tracking-wide text-stone-500">
+                    <label className="block text-[10px] font-medium tracking-wide text-stone-500 uppercase">
                       Rooms
                     </label>
                     {totalPax > 0 && (
@@ -618,65 +621,75 @@ function SortableDayRow({
                       </option>
                     ))}
                   </datalist>
+                  <div className="mb-0.5 flex items-center gap-1 text-[9px] font-medium tracking-wide text-stone-400 uppercase">
+                    <span className="min-w-0 flex-1">Room type</span>
+                    <span className="w-12 shrink-0 text-center">Adults</span>
+                    <span className="w-10 shrink-0 text-center">Kids</span>
+                  </div>
                   <div className="space-y-1">
-                    {rooms.map((room, idx) => (
-                      <div key={idx} className="flex items-center gap-1">
-                        <input
-                          type="text"
-                          list={roomListId}
-                          value={room.roomType ?? ''}
-                          onChange={(e) =>
-                            updateRoom(idx, {
-                              roomType: e.target.value || null,
-                            })
-                          }
-                          placeholder="Room…"
-                          className={`h-8 min-w-0 flex-1 rounded-md border bg-white px-2 text-xs ${
-                            room.roomType
-                              ? 'border-stone-200 text-stone-700'
-                              : 'border-amber-300 bg-amber-50 text-amber-800'
-                          }`}
-                          title="Pick a room from the hotel's rate card, or type a new name"
-                        />
-                        <input
-                          type="number"
-                          min={1}
-                          value={room.pax || ''}
-                          onFocus={(e) => e.target.select()}
-                          onChange={(e) => {
-                            const pax = parseInt(e.target.value, 10) || 0;
-                            const children = Math.min(room.children ?? 0, pax);
-                            updateRoom(idx, { pax, children });
-                          }}
-                          className="h-8 w-12 shrink-0 rounded-md border border-stone-200 bg-white px-1 text-center text-xs text-stone-700"
-                          title="Travelers in this room type"
-                        />
-                        <input
-                          type="number"
-                          min={0}
-                          max={room.pax || 0}
-                          value={room.children || ''}
-                          onFocus={(e) => e.target.select()}
-                          onChange={(e) => {
-                            const children = Math.min(parseInt(e.target.value, 10) || 0, room.pax || 0);
-                            updateRoom(idx, { children });
-                          }}
-                          placeholder="0"
-                          className="h-8 w-10 shrink-0 rounded-md border border-stone-200 bg-white px-1 text-center text-xs text-stone-500"
-                          title="Of those travelers, how many are children — used for child room-rate discounts where the hotel has them configured"
-                        />
-                        {rooms.length > 1 && (
-                          <button
-                            type="button"
-                            onClick={() => removeRoom(idx)}
-                            className="shrink-0 rounded p-1 text-stone-400 hover:bg-stone-100 hover:text-stone-600"
-                            title="Remove room type"
-                          >
-                            <X className="h-3 w-3" />
-                          </button>
-                        )}
-                      </div>
-                    ))}
+                    {rooms.map((room, idx) => {
+                      // Adults/children are the operator-facing fields; pax stays the
+                      // stored total (adults + children) since that's the shape the
+                      // pricing engine, invoices, and proposal PDFs all key off.
+                      const childCount = room.children ?? 0;
+                      const adultCount = Math.max(0, (room.pax || 0) - childCount);
+                      return (
+                        <div key={idx} className="flex items-center gap-1">
+                          <input
+                            type="text"
+                            list={roomListId}
+                            value={room.roomType ?? ''}
+                            onChange={(e) =>
+                              updateRoom(idx, {
+                                roomType: e.target.value || null,
+                              })
+                            }
+                            placeholder="Room…"
+                            className={`h-8 min-w-0 flex-1 rounded-md border bg-white px-2 text-xs ${
+                              room.roomType
+                                ? 'border-stone-200 text-stone-700'
+                                : 'border-amber-300 bg-amber-50 text-amber-800'
+                            }`}
+                            title="Pick a room from the hotel's rate card, or type a new name"
+                          />
+                          <input
+                            type="number"
+                            min={0}
+                            value={adultCount || ''}
+                            onFocus={(e) => e.target.select()}
+                            onChange={(e) => {
+                              const adults = Math.max(0, parseInt(e.target.value, 10) || 0);
+                              updateRoom(idx, { pax: adults + childCount, children: childCount });
+                            }}
+                            className="h-8 w-12 shrink-0 rounded-md border border-stone-200 bg-white px-1 text-center text-xs text-stone-700"
+                            title="Adult travelers in this room"
+                          />
+                          <input
+                            type="number"
+                            min={0}
+                            value={childCount || ''}
+                            onFocus={(e) => e.target.select()}
+                            onChange={(e) => {
+                              const children = Math.max(0, parseInt(e.target.value, 10) || 0);
+                              updateRoom(idx, { pax: adultCount + children, children });
+                            }}
+                            placeholder="0"
+                            className="h-8 w-10 shrink-0 rounded-md border border-stone-200 bg-white px-1 text-center text-xs text-stone-700"
+                            title="Child travelers in this room — used for child room-rate discounts where the hotel has them configured"
+                          />
+                          {rooms.length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => removeRoom(idx)}
+                              className="shrink-0 rounded p-1 text-stone-400 hover:bg-stone-100 hover:text-stone-600"
+                              title="Remove room type"
+                            >
+                              <X className="h-3 w-3" />
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                   <button
                     type="button"
