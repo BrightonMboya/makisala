@@ -330,28 +330,41 @@ Rules:
 - Be specific to the destination and activities
 - Return only the 3 sentences, no headings, no formatting, no quotes`;
 
-  const response = await fetch(GROQ_URL, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${env.GROQ_API_KEY}`,
-    },
-    body: JSON.stringify({
-      model: MODEL,
-      messages: [{ role: 'user', content: prompt }],
-      temperature: 0.7,
-      max_tokens: 512,
-    }),
-  });
+  // gpt-oss-120b spends part of its token budget on a hidden <think> reasoning
+  // trace before the answer; keep effort low and leave enough headroom that the
+  // trace doesn't eat the whole budget and leave content empty. Retry once (with
+  // more headroom) if that still happens.
+  const callGroq = async (maxTokens: number) => {
+    const response = await fetch(GROQ_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${env.GROQ_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model: MODEL,
+        messages: [{ role: 'user', content: prompt }],
+        temperature: 0.7,
+        max_tokens: maxTokens,
+        reasoning_effort: 'low',
+      }),
+    });
 
-  if (!response.ok) {
-    const error = await response.text();
-    log.error('Groq day copy generation failed', { status: response.status, error });
-    throw new Error(`Day copy generation failed: ${response.status}`);
+    if (!response.ok) {
+      const error = await response.text();
+      log.error('Groq day copy generation failed', { status: response.status, error });
+      throw new Error(`Day copy generation failed: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data.choices?.[0]?.message?.content as string | undefined;
+  };
+
+  let text = await callGroq(1024);
+  if (!text) {
+    log.error('Empty response from day copy generation, retrying with more headroom');
+    text = await callGroq(2048);
   }
-
-  const data = await response.json();
-  const text = data.choices?.[0]?.message?.content;
 
   if (!text) {
     throw new Error('Empty response from day copy generation');
