@@ -149,10 +149,13 @@ export function transformProposalToItineraryData(
 
   // Convert days from relational data
   const itinerary: ThemeDay[] = proposalDays.map((day, index) => {
-    const currentDate = startDate ? addDays(startDate, index) : new Date();
-    const dateStr = isZh
-      ? format(currentDate, 'yyyy年M月d日', { locale: zhCN })
-      : format(currentDate, 'MMMM d, yyyy');
+    const dateStr = startDate
+      ? isZh
+        ? format(addDays(startDate, index), 'yyyy年M月d日', { locale: zhCN })
+        : format(addDays(startDate, index), 'MMMM d, yyyy')
+      : isZh
+        ? `第 ${day.dayNumber} 天`
+        : `Day ${day.dayNumber}`;
 
     // Find translated day content if available
     const translatedDay = translation?.days?.find((td: any) => td.dayNumber === day.dayNumber);

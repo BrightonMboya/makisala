@@ -1,14 +1,11 @@
 'use client';
 
 import { Input } from '@repo/ui/input';
-import {
-  Map,
-  Search,
-} from 'lucide-react';
+import { Map, Search } from 'lucide-react';
 import { trpc } from '@/lib/trpc';
 import { staleTimes } from '@/lib/query-keys';
 import { useSession } from '@/components/session-context';
-import { useState, useMemo, useDeferredValue } from 'react';
+import { useDeferredValue, useMemo, useState } from 'react';
 import ProposalTemplateCard from '../_components/proposal-template-card';
 
 export default function ToursPage() {
@@ -29,14 +26,14 @@ export default function ToursPage() {
       (template) =>
         template.name.toLowerCase().includes(query) ||
         (template.tourTitle || '').toLowerCase().includes(query) ||
-        template.countries.some((c) => c.toLowerCase().includes(query))
+        template.countries.some((c) => c.toLowerCase().includes(query)),
     );
   }, [templates, deferredSearchQuery]);
 
   return (
-    <div className="flex flex-col h-full bg-stone-50">
+    <div className="flex h-full flex-col bg-stone-50">
       <header className="flex items-center justify-between border-b border-stone-200 bg-white px-8 py-4">
-        <h2 className="font-serif text-2xl font-bold text-stone-900">Tours</h2>
+        <h2 className="text-lg font-medium text-stone-900">Tours</h2>
         <div className="flex items-center gap-4">
           <div className="relative w-64">
             <Search className="absolute top-2.5 left-2.5 h-4 w-4 text-stone-400" />
@@ -57,23 +54,21 @@ export default function ToursPage() {
           </div>
         ) : templates.length === 0 ? (
           <div className="py-24 text-center">
-            <div className="mx-auto h-12 w-12 text-stone-300 mb-4">
+            <div className="mx-auto mb-4 h-12 w-12 text-stone-300">
               <Map className="h-full w-full" />
             </div>
             <h3 className="text-lg font-medium text-stone-900">No templates yet</h3>
-            <p className="text-stone-500 mt-1 mb-6">
+            <p className="mt-1 mb-6 text-stone-500">
               Save a finished proposal as a template from its menu to see it here.
             </p>
           </div>
         ) : filteredTemplates.length === 0 ? (
           <div className="py-24 text-center">
-            <div className="mx-auto h-12 w-12 text-stone-300 mb-4">
+            <div className="mx-auto mb-4 h-12 w-12 text-stone-300">
               <Search className="h-full w-full" />
             </div>
             <h3 className="text-lg font-medium text-stone-900">No templates found</h3>
-            <p className="text-stone-500 mt-1">
-              Try adjusting your search query.
-            </p>
+            <p className="mt-1 text-stone-500">Try adjusting your search query.</p>
           </div>
         ) : (
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">

@@ -72,10 +72,10 @@ export function NewRequestDialog({ open, onOpenChange, defaultClientId }: NewReq
     let clientId = data.clientId;
 
     // If creating a new client, create it first
-    if (isNewClient && data.lastName) {
+    if (isNewClient && (data.firstName || data.lastName)) {
       try {
         const result = await createClientMutation.mutateAsync({
-          name: `${data.firstName || ''} ${data.lastName}`.trim(),
+          name: `${data.firstName || ''} ${data.lastName || ''}`.trim(),
           email: data.email || undefined,
           phone: data.phone || undefined,
           countryOfResidence: data.country || undefined,
@@ -92,7 +92,7 @@ export function NewRequestDialog({ open, onOpenChange, defaultClientId }: NewReq
     const newId = Math.random().toString(36).substring(7);
     const queryParams = new URLSearchParams();
     if (data.selectedTourId) queryParams.set('tourId', data.selectedTourId);
-    queryParams.set('startDate', data.startDate.toISOString());
+    if (data.startDate) queryParams.set('startDate', data.startDate.toISOString());
     if (clientId) queryParams.set('clientId', clientId);
     queryParams.set('tourTitle', data.tourTitle);
     queryParams.set('tourType', data.tourType);
@@ -192,7 +192,7 @@ export function NewRequestDialog({ open, onOpenChange, defaultClientId }: NewReq
                         name="lastName"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Last Name *</FormLabel>
+                            <FormLabel>Last Name</FormLabel>
                             <FormControl>
                               <Input {...field} />
                             </FormControl>
@@ -272,10 +272,13 @@ export function NewRequestDialog({ open, onOpenChange, defaultClientId }: NewReq
                   name="startDate"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Start Date *</FormLabel>
+                      <FormLabel>Start Date</FormLabel>
                       <FormControl>
                         <DatePicker date={field.value} setDate={field.onChange} />
                       </FormControl>
+                      <p className="text-xs italic text-stone-500">
+                        Leave blank if the client hasn&apos;t confirmed travel dates yet.
+                      </p>
                     </FormItem>
                   )}
                 />

@@ -86,10 +86,15 @@ export default async function AccomodationsPage({
                                         </TableCell>
                                         <TableCell>
                                             {acc.latitude && acc.longitude ? (
-                                                <span className="flex items-center text-gray-600">
+                                                <a
+                                                    href={`https://www.google.com/maps?q=${acc.latitude},${acc.longitude}`}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="flex items-center text-gray-600 hover:underline"
+                                                >
                                                     <MapPin className="mr-1 h-3 w-3" />
-                                                    {acc.latitude}, {acc.longitude}
-                                                </span>
+                                                    View on Maps
+                                                </a>
                                             ) : '-'}
                                         </TableCell>
                                         <TableCell>

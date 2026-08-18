@@ -9,10 +9,10 @@ export const requestSchema = z.object({
   phone: z.string().optional(),
   tourTitle: z.string().min(1, 'Tour title is required'),
   tourType: z.string().min(1, 'Tour type is required'),
-  startDate: z.date(),
+  startDate: z.date().optional(),
   travelers: z.number().min(1, 'At least 1 traveler is required'),
   selectedTourId: z.string().optional(),
-}).refine(data => data.clientId || data.lastName, {
+}).refine(data => data.clientId || data.firstName || data.lastName, {
   message: 'Either select an existing client or enter client details',
   path: ['clientId'],
 })

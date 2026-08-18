@@ -91,8 +91,7 @@ export function transformBuilderToItineraryData(params: {
 
   // Convert builder days to theme days
   const itinerary: ThemeDay[] = days.map((day, index) => {
-    const currentDate = startDate ? addDays(startDate, index) : new Date();
-    const dateStr = format(currentDate, 'MMMM d, yyyy');
+    const dateStr = startDate ? format(addDays(startDate, index), 'MMMM d, yyyy') : `Day ${day.dayNumber}`;
 
     const activities: DayActivity[] = day.activities.map((act) => ({
       time: act.startTime ? formatTime(act.startTime) : '',

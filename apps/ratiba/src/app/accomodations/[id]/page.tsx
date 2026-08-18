@@ -96,10 +96,15 @@ export default async function AccommodationDetailPage({ params }: Props) {
 
             <div className="flex flex-wrap items-center gap-6 text-sm text-gray-500">
               {acc.latitude && acc.longitude && (
-                <span className="flex items-center gap-1.5">
+                <a
+                  href={`https://www.google.com/maps?q=${acc.latitude},${acc.longitude}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1.5 hover:underline"
+                >
                   <MapPin className="h-4 w-4" />
-                  {acc.latitude}, {acc.longitude}
-                </span>
+                  View on Google Maps
+                </a>
               )}
               {acc.url && (
                 <a

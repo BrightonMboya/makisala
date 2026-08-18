@@ -27,7 +27,7 @@ import { RecipientInput } from '@/components/email-composer/recipient-input';
 import { isSupportedEmailBody, type EditorNode } from '@/lib/email/proposal-email-body';
 import type { EmailAttachment } from '@repo/db/schema';
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { toast } from '@repo/ui/toast';
 import { useMutation } from '@tanstack/react-query';
 import { trpc } from '@/lib/trpc';
@@ -65,6 +65,7 @@ const LANGUAGES = [
 
 export default function SharePage() {
   const params = useParams();
+  const router = useRouter();
   const proposalId = params.id as string;
 
   const {
@@ -110,7 +111,7 @@ export default function SharePage() {
   // Share-email composer state (react-email editor body + additional attachments).
   const [emailBodyJson, setEmailBodyJson] = useState<EditorNode | null>(null);
   const [emailAttachments, setEmailAttachments] = useState<EmailAttachment[]>([]);
-  const [includePdfAttachment, setIncludePdfAttachment] = useState(true);
+  const [includePdfAttachment, setIncludePdfAttachment] = useState(false);
   const [previewHtml, setPreviewHtml] = useState('');
   const [previewLoading, setPreviewLoading] = useState(false);
   // Imperative handle to the editor: renders current HTML + inserts variables.
@@ -410,6 +411,9 @@ export default function SharePage() {
           ? `Test email sent to ${testEmail}`
           : `Proposal sent to ${clientName} at ${recipients.join(', ')}`,
       });
+      if (!isTest && clientId) {
+        router.push(`/clients/${clientId}`);
+      }
     },
     onError: (error: Error) => {
       toast({
