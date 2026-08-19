@@ -1,16 +1,17 @@
-import { betterAuth } from 'better-auth';
+import { betterAuth, type BetterAuthPlugin } from 'better-auth';
 import { db, invitation, member, organizations } from '@repo/db';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
-import { organization } from 'better-auth/plugins';
+import { jwt, organization } from 'better-auth/plugins';
 import { passkey } from '@better-auth/passkey';
-import { polar, checkout, portal, webhooks } from '@polar-sh/better-auth';
+import { mcp } from '@better-auth/mcp';
+import { checkout, polar, portal, webhooks } from '@polar-sh/better-auth';
 import { Polar } from '@polar-sh/sdk';
 import { sendEmailVerificationEmail, sendTeamInvitationEmail } from '@repo/resend';
 import { and, eq } from 'drizzle-orm';
 import { randomBytes } from 'crypto';
 import { env } from './env';
 import { log, serializeError } from './logger';
-import { reconcileOrgPlanWithPolar, productIdToTier } from './billing-reconcile';
+import { productIdToTier, reconcileOrgPlanWithPolar } from './billing-reconcile';
 
 // Initialize Polar client
 const polarClient = new Polar({
@@ -162,6 +163,14 @@ export const auth = betterAuth({
       rpName: 'Ratiba',
       origin: env.NEXT_PUBLIC_APP_URL,
     }),
+    jwt(),
+    mcp({
+      loginPage: '/login',
+      consentPage: '/consent',
+      resource: `${env.NEXT_PUBLIC_APP_URL}/api/mcp`,
+      allowDynamicClientRegistration: true,
+      allowUnauthenticatedClientRegistration: true,
+    }) as unknown as BetterAuthPlugin,
     organization({
       // Send invitation email when a member is invited
       async sendInvitationEmail(data) {

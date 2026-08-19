@@ -143,7 +143,8 @@ export async function checkFeatureAccess(
     case 'allThemes':
     case 'noWatermark':
     case 'comments':
-    case 'customDomains': {
+    case 'customDomains':
+    case 'mcpAccess': {
       if (limits[feature]) return { allowed: true };
       const nextTier = getUpgradeTier(plan.effectiveTier, feature);
       const featureNames: Record<string, string> = {
@@ -152,6 +153,7 @@ export async function checkFeatureAccess(
         noWatermark: 'Watermark removal',
         comments: 'Comments',
         customDomains: 'Custom domains',
+        mcpAccess: 'The MCP connector (ChatGPT / Claude)',
       };
       return {
         allowed: false,

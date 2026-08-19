@@ -246,6 +246,90 @@ interface BuilderDay {
   transfer?: BuilderTransfer;
 }
 
+// ---------- MCP-facing input schemas ----------
+// Strict, LLM-friendly counterparts to the loose `data: z.record(...)` the
+// builder UI posts to `save`. Mirror BuilderData/BuilderDay above field-for-
+// field; a plain object built from these validates against `save` as-is.
+// `accommodation` stays an id (not a free-text name): proposalDays has no
+// free-text accommodation column, so a name with no matching id would be
+// silently dropped by `save` (unlike destinationName, which has a real column).
+const proposalRoomInput = z.object({
+  roomType: z.string().max(100).nullable().optional(),
+  pax: z.number().int().min(1),
+});
+
+const proposalActivityInput = z.object({
+  name: z.string().min(1).max(255),
+  description: z.string().max(2000).optional(),
+  location: z.string().max(255).optional(),
+  fromLocation: z.string().max(255).optional(),
+  toLocation: z.string().max(255).optional(),
+  moment: z.enum(['Morning', 'Afternoon', 'Evening', 'Half Day', 'Full Day', 'Night']).optional(),
+  time: z.string().max(20).optional(),
+  isOptional: z.boolean().optional(),
+  price: z.number().min(0).optional(),
+  priceUnit: z.enum(['per_person', 'per_group']).optional(),
+});
+
+const proposalTransferInput = z.object({
+  originName: z.string().min(1).max(255),
+  destinationName: z.string().min(1).max(255),
+  mode: z.enum(['road_4x4', 'road_shuttle', 'road_bus', 'mini_bus', 'flight_domestic', 'flight_bush']),
+  durationMinutes: z.number().int().min(0).optional(),
+  distanceKm: z.number().int().min(0).optional(),
+  notes: z.string().max(1000).optional(),
+});
+
+const proposalDayInput = z.object({
+  dayNumber: z.number().int().min(1),
+  title: z.string().max(255).optional(),
+  description: z.string().max(5000).optional(),
+  destinationName: z.string().max(255).optional(),
+  accommodation: z.string().optional(),
+  rooms: z.array(proposalRoomInput).max(20).optional(),
+  activities: z.array(proposalActivityInput).max(20).optional(),
+  meals: z
+    .object({
+      breakfast: z.boolean().optional(),
+      lunch: z.boolean().optional(),
+      dinner: z.boolean().optional(),
+    })
+    .optional(),
+  transfer: proposalTransferInput.optional(),
+});
+
+const proposalPricingRowInput = z.object({
+  id: z.string(),
+  count: z.number().int().min(1),
+  type: z.string().min(1).max(100),
+  unitPrice: z.number().min(0),
+});
+
+const proposalTravelerGroupInput = z.object({
+  id: z.string(),
+  count: z.number().int().min(1),
+  type: z.string().min(1).max(100),
+});
+
+export const createProposalInput = z.object({
+  name: z.string().min(2).max(255),
+  tourId: z.string().optional(),
+  clientId: z.string().optional(),
+  currency: z.enum(['USD', 'EUR']).optional(),
+  startDate: z.string().optional(),
+  startCity: z.string().max(255).optional(),
+  endCity: z.string().max(255).optional(),
+  pickupPoint: z.string().max(255).optional(),
+  countries: z.array(z.string().min(2)).optional(),
+  inclusions: z.array(z.string().max(255)).optional(),
+  exclusions: z.array(z.string().max(255)).optional(),
+  travelerGroups: z.array(proposalTravelerGroupInput).optional(),
+  pricingRows: z.array(proposalPricingRowInput).optional(),
+  days: z.array(proposalDayInput).max(60).optional(),
+});
+
+export const updateProposalInput = createProposalInput.partial().extend({ id: z.string() });
+
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 // When a proposal uses the rate-card auto-pricing engine, the builder only
@@ -1025,6 +1109,7 @@ export const proposalsRouter = router({
         columns: {
           id: true,
           name: true,
+          status: true,
           tourId: true,
           tourTitle: true,
           tourType: true,

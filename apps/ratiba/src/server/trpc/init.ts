@@ -51,7 +51,7 @@ export function escapeLikeQuery(query: string): string {
   return query.replace(/[%_\\]/g, '\\$&');
 }
 
-const resolveOrgId = cache(async (
+export const resolveOrgId = cache(async (
   userId: string,
   sessionOrgId?: string | null,
 ): Promise<string> => {

@@ -14,7 +14,8 @@ export type Feature =
   | 'allThemes'
   | 'noWatermark'
   | 'comments'
-  | 'customDomains';
+  | 'customDomains'
+  | 'mcpAccess';
 
 export interface PlanLimits {
   activeProposals: number; // -1 = unlimited
@@ -24,6 +25,7 @@ export interface PlanLimits {
   noWatermark: boolean;
   comments: boolean;
   customDomains: boolean;
+  mcpAccess: boolean;
 }
 
 export interface PlanConfig {
@@ -44,6 +46,7 @@ export const PLAN_CONFIG: Record<PlanTier, PlanConfig> = {
       noWatermark: false,
       comments: false,
       customDomains: false,
+      mcpAccess: false,
     },
   },
   starter: {
@@ -57,6 +60,7 @@ export const PLAN_CONFIG: Record<PlanTier, PlanConfig> = {
       noWatermark: false,
       comments: false,
       customDomains: false,
+      mcpAccess: false,
     },
   },
   pro: {
@@ -70,6 +74,7 @@ export const PLAN_CONFIG: Record<PlanTier, PlanConfig> = {
       noWatermark: true,
       comments: true,
       customDomains: false,
+      mcpAccess: true,
     },
   },
   business: {
@@ -83,6 +88,7 @@ export const PLAN_CONFIG: Record<PlanTier, PlanConfig> = {
       noWatermark: true,
       comments: true,
       customDomains: true,
+      mcpAccess: true,
     },
   },
 };

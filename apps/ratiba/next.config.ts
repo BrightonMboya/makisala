@@ -31,6 +31,17 @@ const nextConfig: NextConfig = {
       '</robots.txt>; rel="describedby"; type="text/plain"',
       '</features.md>; rel="describedby"; type="text/markdown"; title="Product features (markdown)"',
     ].join(', ');
+    // MCP OAuth discovery/DCR/token endpoints are meant to be fetched
+    // cross-origin by browser-based MCP clients (e.g. MCP Inspector's web
+    // UI). Without Access-Control-Allow-Origin, those fetches are silently
+    // blocked by the browser, which the client SDK's CORS-swallowing logic
+    // misreads as "endpoint not found" and falls back to guessing the wrong
+    // (bare-origin) authorization server.
+    const mcpCorsHeaders = [
+      { key: 'Access-Control-Allow-Origin', value: '*' },
+      { key: 'Access-Control-Allow-Methods', value: 'GET, POST, OPTIONS' },
+      { key: 'Access-Control-Allow-Headers', value: '*' },
+    ];
     return [
       {
         source: '/',
@@ -39,6 +50,14 @@ const nextConfig: NextConfig = {
           { key: 'Vary', value: 'Accept' },
         ],
       },
+      { source: '/.well-known/oauth-protected-resource/:path*', headers: mcpCorsHeaders },
+      { source: '/.well-known/oauth-authorization-server/:path*', headers: mcpCorsHeaders },
+      { source: '/.well-known/openid-configuration/:path*', headers: mcpCorsHeaders },
+      {
+        source: '/api/mcp',
+        headers: [...mcpCorsHeaders, { key: 'Access-Control-Expose-Headers', value: 'WWW-Authenticate, Mcp-Session-Id' }],
+      },
+      { source: '/api/auth/oauth2/:path*', headers: mcpCorsHeaders },
     ];
   },
   images: {

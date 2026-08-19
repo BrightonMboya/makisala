@@ -10,6 +10,37 @@ import { eq, inArray, isNull, sql } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
 import { router, protectedProcedure, publicProcedure } from '../init';
 
+const itineraryDayInput = z.object({
+  dayNumber: z.number(),
+  title: z.string().max(255),
+  overview: z.string().max(5000).optional(),
+  national_park_id: z.string().optional(),
+  accommodation_id: z.string().optional(),
+});
+
+export const createTourInput = z.object({
+  tourName: z.string().min(2).max(255),
+  overview: z.string().min(1).max(5000),
+  pricing: z.string(),
+  countries: z.array(z.string().min(2)).min(1, 'At least one country is required'),
+  tags: z.array(z.string().max(100)).max(20),
+  img_url: z.string().optional(),
+  number_of_days: z.number().min(1),
+  itineraries: z.array(itineraryDayInput).max(60).optional(),
+});
+
+export const updateTourInput = z.object({
+  id: z.string(),
+  tourName: z.string().optional(),
+  overview: z.string().optional(),
+  pricing: z.string().optional(),
+  countries: z.array(z.string().min(2)).min(1).optional(),
+  tags: z.array(z.string().max(100)).max(20).optional(),
+  img_url: z.string().optional(),
+  number_of_days: z.number().optional(),
+  itineraries: z.array(itineraryDayInput).max(60).optional(),
+});
+
 export const toursRouter = router({
   list: protectedProcedure.query(async ({ ctx }) => {
     return await ctx.db
@@ -101,29 +132,7 @@ export const toursRouter = router({
     }),
 
   create: protectedProcedure
-    .input(
-      z.object({
-        tourName: z.string().min(2).max(255),
-        overview: z.string().min(1).max(5000),
-        pricing: z.string(),
-        countries: z.array(z.string().min(2)).min(1, 'At least one country is required'),
-        tags: z.array(z.string().max(100)).max(20),
-        img_url: z.string().optional(),
-        number_of_days: z.number().min(1),
-        itineraries: z
-          .array(
-            z.object({
-              dayNumber: z.number(),
-              title: z.string().max(255),
-              overview: z.string().max(5000).optional(),
-              national_park_id: z.string().optional(),
-              accommodation_id: z.string().optional(),
-            }),
-          )
-          .max(60)
-          .optional(),
-      }),
-    )
+    .input(createTourInput)
     .mutation(async ({ ctx, input }) => {
       const { itineraries, countries, ...tourData } = input;
       const primaryCountry = countries[0]!; // zod .min(1) guarantees at least one element
@@ -191,30 +200,7 @@ export const toursRouter = router({
     }),
 
   update: protectedProcedure
-    .input(
-      z.object({
-        id: z.string(),
-        tourName: z.string().optional(),
-        overview: z.string().optional(),
-        pricing: z.string().optional(),
-        countries: z.array(z.string().min(2)).min(1).optional(),
-        tags: z.array(z.string().max(100)).max(20).optional(),
-        img_url: z.string().optional(),
-        number_of_days: z.number().optional(),
-        itineraries: z
-          .array(
-            z.object({
-              dayNumber: z.number(),
-              title: z.string().max(255),
-              overview: z.string().max(5000).optional(),
-              national_park_id: z.string().optional(),
-              accommodation_id: z.string().optional(),
-            }),
-          )
-          .max(60)
-          .optional(),
-      }),
-    )
+    .input(updateTourInput)
     .mutation(async ({ ctx, input }) => {
       const tour = await ctx.db.query.tours.findFirst({
         where: eq(tours.id, input.id),
