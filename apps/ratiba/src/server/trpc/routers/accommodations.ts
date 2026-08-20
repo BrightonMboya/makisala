@@ -191,6 +191,10 @@ export const accommodationsRouter = router({
     .input(
       z.object({
         query: z.string().default(''),
+        // Best-effort destination filter: accommodations have no destination/park
+        // FK (see nationalParkId note on proposalDays), only this loose text
+        // column, so this matches on country name/code substring only.
+        country: z.string().optional(),
         limit: z.number().int().positive().max(100).default(20),
       }),
     )
@@ -199,30 +203,17 @@ export const accommodationsRouter = router({
       const orgId = await resolveOptionalOrgId(ctx);
       const hiddenIds = orgId ? await getHiddenImageIds(ctx.db, orgId) : [];
 
-      if (!trimmed) {
-        return ctx.db.query.accommodations.findMany({
-          where: accVisibleWhere(orgId),
-          limit: input.limit,
-          with: {
-          images: {
-            where: (img, { and, or, eq, isNull, notInArray }) =>
-              and(
-                orgId
-                  ? or(isNull(img.organizationId), eq(img.organizationId, orgId))
-                  : isNull(img.organizationId),
-                hiddenIds.length ? notInArray(img.id, hiddenIds) : undefined,
-              )!,
-            limit: 1,
-          },
-        },
-        });
+      const conditions = [accVisibleWhere(orgId)];
+      if (trimmed) {
+        const searchLike = `%${escapeLikeQuery(trimmed)}%`;
+        conditions.push(or(ilike(accommodations.name, searchLike), ilike(accommodations.slug, searchLike))!);
       }
-      const searchLike = `%${escapeLikeQuery(trimmed)}%`;
+      if (input.country?.trim()) {
+        conditions.push(ilike(accommodations.country, `%${escapeLikeQuery(input.country.trim())}%`)!);
+      }
+
       return ctx.db.query.accommodations.findMany({
-        where: and(
-          or(ilike(accommodations.name, searchLike), ilike(accommodations.slug, searchLike)),
-          accVisibleWhere(orgId),
-        ),
+        where: and(...conditions),
         limit: input.limit,
         with: {
           images: {
@@ -233,7 +224,7 @@ export const accommodationsRouter = router({
                   : isNull(img.organizationId),
                 hiddenIds.length ? notInArray(img.id, hiddenIds) : undefined,
               )!,
-            limit: 1,
+            limit: 3,
           },
         },
       });

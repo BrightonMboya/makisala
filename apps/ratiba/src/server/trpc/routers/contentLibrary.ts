@@ -108,6 +108,8 @@ export const contentLibraryRouter = router({
         .object({
           cursor: z.string().optional(),
           limit: z.number().int().positive().max(100).default(20),
+          // Name search — omit for the unfiltered browse grid.
+          query: z.string().optional(),
         })
         .optional(),
     )
@@ -116,6 +118,9 @@ export const contentLibraryRouter = router({
       const cursor = input?.cursor ? decodeCursor(input.cursor) : null;
 
       const conditions = [eq(organizationImages.organizationId, ctx.orgId)];
+      if (input?.query?.trim()) {
+        conditions.push(ilike(organizationImages.name, `%${escapeLikeQuery(input.query.trim())}%`));
+      }
 
       if (cursor) {
         conditions.push(

@@ -285,6 +285,9 @@ const proposalDayInput = z.object({
   title: z.string().max(255).optional(),
   description: z.string().max(5000).optional(),
   destinationName: z.string().max(255).optional(),
+  // A photo representing this day/destination (e.g. from search_images). Shown
+  // as the day card's image in the itinerary.
+  previewImage: z.string().url().optional(),
   accommodation: z.string().optional(),
   rooms: z.array(proposalRoomInput).max(20).optional(),
   activities: z.array(proposalActivityInput).max(20).optional(),
@@ -315,6 +318,15 @@ export const createProposalInput = z.object({
   name: z.string().min(2).max(255),
   tourId: z.string().optional(),
   clientId: z.string().optional(),
+  // The proposal's hero/cover photo (e.g. from search_images). A client-facing
+  // proposal should always have one.
+  heroImage: z.string().url().optional(),
+  // Visual theme for the client-facing page. Defaults to minimalistic if
+  // unset, or if the org's plan doesn't allow the requested theme (kudu/
+  // discovery require Pro/Business — see ALLOWED_THEMES_BY_TIER). Omits
+  // 'safari-portal': a real, renderable theme, but not yet offered in the
+  // builder's own theme picker, so not offered here either.
+  theme: z.enum(['minimalistic', 'kudu', 'discovery']).optional(),
   currency: z.enum(['USD', 'EUR']).optional(),
   startDate: z.string().optional(),
   startCity: z.string().max(255).optional(),
