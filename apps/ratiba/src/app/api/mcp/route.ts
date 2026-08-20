@@ -299,7 +299,7 @@ When creating or updating a client-facing proposal:
 4. Always set room types and pax counts on accommodation nights.
 5. Configure meals for each day where relevant.
 6. Include relevant activities and transfers/transportation.
-7. Select a high-quality, relevant hero image for the proposal, and preview images for days where a good one exists (use search_images).
+7. Every national park has a curated photo library. For each distinct destinationName in the itinerary (e.g. Arusha, Tarangire, Serengeti), call search_images once with that name; set each day's previewImage from that day's own destination's destinationImages (a day at Tarangire gets a Tarangire photo, not a Serengeti one), and set the proposal's heroImage from the primary/opening destination's destinationImages.
 8. There are three visual themes: minimalistic (default, clean/typographic), kudu (dark, immersive, snap-scroll), and discovery (split-screen, image-forward). Keep the default unless the user asks for a particular look or a theme's style clearly fits the trip (e.g. discovery for a photography-heavy safari). kudu/discovery require a Pro/Business plan — if the org's plan doesn't allow the requested theme it's silently saved as minimalistic, which create_proposal/update_proposal surface back as a warning.
 9. If the user asks for the proposal in another language, use translate_proposal after the proposal (and its final content) exists — translating first and editing the itinerary after would leave the translation stale, since re-running translate_proposal regenerates it from the current content.
 10. Prefer existing Ratiba records (accommodations, images, clients) over inventing values. \`accommodation\` fields must be real accommodation ids — look them up with search_accommodations or get_accommodation; a lodge name with no id will not be linked.
@@ -487,9 +487,16 @@ const mcpHandler = createMcpHandler(
       {
         title: 'Search images',
         description:
-          'Find real, existing images to use as a proposal hero image or day preview image. Matches the query against national park/destination names (returning that destination\'s photo library), accommodation names (returning that lodge\'s photos), and this organization\'s own uploaded image library (matched by name/caption). Always use this instead of inventing an image URL — check the organization\'s own library first, since those are often Makisala-branded or trip-specific photos not tied to any single destination/lodge.',
+          'Find real, existing images to use as a proposal hero image or a day preview image. Matches the query against national park/destination names (returning that destination\'s photo library in `destinationImages`), accommodation names (returning that lodge\'s photos in `accommodationImages`), and this organization\'s own uploaded image library (matched by name/caption, returned in `organizationImages`). Every national park already has a curated library — call this once per distinct `destinationName` in the itinerary (e.g. once for "Serengeti", once for "Tarangire", once for "Arusha"), then set each day\'s `previewImage` from that day\'s own destination\'s `destinationImages`, and pick the proposal\'s `heroImage` from the primary/opening destination\'s `destinationImages`. Always use this instead of inventing an image URL — check the organization\'s own library first, since those are often Makisala-branded or trip-specific photos not tied to any single destination/lodge.',
         inputSchema: z.object({
-          query: z.string().min(2).describe('A destination name (e.g. "Serengeti") or accommodation name'),
+          query: z
+            .string()
+            .min(2)
+            .describe(
+              'A destination name or accommodation name. For destinations, use the short official park name ' +
+                '(e.g. "Serengeti", "Tarangire", "Ngorongoro Crater") — matching is substring-based against the ' +
+                'park\'s name, so a longer descriptive phrase will fail to match.',
+            ),
         }),
       },
       async (input, ctx) => {

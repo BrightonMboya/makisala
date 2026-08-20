@@ -284,10 +284,25 @@ const proposalDayInput = z.object({
   dayNumber: z.number().int().min(1),
   title: z.string().max(255).optional(),
   description: z.string().max(5000).optional(),
-  destinationName: z.string().max(255).optional(),
-  // A photo representing this day/destination (e.g. from search_images). Shown
-  // as the day card's image in the itinerary.
-  previewImage: z.string().url().optional(),
+  destinationName: z
+    .string()
+    .max(255)
+    .optional()
+    .describe(
+      'The park/place this day is at, e.g. "Serengeti", "Tarangire", "Ngorongoro Crater". Pass this as the ' +
+        '`query` to search_images to fetch that destination\'s photo library for previewImage/heroImage — use a ' +
+        'short name matching the park\'s official name (search is substring match: "Serengeti" matches, a longer ' +
+        'phrase like "Northern Serengeti migration route" will not).',
+    ),
+  previewImage: z
+    .string()
+    .url()
+    .optional()
+    .describe(
+      "This day's photo. Call search_images with this day's own destinationName as the query and use one of " +
+        "the returned destinationImages — don't reuse another day's photo unless that day is at the same " +
+        'destination, and never invent a URL.',
+    ),
   accommodation: z.string().optional(),
   rooms: z.array(proposalRoomInput).max(20).optional(),
   activities: z.array(proposalActivityInput).max(20).optional(),
@@ -318,9 +333,15 @@ export const createProposalInput = z.object({
   name: z.string().min(2).max(255),
   tourId: z.string().optional(),
   clientId: z.string().optional(),
-  // The proposal's hero/cover photo (e.g. from search_images). A client-facing
-  // proposal should always have one.
-  heroImage: z.string().url().optional(),
+  heroImage: z
+    .string()
+    .url()
+    .optional()
+    .describe(
+      "The proposal's hero/cover photo — a client-facing proposal should always have one. Call search_images " +
+        "with the trip's primary or opening destinationName and use one of the returned destinationImages " +
+        '(fall back to an organizationImages photo if that destination has no library); never invent a URL.',
+    ),
   // Visual theme for the client-facing page. Defaults to minimalistic if
   // unset, or if the org's plan doesn't allow the requested theme (kudu/
   // discovery require Pro/Business — see ALLOWED_THEMES_BY_TIER). Omits
