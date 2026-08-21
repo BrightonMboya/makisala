@@ -796,6 +796,13 @@ export const accommodations = pgTable(
     pricingInfo: text('pricing_info'),
     country: text('country'),
 
+    // True only for lodges/camps physically sited inside a national park's
+    // gazetted boundary. Drives whether a park's per-person concession fee
+    // (parkAncillaryFees.requiresInsidePark) applies to a night here — a
+    // Karatu-based lodge doing day trips into Tarangire, for example, must
+    // stay false. Defaults false (conservative: undercharge, not overcharge).
+    isInsidePark: boolean('is_inside_park').notNull().default(false),
+
     // Ownership. NULL = curated/global lodge shared with every org. Non-null =
     // a lodge one org added privately; only that org sees it in search/builder.
     organizationId: uuid('organization_id').references(() => organizations.id, {
@@ -2196,6 +2203,12 @@ export const parkAncillaryFees = pgTable(
     // fee that differs by adult/child). Null = applies to every traveler at
     // the same rate.
     category: ParkFeeCategory('category'),
+    // When true, this fee only counts nights whose accommodation is flagged
+    // accommodations.isInsidePark — e.g. Tarangire/Manyara's hotel concession
+    // fee, which shouldn't fire for a Karatu-based lodge day-tripping in.
+    // Existing unconditional fees (Serengeti, NCA, Ndutu) default false so
+    // they keep firing exactly as before.
+    requiresInsidePark: boolean('requires_inside_park').notNull().default(false),
     createdAt: timestamp('created_at').defaultNow().notNull(),
     updatedAt: timestamp('updated_at').defaultNow().notNull(),
   },

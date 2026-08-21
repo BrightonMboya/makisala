@@ -4,17 +4,26 @@ import { and, desc, eq, ilike } from 'drizzle-orm';
 import { TRPCError } from '@trpc/server';
 import { router, protectedProcedure, escapeLikeQuery } from '../init';
 
+// Exported so MCP tools can import the exact shape instead of re-declaring
+// it — a field added/tightened here (e.g. a new max length) then also
+// applies to search_clients without anyone remembering to update both.
+export const clientsListInput = z.object({
+  query: z.string().max(100).optional(),
+  page: z.number().int().positive().default(1),
+  limit: z.number().int().positive().max(100).default(10),
+});
+
+export const createClientInput = z.object({
+  name: z.string().min(1).max(255),
+  email: z.string().email().max(255).optional(),
+  phone: z.string().max(50).optional(),
+  countryOfResidence: z.string().max(100).optional(),
+  notes: z.string().max(5000).optional(),
+});
+
 export const clientsRouter = router({
   list: protectedProcedure
-    .input(
-      z
-        .object({
-          query: z.string().max(100).optional(),
-          page: z.number().int().positive().default(1),
-          limit: z.number().int().positive().max(100).default(10),
-        })
-        .optional(),
-    )
+    .input(clientsListInput.optional())
     .query(async ({ ctx, input }) => {
       const page = input?.page ?? 1;
       const limit = input?.limit ?? 10;
@@ -60,15 +69,7 @@ export const clientsRouter = router({
     }),
 
   create: protectedProcedure
-    .input(
-      z.object({
-        name: z.string().min(1).max(255),
-        email: z.string().email().max(255).optional(),
-        phone: z.string().max(50).optional(),
-        countryOfResidence: z.string().max(100).optional(),
-        notes: z.string().max(5000).optional(),
-      }),
-    )
+    .input(createClientInput)
     .mutation(async ({ ctx, input }) => {
       const [newClient] = await ctx.db
         .insert(clients)

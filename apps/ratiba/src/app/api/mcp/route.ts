@@ -8,7 +8,18 @@ import { log } from '@/lib/logger';
 import { checkFeatureAccess } from '@/lib/plans';
 import { createMcpCaller } from '@/server/trpc/caller';
 import { resolveOrgId } from '@/server/trpc/init';
-import { createProposalInput, updateProposalInput } from '@/server/trpc/routers/proposals';
+import {
+  createProposalInput,
+  updateProposalInput,
+  listProposalsForDashboardInput,
+  reconcileAutoPricingRows,
+  type BuilderData,
+} from '@/server/trpc/routers/proposals';
+import { db } from '@repo/db';
+import { clientsListInput, createClientInput } from '@/server/trpc/routers/clients';
+import { translateProposalInput } from '@/server/trpc/routers/translations';
+import { accommodationsSearchInput } from '@/server/trpc/routers/accommodations';
+import type { PricingBreakdown } from '@/lib/pricing-engine';
 import { getPublicUrl } from '@/lib/storage';
 
 type McpCaller = Awaited<ReturnType<typeof createMcpCaller>>;
@@ -166,13 +177,15 @@ function mapProposalDays(days: ProposalDayInput[] | undefined): BuilderFacingDay
   }));
 }
 
-// Auto-pricing engine settings the MCP schema has no way to set — they're
+// Auto-pricing engine settings. `useAutoPricing` itself is authorable via the
+// MCP schema (createProposalInput); the rate-card selectors it depends on —
+// vehicle/guide/markup/transfer-rate — have no MCP-facing equivalent and are
 // only ever carried over from an existing proposal (see update_proposal's
-// `autoPricingPassthrough`), never authored via MCP. `save` treats a missing
-// key as "reset to null/default" (it isn't a partial patch), so leaving these
-// out entirely — as opposed to passing them as `undefined` — would silently
-// wipe a proposal's vehicle/guide/markup/transfer-rate selection on every
-// MCP edit, even one unrelated to pricing.
+// passthrough below), never authored via MCP. `save` treats a missing key as
+// "reset to null/default" (it isn't a partial patch), so leaving these out
+// entirely — as opposed to passing them as `undefined` — would silently wipe
+// a proposal's vehicle/guide/markup/transfer-rate selection on every MCP
+// edit, even one unrelated to pricing.
 interface AutoPricingPassthrough {
   vehicleId?: string | null;
   vehicleCount?: number | null;
@@ -211,6 +224,50 @@ function proposalDataFromInput(
     ...autoPricing,
     days,
   };
+}
+
+// Turns a rate-card PricingBreakdown into something worth relaying to the
+// human on the other end of the conversation — the line-item cost, the
+// markup, and the final sell price, not just a single number. Also flags
+// the one case that's silent otherwise: an auto-priced proposal that landed
+// at 0% markup (the org's real default markup couldn't be resolved, or
+// someone explicitly zeroed it) is selling at raw cost with no margin — the
+// agent should confirm that's intentional before treating this proposal as
+// ready to send to a client, not just note it in passing.
+function summarizePricingBreakdown(breakdown: PricingBreakdown | null | undefined): {
+  pricingSummary: Record<string, unknown> | null;
+  zeroMarkupWarning: string | null;
+} {
+  if (!breakdown) return { pricingSummary: null, zeroMarkupWarning: null };
+  const lineItemsBySource = new Map<string, number>();
+  for (const li of breakdown.lineItems) {
+    lineItemsBySource.set(li.source, (lineItemsBySource.get(li.source) ?? 0) + li.totalCost);
+  }
+  const pricingSummary = {
+    currency: breakdown.currency,
+    pax: breakdown.pax,
+    costBySource: Object.fromEntries(lineItemsBySource),
+    costSubtotal: breakdown.costSubtotal,
+    markupPct: breakdown.markupPct,
+    markupAmount: breakdown.markupAmount,
+    sellTotal: breakdown.sellTotal,
+    sellPerPax: breakdown.sellPerPax,
+    lineItems: breakdown.lineItems.map((li) => ({
+      label: li.label,
+      quantity: li.quantity,
+      unitCost: li.unitCost,
+      totalCost: li.totalCost,
+      source: li.source,
+      ...(li.missing ? { missing: li.missing } : {}),
+    })),
+  };
+  const zeroMarkupWarning =
+    breakdown.markupPct === 0
+      ? 'This proposal has 0% markup applied — the sell price equals raw cost with no margin. Do not present ' +
+        'this as a final, ready-to-send price without confirming with the user that no markup is intentional ' +
+        '(check the org\'s default markup setting, or set one explicitly).'
+      : null;
+  return { pricingSummary, zeroMarkupWarning };
 }
 
 interface ExistingProposalDay {
@@ -343,27 +400,17 @@ const mcpHandler = createMcpHandler(
         title: 'List proposals',
         description:
           'List client proposals (quotes/sales documents) in the connected Ratiba account, optionally filtered by status or search text.',
-        inputSchema: z.object({
-          status: z
-            .enum(['draft', 'shared', 'awaiting_payment', 'paid', 'booked', 'completed', 'cancelled'])
-            .optional(),
-          search: z.string().optional(),
-          page: z.number().int().min(1).optional(),
-          pageSize: z.number().int().min(1).max(100).optional(),
+        inputSchema: listProposalsForDashboardInput.pick({
+          status: true,
+          search: true,
+          page: true,
+          pageSize: true,
         }),
       },
       async (input, ctx) => {
         const { userId, orgId } = getAuth(ctx);
         const caller = await createMcpCaller(userId, orgId);
-        return textResult(
-          await caller.proposals.listForDashboard({
-            filter: 'all',
-            status: input.status,
-            search: input.search,
-            page: input.page ?? 1,
-            pageSize: input.pageSize ?? 20,
-          }),
-        );
+        return textResult(await caller.proposals.listForDashboard({ ...input, filter: 'all' }));
       },
     );
 
@@ -372,13 +419,47 @@ const mcpHandler = createMcpHandler(
       {
         title: 'Get proposal',
         description:
-          'Get the full details of one proposal by id, including its day-by-day itinerary and pricing.',
+          'Get the full details of one proposal by id, including its day-by-day itinerary and pricing. For an ' +
+          'auto-priced proposal (`useAutoPricing: true`), also includes a freshly-computed `pricingSummary` ' +
+          '(cost by category, markup, sell total) and flags in `warnings` if it has 0% markup applied.',
         inputSchema: z.object({ id: z.string() }),
       },
       async (input, ctx) => {
         const { userId, orgId } = getAuth(ctx);
         const caller = await createMcpCaller(userId, orgId);
-        return textResult(await caller.proposals.getForBuilder({ id: input.id }));
+        const existing = await caller.proposals.getForBuilder({ id: input.id });
+        if (!existing) return textResult(null);
+
+        let pricingSummary: Record<string, unknown> | null = null;
+        const warnings: string[] = [];
+        if (existing.useAutoPricing) {
+          // daysFromExisting's return type is a slightly looser shape than
+          // BuilderDay (this same data already flows through it via
+          // proposalDataFromInput's untyped Record<string, unknown> return
+          // in update_proposal above) — safe to assert here too.
+          const builderData: BuilderData = {
+            days: daysFromExisting(existing.days).map((d) => ({
+              ...d,
+              rooms: d.rooms?.map((r) => ({ ...r, roomType: r.roomType ?? null })),
+            })) as BuilderData['days'],
+            travelerGroups: existing.travelerGroups,
+            startDate: existing.startDate,
+            vehicleId: existing.vehicleId,
+            vehicleCount: existing.vehicleCount,
+            guideId: existing.guideId,
+            markupPct: existing.markupPct,
+            pickupTransferRateId: existing.pickupTransferRateId,
+            dropoffTransferRateId: existing.dropoffTransferRateId,
+            currency: existing.currency as 'USD' | 'EUR' | undefined,
+            pricingOverrides: existing.pricingOverrides,
+            internalCostLines: existing.internalCostLines,
+          };
+          const reconciled = await reconcileAutoPricingRows(db, orgId, builderData);
+          const summarized = summarizePricingBreakdown(reconciled?.breakdown);
+          pricingSummary = summarized.pricingSummary;
+          if (summarized.zeroMarkupWarning) warnings.push(summarized.zeroMarkupWarning);
+        }
+        return textResult({ ...existing, pricingSummary, warnings });
       },
     );
 
@@ -388,15 +469,12 @@ const mcpHandler = createMcpHandler(
         title: 'Search clients',
         description:
           'Search existing clients by name. Use this before create_client to avoid creating a duplicate — if the client already exists, reuse their id as `clientId` on create_proposal/update_proposal.',
-        inputSchema: z.object({
-          query: z.string().optional(),
-          limit: z.number().int().min(1).max(100).optional(),
-        }),
+        inputSchema: clientsListInput.pick({ query: true, limit: true }),
       },
       async (input, ctx) => {
         const { userId, orgId } = getAuth(ctx);
         const caller = await createMcpCaller(userId, orgId);
-        const result = await caller.clients.list({ query: input.query, limit: input.limit ?? 10 });
+        const result = await caller.clients.list(input);
         return textResult(result.clients);
       },
     );
@@ -407,13 +485,7 @@ const mcpHandler = createMcpHandler(
         title: 'Create client',
         description:
           'Create a new client record. Search first with search_clients to avoid duplicates. Returns the new client id — pass it as `clientId` when creating a proposal for them.',
-        inputSchema: z.object({
-          name: z.string().min(1).max(255),
-          email: z.string().email().max(255).optional(),
-          phone: z.string().max(50).optional(),
-          countryOfResidence: z.string().max(100).optional(),
-          notes: z.string().max(5000).optional(),
-        }),
+        inputSchema: createClientInput,
       },
       async (input, ctx) => {
         const { userId, orgId } = getAuth(ctx);
@@ -428,10 +500,7 @@ const mcpHandler = createMcpHandler(
         title: 'Translate proposal',
         description:
           "Translate a proposal's client-facing content into another language and set it as the proposal's active language. Re-running with the same language regenerates and overwrites that translation (e.g. after the itinerary changes).",
-        inputSchema: z.object({
-          proposalId: z.string(),
-          language: z.string().min(2).max(10).describe('Target language code, e.g. "fr", "de", "es"'),
-        }),
+        inputSchema: translateProposalInput,
       },
       async (input, ctx) => {
         const { userId, orgId } = getAuth(ctx);
@@ -460,20 +529,18 @@ const mcpHandler = createMcpHandler(
         title: 'Search accommodations',
         description:
           'Search existing accommodations (lodges/camps/hotels) to find valid ids for use as `accommodation` on a proposal day. Search by name, or filter by country (accommodations have no destination/park field, only a country and coordinates — use judgment, or cross-check `latitude`/`longitude` against the day\'s destination, when narrowing beyond country). Always search before guessing an id.',
-        inputSchema: z.object({
-          query: z.string().optional().describe('Free-text match against accommodation name'),
+        // Same shape as accommodations.search, but capped at 50 results
+        // instead of 100 — a tighter limit for an LLM caller's context.
+        inputSchema: accommodationsSearchInput.extend({
+          query: z.string().default('').describe('Free-text match against accommodation name'),
           country: z.string().optional().describe('Filter by country, e.g. "Tanzania"'),
-          limit: z.number().int().min(1).max(50).optional(),
+          limit: z.number().int().positive().max(50).default(20),
         }),
       },
       async (input, ctx) => {
         const { userId, orgId } = getAuth(ctx);
         const caller = await createMcpCaller(userId, orgId);
-        const results = await caller.accommodations.search({
-          query: input.query ?? '',
-          country: input.country,
-          limit: input.limit ?? 20,
-        });
+        const results = await caller.accommodations.search(input);
         return textResult(
           results.map((acc) => ({
             id: acc.id,
@@ -557,18 +624,32 @@ const mcpHandler = createMcpHandler(
       {
         title: 'Create proposal',
         description:
-          'Create a new client-facing proposal (a day-by-day itinerary with pricing) in Ratiba. `clientId` should reference a real client — search_clients (and create_client if they\'re new) before calling this, rather than leaving it unset for a named proposal. A complete proposal normally has: an accommodation on every overnight day (with room type and pax), meals, activities, transfers, pricing, and a hero image — search_accommodations/search_images first, then fill these in; do not create a bare-minimum proposal and wait to be asked. `accommodation` on a day must be a real accommodation id (from search_accommodations/get_accommodation) — a lodge name with no id will not be linked and should go in `description` instead. `theme` picks the client page\'s visual style (minimalistic/kudu/discovery) — defaults to minimalistic; kudu/discovery need a Pro/Business plan or the request is silently downgraded (surfaced as a warning). Returns `shareUrl`/`editUrl` — use those, never construct a URL yourself. After creating, call get_proposal to verify what was actually persisted before telling the user it is done; the response also includes non-blocking `warnings` for anything obviously missing. To send the proposal in another language, use translate_proposal afterward.',
+          'Create a new client-facing proposal (a day-by-day itinerary with pricing) in Ratiba. `clientId` should reference a real client — search_clients (and create_client if they\'re new) before calling this, rather than leaving it unset for a named proposal. A complete proposal normally has: an accommodation on every overnight day (with room type and pax), meals, activities, transfers, pricing, and a hero image — search_accommodations/search_images first, then fill these in; do not create a bare-minimum proposal and wait to be asked. `accommodation` on a day must be a real accommodation id (from search_accommodations/get_accommodation) — a lodge name with no id will not be linked and should go in `description` instead. `theme` picks the client page\'s visual style (minimalistic/kudu/discovery) — defaults to minimalistic; kudu/discovery need a Pro/Business plan or the request is silently downgraded (surfaced as a warning). `useAutoPricing: true` computes pricing from the org\'s rate card (park fees, accommodation, and any org markup tiers) instead of flat `pricingRows`; the vehicle/guide/transfer selectors that feed that engine can\'t be set via MCP, so a brand-new auto-priced proposal excludes vehicle and guide costs — and prices any airport-transfer day with no transfer/flight leg at $0 — until someone assigns those in the builder (surfaced as a warning). Without a `startDate`, seasonal rates (accommodation/park fee/activity/flight) can\'t be resolved to a real date, so each is priced at its highest-season rate as a conservative estimate instead (also surfaced as a warning) — pass `startDate` when it\'s known for an accurate price. Leave it unset (or use `pricingRows`) unless the org relies on rate-card pricing. Returns `shareUrl`/`editUrl` — use those, never construct a URL yourself. After creating, call get_proposal to verify what was actually persisted before telling the user it is done; the response also includes non-blocking `warnings` for anything obviously missing. To send the proposal in another language, use translate_proposal afterward.',
         inputSchema: createProposalInput,
       },
       async (input, ctx) => {
         const { userId, orgId } = getAuth(ctx);
         const caller = await createMcpCaller(userId, orgId);
         const warnings = await validateProposalDays(caller, input.days, input.heroImage);
+        if (input.useAutoPricing) {
+          warnings.push(
+            'useAutoPricing is on, but this proposal has no vehicle or guide assigned yet (MCP can\'t set those) ' +
+              '— the rate-card price will exclude vehicle/guide costs until one is assigned in the builder.',
+          );
+          if (!input.startDate) {
+            warnings.push(
+              'useAutoPricing is on with no startDate set — rate-card pricing used each item\'s highest-season ' +
+                'rate as a conservative estimate; set a startDate (or edit in the builder) for the real seasonal price.',
+            );
+          }
+        }
         const result = await caller.proposals.save({
           id: '',
           name: input.name,
           tourId: input.tourId ?? null,
-          data: proposalDataFromInput(input, mapProposalDays(input.days)),
+          data: proposalDataFromInput(input, mapProposalDays(input.days), {
+            useAutoPricing: input.useAutoPricing,
+          }),
         });
         if (input.theme) {
           const saved = await caller.proposals.getForBuilder({ id: result.id });
@@ -578,7 +659,9 @@ const mcpHandler = createMcpHandler(
             );
           }
         }
-        return textResult({ ...result, ...proposalUrls(result.id), warnings });
+        const { pricingSummary, zeroMarkupWarning } = summarizePricingBreakdown(result.pricingBreakdown);
+        if (zeroMarkupWarning) warnings.push(zeroMarkupWarning);
+        return textResult({ ...result, ...proposalUrls(result.id), pricingSummary, warnings });
       },
     );
 
@@ -587,7 +670,7 @@ const mcpHandler = createMcpHandler(
       {
         title: 'Update proposal',
         description:
-          'Update an existing proposal. Fields left out keep their current value — including `theme`, which stays as-is unless a new one is passed. If `days` is provided it replaces the whole itinerary; if omitted, the existing itinerary (accommodations, meals, activities, transfers included) is kept as-is. Same completeness expectations as create_proposal: search_accommodations/search_images before referencing new ids, and verify with get_proposal afterward. Returns `shareUrl`/`editUrl` and non-blocking `warnings`.',
+          'Update an existing proposal. Fields left out keep their current value — including `theme`, which stays as-is unless a new one is passed, and `useAutoPricing`, which is carried over from the existing proposal unless explicitly set. If `days` is provided it replaces the whole itinerary; if omitted, the existing itinerary (accommodations, meals, activities, transfers included) is kept as-is. Same completeness expectations as create_proposal: search_accommodations/search_images before referencing new ids, and verify with get_proposal afterward. Returns `shareUrl`/`editUrl` and non-blocking `warnings`.',
         inputSchema: updateProposalInput,
       },
       async (input, ctx) => {
@@ -600,6 +683,19 @@ const mcpHandler = createMcpHandler(
         const days = rest.days ? mapProposalDays(rest.days) : daysFromExisting(existing.days);
         const heroImage = rest.heroImage ?? existing.heroImage ?? undefined;
         const warnings = await validateProposalDays(caller, rest.days, heroImage);
+        const useAutoPricing = rest.useAutoPricing ?? existing.useAutoPricing;
+        if (useAutoPricing && !existing.vehicleId) {
+          warnings.push(
+            'useAutoPricing is on, but this proposal has no vehicle or guide assigned yet (MCP can\'t set those) ' +
+              '— the rate-card price will exclude vehicle/guide costs until one is assigned in the builder.',
+          );
+        }
+        if (useAutoPricing && !(rest.startDate ?? existing.startDate)) {
+          warnings.push(
+            'useAutoPricing is on with no startDate set — rate-card pricing used each item\'s highest-season ' +
+              'rate as a conservative estimate; set a startDate (or edit in the builder) for the real seasonal price.',
+          );
+        }
         const result = await caller.proposals.save({
           id,
           name: rest.name ?? existing.name,
@@ -622,9 +718,12 @@ const mcpHandler = createMcpHandler(
               pricingRows: rest.pricingRows ?? existing.pricingRows ?? undefined,
             },
             days,
-            // MCP has no inputs for these — always carry the existing values
-            // forward so an unrelated edit (e.g. a description tweak) can't
-            // reset the proposal's vehicle/guide/markup/transfer selection.
+            // MCP has no inputs for the rate-card selectors — always carry
+            // the existing values forward so an unrelated edit (e.g. a
+            // description tweak) can't reset the proposal's
+            // vehicle/guide/markup/transfer selection. `useAutoPricing`
+            // itself IS authorable — an explicit value overrides the
+            // existing one, otherwise it's carried forward like the rest.
             {
               vehicleId: existing.vehicleId,
               vehicleCount: existing.vehicleCount,
@@ -632,7 +731,7 @@ const mcpHandler = createMcpHandler(
               markupPct: existing.markupPct,
               pickupTransferRateId: existing.pickupTransferRateId,
               dropoffTransferRateId: existing.dropoffTransferRateId,
-              useAutoPricing: existing.useAutoPricing,
+              useAutoPricing,
               pricingOverrides: existing.pricingOverrides,
               internalCostLines: existing.internalCostLines,
             },
@@ -646,7 +745,9 @@ const mcpHandler = createMcpHandler(
             );
           }
         }
-        return textResult({ ...result, ...proposalUrls(result.id), warnings });
+        const { pricingSummary, zeroMarkupWarning } = summarizePricingBreakdown(result.pricingBreakdown);
+        if (zeroMarkupWarning) warnings.push(zeroMarkupWarning);
+        return textResult({ ...result, ...proposalUrls(result.id), pricingSummary, warnings });
       },
     );
   },

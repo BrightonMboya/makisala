@@ -144,6 +144,12 @@ export interface ParkAncillaryFeeRate {
   // fee that differs by adult/child, mirroring ParkFeeRate.category). Null/
   // unset means the fee applies to every traveler at the same rate.
   category?: ParkFeeCategory | null;
+  // When true, only nights whose accommodation is flagged insidePark (see
+  // PricingInput.insideParkAccommodationIds) count toward this fee — e.g.
+  // Tarangire/Manyara's hotel concession fee, which a Karatu-based lodge
+  // day-tripping in should never be charged. Unset/false = unconditional
+  // (today's behavior for Serengeti/NCA/Ndutu).
+  requiresInsidePark?: boolean;
 }
 
 export interface VehicleRate {
@@ -218,7 +224,12 @@ export interface RoomNight {
 
 export interface ItineraryDayInput {
   dayNumber: number;
-  date: Date; // calendar date for this day
+  // Calendar date for this day. Null when the trip has no start date yet —
+  // every season-dependent lookup (accommodation, park fee, activity,
+  // flight) then falls back to that item's highest-rate row across all its
+  // seasons, so pricing still shows a conservative estimate instead of
+  // blocking entirely (see pickHighestRate / the 'no_start_date' warning).
+  date: Date | null;
   accommodationId: string | null;
   accommodationName?: string | null; // shown in the cost line label
 
@@ -290,6 +301,11 @@ export interface PricingInput {
   vehicles: VehicleRate[];
   transferRates: TransferRate[];
   activityRates: ActivityRate[];
+  // Accommodation ids flagged accommodations.isInsidePark = true — see
+  // ParkAncillaryFeeRate.requiresInsidePark. Unset/empty = no accommodation
+  // counts as inside-park, so any requiresInsidePark fee charges nothing
+  // rather than silently falling back to the old unconditional behavior.
+  insideParkAccommodationIds?: Set<string>;
 }
 
 export interface LineItem {
@@ -341,7 +357,8 @@ export type WarningKind =
   | 'unpriced_transfer_day'
   | 'missing_transit_fee'
   | 'missing_meal_rate'
-  | 'missing_flight_rate';
+  | 'missing_flight_rate'
+  | 'no_start_date';
 
 export interface PricingWarning {
   kind: WarningKind;
@@ -395,6 +412,15 @@ export function resolveSeason(date: Date, seasons: SeasonBand[]): SeasonBand | n
   return matches.reduce((best, s) => (s.priority > best.priority ? s : best));
 }
 
+// No trip start date means no day can be resolved to a calendar season.
+// Every date-null lookup below picks the highest-rate candidate instead of
+// blocking — a conservative stand-in that's never an underprice, no matter
+// which season a start date eventually lands on.
+function pickHighestRate<T>(candidates: T[], valueOf: (t: T) => number): T | undefined {
+  if (candidates.length === 0) return undefined;
+  return candidates.reduce((best, c) => (valueOf(c) > valueOf(best) ? c : best));
+}
+
 const num = (n: number) => Math.round(n * 100) / 100;
 
 function parkCategoryLabel(category: ParkFeeCategory): string {
@@ -437,6 +463,14 @@ export function computePricing(input: PricingInput): PricingBreakdown {
   const lineItems: LineItem[] = [];
   const tripDays = input.days.length;
 
+  if (input.days.some((d) => d.date === null)) {
+    warnings.push({
+      kind: 'no_start_date',
+      message:
+        "Trip start date not set — accommodation, park fee, activity, and flight lines are priced at each item's highest-season rate as a conservative estimate until a date is set",
+    });
+  }
+
   // Auto-bump vehicle count to fit the party when the selected vehicle's seat
   // capacity is known. vehicleCount from the caller is a floor, not a fixed
   // value — a group that outgrows one vehicle gets priced for a second one
@@ -472,34 +506,48 @@ export function computePricing(input: PricingInput): PricingBreakdown {
       });
       continue;
     }
-    const accommodationSeasonIds = new Set(
-      input.accommodationRates
-        .filter((r) => r.accommodationId === day.accommodationId)
-        .map((r) => r.seasonId),
-    );
-    const season = resolveSeason(day.date, ownedSeasons(input.seasons, accommodationSeasonIds));
-    if (!season) {
-      warnings.push({
-        kind: 'no_season',
-        dayNumber: day.dayNumber,
-        message: `${hotelName} (Day ${day.dayNumber}): no season matches ${day.date.toDateString()}`,
-      });
-      continue;
+    let season: SeasonBand | null = null;
+    if (day.date !== null) {
+      const accommodationSeasonIds = new Set(
+        input.accommodationRates
+          .filter((r) => r.accommodationId === day.accommodationId)
+          .map((r) => r.seasonId),
+      );
+      season = resolveSeason(day.date, ownedSeasons(input.seasons, accommodationSeasonIds));
+      if (!season) {
+        warnings.push({
+          kind: 'no_season',
+          dayNumber: day.dayNumber,
+          message: `${hotelName} (Day ${day.dayNumber}): no season matches ${day.date.toDateString()}`,
+        });
+        continue;
+      }
     }
     for (const [roomIndex, room] of validRooms.entries()) {
       const roomKey = `acc:${day.accommodationId}:${day.dayNumber}:${room.roomType}:${day.mealPlan}:${roomIndex}`;
-      const rate = input.accommodationRates.find(
-        (r) =>
-          r.accommodationId === day.accommodationId &&
-          r.seasonId === season.id &&
-          r.roomType === room.roomType &&
-          r.mealPlan === day.mealPlan,
-      );
+      const rate =
+        day.date !== null
+          ? input.accommodationRates.find(
+              (r) =>
+                r.accommodationId === day.accommodationId &&
+                r.seasonId === season!.id &&
+                r.roomType === room.roomType &&
+                r.mealPlan === day.mealPlan,
+            )
+          : pickHighestRate(
+              input.accommodationRates.filter(
+                (r) =>
+                  r.accommodationId === day.accommodationId &&
+                  r.roomType === room.roomType &&
+                  r.mealPlan === day.mealPlan,
+              ),
+              (r) => r.perPaxRate,
+            );
       if (!rate) {
         warnings.push({
           kind: 'missing_hotel_rate',
           dayNumber: day.dayNumber,
-          message: `${hotelName} (Day ${day.dayNumber}): no rate for ${room.roomType}/${day.mealPlan} in ${season.name}`,
+          message: `${hotelName} (Day ${day.dayNumber}): no rate for ${room.roomType}/${day.mealPlan}${season ? ` in ${season.name}` : ''}`,
           key: roomKey,
         });
         lineItems.push({
@@ -605,7 +653,8 @@ export function computePricing(input: PricingInput): PricingBreakdown {
         )
         .map((r) => r.seasonId),
     );
-    const season = resolveSeason(day.date, ownedSeasons(input.seasons, parkSeasonIds));
+    const season =
+      day.date !== null ? resolveSeason(day.date, ownedSeasons(input.seasons, parkSeasonIds)) : null;
     for (const segment of segments) {
       if (segment.count <= 0) continue;
       const matchesCategory = (r: ParkFeeRate) =>
@@ -619,7 +668,28 @@ export function computePricing(input: PricingInput): PricingBreakdown {
       // charging nothing, and warn so the gap in the rate card is visible.
       let rate: ParkFeeRate | undefined;
       let usedEntranceFallback = false;
-      if (day.isTransit) {
+      if (day.date === null) {
+        // No trip start date: skip season matching and take the highest-rate
+        // row for this category/feeType across every season instead.
+        if (day.isTransit) {
+          rate = pickHighestRate(
+            input.parkFeeRates.filter((r) => matchesCategory(r) && isTransitRate(r)),
+            (r) => r.perPersonRate,
+          );
+          if (!rate) {
+            rate = pickHighestRate(
+              input.parkFeeRates.filter((r) => matchesCategory(r) && isEntranceRate(r)),
+              (r) => r.perPersonRate,
+            );
+            usedEntranceFallback = !!rate;
+          }
+        } else {
+          rate = pickHighestRate(
+            input.parkFeeRates.filter((r) => matchesCategory(r) && isEntranceRate(r)),
+            (r) => r.perPersonRate,
+          );
+        }
+      } else if (day.isTransit) {
         rate =
           input.parkFeeRates.find(
             (r) => matchesCategory(r) && isTransitRate(r) && r.seasonId === (season?.id ?? null),
@@ -674,11 +744,16 @@ export function computePricing(input: PricingInput): PricingBreakdown {
   if (input.parkAncillaryFees.length > 0) {
     const hasVehicle = !!input.vehicleId;
     const dayCountByPark = new Map<string, number>();
+    const insideParkDayCountByPark = new Map<string, number>();
     const firstDayByPark = new Map<string, (typeof daysWithParkId)[number]>();
+    const insideParkIds = input.insideParkAccommodationIds;
     for (const entry of daysWithParkId) {
       if (!entry.parkId) continue;
       dayCountByPark.set(entry.parkId, (dayCountByPark.get(entry.parkId) ?? 0) + 1);
       if (!firstDayByPark.has(entry.parkId)) firstDayByPark.set(entry.parkId, entry);
+      if (entry.day.accommodationId && insideParkIds?.has(entry.day.accommodationId)) {
+        insideParkDayCountByPark.set(entry.parkId, (insideParkDayCountByPark.get(entry.parkId) ?? 0) + 1);
+      }
     }
 
     // A "visit" is a contiguous run of days at the same park — an itinerary
@@ -697,11 +772,39 @@ export function computePricing(input: PricingInput): PricingBreakdown {
       }
     }
 
-    const feesByPark = new Map<string, ParkAncillaryFeeRate[]>();
+    // Group by (parkId, name, category) first — a single fee (e.g. a
+    // concession fee that's genuinely higher Jul-Sep than Oct-Jun per
+    // TANAPA's own tariff sheet) can have one row per season, same as every
+    // other seasonal rate in this engine. Resolve each group to exactly one
+    // row via the visit's first day (or the highest rate with no start
+    // date) before pricing, so two seasonal rows for the same fee never
+    // both charge on top of each other.
+    const feesByIdentity = new Map<string, ParkAncillaryFeeRate[]>();
     for (const fee of input.parkAncillaryFees) {
-      const list = feesByPark.get(fee.parkId) ?? [];
+      const identityKey = `${fee.parkId}::${fee.name}::${fee.category ?? ''}`;
+      const list = feesByIdentity.get(identityKey) ?? [];
       list.push(fee);
-      feesByPark.set(fee.parkId, list);
+      feesByIdentity.set(identityKey, list);
+    }
+    const feesByPark = new Map<string, ParkAncillaryFeeRate[]>();
+    for (const feeGroup of feesByIdentity.values()) {
+      const parkId = feeGroup[0]!.parkId;
+      const ownedIds = new Set(
+        feeGroup
+          .filter((f): f is ParkAncillaryFeeRate & { seasonId: string } => f.seasonId !== null)
+          .map((f) => f.seasonId),
+      );
+      const date = firstDayByPark.get(parkId)?.day.date ?? null;
+      const season = date !== null ? resolveSeason(date, ownedSeasons(input.seasons, ownedIds)) : null;
+      const selected =
+        date !== null
+          ? (feeGroup.find((f) => f.seasonId === (season?.id ?? null)) ??
+            feeGroup.find((f) => f.seasonId === null))
+          : pickHighestRate(feeGroup, (f) => f.rate);
+      if (!selected) continue;
+      const list = feesByPark.get(parkId) ?? [];
+      list.push(selected);
+      feesByPark.set(parkId, list);
     }
 
     for (const [parkId, dayCount] of dayCountByPark) {
@@ -755,15 +858,19 @@ export function computePricing(input: PricingInput): PricingBreakdown {
           ? (segments.find((s) => s.category === fee.category)?.count ?? 0)
           : pax;
         if (segmentPax <= 0) continue;
-        const totalCost = num(fee.rate * dayCount * segmentPax);
+        const effectiveDayCount = fee.requiresInsidePark
+          ? insideParkDayCountByPark.get(parkId) ?? 0
+          : dayCount;
+        if (effectiveDayCount <= 0) continue;
+        const totalCost = num(fee.rate * effectiveDayCount * segmentPax);
         const categorySuffix = fee.category ? ` — ${parkCategoryLabel(fee.category)}` : '';
         lineItems.push({
           key: fee.category
             ? `park_ancillary:${parkId}:${fee.name}:${fee.category}`
             : `park_ancillary:${parkId}:${fee.name}`,
-          label: `${fee.parkName || 'Park'} — ${fee.name}${categorySuffix} (${dayCount} day${dayCount === 1 ? '' : 's'} × ${segmentPax})`,
+          label: `${fee.parkName || 'Park'} — ${fee.name}${categorySuffix} (${effectiveDayCount} day${effectiveDayCount === 1 ? '' : 's'} × ${segmentPax})`,
           dayNumber: firstEntry.day.dayNumber,
-          quantity: dayCount * segmentPax,
+          quantity: effectiveDayCount * segmentPax,
           unitCost: fee.rate,
           totalCost,
           source: 'park_fee',
@@ -796,10 +903,15 @@ export function computePricing(input: PricingInput): PricingBreakdown {
           )
           .map((r) => r.seasonId),
       );
-      const season = resolveSeason(day.date, ownedSeasons(input.seasons, activitySeasonIds));
+      const season =
+        day.date !== null
+          ? resolveSeason(day.date, ownedSeasons(input.seasons, activitySeasonIds))
+          : null;
       const rate =
-        input.activityRates.find((r) => matches(r) && r.seasonId === (season?.id ?? null)) ??
-        input.activityRates.find((r) => matches(r) && r.seasonId === null);
+        day.date !== null
+          ? (input.activityRates.find((r) => matches(r) && r.seasonId === (season?.id ?? null)) ??
+            input.activityRates.find((r) => matches(r) && r.seasonId === null))
+          : pickHighestRate(input.activityRates.filter(matches), (r) => r.rate);
       const activityLabel = activity.name?.trim() || rate?.activityName?.trim() || 'Activity';
       const activityKey = `activity:${activity.libraryId ?? nameKey}:${day.dayNumber}:${activityIndex}`;
       if (!rate) {
@@ -893,11 +1005,19 @@ export function computePricing(input: PricingInput): PricingBreakdown {
         )
         .map((f) => f.seasonId),
     );
-    const season = resolveSeason(day.date, ownedSeasons(input.seasons, flightSeasonIds));
+    const season =
+      day.date !== null
+        ? resolveSeason(day.date, ownedSeasons(input.seasons, flightSeasonIds))
+        : null;
     const flight =
-      (input.flightRates ?? []).find(
-        (f) => f.id === day.flightId && f.seasonId === (season?.id ?? null),
-      ) ?? (input.flightRates ?? []).find((f) => f.id === day.flightId && f.seasonId === null);
+      day.date !== null
+        ? ((input.flightRates ?? []).find(
+            (f) => f.id === day.flightId && f.seasonId === (season?.id ?? null),
+          ) ?? (input.flightRates ?? []).find((f) => f.id === day.flightId && f.seasonId === null))
+        : pickHighestRate(
+            (input.flightRates ?? []).filter((f) => f.id === day.flightId),
+            (f) => f.perPersonRate,
+          );
     const key = `flight:${day.flightId}:${day.dayNumber}`;
     if (!flight) {
       warnings.push({

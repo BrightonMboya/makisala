@@ -10,6 +10,7 @@ import type {
   ThemeType,
 } from '@/types/itinerary-types';
 import type { InternalCostLine } from '@repo/db/schema';
+import { trpc } from '@/lib/trpc';
 
 const BuilderContext = createContext<BuilderContextType | undefined>(undefined);
 
@@ -69,6 +70,10 @@ export function BuilderProvider({
   const [vehicleId, setVehicleId] = useState<string | null>(null);
   const [vehicleCount, setVehicleCount] = useState<number>(1);
   const [guideId, setGuideId] = useState<string | null>(null);
+  // 30 is only a placeholder until the org's real default markup loads (see
+  // the effect below) — every saved proposal overrides it via initialData,
+  // and a brand-new one gets the org's actual configured default instead of
+  // this hardcoded number.
   const [markupPct, setMarkupPct] = useState<number>(30);
   const [pickupTransferId, setPickupTransferId] = useState<string | null>(null);
   const [dropoffTransferId, setDropoffTransferId] = useState<string | null>(null);
@@ -188,6 +193,26 @@ export function BuilderProvider({
       }
     }
   }, [initialData]);
+
+  // A brand-new proposal (or one saved before markupPct existed) has no
+  // markup of its own yet — adopt the org's real configured default the
+  // moment it loads, instead of leaving the hardcoded 30 above in place.
+  // Never runs for a proposal that already has its own saved markupPct
+  // (initialData already set state to that value, synchronously, above).
+  const { data: pricingDefaults, isSuccess: pricingDefaultsLoaded } = trpc.rateCards.settings.get.useQuery();
+  const appliedOrgMarkupDefault = useRef(false);
+  useEffect(() => {
+    if (!pricingDefaultsLoaded || appliedOrgMarkupDefault.current) return;
+    appliedOrgMarkupDefault.current = true;
+    if (initialData?.markupPct == null) {
+      // No pricing_settings row yet (org never opened Settings -> Rate
+      // Cards -> Pricing) means no default has been *configured* — 30
+      // matches that column's own DB default, same fallback org-pricing.ts
+      // uses server-side, so the builder and the actual computed price
+      // agree even before the org saves an explicit setting.
+      setMarkupPct(Number(pricingDefaults?.defaultMarkupPct ?? 30));
+    }
+  }, [pricingDefaultsLoaded, pricingDefaults, initialData]);
 
   // Sync pricing rows when traveler groups change (optional, but requested behavior implies sync)
   // We only sync counts and types, preserving unit prices if IDs match

@@ -1568,6 +1568,7 @@ const WARNING_FIX: Record<WarningKind, { tab: string | null; label: string } | n
   missing_transit_fee: { tab: 'parks', label: 'Add transit rate' },
   missing_meal_rate: { tab: null, label: 'Add meal rate' },
   missing_flight_rate: { tab: null, label: 'Add flight rate' },
+  no_start_date: null,
 };
 
 // A computed line total that the operator can click to override with a manual

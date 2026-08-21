@@ -9,15 +9,17 @@ import {
   generateDayCopy,
 } from '@/lib/translation';
 
+// Exported so the MCP translate_proposal tool imports this shape directly
+// instead of re-declaring it.
+export const translateProposalInput = z.object({
+  proposalId: z.string(),
+  language: z.string().min(2).max(10).describe('Target language code, e.g. "fr", "de", "es"'),
+});
+
 export const translationsRouter = router({
   /** Translate a proposal into a target language and store the result */
   translate: protectedProcedure
-    .input(
-      z.object({
-        proposalId: z.string(),
-        language: z.string().min(2).max(10),
-      }),
-    )
+    .input(translateProposalInput)
     .mutation(async ({ ctx, input }) => {
       // Verify proposal belongs to the org
       const proposal = await ctx.db.query.proposals.findFirst({

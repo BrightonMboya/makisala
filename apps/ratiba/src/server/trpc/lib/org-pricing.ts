@@ -4,6 +4,7 @@
 import type { InternalCostLine } from '@repo/db/schema';
 import {
   accommodationRates,
+  accommodations,
   activityLibrary,
   activityRates,
   flightRates,
@@ -17,7 +18,7 @@ import {
   transferRates,
   vehicles,
 } from '@repo/db/schema';
-import { eq, inArray } from 'drizzle-orm';
+import { and, eq, inArray } from 'drizzle-orm';
 import { alias } from 'drizzle-orm/pg-core';
 import type { Context } from '../init';
 import {
@@ -32,7 +33,7 @@ type DB = Context['db'];
 
 export interface OrgPricingDayInput {
   dayNumber: number;
-  date: Date;
+  date: Date | null;
   accommodationId: string | null;
   accommodationName?: string | null;
   mealPlan: MealPlan | null;
@@ -56,7 +57,11 @@ export interface OrgPricingParams {
   guideId?: string | null;
   pickupTransferId: string | null;
   dropoffTransferId: string | null;
-  markupPct: number;
+  // Null/unset falls back to the org's saved pricing-settings default markup
+  // (see `defaultMarkupPct` below) instead of an implicit 0% — a caller that
+  // never touched the markup field should get the org's real default, not a
+  // silent no-margin price.
+  markupPct: number | null;
   // Group-size-tiered markup schedule; when omitted, the org's saved
   // pricing-settings tiers (if any) are used instead.
   markupTiers?: Array<{ minPax: number; markupPct: number }> | null;
@@ -73,6 +78,9 @@ export async function computeOrgPricing(
   const dayParkIds = Array.from(
     new Set(input.days.map((d) => d.parkId).filter((id): id is string => !!id)),
   );
+  const dayAccommodationIds = Array.from(
+    new Set(input.days.map((d) => d.accommodationId).filter((id): id is string => !!id)),
+  );
   const parentParks = alias(nationalParks, 'parent_national_parks');
 
   const [
@@ -88,6 +96,7 @@ export async function computeOrgPricing(
     flightRateRows,
     settingsRow,
     parkAliasRows,
+    insideParkAccomRows,
   ] = await Promise.all([
     db.select().from(seasons).where(eq(seasons.organizationId, orgId)),
     db.select().from(accommodationRates).where(eq(accommodationRates.organizationId, orgId)),
@@ -112,6 +121,7 @@ export async function computeOrgPricing(
         chargeBasis: parkAncillaryFees.chargeBasis,
         rate: parkAncillaryFees.rate,
         category: parkAncillaryFees.category,
+        requiresInsidePark: parkAncillaryFees.requiresInsidePark,
       })
       .from(parkAncillaryFees)
       .leftJoin(nationalParks, eq(nationalParks.id, parkAncillaryFees.parkId))
@@ -145,7 +155,17 @@ export async function computeOrgPricing(
           .leftJoin(parentParks, eq(nationalParks.parentParkId, parentParks.id))
           .where(inArray(nationalParks.id, dayParkIds))
       : Promise.resolve([]),
+    dayAccommodationIds.length > 0
+      ? db
+          .select({ id: accommodations.id })
+          .from(accommodations)
+          .where(
+            and(inArray(accommodations.id, dayAccommodationIds), eq(accommodations.isInsidePark, true)),
+          )
+      : Promise.resolve([]),
   ]);
+
+  const insideParkAccommodationIds = new Set(insideParkAccomRows.map((r) => r.id));
 
   const parkAliasMap = new Map<string, { id: string; name: string }>();
   for (const r of parkAliasRows) {
@@ -190,7 +210,11 @@ export async function computeOrgPricing(
     guideId: input.guideId ?? null,
     pickupTransferId: input.pickupTransferId,
     dropoffTransferId: input.dropoffTransferId,
-    markupPct: input.markupPct,
+    // pricing_settings is a lazily-created row (only inserted the first
+    // time an org saves Settings -> Rate Cards -> Pricing) — a brand-new
+    // org has no row at all yet, not a row with defaultMarkupPct: 0. Fall
+    // back to 30, matching that column's own DB default, rather than 0.
+    markupPct: input.markupPct ?? Number(settingsRow[0]?.defaultMarkupPct ?? 30),
     markupTiers: input.markupTiers ?? settingsRow[0]?.markupTiers ?? null,
     currency: input.currency || settingsRow[0]?.defaultCurrency || 'USD',
     overrides: input.overrides ?? null,
@@ -231,7 +255,9 @@ export async function computeOrgPricing(
       chargeBasis: r.chargeBasis,
       rate: Number(r.rate),
       category: r.category,
+      requiresInsidePark: r.requiresInsidePark,
     })),
+    insideParkAccommodationIds,
     vehicles: vehicleRows.map((v) => ({
       id: v.id,
       perDayRate: Number(v.perDayRate),

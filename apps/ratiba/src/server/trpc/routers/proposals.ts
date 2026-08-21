@@ -38,7 +38,7 @@ import {
   DEFAULT_DASHBOARD_STATUSES,
   isClientConfirmable,
 } from '@/lib/proposal-status';
-import { deriveMealPlan, type ParkFeeCategory } from '@/lib/pricing-engine';
+import { deriveMealPlan, type ParkFeeCategory, type PricingBreakdown } from '@/lib/pricing-engine';
 import { computeOrgPricing, type OrgPricingDayInput } from '../lib/org-pricing';
 import { env } from '@/lib/env';
 import { getPublicUrl } from '@/lib/storage';
@@ -147,7 +147,7 @@ async function copyProposalDays(tx: any, days: any[], newProposalId: string) {
   }
 }
 
-interface BuilderData {
+export interface BuilderData {
   selectedTheme?: string;
   tourId?: string;
   clientId?: string | null;
@@ -373,6 +373,14 @@ export const createProposalInput = z.object({
   exclusions: z.array(z.string().max(255)).optional(),
   travelerGroups: z.array(proposalTravelerGroupInput).optional(),
   pricingRows: z.array(proposalPricingRowInput).optional(),
+  useAutoPricing: z
+    .boolean()
+    .optional()
+    .describe(
+      'When true, pricing is computed from the org rate card (vehicle/guide/park-fee/accommodation rates plus ' +
+        'markup) instead of the flat `pricingRows` unit prices. Requires travelerGroups, startDate, and days with ' +
+        'accommodations to be set — otherwise no rate-card total can be computed and pricingRows is left as-is.',
+    ),
   days: z.array(proposalDayInput).max(60).optional(),
 });
 
@@ -389,22 +397,35 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 // showing $0 everywhere despite a correct total in the builder. Re-run the
 // same engine server-side at save time and reconcile `pricingRows` so every
 // consumer of the stored proposal agrees with the auto-priced total.
-async function reconcileAutoPricingRows(
+// Exported so callers outside `save` (e.g. the MCP get_proposal tool, which
+// wants a fresh breakdown for an already-saved proposal without writing
+// anything) can run the same computation.
+export async function reconcileAutoPricingRows(
   db: Context['db'],
   orgId: string,
   builderData: BuilderData,
-): Promise<BuilderData['pricingRows']> {
+): Promise<{ pricingRows: BuilderData['pricingRows']; breakdown: PricingBreakdown } | null> {
   const days = builderData.days ?? [];
   const travelerGroups = builderData.travelerGroups ?? [];
   const totalPax = travelerGroups.reduce((sum, g) => sum + g.count, 0);
-  if (!builderData.startDate || days.length === 0 || totalPax === 0) return null;
+  if (days.length === 0 || totalPax === 0) return null;
 
-  const startDate = new Date(builderData.startDate);
-  if (Number.isNaN(startDate.getTime())) return null;
+  // No start date yet: still price every day, just without a real calendar
+  // date — computeOrgPricing/computePricing falls back to each rate's
+  // highest-season value in that case (see pricing-engine.ts), so the
+  // itinerary still gets a conservative total instead of $0/unpriced rows.
+  let startDate: Date | null = null;
+  if (builderData.startDate) {
+    const parsed = new Date(builderData.startDate);
+    if (!Number.isNaN(parsed.getTime())) startDate = parsed;
+  }
 
   const dayInputs: OrgPricingDayInput[] = days.map((d, idx) => {
-    const date = new Date(startDate);
-    date.setUTCDate(date.getUTCDate() + idx);
+    let date: Date | null = null;
+    if (startDate) {
+      date = new Date(startDate);
+      date.setUTCDate(date.getUTCDate() + idx);
+    }
     const isParkId = !!d.destination && UUID_RE.test(d.destination);
     return {
       dayNumber: d.dayNumber,
@@ -440,8 +461,10 @@ async function reconcileAutoPricingRows(
   }
   for (const [category, count] of counts) travelerBreakdown.push({ category, count });
 
+  // Null (not 0) when unset, so computeOrgPricing falls back to the org's
+  // own configured default markup instead of an implicit no-margin price.
   const markupPct =
-    builderData.markupPct == null || builderData.markupPct === '' ? 0 : Number(builderData.markupPct);
+    builderData.markupPct == null || builderData.markupPct === '' ? null : Number(builderData.markupPct);
 
   try {
     const breakdown = await computeOrgPricing(db, orgId, {
@@ -461,36 +484,41 @@ async function reconcileAutoPricingRows(
       internalCostLines: builderData.internalCostLines ?? null,
     });
 
-    return travelerGroups.map((g) => ({
-      id: g.id,
-      count: g.count,
-      type: g.type,
-      unitPrice: breakdown.sellPerPax,
-    }));
+    return {
+      pricingRows: travelerGroups.map((g) => ({
+        id: g.id,
+        count: g.count,
+        type: g.type,
+        unitPrice: breakdown.sellPerPax,
+      })),
+      breakdown,
+    };
   } catch (err) {
     log.error('Auto pricing reconciliation failed on proposal save', { orgId, error: serializeError(err) });
     return null;
   }
 }
 
+// Exported so the MCP list_proposals tool can .pick() the fields it exposes
+// (status/search/page/pageSize) from the same validated shape, instead of
+// re-declaring them — `filter`/`statuses` stay dashboard-only (MCP always
+// passes filter: 'all' itself and has no use for the multi-status filter).
+export const listProposalsForDashboardInput = z.object({
+  filter: z.enum(['mine', 'all']).default('mine'),
+  page: z.number().int().min(1).default(1),
+  pageSize: z.number().int().min(1).max(100).default(20),
+  status: z
+    .enum(['draft', 'shared', 'awaiting_payment', 'paid', 'booked', 'completed', 'cancelled'])
+    .optional(),
+  statuses: z
+    .array(z.enum(['draft', 'shared', 'awaiting_payment', 'paid', 'booked', 'completed', 'cancelled']))
+    .optional(),
+  search: z.string().optional(),
+});
+
 export const proposalsRouter = router({
   listForDashboard: protectedProcedure
-    .input(
-      z.object({
-        filter: z.enum(['mine', 'all']).default('mine'),
-        page: z.number().int().min(1).default(1),
-        pageSize: z.number().int().min(1).max(100).default(20),
-        status: z
-          .enum(['draft', 'shared', 'awaiting_payment', 'paid', 'booked', 'completed', 'cancelled'])
-          .optional(),
-        statuses: z
-          .array(
-            z.enum(['draft', 'shared', 'awaiting_payment', 'paid', 'booked', 'completed', 'cancelled']),
-          )
-          .optional(),
-        search: z.string().optional(),
-      }),
-    )
+    .input(listProposalsForDashboardInput)
     .query(async ({ ctx, input }) => {
       // Templates are drafts with no client — exclude them so they don't
       // surface as a stray "fresh draft" row in the pipeline.
@@ -1317,7 +1345,7 @@ export const proposalsRouter = router({
       // Auto-priced proposals never get their sell total written into
       // pricingRows client-side (see reconcileAutoPricingRows above) — derive
       // it here so the public page/PDF/preview don't show $0.
-      const reconciledPricingRows = builderData.useAutoPricing
+      const reconciledAutoPricing = builderData.useAutoPricing
         ? await reconcileAutoPricingRows(ctx.db, ctx.orgId, builderData)
         : null;
 
@@ -1340,7 +1368,7 @@ export const proposalsRouter = router({
         endCityLng: builderData.endCityLng || null,
         pickupPoint: builderData.pickupPoint || null,
         transferIncluded: builderData.transferIncluded || null,
-        pricingRows: reconciledPricingRows || builderData.pricingRows || null,
+        pricingRows: reconciledAutoPricing?.pricingRows || builderData.pricingRows || null,
         extras: builderData.extras || null,
         travelerGroups: builderData.travelerGroups || null,
         countries: builderData.countries || null,
@@ -1586,7 +1614,7 @@ export const proposalsRouter = router({
         }
       });
 
-      return { success: true, id: proposalId };
+      return { success: true, id: proposalId, pricingBreakdown: reconciledAutoPricing?.breakdown ?? null };
     }),
 
   // Persist the share-email draft (editor body JSON + attachment list) composed

@@ -1780,6 +1780,179 @@ describe('computePricing — flights', () => {
 });
 
 // ---------------------------------------------------------------------------
+// computePricing — no start date (day.date === null)
+// ---------------------------------------------------------------------------
+
+describe('computePricing — no start date', () => {
+  const lowSeason: SeasonBand = { id: 'low', name: 'Low', startMonth: 1, startDay: 1, endMonth: 5, endDay: 31, priority: 0 };
+  const highSeason: SeasonBand = { id: 'high', name: 'High', startMonth: 6, startDay: 1, endMonth: 10, endDay: 31, priority: 1 };
+
+  test('emits a no_start_date warning when any day has a null date', () => {
+    const result = computePricing(
+      baseInput({
+        days: [{ dayNumber: 1, date: null, accommodationId: null, mealPlan: null, rooms: [], parkId: null }],
+      }),
+    );
+    expect(result.warnings).toMatchObject([{ kind: 'no_start_date' }]);
+  });
+
+  test('accommodation: picks the highest perPaxRate across seasons, not the season-less no_season path', () => {
+    const low: AccommodationRate = {
+      accommodationId: 'acc-1',
+      seasonId: 'low',
+      roomType: 'double',
+      mealPlan: 'bb',
+      perPaxRate: 150,
+      rateBasis: 'per_person',
+      maxOccupancy: 2,
+      additionalAdultPct: null,
+      additionalChildPct: null,
+    };
+    const high: AccommodationRate = { ...low, seasonId: 'high', perPaxRate: 400 };
+    const result = computePricing(
+      baseInput({
+        seasons: [lowSeason, highSeason],
+        accommodationRates: [low, high],
+        days: [
+          {
+            dayNumber: 1,
+            date: null,
+            accommodationId: 'acc-1',
+            accommodationName: 'Test Lodge',
+            mealPlan: 'bb',
+            rooms: [{ roomType: 'double', pax: 2 }],
+            parkId: null,
+          },
+        ],
+      }),
+    );
+    expect(result.warnings.some((w) => w.kind === 'no_season')).toBe(false);
+    expect(result.lineItems).toHaveLength(1);
+    expect(result.lineItems[0]).toMatchObject({ unitCost: 400, totalCost: 800, source: 'accommodation' });
+  });
+
+  test('park fee: picks the highest perPersonRate for the category across seasons', () => {
+    const low: ParkFeeRate = {
+      parkId: 'park-1',
+      parkName: 'Serengeti National Park',
+      seasonId: 'low',
+      category: 'non_resident_adult',
+      perPersonRate: 60,
+    };
+    const high: ParkFeeRate = { ...low, seasonId: 'high', perPersonRate: 90 };
+    const result = computePricing(
+      baseInput({
+        pax: 2,
+        seasons: [lowSeason, highSeason],
+        parkFeeRates: [low, high],
+        days: [{ dayNumber: 1, date: null, accommodationId: null, mealPlan: null, rooms: [], parkId: 'park-1' }],
+      }),
+    );
+    expect(result.lineItems[0]).toMatchObject({ unitCost: 90, totalCost: 180, source: 'park_fee' });
+  });
+
+  test('activity: picks the highest rate across seasons', () => {
+    const low: ActivityRate = { activityId: 'act-1', activityName: 'Balloon Safari', seasonId: 'low', chargeBasis: 'per_person', rate: 450 };
+    const high: ActivityRate = { ...low, seasonId: 'high', rate: 600 };
+    const result = computePricing(
+      baseInput({
+        pax: 2,
+        seasons: [lowSeason, highSeason],
+        activityRates: [low, high],
+        days: [{ dayNumber: 1, date: null, accommodationId: null, mealPlan: null, rooms: [], parkId: null, activities: [{ libraryId: 'act-1' }] }],
+      }),
+    );
+    expect(result.lineItems[0]).toMatchObject({ unitCost: 600, source: 'activity' });
+  });
+
+  test('flight: picks the highest perPersonRate across seasons', () => {
+    const low: FlightRate = { id: 'flight-1', name: 'Arusha-Zanzibar', seasonId: 'low', perPersonRate: 240 };
+    const high: FlightRate = { ...low, seasonId: 'high', perPersonRate: 320 };
+    const result = computePricing(
+      baseInput({
+        pax: 1,
+        seasons: [lowSeason, highSeason],
+        flightRates: [low, high],
+        days: [{ dayNumber: 1, date: null, accommodationId: null, mealPlan: null, rooms: [], parkId: null, flightId: 'flight-1' }],
+      }),
+    );
+    expect(result.lineItems[0]).toMatchObject({ unitCost: 320, source: 'flight' });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// computePricing — real TANAPA tariff seasons (Serengeti)
+//
+// Sourced from TANAPA's own published tariff sheet: the Serengeti entrance
+// fee and its hotel concession fee run on two DIFFERENT season calendars —
+// entrance peaks 16 May-14 Mar (wrapping the year boundary) at $82.60/low
+// $70.80 (15 Mar-15 May), while the concession fee peaks Jul-Sep at $70.80/
+// low Oct-Jun (also wrapping) at $59.00. A date can be "peak" for one fee
+// and "low" for the other on the same park, same day — a real stress case
+// for ownedSeasons' per-entity season restriction and for the ancillary-fee
+// season fix above (two seasonal rows for the same fee must resolve to
+// exactly one, never both).
+// ---------------------------------------------------------------------------
+
+describe('computePricing — real TANAPA tariff seasons (Serengeti)', () => {
+  const entrancePeak: SeasonBand = { id: 'entrance-peak', name: 'Entrance peak (16 May-14 Mar)', startMonth: 5, startDay: 16, endMonth: 3, endDay: 14, priority: 1 };
+  const entranceLow: SeasonBand = { id: 'entrance-low', name: 'Entrance low (15 Mar-15 May)', startMonth: 3, startDay: 15, endMonth: 5, endDay: 15, priority: 0 };
+  const concessionPeak: SeasonBand = { id: 'concession-peak', name: 'Concession peak (Jul-Sep)', startMonth: 7, startDay: 1, endMonth: 9, endDay: 30, priority: 1 };
+  const concessionLow: SeasonBand = { id: 'concession-low', name: 'Concession low (Oct-Jun)', startMonth: 10, startDay: 1, endMonth: 6, endDay: 30, priority: 0 };
+  const seasons = [entrancePeak, entranceLow, concessionPeak, concessionLow];
+
+  const parkFeeRates: ParkFeeRate[] = [
+    { parkId: 'serengeti', parkName: 'Serengeti National Park', seasonId: 'entrance-peak', category: 'non_resident_adult', perPersonRate: 82.6 },
+    { parkId: 'serengeti', parkName: 'Serengeti National Park', seasonId: 'entrance-low', category: 'non_resident_adult', perPersonRate: 70.8 },
+  ];
+  const parkAncillaryFees: ParkAncillaryFeeRate[] = [
+    { parkId: 'serengeti', parkName: 'Serengeti National Park', seasonId: 'concession-peak', name: 'Concession fee', chargeBasis: 'per_person_per_day', rate: 70.8 },
+    { parkId: 'serengeti', parkName: 'Serengeti National Park', seasonId: 'concession-low', name: 'Concession fee', chargeBasis: 'per_person_per_day', rate: 59.0 },
+  ];
+  const day = (date: Date | null) => ({ dayNumber: 1, date, accommodationId: null, mealPlan: null, rooms: [], parkId: 'serengeti' });
+
+  test('Nov 1: entrance is peak ($82.60) but concession is low ($59) — one line item each, not two', () => {
+    const result = computePricing(
+      baseInput({ pax: 1, seasons, parkFeeRates, parkAncillaryFees, days: [day(new Date(Date.UTC(2026, 10, 1)))] }),
+    );
+    const entrance = result.lineItems.filter((l) => l.key.startsWith('park:'));
+    const concession = result.lineItems.filter((l) => l.key.startsWith('park_ancillary:'));
+    expect(entrance).toHaveLength(1);
+    expect(entrance[0]?.unitCost).toBe(82.6);
+    expect(concession).toHaveLength(1);
+    expect(concession[0]?.unitCost).toBe(59.0);
+  });
+
+  test('Sept 20: both entrance and concession are in their peak window', () => {
+    const result = computePricing(
+      baseInput({ pax: 1, seasons, parkFeeRates, parkAncillaryFees, days: [day(new Date(Date.UTC(2026, 8, 20)))] }),
+    );
+    expect(result.lineItems.find((l) => l.key.startsWith('park:'))?.unitCost).toBe(82.6);
+    expect(result.lineItems.find((l) => l.key.startsWith('park_ancillary:'))?.unitCost).toBe(70.8);
+  });
+
+  test('April 1: both entrance and concession are in their low window', () => {
+    const result = computePricing(
+      baseInput({ pax: 1, seasons, parkFeeRates, parkAncillaryFees, days: [day(new Date(Date.UTC(2026, 3, 1)))] }),
+    );
+    expect(result.lineItems.find((l) => l.key.startsWith('park:'))?.unitCost).toBe(70.8);
+    expect(result.lineItems.find((l) => l.key.startsWith('park_ancillary:'))?.unitCost).toBe(59.0);
+  });
+
+  test('no start date: each fee independently defaults to its own highest-season rate', () => {
+    const result = computePricing(
+      baseInput({ pax: 1, seasons, parkFeeRates, parkAncillaryFees, days: [day(null)] }),
+    );
+    const entrance = result.lineItems.filter((l) => l.key.startsWith('park:'));
+    const concession = result.lineItems.filter((l) => l.key.startsWith('park_ancillary:'));
+    expect(entrance).toHaveLength(1);
+    expect(entrance[0]?.unitCost).toBe(82.6); // max(82.60, 70.80)
+    expect(concession).toHaveLength(1);
+    expect(concession[0]?.unitCost).toBe(70.8); // max(70.80, 59.00) — NOT the entrance fee's peak value
+  });
+});
+
+// ---------------------------------------------------------------------------
 // computePricing — tiered markup
 // ---------------------------------------------------------------------------
 
@@ -2157,4 +2330,223 @@ describe('computePricing — Bobby Tours reconciliation (real cost sheets)', () 
     expect(result.costSubtotal).toBe(9118.5);
     expect(result.costSubtotal).toBeGreaterThan(6734);
   });
+});
+
+// ---------------------------------------------------------------------------
+// computePricing — Bobby Tours website itineraries (Adventure vs Comfort)
+//
+// bobbytours.com's own public itinerary pages offer every day at two tiers —
+// "Adventure" (budget campsites: Venus, Panorama, Pimbi) and "Comfort"
+// (lodges: Sanna, Marera Valley, Acacia Central Camp, Zanzibar Magic). Venus
+// ($42/fb) and Sanna ($85/fb) both also appear in the reconciled cost
+// sheets, so the Arusha night is the one place a tier comparison is fully
+// verified end to end, not estimated. Panorama, Pimbi, and Acacia Central
+// Camp have no cost sheet on file — deliberately left unmapped below to
+// prove the engine degrades to a warning, not a crash or a silent $0 that
+// looks like a real price.
+// ---------------------------------------------------------------------------
+
+describe('computePricing — Bobby Tours website itineraries (Adventure vs Comfort)', () => {
+  const rate = (id: string, perPaxRate: number): AccommodationRate => ({
+    accommodationId: id,
+    seasonId: 's1',
+    roomType: 'double',
+    mealPlan: 'fb',
+    perPaxRate,
+    rateBasis: 'per_person',
+    maxOccupancy: 2,
+    additionalAdultPct: null,
+    additionalChildPct: null,
+  });
+  const arushaNight = (accommodationId: string, pax: number): ItineraryDayInput => ({
+    dayNumber: 1,
+    date: new Date(Date.UTC(2026, 4, 26)),
+    accommodationId,
+    mealPlan: 'fb',
+    rooms: [{ roomType: 'double', pax }],
+    parkId: null,
+    dayKind: 'airport_transfer',
+  });
+
+  test('Arusha night: Adventure (Venus, $42/fb) vs Comfort (Sanna, $85/fb) — both real, verified rates', () => {
+    const seasons = [{ id: 's1', name: 'Trip season', startMonth: 1, startDay: 1, endMonth: 12, endDay: 31, priority: 0 }];
+    const adventure = computePricing(baseInput({ pax: 2, seasons, accommodationRates: [rate('venus', 42)], days: [arushaNight('venus', 2)] }));
+    const comfort = computePricing(baseInput({ pax: 2, seasons, accommodationRates: [rate('sanna', 85)], days: [arushaNight('sanna', 2)] }));
+    expect(adventure.lineItems[0]?.totalCost).toBe(84); // 42 * 2
+    expect(comfort.lineItems[0]?.totalCost).toBe(170); // 85 * 2
+    expect(comfort.costSubtotal - adventure.costSubtotal).toBe(86); // the real Comfort-vs-Adventure delta for this night
+  });
+
+  test('a missing lodge rate that repeats across consecutive days (e.g. two nights at Acacia Central Camp) warns once per night, not once for the whole trip', () => {
+    const twoNightsAtUnmappedCamp: ItineraryDayInput[] = [1, 2].map((dayNumber) => ({
+      dayNumber,
+      date: new Date(Date.UTC(2026, 4, 26 + dayNumber)),
+      accommodationId: 'acacia-central',
+      accommodationName: 'Acacia Central Camp',
+      mealPlan: 'fb',
+      rooms: [{ roomType: 'double', pax: 2 }],
+      parkId: 'serengeti',
+      dayKind: 'touring',
+    }));
+    const result = computePricing(
+      baseInput({
+        pax: 2,
+        seasons: [{ id: 's1', name: 'Trip season', startMonth: 1, startDay: 1, endMonth: 12, endDay: 31, priority: 0 }],
+        accommodationRates: [], // Acacia Central Camp has no rate on file
+        parkFeeRates: [{ parkId: 'serengeti', parkName: 'Serengeti National Park', seasonId: null, category: 'non_resident_adult', perPersonRate: 82.6 }],
+        days: twoNightsAtUnmappedCamp,
+      }),
+    );
+    const missing = result.warnings.filter((w) => w.kind === 'missing_hotel_rate');
+    expect(missing).toHaveLength(2);
+    expect(missing.map((w) => w.dayNumber)).toEqual([1, 2]);
+    // the rest of the trip (one park fee line per day) still prices correctly around the gap
+    const parkFeeLines = result.lineItems.filter((l) => l.source === 'park_fee');
+    expect(parkFeeLines).toHaveLength(2);
+    expect(parkFeeLines.reduce((sum, l) => sum + l.totalCost, 0)).toBe(82.6 * 2 * 2);
+  });
+
+  // Full day-by-day reconstructions of 7 of bobbytours.com's 8 non-climbing
+  // published itineraries (the 8th, "Hiking, Safari, and Beach Bliss",
+  // splices in a Kilimanjaro day-trek the engine has no model for — see the
+  // audit's "known gaps" section). Comfort tier throughout, since Sanna,
+  // Marera Valley, and Zanzibar Magic are all real, sheet-verified rates;
+  // Acacia Central Camp is the one recurring gap (see above). This is a
+  // resilience sweep, not a price-accuracy check — it asserts the engine
+  // never throws and warns/lines up exactly where it should on real,
+  // currently-published trip shapes, including ones far longer and more
+  // varied than anything in the leaked cost sheets.
+  type Spec = { lodge: string | null; lodgeName: string | null; parkId: string | null; dayKind: 'airport_transfer' | 'touring' | 'none'; flightId?: string | null };
+  const zanzibarNight = (n: number): Spec[] =>
+    Array.from({ length: n }, () => ({ lodge: 'zanzibar-magic', lodgeName: 'Zanzibar Magic Boutique Hotel', parkId: null, dayKind: 'none' as const }));
+  const SITE_ITINERARIES: Record<string, Spec[]> = {
+    'Quick Tanzania Safari (4d)': [
+      { lodge: 'sanna', lodgeName: 'Sanna Boutique Hotel', parkId: null, dayKind: 'airport_transfer' },
+      { lodge: 'marera', lodgeName: 'Marera Valley Lodge', parkId: 'tarangire', dayKind: 'touring' },
+      { lodge: 'marera', lodgeName: 'Marera Valley Lodge', parkId: 'lake-manyara', dayKind: 'touring' },
+      { lodge: null, lodgeName: null, parkId: 'ngorongoro-crater', dayKind: 'touring' },
+    ],
+    'Tanzania Express Safari (5d)': [
+      { lodge: 'sanna', lodgeName: 'Sanna Boutique Hotel', parkId: null, dayKind: 'airport_transfer' },
+      { lodge: 'marera', lodgeName: 'Marera Valley Lodge', parkId: 'tarangire', dayKind: 'touring' },
+      { lodge: 'acacia-central', lodgeName: 'Acacia Central Camp', parkId: 'serengeti', dayKind: 'touring' },
+      { lodge: 'marera', lodgeName: 'Marera Valley Lodge', parkId: 'ngorongoro-crater', dayKind: 'touring' },
+      { lodge: null, lodgeName: null, parkId: 'lake-manyara', dayKind: 'touring' },
+    ],
+    'Tanzania Safari Magic & Zanzibar Relaxation (8d)': [
+      { lodge: 'sanna', lodgeName: 'Sanna Boutique Hotel', parkId: null, dayKind: 'airport_transfer' },
+      { lodge: 'marera', lodgeName: 'Marera Valley Lodge', parkId: 'tarangire', dayKind: 'touring' },
+      { lodge: 'acacia-central', lodgeName: 'Acacia Central Camp', parkId: 'serengeti', dayKind: 'touring' },
+      { lodge: 'acacia-central', lodgeName: 'Acacia Central Camp', parkId: 'serengeti', dayKind: 'touring' },
+      { lodge: 'zanzibar-magic', lodgeName: 'Zanzibar Magic Boutique Hotel', parkId: 'ngorongoro-crater', dayKind: 'touring', flightId: 'znz-flight' },
+      ...zanzibarNight(2),
+      { lodge: null, lodgeName: null, parkId: null, dayKind: 'none' },
+    ],
+    'Ultimate Tanzania Adventure: Northern Parks & Zanzibar Escape (9d)': [
+      { lodge: 'sanna', lodgeName: 'Sanna Boutique Hotel', parkId: null, dayKind: 'airport_transfer' },
+      { lodge: 'marera', lodgeName: 'Marera Valley Lodge', parkId: 'tarangire', dayKind: 'touring' },
+      { lodge: 'acacia-central', lodgeName: 'Acacia Central Camp', parkId: 'serengeti', dayKind: 'touring' },
+      { lodge: 'acacia-central', lodgeName: 'Acacia Central Camp', parkId: 'serengeti', dayKind: 'touring' },
+      { lodge: 'marera', lodgeName: 'Marera Valley Lodge', parkId: 'ngorongoro-crater', dayKind: 'touring' },
+      { lodge: 'zanzibar-magic', lodgeName: 'Zanzibar Magic Boutique Hotel', parkId: 'lake-manyara', dayKind: 'touring', flightId: 'znz-flight' },
+      ...zanzibarNight(2),
+      { lodge: null, lodgeName: null, parkId: null, dayKind: 'none' },
+    ],
+    'Unforgettable Wildebeest Migration & Zanzibar Discovery (14d)': [
+      { lodge: 'sanna', lodgeName: 'Sanna Boutique Hotel', parkId: null, dayKind: 'airport_transfer' },
+      { lodge: 'marera', lodgeName: 'Marera Valley Lodge', parkId: 'tarangire', dayKind: 'touring' },
+      { lodge: 'acacia-central', lodgeName: 'Acacia Central Camp', parkId: 'serengeti', dayKind: 'touring' },
+      { lodge: 'acacia-central', lodgeName: 'Acacia Central Camp', parkId: 'serengeti', dayKind: 'touring' },
+      { lodge: 'acacia-central', lodgeName: 'Acacia Central Camp', parkId: 'serengeti', dayKind: 'touring' },
+      { lodge: 'marera', lodgeName: 'Marera Valley Lodge', parkId: 'ngorongoro-crater', dayKind: 'touring' },
+      { lodge: 'zanzibar-magic', lodgeName: 'Zanzibar Magic Boutique Hotel', parkId: 'lake-manyara', dayKind: 'touring', flightId: 'znz-flight' },
+      ...zanzibarNight(6),
+      { lodge: null, lodgeName: null, parkId: null, dayKind: 'none' },
+    ],
+    'Tanzania and Zanzibar: An Adventurous Experience (12d)': [
+      { lodge: 'sanna', lodgeName: 'Sanna Boutique Hotel', parkId: null, dayKind: 'airport_transfer' },
+      { lodge: 'marera', lodgeName: 'Marera Valley Lodge', parkId: 'tarangire', dayKind: 'touring' },
+      { lodge: 'acacia-central', lodgeName: 'Acacia Central Camp', parkId: 'serengeti', dayKind: 'touring' },
+      { lodge: 'acacia-central', lodgeName: 'Acacia Central Camp', parkId: 'serengeti', dayKind: 'touring' },
+      { lodge: 'marera', lodgeName: 'Marera Valley Lodge', parkId: 'ngorongoro-crater', dayKind: 'touring' },
+      { lodge: 'marera', lodgeName: 'Marera Valley Lodge', parkId: 'lake-manyara', dayKind: 'touring' },
+      { lodge: 'zanzibar-magic', lodgeName: 'Zanzibar Magic Boutique Hotel', parkId: 'lake-manyara', dayKind: 'touring', flightId: 'znz-flight' },
+      ...zanzibarNight(4),
+      { lodge: null, lodgeName: null, parkId: null, dayKind: 'none' },
+    ],
+    'Migration Safari & Cultural Experience: Tanzania & Zanzibar (12d)': [
+      { lodge: 'sanna', lodgeName: 'Sanna Boutique Hotel', parkId: null, dayKind: 'airport_transfer' },
+      { lodge: 'marera', lodgeName: 'Marera Valley Lodge', parkId: 'tarangire', dayKind: 'touring' },
+      { lodge: 'acacia-central', lodgeName: 'Acacia Central Camp', parkId: 'serengeti', dayKind: 'touring' },
+      { lodge: 'acacia-central', lodgeName: 'Acacia Central Camp', parkId: 'serengeti', dayKind: 'touring' },
+      { lodge: 'acacia-central', lodgeName: 'Acacia Central Camp', parkId: 'serengeti', dayKind: 'touring' },
+      { lodge: 'marera', lodgeName: 'Marera Valley Lodge', parkId: 'ngorongoro-crater', dayKind: 'touring' },
+      { lodge: 'zanzibar-magic', lodgeName: 'Zanzibar Magic Boutique Hotel', parkId: 'lake-manyara', dayKind: 'touring', flightId: 'znz-flight' },
+      ...zanzibarNight(4),
+      { lodge: null, lodgeName: null, parkId: null, dayKind: 'none' },
+    ],
+  };
+
+  const siteParkFeeRates: ParkFeeRate[] = [
+    { parkId: 'tarangire', parkName: 'Tarangire National Park', seasonId: null, category: 'non_resident_adult', perPersonRate: 59 },
+    { parkId: 'lake-manyara', parkName: 'Lake Manyara National Park', seasonId: null, category: 'non_resident_adult', perPersonRate: 59 },
+    { parkId: 'serengeti', parkName: 'Serengeti National Park', seasonId: null, category: 'non_resident_adult', perPersonRate: 82.6 },
+    { parkId: 'ngorongoro-crater', parkName: 'Ngorongoro Crater', seasonId: null, category: 'non_resident_adult', perPersonRate: 70.8 },
+  ];
+  const siteParkAncillaryFees: ParkAncillaryFeeRate[] = [
+    { parkId: 'ngorongoro-crater', parkName: 'Ngorongoro Crater', seasonId: null, name: 'Crater descent fee', chargeBasis: 'per_vehicle_once_per_visit', rate: 295 },
+  ];
+  const siteAccommodationRates: AccommodationRate[] = [rate('sanna', 85), rate('marera', 105), rate('zanzibar-magic', 185.5)];
+
+  for (const [name, specs] of Object.entries(SITE_ITINERARIES)) {
+    test(`${name} — no crash, exactly one missing_hotel_rate per unmapped night, accommodation/flight lines match the published day plan`, () => {
+      const pax = 2;
+      const rooms = [{ roomType: 'double', pax }];
+      const days: ItineraryDayInput[] = specs.map((s, i) => ({
+        dayNumber: i + 1,
+        date: null, // no fixed start date for these reconstructions — exercises the highest-season fallback
+        accommodationId: s.lodge,
+        accommodationName: s.lodgeName,
+        mealPlan: s.lodge ? 'fb' : null,
+        rooms: s.lodge ? rooms : [],
+        parkId: s.parkId,
+        dayKind: s.dayKind,
+        flightId: s.flightId ?? null,
+      }));
+      const result = computePricing(
+        baseInput({
+          pax,
+          markupPct: 30,
+          seasons: [],
+          accommodationRates: siteAccommodationRates,
+          parkFeeRates: siteParkFeeRates,
+          parkAncillaryFees: siteParkAncillaryFees,
+          vehicleId: 'veh-1',
+          vehicles: [{ id: 'veh-1', perDayRate: 250, seatCapacity: 6 }],
+          guideId: 'guide-1',
+          guides: [{ id: 'guide-1', name: 'Standard guide', touringRate: 35, airportTransferRate: 10 }],
+          pickupTransferId: 't-pickup',
+          dropoffTransferId: 't-dropoff',
+          transferRates: [
+            { id: 't-pickup', name: 'Airport pickup', mode: 'per_vehicle', rate: 50 },
+            { id: 't-dropoff', name: 'Airport dropoff', mode: 'per_vehicle', rate: 50 },
+          ],
+          flightRates: [{ id: 'znz-flight', name: 'Arusha-Zanzibar', seasonId: null, perPersonRate: 240 }],
+          days,
+        }),
+      );
+
+      const expectedMissingCount = specs.filter((s) => s.lodge === 'acacia-central').length;
+      const missing = result.warnings.filter((w) => w.kind === 'missing_hotel_rate');
+      expect(missing).toHaveLength(expectedMissingCount);
+
+      const expectedAccLines = specs.filter((s) => s.lodge !== null).length;
+      expect(result.lineItems.filter((l) => l.source === 'accommodation')).toHaveLength(expectedAccLines);
+
+      const expectedFlightLines = specs.filter((s) => s.flightId).length;
+      expect(result.lineItems.filter((l) => l.source === 'flight')).toHaveLength(expectedFlightLines);
+
+      expect(result.sellPerPax).toBeGreaterThan(0);
+    });
+  }
 });

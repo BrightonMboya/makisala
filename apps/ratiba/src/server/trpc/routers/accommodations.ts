@@ -17,6 +17,17 @@ import {
   getSignedUploadUrl,
 } from '@/lib/storage';
 
+// Exported so the MCP search_accommodations tool imports this shape
+// directly instead of re-declaring it.
+export const accommodationsSearchInput = z.object({
+  query: z.string().default(''),
+  // Best-effort destination filter: accommodations have no destination/park
+  // FK (see nationalParkId note on proposalDays), only this loose text
+  // column, so this matches on country name/code substring only.
+  country: z.string().optional(),
+  limit: z.number().int().positive().max(100).default(20),
+});
+
 const uploadedImageSchema = z.object({
   key: z.string().min(1),
   bucket: z.string().min(1),
@@ -189,14 +200,7 @@ export const accommodationsRouter = router({
 
   search: publicProcedure
     .input(
-      z.object({
-        query: z.string().default(''),
-        // Best-effort destination filter: accommodations have no destination/park
-        // FK (see nationalParkId note on proposalDays), only this loose text
-        // column, so this matches on country name/code substring only.
-        country: z.string().optional(),
-        limit: z.number().int().positive().max(100).default(20),
-      }),
+      accommodationsSearchInput,
     )
     .query(async ({ ctx, input }) => {
       const trimmed = input.query.trim();
