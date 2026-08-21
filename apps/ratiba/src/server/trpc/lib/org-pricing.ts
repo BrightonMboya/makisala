@@ -6,6 +6,9 @@ import {
   accommodationRates,
   activityLibrary,
   activityRates,
+  flightRates,
+  guides,
+  mealCostRates,
   nationalParks,
   parkAncillaryFees,
   parkFeeRates,
@@ -37,6 +40,10 @@ export interface OrgPricingDayInput {
   parkId: string | null;
   destinationName?: string | null;
   activities: Array<{ libraryId?: string | null; name?: string | null; isOptional?: boolean }>;
+  dayKind?: 'touring' | 'airport_transfer' | 'none';
+  isTransit?: boolean;
+  mealCostId?: string | null;
+  flightId?: string | null;
 }
 
 export interface OrgPricingParams {
@@ -46,9 +53,13 @@ export interface OrgPricingParams {
   travelerBreakdown?: Array<{ category: ParkFeeCategory; count: number }>;
   vehicleId: string | null;
   vehicleCount: number;
+  guideId?: string | null;
   pickupTransferId: string | null;
   dropoffTransferId: string | null;
   markupPct: number;
+  // Group-size-tiered markup schedule; when omitted, the org's saved
+  // pricing-settings tiers (if any) are used instead.
+  markupTiers?: Array<{ minPax: number; markupPct: number }> | null;
   currency: string;
   overrides?: Record<string, number> | null;
   internalCostLines?: InternalCostLine[] | null;
@@ -72,6 +83,9 @@ export async function computeOrgPricing(
     activityRows,
     vehicleRows,
     transferRows,
+    guideRows,
+    mealCostRows,
+    flightRateRows,
     settingsRow,
     parkAliasRows,
   ] = await Promise.all([
@@ -84,6 +98,7 @@ export async function computeOrgPricing(
         seasonId: parkFeeRates.seasonId,
         category: parkFeeRates.category,
         perPersonRate: parkFeeRates.perPersonRate,
+        feeType: parkFeeRates.feeType,
       })
       .from(parkFeeRates)
       .leftJoin(nationalParks, eq(nationalParks.id, parkFeeRates.parkId))
@@ -96,6 +111,7 @@ export async function computeOrgPricing(
         name: parkAncillaryFees.name,
         chargeBasis: parkAncillaryFees.chargeBasis,
         rate: parkAncillaryFees.rate,
+        category: parkAncillaryFees.category,
       })
       .from(parkAncillaryFees)
       .leftJoin(nationalParks, eq(nationalParks.id, parkAncillaryFees.parkId))
@@ -113,6 +129,9 @@ export async function computeOrgPricing(
       .where(eq(activityRates.organizationId, orgId)),
     db.select().from(vehicles).where(eq(vehicles.organizationId, orgId)),
     db.select().from(transferRates).where(eq(transferRates.organizationId, orgId)),
+    db.select().from(guides).where(eq(guides.organizationId, orgId)),
+    db.select().from(mealCostRates).where(eq(mealCostRates.organizationId, orgId)),
+    db.select().from(flightRates).where(eq(flightRates.organizationId, orgId)),
     db.select().from(pricingSettings).where(eq(pricingSettings.organizationId, orgId)).limit(1),
     dayParkIds.length > 0
       ? db
@@ -157,6 +176,10 @@ export async function computeOrgPricing(
           name: a.name ?? null,
           isOptional: a.isOptional ?? false,
         })),
+        dayKind: d.dayKind,
+        isTransit: d.isTransit,
+        mealCostId: d.mealCostId ?? null,
+        flightId: d.flightId ?? null,
       };
     }),
     pax: input.pax,
@@ -164,9 +187,11 @@ export async function computeOrgPricing(
     travelerBreakdown: input.travelerBreakdown,
     vehicleId: input.vehicleId,
     vehicleCount: input.vehicleCount,
+    guideId: input.guideId ?? null,
     pickupTransferId: input.pickupTransferId,
     dropoffTransferId: input.dropoffTransferId,
     markupPct: input.markupPct,
+    markupTiers: input.markupTiers ?? settingsRow[0]?.markupTiers ?? null,
     currency: input.currency || settingsRow[0]?.defaultCurrency || 'USD',
     overrides: input.overrides ?? null,
     internalCostLines: input.internalCostLines ?? null,
@@ -196,6 +221,7 @@ export async function computeOrgPricing(
       seasonId: r.seasonId,
       category: r.category,
       perPersonRate: Number(r.perPersonRate),
+      feeType: r.feeType,
     })),
     parkAncillaryFees: parkAncillaryRows.map((r) => ({
       parkId: r.parkId,
@@ -204,10 +230,12 @@ export async function computeOrgPricing(
       name: r.name,
       chargeBasis: r.chargeBasis,
       rate: Number(r.rate),
+      category: r.category,
     })),
     vehicles: vehicleRows.map((v) => ({
       id: v.id,
       perDayRate: Number(v.perDayRate),
+      seatCapacity: v.capacity,
     })),
     transferRates: transferRows.map((t) => ({
       id: t.id,
@@ -221,6 +249,23 @@ export async function computeOrgPricing(
       seasonId: r.seasonId,
       chargeBasis: r.chargeBasis,
       rate: Number(r.rate),
+    })),
+    guides: guideRows.map((g) => ({
+      id: g.id,
+      name: g.name,
+      touringRate: Number(g.touringRate),
+      airportTransferRate: Number(g.airportTransferRate),
+    })),
+    mealRates: mealCostRows.map((m) => ({
+      id: m.id,
+      name: m.name,
+      perPersonRate: Number(m.perPersonRate),
+    })),
+    flightRates: flightRateRows.map((f) => ({
+      id: f.id,
+      name: f.name,
+      seasonId: f.seasonId,
+      perPersonRate: Number(f.perPersonRate),
     })),
   });
 }

@@ -6,6 +6,9 @@ import {
   parkAncillaryFees,
   vehicles,
   transferRates,
+  guides,
+  mealCostRates,
+  flightRates,
   pricingSettings,
   accommodations,
   nationalParks,
@@ -27,8 +30,13 @@ const PARK_FEE_CATEGORIES = [
   'citizen_child',
 ] as const;
 const TRANSFER_MODES = ['per_vehicle', 'per_pax'] as const;
-const ANCILLARY_CHARGE_BASES = ['per_vehicle_per_day', 'per_vehicle_once_per_visit'] as const;
+const ANCILLARY_CHARGE_BASES = [
+  'per_vehicle_per_day',
+  'per_vehicle_once_per_visit',
+  'per_person_per_day',
+] as const;
 const ACTIVITY_CHARGE_BASES = ['per_person', 'per_group'] as const;
+const PARK_FEE_TYPES = ['entrance', 'transit'] as const;
 
 // ----- helpers -----
 const monthDay = z.object({
@@ -415,6 +423,7 @@ const parkFeeRatesRouter = router({
         category: parkFeeRates.category,
         perPersonRate: parkFeeRates.perPersonRate,
         currency: parkFeeRates.currency,
+        feeType: parkFeeRates.feeType,
       })
       .from(parkFeeRates)
       .leftJoin(nationalParks, eq(nationalParks.id, parkFeeRates.parkId))
@@ -429,6 +438,7 @@ const parkFeeRatesRouter = router({
         category: z.enum(PARK_FEE_CATEGORIES),
         perPersonRate: z.number().nonnegative(),
         currency: z.string().length(3).default('USD'),
+        feeType: z.enum(PARK_FEE_TYPES).default('entrance'),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -452,6 +462,7 @@ const parkFeeRatesRouter = router({
         category: z.enum(PARK_FEE_CATEGORIES).optional(),
         perPersonRate: z.number().nonnegative().optional(),
         currency: z.string().length(3).optional(),
+        feeType: z.enum(PARK_FEE_TYPES).optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -506,6 +517,7 @@ const parkAncillaryFeesRouter = router({
         chargeBasis: parkAncillaryFees.chargeBasis,
         rate: parkAncillaryFees.rate,
         currency: parkAncillaryFees.currency,
+        category: parkAncillaryFees.category,
       })
       .from(parkAncillaryFees)
       .leftJoin(nationalParks, eq(nationalParks.id, parkAncillaryFees.parkId))
@@ -521,6 +533,8 @@ const parkAncillaryFeesRouter = router({
         chargeBasis: z.enum(ANCILLARY_CHARGE_BASES),
         rate: z.number().nonnegative(),
         currency: z.string().length(3).default('USD'),
+        // Only meaningful when chargeBasis is 'per_person_per_day'.
+        category: z.enum(PARK_FEE_CATEGORIES).nullable().optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -529,6 +543,7 @@ const parkAncillaryFeesRouter = router({
         .values({
           ...input,
           seasonId: input.seasonId ?? null,
+          category: input.category ?? null,
           rate: String(input.rate),
           organizationId: ctx.orgId,
         })
@@ -545,6 +560,7 @@ const parkAncillaryFeesRouter = router({
         chargeBasis: z.enum(ANCILLARY_CHARGE_BASES).optional(),
         rate: z.number().nonnegative().optional(),
         currency: z.string().length(3).optional(),
+        category: z.enum(PARK_FEE_CATEGORIES).nullable().optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
@@ -801,7 +817,195 @@ const transferRatesRouter = router({
     }),
 });
 
+// ----- guides -----
+const guidesRouter = router({
+  list: protectedProcedure.query(({ ctx }) =>
+    ctx.db.select().from(guides).where(eq(guides.organizationId, ctx.orgId)).orderBy(asc(guides.name)),
+  ),
+
+  create: adminProcedure
+    .input(
+      z.object({
+        name: z.string().min(1).max(200),
+        touringRate: z.number().nonnegative(),
+        airportTransferRate: z.number().nonnegative(),
+        currency: z.string().length(3).default('USD'),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const [row] = await ctx.db
+        .insert(guides)
+        .values({
+          ...input,
+          touringRate: String(input.touringRate),
+          airportTransferRate: String(input.airportTransferRate),
+          organizationId: ctx.orgId,
+        })
+        .returning();
+      return row;
+    }),
+
+  update: adminProcedure
+    .input(
+      z.object({
+        id: z.string().uuid(),
+        name: z.string().min(1).max(200).optional(),
+        touringRate: z.number().nonnegative().optional(),
+        airportTransferRate: z.number().nonnegative().optional(),
+        currency: z.string().length(3).optional(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const { id, touringRate, airportTransferRate, ...rest } = input;
+      const patch: Record<string, unknown> = { ...rest, updatedAt: new Date() };
+      if (touringRate !== undefined) patch.touringRate = String(touringRate);
+      if (airportTransferRate !== undefined) patch.airportTransferRate = String(airportTransferRate);
+      const [row] = await ctx.db
+        .update(guides)
+        .set(patch)
+        .where(and(eq(guides.id, id), eq(guides.organizationId, ctx.orgId)))
+        .returning();
+      if (!row) throw new TRPCError({ code: 'NOT_FOUND' });
+      return row;
+    }),
+
+  delete: adminProcedure
+    .input(z.object({ id: z.string().uuid() }))
+    .mutation(async ({ ctx, input }) => {
+      await ctx.db.delete(guides).where(and(eq(guides.id, input.id), eq(guides.organizationId, ctx.orgId)));
+      return { ok: true };
+    }),
+});
+
+// ----- meal cost rates (e.g. lunchbox) -----
+const mealCostRatesRouter = router({
+  list: protectedProcedure.query(({ ctx }) =>
+    ctx.db
+      .select()
+      .from(mealCostRates)
+      .where(eq(mealCostRates.organizationId, ctx.orgId))
+      .orderBy(asc(mealCostRates.name)),
+  ),
+
+  create: adminProcedure
+    .input(
+      z.object({
+        name: z.string().min(1).max(200),
+        perPersonRate: z.number().nonnegative(),
+        currency: z.string().length(3).default('USD'),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const [row] = await ctx.db
+        .insert(mealCostRates)
+        .values({ ...input, perPersonRate: String(input.perPersonRate), organizationId: ctx.orgId })
+        .returning();
+      return row;
+    }),
+
+  update: adminProcedure
+    .input(
+      z.object({
+        id: z.string().uuid(),
+        name: z.string().min(1).max(200).optional(),
+        perPersonRate: z.number().nonnegative().optional(),
+        currency: z.string().length(3).optional(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const { id, perPersonRate, ...rest } = input;
+      const patch: Record<string, unknown> = { ...rest, updatedAt: new Date() };
+      if (perPersonRate !== undefined) patch.perPersonRate = String(perPersonRate);
+      const [row] = await ctx.db
+        .update(mealCostRates)
+        .set(patch)
+        .where(and(eq(mealCostRates.id, id), eq(mealCostRates.organizationId, ctx.orgId)))
+        .returning();
+      if (!row) throw new TRPCError({ code: 'NOT_FOUND' });
+      return row;
+    }),
+
+  delete: adminProcedure
+    .input(z.object({ id: z.string().uuid() }))
+    .mutation(async ({ ctx, input }) => {
+      await ctx.db
+        .delete(mealCostRates)
+        .where(and(eq(mealCostRates.id, input.id), eq(mealCostRates.organizationId, ctx.orgId)));
+      return { ok: true };
+    }),
+});
+
+// ----- flight rates -----
+const flightRatesRouter = router({
+  list: protectedProcedure.query(({ ctx }) =>
+    ctx.db
+      .select()
+      .from(flightRates)
+      .where(eq(flightRates.organizationId, ctx.orgId))
+      .orderBy(asc(flightRates.name)),
+  ),
+
+  create: adminProcedure
+    .input(
+      z.object({
+        name: z.string().min(1).max(200),
+        seasonId: z.string().uuid().nullable().optional(),
+        perPersonRate: z.number().nonnegative(),
+        currency: z.string().length(3).default('USD'),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const [row] = await ctx.db
+        .insert(flightRates)
+        .values({
+          ...input,
+          seasonId: input.seasonId ?? null,
+          perPersonRate: String(input.perPersonRate),
+          organizationId: ctx.orgId,
+        })
+        .returning();
+      return row;
+    }),
+
+  update: adminProcedure
+    .input(
+      z.object({
+        id: z.string().uuid(),
+        name: z.string().min(1).max(200).optional(),
+        seasonId: z.string().uuid().nullable().optional(),
+        perPersonRate: z.number().nonnegative().optional(),
+        currency: z.string().length(3).optional(),
+      }),
+    )
+    .mutation(async ({ ctx, input }) => {
+      const { id, perPersonRate, ...rest } = input;
+      const patch: Record<string, unknown> = { ...rest, updatedAt: new Date() };
+      if (perPersonRate !== undefined) patch.perPersonRate = String(perPersonRate);
+      const [row] = await ctx.db
+        .update(flightRates)
+        .set(patch)
+        .where(and(eq(flightRates.id, id), eq(flightRates.organizationId, ctx.orgId)))
+        .returning();
+      if (!row) throw new TRPCError({ code: 'NOT_FOUND' });
+      return row;
+    }),
+
+  delete: adminProcedure
+    .input(z.object({ id: z.string().uuid() }))
+    .mutation(async ({ ctx, input }) => {
+      await ctx.db
+        .delete(flightRates)
+        .where(and(eq(flightRates.id, input.id), eq(flightRates.organizationId, ctx.orgId)));
+      return { ok: true };
+    }),
+});
+
 // ----- pricing settings (singleton per org) -----
+const markupTierSchema = z.object({
+  minPax: z.number().int().positive(),
+  markupPct: z.number().nonnegative().max(1000),
+});
+
 const settingsRouter = router({
   get: protectedProcedure.query(async ({ ctx }) => {
     const [row] = await ctx.db
@@ -818,25 +1022,25 @@ const settingsRouter = router({
         defaultMarkupPct: z.number().nonnegative().max(1000),
         defaultCurrency: z.string().length(3),
         defaultTravelerCategory: z.enum(PARK_FEE_CATEGORIES),
+        // Optional group-size-tiered markup schedule (see pricing-engine.ts).
+        // Omitted = leave whatever tiers are already saved untouched.
+        markupTiers: z.array(markupTierSchema).nullable().optional(),
       }),
     )
     .mutation(async ({ ctx, input }) => {
+      const shared: Record<string, unknown> = {
+        defaultMarkupPct: String(input.defaultMarkupPct),
+        defaultCurrency: input.defaultCurrency,
+        defaultTravelerCategory: input.defaultTravelerCategory,
+      };
+      // Omitted (not just null) = leave whatever tiers are already saved untouched.
+      if (input.markupTiers !== undefined) shared.markupTiers = input.markupTiers;
       const [row] = await ctx.db
         .insert(pricingSettings)
-        .values({
-          organizationId: ctx.orgId,
-          defaultMarkupPct: String(input.defaultMarkupPct),
-          defaultCurrency: input.defaultCurrency,
-          defaultTravelerCategory: input.defaultTravelerCategory,
-        })
+        .values({ organizationId: ctx.orgId, ...shared } as typeof pricingSettings.$inferInsert)
         .onConflictDoUpdate({
           target: pricingSettings.organizationId,
-          set: {
-            defaultMarkupPct: String(input.defaultMarkupPct),
-            defaultCurrency: input.defaultCurrency,
-            defaultTravelerCategory: input.defaultTravelerCategory,
-            updatedAt: new Date(),
-          },
+          set: { ...shared, updatedAt: new Date() },
         })
         .returning();
       return row;
@@ -851,5 +1055,8 @@ export const rateCardsRouter = router({
   activityRates: activityRatesRouter,
   vehicles: vehiclesRouter,
   transferRates: transferRatesRouter,
+  guides: guidesRouter,
+  mealCostRates: mealCostRatesRouter,
+  flightRates: flightRatesRouter,
   settings: settingsRouter,
 });

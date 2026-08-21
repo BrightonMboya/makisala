@@ -25,6 +25,7 @@ import {
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { cn } from '@/lib/utils';
+import { inferDayPricingFlags } from '@/lib/day-pricing-inference';
 import { useBuilder } from '@/components/itinerary-builder/builder-context';
 import type {
   AccommodationAlternative,
@@ -96,6 +97,8 @@ export default function PricingPage() {
     setVehicleId,
     vehicleCount,
     setVehicleCount,
+    guideId,
+    setGuideId,
     markupPct,
     setMarkupPct,
     pickupTransferId,
@@ -303,30 +306,37 @@ export default function PricingPage() {
 
   const dayInputs = useMemo(() => {
     if (!startDate || days.length === 0) return [];
-    return days.map((d, idx) => ({
-      dayNumber: d.dayNumber,
-      date: addDays(startDate, idx).toISOString(),
-      accommodationId: d.accommodation,
-      accommodationName: d.accommodationName ?? null,
-      // Board basis comes from the day's meals (B/L/D), not a separate field.
-      mealPlan: deriveMealPlan(d.meals),
-      rooms: (d.rooms ?? []).map((r) => ({
-        roomType: (r.roomType ?? null) as 'single' | 'double' | 'triple' | 'quad' | 'family' | null,
-        pax: r.pax,
-        children: r.children ?? 0,
-      })),
-      parkId:
-        d.destination &&
-        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(d.destination)
-          ? d.destination
-          : null,
-      destinationName: d.destinationName ?? null,
-      activities: d.activities.map((a) => ({
-        libraryId: a.libraryId ?? null,
-        name: a.name ?? null,
-        isOptional: a.isOptional,
-      })),
-    }));
+    return days.map((d, idx) => {
+      const inferred = inferDayPricingFlags(days, idx);
+      return {
+        dayNumber: d.dayNumber,
+        date: addDays(startDate, idx).toISOString(),
+        accommodationId: d.accommodation,
+        accommodationName: d.accommodationName ?? null,
+        // Board basis comes from the day's meals (B/L/D), not a separate field.
+        mealPlan: deriveMealPlan(d.meals),
+        rooms: (d.rooms ?? []).map((r) => ({
+          roomType: (r.roomType ?? null) as 'single' | 'double' | 'triple' | 'quad' | 'family' | null,
+          pax: r.pax,
+          children: r.children ?? 0,
+        })),
+        parkId:
+          d.destination &&
+          /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(d.destination)
+            ? d.destination
+            : null,
+        destinationName: d.destinationName ?? null,
+        activities: d.activities.map((a) => ({
+          libraryId: a.libraryId ?? null,
+          name: a.name ?? null,
+          isOptional: a.isOptional,
+        })),
+        dayKind: inferred.dayKind,
+        isTransit: inferred.isTransit,
+        mealCostId: inferred.mealCostId,
+        flightId: d.transfer?.flightRateId ?? null,
+      };
+    });
   }, [days, startDate]);
 
   const computeQuery = trpc.pricing.compute.useQuery(
@@ -337,6 +347,7 @@ export default function PricingPage() {
       travelerBreakdown,
       vehicleId,
       vehicleCount,
+      guideId,
       pickupTransferId,
       dropoffTransferId,
       markupPct,
@@ -354,6 +365,7 @@ export default function PricingPage() {
   );
 
   const { data: vehicles = [] } = trpc.rateCards.vehicles.list.useQuery();
+  const { data: guides = [] } = trpc.rateCards.guides.list.useQuery();
   const { data: transferOptions = [] } = trpc.rateCards.transferRates.list.useQuery();
   const { data: activityRateOptions = [] } = trpc.rateCards.activityRates.listAll.useQuery();
   const { data: pricingDefaults } = trpc.rateCards.settings.get.useQuery();
@@ -460,6 +472,9 @@ export default function PricingPage() {
             setVehicleId={setVehicleId}
             vehicleCount={vehicleCount}
             setVehicleCount={setVehicleCount}
+            guideId={guideId}
+            setGuideId={setGuideId}
+            guides={guides}
             pickupTransferId={pickupTransferId}
             setPickupTransferId={setPickupTransferId}
             dropoffTransferId={dropoffTransferId}
@@ -894,6 +909,8 @@ function AutoPricingSection({
   setVehicleId,
   vehicleCount,
   setVehicleCount,
+  guideId,
+  setGuideId,
   pickupTransferId,
   setPickupTransferId,
   dropoffTransferId,
@@ -916,11 +933,14 @@ function AutoPricingSection({
   onUpdateInternalCostLine,
   onUpdateInternalCostLineQuantity,
   onDeleteInternalCostLine,
+  guides,
 }: {
   vehicleId: string | null;
   setVehicleId: (v: string | null) => void;
   vehicleCount: number;
   setVehicleCount: (v: number) => void;
+  guideId: string | null;
+  setGuideId: (v: string | null) => void;
   pickupTransferId: string | null;
   setPickupTransferId: (v: string | null) => void;
   dropoffTransferId: string | null;
@@ -928,6 +948,7 @@ function AutoPricingSection({
   markupPct: number;
   setMarkupPct: (v: number) => void;
   vehicles: Array<{ id: string; name: string; perDayRate: string | number }>;
+  guides: Array<{ id: string; name: string; touringRate: string | number }>;
   transferOptions: Array<{
     id: string;
     name: string;
@@ -1029,7 +1050,7 @@ function AutoPricingSection({
   return (
     <div className="space-y-5 p-6">
       {/* Trip-wide auto settings */}
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-3 lg:grid-cols-5">
         <div>
           <label className="mb-1 block text-xs font-semibold tracking-wide text-stone-500 uppercase">
             Vehicle (per-day)
@@ -1057,6 +1078,23 @@ function AutoPricingSection({
               className="h-9 w-16 shrink-0 rounded-md border border-stone-200 bg-stone-50 px-2 text-center text-sm"
             />
           </div>
+        </div>
+        <div>
+          <label className="mb-1 block text-xs font-semibold tracking-wide text-stone-500 uppercase">
+            Guide (priced separately from vehicle)
+          </label>
+          <select
+            value={guideId ?? ''}
+            onChange={(e) => setGuideId(e.target.value || null)}
+            className="h-9 w-full rounded-md border border-stone-200 bg-stone-50 px-2 text-sm"
+          >
+            <option value="">— none —</option>
+            {guides.map((g) => (
+              <option key={g.id} value={g.id}>
+                {g.name} (${Number(g.touringRate)}/touring day)
+              </option>
+            ))}
+          </select>
         </div>
         <div>
           <label className="mb-1 block text-xs font-semibold tracking-wide text-stone-500 uppercase">
@@ -1524,6 +1562,12 @@ const WARNING_FIX: Record<WarningKind, { tab: string | null; label: string } | n
   missing_activity_rate: { tab: 'activities', label: 'Add activity rate' },
   missing_vehicle: { tab: 'vehicles', label: 'Check vehicle' },
   missing_transfer: { tab: 'transfers', label: 'Check transfer' },
+  vehicle_capacity_exceeded: { tab: 'vehicles', label: 'Add another vehicle' },
+  missing_guide: { tab: null, label: 'Check guide' },
+  unpriced_transfer_day: { tab: 'guides', label: 'Add guide' },
+  missing_transit_fee: { tab: 'parks', label: 'Add transit rate' },
+  missing_meal_rate: { tab: null, label: 'Add meal rate' },
+  missing_flight_rate: { tab: null, label: 'Add flight rate' },
 };
 
 // A computed line total that the operator can click to override with a manual

@@ -28,6 +28,7 @@ import { getHiddenImageIds } from '../lib/hidden-images';
 import { loadBookingAddOns } from '../lib/booking-addons';
 import { computeBookingTotal, parseSelections, type Selections } from '@/lib/booking-addons';
 import { buildCheckoutLineItems, computeTotals } from '@/lib/invoices/seed-from-proposal';
+import { inferDayPricingFlags } from '@/lib/day-pricing-inference';
 import { getNextInvoiceNumber } from '@/lib/invoices/numbering';
 import { formatMoney } from '@/components/invoices/form-types';
 import { getOrgPaymentMethodSnapshot } from '@/lib/invoices/payment-methods';
@@ -86,6 +87,9 @@ async function copyProposalDays(tx: any, days: any[], newProposalId: string) {
         destinationLat: day.destinationLat,
         destinationLng: day.destinationLng,
         alternatives: day.alternatives,
+        dayKind: day.dayKind,
+        isTransit: day.isTransit,
+        mealCostId: day.mealCostId,
       })
       .returning();
 
@@ -137,6 +141,7 @@ async function copyProposalDays(tx: any, days: any[], newProposalId: string) {
         durationMinutes: transport.durationMinutes,
         distanceKm: transport.distanceKm,
         notes: transport.notes,
+        flightRateId: transport.flightRateId,
       });
     }
   }
@@ -176,7 +181,9 @@ interface BuilderData {
   internalCostLines?: InternalCostLine[] | null;
   vehicleId?: string | null;
   vehicleCount?: number | null;
+  guideId?: string | null;
   markupPct?: number | string | null;
+  markupTiers?: Array<{ minPax: number; markupPct: number }> | null;
   pickupTransferRateId?: string | null;
   dropoffTransferRateId?: string | null;
   currency?: 'USD' | 'EUR' | null;
@@ -209,6 +216,8 @@ interface BuilderTransfer {
   durationMinutes?: number | null;
   distanceKm?: number | null;
   notes?: string | null;
+  /** Only meaningful when mode is a flight type — references flightRates.id. */
+  flightRateId?: string | null;
 }
 
 interface BuilderDay {
@@ -244,6 +253,12 @@ interface BuilderDay {
   meals?: { breakfast?: boolean; lunch?: boolean; dinner?: boolean };
   mealOptions?: string[];
   transfer?: BuilderTransfer;
+  /** Drives which per-day vehicle/guide rate applies — see pricing-engine.ts. */
+  dayKind?: 'touring' | 'airport_transfer' | 'none';
+  /** True when this day transits nationalParkId without a full visit. */
+  isTransit?: boolean;
+  /** References mealCostRates.id for a boxed-lunch-style day cost. */
+  mealCostId?: string | null;
 }
 
 // ---------- MCP-facing input schemas ----------
@@ -409,6 +424,10 @@ async function reconcileAutoPricingRows(
         name: a.name ?? null,
         isOptional: a.isOptional ?? false,
       })),
+      dayKind: d.dayKind,
+      isTransit: d.isTransit,
+      mealCostId: d.mealCostId ?? null,
+      flightId: d.transfer?.flightRateId ?? null,
     };
   });
 
@@ -432,9 +451,11 @@ async function reconcileAutoPricingRows(
       travelerBreakdown,
       vehicleId: builderData.vehicleId ?? null,
       vehicleCount: builderData.vehicleCount ?? 1,
+      guideId: builderData.guideId ?? null,
       pickupTransferId: builderData.pickupTransferRateId ?? null,
       dropoffTransferId: builderData.dropoffTransferRateId ?? null,
       markupPct,
+      markupTiers: builderData.markupTiers ?? null,
       currency: builderData.currency === 'EUR' ? 'EUR' : 'USD',
       overrides: builderData.pricingOverrides ?? null,
       internalCostLines: builderData.internalCostLines ?? null,
@@ -1167,6 +1188,7 @@ export const proposalsRouter = router({
           internalCostLines: true,
           vehicleId: true,
           vehicleCount: true,
+          guideId: true,
           markupPct: true,
           pickupTransferRateId: true,
           dropoffTransferRateId: true,
@@ -1193,6 +1215,9 @@ export const proposalsRouter = router({
               description: true,
               previewImage: true,
               alternatives: true,
+              dayKind: true,
+              isTransit: true,
+              mealCostId: true,
             },
             with: {
               accommodations: {
@@ -1219,6 +1244,7 @@ export const proposalsRouter = router({
                   durationMinutes: true,
                   distanceKm: true,
                   notes: true,
+                  flightRateId: true,
                 },
               },
             },
@@ -1325,6 +1351,7 @@ export const proposalsRouter = router({
         internalCostLines: builderData.internalCostLines || null,
         vehicleId: builderData.vehicleId ?? null,
         vehicleCount: builderData.vehicleCount ?? 1,
+        guideId: builderData.guideId ?? null,
         markupPct:
           builderData.markupPct == null || builderData.markupPct === ''
             ? null
@@ -1369,6 +1396,7 @@ export const proposalsRouter = router({
             internalCostLines: proposalData.internalCostLines,
             vehicleId: proposalData.vehicleId,
             vehicleCount: proposalData.vehicleCount,
+            guideId: proposalData.guideId,
             markupPct: proposalData.markupPct,
             pickupTransferRateId: proposalData.pickupTransferRateId,
             dropoffTransferRateId: proposalData.dropoffTransferRateId,
@@ -1407,6 +1435,7 @@ export const proposalsRouter = router({
               internalCostLines: proposalData.internalCostLines,
               vehicleId: proposalData.vehicleId,
               vehicleCount: proposalData.vehicleCount,
+              guideId: proposalData.guideId,
               markupPct: proposalData.markupPct,
               pickupTransferRateId: proposalData.pickupTransferRateId,
               dropoffTransferRateId: proposalData.dropoffTransferRateId,
@@ -1420,7 +1449,13 @@ export const proposalsRouter = router({
 
         const days = builderData.days || [];
 
-        for (const day of days) {
+        for (const [dayIdx, day] of days.entries()) {
+          // Recomputed from the day's own content rather than trusted from the
+          // caller — the manual per-day toggle was removed, and the MCP
+          // connector never had one, so this is now the only source of truth.
+          // Recomputing on every save also means an unrelated edit can't
+          // silently reset a day that was previously classified correctly.
+          const inferredFlags = inferDayPricingFlags(days, dayIdx);
           let nationalParkId: string | null = null;
 
           if (day.destination) {
@@ -1447,6 +1482,9 @@ export const proposalsRouter = router({
                 Array.isArray(day.alternatives) && day.alternatives.length > 0
                   ? day.alternatives.filter((alt) => !!alt.accommodation)
                   : null,
+              dayKind: inferredFlags.dayKind,
+              isTransit: inferredFlags.isTransit,
+              mealCostId: inferredFlags.mealCostId,
             })
             .returning();
 
@@ -1526,6 +1564,7 @@ export const proposalsRouter = router({
               durationMinutes: day.transfer.durationMinutes || null,
               distanceKm: day.transfer.distanceKm || null,
               notes: day.transfer.notes || null,
+              flightRateId: day.transfer.flightRateId || null,
             });
           }
         }
@@ -2210,6 +2249,7 @@ export const proposalsRouter = router({
           internalCostLines: original.internalCostLines,
           vehicleId: original.vehicleId,
           vehicleCount: original.vehicleCount,
+          guideId: original.guideId,
           markupPct: original.markupPct,
           pickupTransferRateId: original.pickupTransferRateId,
           dropoffTransferRateId: original.dropoffTransferRateId,
@@ -2292,6 +2332,7 @@ export const proposalsRouter = router({
           internalCostLines: original.internalCostLines,
           vehicleId: original.vehicleId,
           vehicleCount: original.vehicleCount,
+          guideId: original.guideId,
           markupPct: original.markupPct,
           pickupTransferRateId: original.pickupTransferRateId,
           dropoffTransferRateId: original.dropoffTransferRateId,

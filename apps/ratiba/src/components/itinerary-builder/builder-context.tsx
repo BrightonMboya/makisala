@@ -68,6 +68,7 @@ export function BuilderProvider({
   const [useAutoPricing, setUseAutoPricing] = useState(false);
   const [vehicleId, setVehicleId] = useState<string | null>(null);
   const [vehicleCount, setVehicleCount] = useState<number>(1);
+  const [guideId, setGuideId] = useState<string | null>(null);
   const [markupPct, setMarkupPct] = useState<number>(30);
   const [pickupTransferId, setPickupTransferId] = useState<string | null>(null);
   const [dropoffTransferId, setDropoffTransferId] = useState<string | null>(null);
@@ -163,6 +164,7 @@ export function BuilderProvider({
       if (initialData.useAutoPricing != null) setUseAutoPricing(!!initialData.useAutoPricing);
       if (initialData.vehicleId !== undefined) setVehicleId(initialData.vehicleId);
       if (initialData.vehicleCount != null) setVehicleCount(Number(initialData.vehicleCount));
+      if (initialData.guideId !== undefined) setGuideId(initialData.guideId);
       if (initialData.markupPct != null) setMarkupPct(Number(initialData.markupPct));
       if (initialData.pickupTransferRateId !== undefined)
         setPickupTransferId(initialData.pickupTransferRateId);
@@ -262,6 +264,8 @@ export function BuilderProvider({
         setVehicleId,
         vehicleCount,
         setVehicleCount,
+        guideId,
+        setGuideId,
         markupPct,
         setMarkupPct,
         pickupTransferId,

@@ -101,7 +101,19 @@ export type BuilderDay = {
     durationMinutes: number | null;
     distanceKm: number | null;
     notes: string;
+    // Only meaningful when mode is 'flight_domestic'/'flight_bush' — the
+    // flight rate this leg is priced from. Null = not yet priced.
+    flightRateId?: string | null;
   } | null;
+  // Drives which per-day vehicle/guide rate applies in the pricing engine.
+  // Unset = 'touring', the common case.
+  dayKind?: 'touring' | 'airport_transfer' | 'none';
+  // True when this day passes through `destination` without a full visit
+  // (e.g. driving past Ngorongoro en route to the Serengeti).
+  isTransit?: boolean;
+  // References a meal-cost rate (e.g. a boxed lunch) for a day with no lodge
+  // meal available. Null/unset = no meal cost that day.
+  mealCostId?: string | null;
 };
 
 export type TravelerGroup = {
@@ -191,6 +203,9 @@ export type BuilderContextType = {
   setVehicleId: React.Dispatch<React.SetStateAction<string | null>>;
   vehicleCount: number;
   setVehicleCount: React.Dispatch<React.SetStateAction<number>>;
+  // Guide priced separately from the vehicle — see pricing-engine.ts's GuideRate.
+  guideId: string | null;
+  setGuideId: React.Dispatch<React.SetStateAction<string | null>>;
   markupPct: number;
   setMarkupPct: React.Dispatch<React.SetStateAction<number>>;
   pickupTransferId: string | null;

@@ -25,6 +25,8 @@ const activityInputSchema = z.object({
   isOptional: z.boolean().optional(),
 });
 
+const DAY_KINDS = ['touring', 'airport_transfer', 'none'] as const;
+
 const dayInputSchema = z.object({
   dayNumber: z.number().int(),
   date: z.coerce.date(),
@@ -35,6 +37,10 @@ const dayInputSchema = z.object({
   parkId: z.string().uuid().nullable(),
   destinationName: z.string().nullish(),
   activities: z.array(activityInputSchema).default([]),
+  dayKind: z.enum(DAY_KINDS).optional(),
+  isTransit: z.boolean().optional(),
+  mealCostId: z.string().uuid().nullish(),
+  flightId: z.string().uuid().nullish(),
 });
 
 const computeInputSchema = z.object({
@@ -51,9 +57,13 @@ const computeInputSchema = z.object({
     .optional(),
   vehicleId: z.string().uuid().nullable(),
   vehicleCount: z.number().int().positive().default(1),
+  guideId: z.string().uuid().nullish(),
   pickupTransferId: z.string().uuid().nullable(),
   dropoffTransferId: z.string().uuid().nullable(),
   markupPct: z.number().nonnegative().max(1000),
+  markupTiers: z
+    .array(z.object({ minPax: z.number().int().positive(), markupPct: z.number().nonnegative() }))
+    .nullish(),
   currency: z.string().length(3).default('USD'),
   overrides: z.record(z.string(), z.number()).nullish(),
   internalCostLines: z
@@ -90,6 +100,10 @@ export const pricingRouter = router({
             name: a.name ?? null,
             isOptional: a.isOptional ?? false,
           })),
+          dayKind: d.dayKind,
+          isTransit: d.isTransit,
+          mealCostId: d.mealCostId ?? null,
+          flightId: d.flightId ?? null,
         }),
       ),
       pax: input.pax,
@@ -99,9 +113,11 @@ export const pricingRouter = router({
         | undefined,
       vehicleId: input.vehicleId,
       vehicleCount: input.vehicleCount,
+      guideId: input.guideId ?? null,
       pickupTransferId: input.pickupTransferId,
       dropoffTransferId: input.dropoffTransferId,
       markupPct: input.markupPct,
+      markupTiers: input.markupTiers ?? null,
       currency: input.currency,
       overrides: input.overrides ?? null,
       internalCostLines: input.internalCostLines ?? null,

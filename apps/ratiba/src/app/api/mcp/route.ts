@@ -130,6 +130,7 @@ interface BuilderFacingDay {
     durationMinutes?: number;
     distanceKm?: number;
     notes?: string;
+    flightRateId?: string;
   };
 }
 
@@ -165,12 +166,32 @@ function mapProposalDays(days: ProposalDayInput[] | undefined): BuilderFacingDay
   }));
 }
 
+// Auto-pricing engine settings the MCP schema has no way to set — they're
+// only ever carried over from an existing proposal (see update_proposal's
+// `autoPricingPassthrough`), never authored via MCP. `save` treats a missing
+// key as "reset to null/default" (it isn't a partial patch), so leaving these
+// out entirely — as opposed to passing them as `undefined` — would silently
+// wipe a proposal's vehicle/guide/markup/transfer-rate selection on every
+// MCP edit, even one unrelated to pricing.
+interface AutoPricingPassthrough {
+  vehicleId?: string | null;
+  vehicleCount?: number | null;
+  guideId?: string | null;
+  markupPct?: number | string | null;
+  pickupTransferRateId?: string | null;
+  dropoffTransferRateId?: string | null;
+  useAutoPricing?: boolean | null;
+  pricingOverrides?: unknown;
+  internalCostLines?: unknown;
+}
+
 // Builds the loose `data` blob `proposals.save` expects from our strict,
 // LLM-facing input, plus the already-mapped `days` (from mapProposalDays or
 // daysFromExisting — see callers).
 function proposalDataFromInput(
   input: Omit<z.infer<typeof createProposalInput>, 'name' | 'tourId' | 'days'>,
   days: BuilderFacingDay[] | undefined,
+  autoPricing?: AutoPricingPassthrough,
 ): Record<string, unknown> {
   return {
     clientId: input.clientId,
@@ -187,6 +208,7 @@ function proposalDataFromInput(
     exclusions: input.exclusions,
     travelerGroups: input.travelerGroups,
     pricingRows: input.pricingRows,
+    ...autoPricing,
     days,
   };
 }
@@ -230,6 +252,7 @@ interface ExistingProposalDay {
     durationMinutes: number | null;
     distanceKm: number | null;
     notes: string | null;
+    flightRateId: string | null;
   }>;
 }
 
@@ -284,6 +307,7 @@ function daysFromExisting(days: ExistingProposalDay[]): BuilderFacingDay[] {
           durationMinutes: day.transportation[0].durationMinutes ?? undefined,
           distanceKm: day.transportation[0].distanceKm ?? undefined,
           notes: day.transportation[0].notes ?? undefined,
+          flightRateId: day.transportation[0].flightRateId ?? undefined,
         }
       : undefined,
   }));
@@ -598,6 +622,20 @@ const mcpHandler = createMcpHandler(
               pricingRows: rest.pricingRows ?? existing.pricingRows ?? undefined,
             },
             days,
+            // MCP has no inputs for these — always carry the existing values
+            // forward so an unrelated edit (e.g. a description tweak) can't
+            // reset the proposal's vehicle/guide/markup/transfer selection.
+            {
+              vehicleId: existing.vehicleId,
+              vehicleCount: existing.vehicleCount,
+              guideId: existing.guideId,
+              markupPct: existing.markupPct,
+              pickupTransferRateId: existing.pickupTransferRateId,
+              dropoffTransferRateId: existing.dropoffTransferRateId,
+              useAutoPricing: existing.useAutoPricing,
+              pricingOverrides: existing.pricingOverrides,
+              internalCostLines: existing.internalCostLines,
+            },
           ),
         });
         if (rest.theme) {

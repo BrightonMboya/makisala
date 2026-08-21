@@ -3,7 +3,16 @@ import { dehydrate, HydrationBoundary, QueryClient } from '@tanstack/react-query
 import { RateCardsShell } from './_components/rate-cards-shell';
 import { createServerCaller } from '@/server/trpc/caller';
 
-type SectionKey = 'hotels' | 'parks' | 'activities' | 'vehicles' | 'transfers' | 'seasons';
+type SectionKey =
+  | 'hotels'
+  | 'parks'
+  | 'activities'
+  | 'vehicles'
+  | 'guides'
+  | 'transfers'
+  | 'flights'
+  | 'meals'
+  | 'seasons';
 
 interface PageProps {
   searchParams: Promise<{ tab?: string }>;
@@ -15,7 +24,17 @@ function qKey(path: string[], input?: unknown) {
 
 export default async function RateCardsPage({ searchParams }: PageProps) {
   const params = await searchParams;
-  const validTabs: SectionKey[] = ['hotels', 'parks', 'activities', 'vehicles', 'transfers', 'seasons'];
+  const validTabs: SectionKey[] = [
+    'hotels',
+    'parks',
+    'activities',
+    'vehicles',
+    'guides',
+    'transfers',
+    'flights',
+    'meals',
+    'seasons',
+  ];
   // Older deep links pointed at the merged settings tab.
   const requested = params.tab === 'settings' ? 'seasons' : params.tab;
   const defaultTab: SectionKey =
@@ -47,20 +66,27 @@ export default async function RateCardsPage({ searchParams }: PageProps) {
   }
 
   const queryClient = new QueryClient();
-  const [hotelRates, parkRates, activityRates, vehicles, transfers, seasons] = await Promise.all([
-    trpc.rateCards.accommodationRates.listAll(),
-    trpc.rateCards.parkFeeRates.listAll(),
-    trpc.rateCards.activityRates.listAll(),
-    trpc.rateCards.vehicles.list(),
-    trpc.rateCards.transferRates.list(),
-    trpc.rateCards.seasons.list(),
-  ]);
+  const [hotelRates, parkRates, activityRates, vehicles, guides, transfers, flights, mealCosts, seasons] =
+    await Promise.all([
+      trpc.rateCards.accommodationRates.listAll(),
+      trpc.rateCards.parkFeeRates.listAll(),
+      trpc.rateCards.activityRates.listAll(),
+      trpc.rateCards.vehicles.list(),
+      trpc.rateCards.guides.list(),
+      trpc.rateCards.transferRates.list(),
+      trpc.rateCards.flightRates.list(),
+      trpc.rateCards.mealCostRates.list(),
+      trpc.rateCards.seasons.list(),
+    ]);
 
   queryClient.setQueryData(qKey(['rateCards', 'accommodationRates', 'listAll']), hotelRates);
   queryClient.setQueryData(qKey(['rateCards', 'parkFeeRates', 'listAll']), parkRates);
   queryClient.setQueryData(qKey(['rateCards', 'activityRates', 'listAll']), activityRates);
   queryClient.setQueryData(qKey(['rateCards', 'vehicles', 'list']), vehicles);
+  queryClient.setQueryData(qKey(['rateCards', 'guides', 'list']), guides);
   queryClient.setQueryData(qKey(['rateCards', 'transferRates', 'list']), transfers);
+  queryClient.setQueryData(qKey(['rateCards', 'flightRates', 'list']), flights);
+  queryClient.setQueryData(qKey(['rateCards', 'mealCostRates', 'list']), mealCosts);
   queryClient.setQueryData(qKey(['rateCards', 'seasons', 'list']), seasons);
 
   if (defaultTab === 'parks') {

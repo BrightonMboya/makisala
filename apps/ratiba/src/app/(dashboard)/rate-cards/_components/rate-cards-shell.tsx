@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Building, TreePine, Car, Plane, Calendar, Check, Sparkles } from 'lucide-react';
+import { Building, TreePine, Car, Plane, Calendar, Check, Sparkles, UserRound, Sandwich, PlaneTakeoff } from 'lucide-react';
 import { trpc } from '@/lib/trpc';
 import { cn } from '@/lib/utils';
 import { AccommodationRatesTab } from './accommodation-rates-tab';
@@ -9,16 +9,31 @@ import { ParkFeesTab } from './park-fees-tab';
 import { ActivitiesTab } from './activities-tab';
 import { VehiclesTab } from './vehicles-tab';
 import { TransfersTab } from './transfers-tab';
+import { GuidesTab } from './guides-tab';
+import { MealCostsTab } from './meal-costs-tab';
+import { FlightRatesTab } from './flight-rates-tab';
 import { SeasonsDefaultsTab } from './seasons-defaults-tab';
 
-type SectionKey = 'hotels' | 'parks' | 'activities' | 'vehicles' | 'transfers' | 'seasons';
+type SectionKey =
+  | 'hotels'
+  | 'parks'
+  | 'activities'
+  | 'vehicles'
+  | 'guides'
+  | 'transfers'
+  | 'flights'
+  | 'meals'
+  | 'seasons';
 
 const ICONS: Record<SectionKey, typeof Building> = {
   hotels: Building,
   parks: TreePine,
   activities: Sparkles,
   vehicles: Car,
+  guides: UserRound,
   transfers: Plane,
+  flights: PlaneTakeoff,
+  meals: Sandwich,
   seasons: Calendar,
 };
 
@@ -29,7 +44,10 @@ export function RateCardsShell({ defaultTab }: { defaultTab: SectionKey }) {
   const { data: parkRates = [] } = trpc.rateCards.parkFeeRates.listAll.useQuery();
   const { data: activityRates = [] } = trpc.rateCards.activityRates.listAll.useQuery();
   const { data: vehicles = [] } = trpc.rateCards.vehicles.list.useQuery();
+  const { data: guides = [] } = trpc.rateCards.guides.list.useQuery();
   const { data: transfers = [] } = trpc.rateCards.transferRates.list.useQuery();
+  const { data: flights = [] } = trpc.rateCards.flightRates.list.useQuery();
+  const { data: mealCosts = [] } = trpc.rateCards.mealCostRates.list.useQuery();
   const { data: hasSeasons = false } = trpc.rateCards.seasons.hasAny.useQuery();
 
   const hotelCount = new Set(hotelRates.map((r) => r.accommodationId)).size;
@@ -70,10 +88,28 @@ export function RateCardsShell({ defaultTab }: { defaultTab: SectionKey }) {
       hint: vehicles.length > 0 ? `${vehicles.length} in fleet` : 'Add fleet',
     },
     {
+      key: 'guides',
+      label: 'Guides',
+      done: guides.length > 0,
+      hint: guides.length > 0 ? `${guides.length} configured` : 'Add guide rates',
+    },
+    {
       key: 'transfers',
       label: 'Transfers',
       done: transfers.length > 0,
       hint: transfers.length > 0 ? `${transfers.length} configured` : 'Add pickups',
+    },
+    {
+      key: 'flights',
+      label: 'Flights',
+      done: flights.length > 0,
+      hint: flights.length > 0 ? `${flights.length} routes` : 'Add domestic/charter fares',
+    },
+    {
+      key: 'meals',
+      label: 'Meal Costs',
+      done: mealCosts.length > 0,
+      hint: mealCosts.length > 0 ? `${mealCosts.length} configured` : 'Add lunchbox rate',
     },
     {
       key: 'seasons',
@@ -142,7 +178,10 @@ export function RateCardsShell({ defaultTab }: { defaultTab: SectionKey }) {
         {active === 'parks' && <ParkFeesTab />}
         {active === 'activities' && <ActivitiesTab />}
         {active === 'vehicles' && <VehiclesTab />}
+        {active === 'guides' && <GuidesTab />}
         {active === 'transfers' && <TransfersTab />}
+        {active === 'flights' && <FlightRatesTab />}
+        {active === 'meals' && <MealCostsTab />}
         {active === 'seasons' && <SeasonsDefaultsTab />}
       </div>
     </div>

@@ -9,12 +9,17 @@ import { trpc } from '@/lib/trpc';
 import { cn } from '@/lib/utils';
 import { AsyncCombobox } from '@/components/itinerary-builder/async-combobox';
 
-const ANCILLARY_BASES = ['per_vehicle_per_day', 'per_vehicle_once_per_visit'] as const;
+const ANCILLARY_BASES = [
+  'per_vehicle_per_day',
+  'per_vehicle_once_per_visit',
+  'per_person_per_day',
+] as const;
 type AncillaryBasis = (typeof ANCILLARY_BASES)[number];
 
 const ANCILLARY_BASIS_LABEL: Record<AncillaryBasis, string> = {
   per_vehicle_per_day: 'Per vehicle, per day',
   per_vehicle_once_per_visit: 'Per vehicle, once per visit',
+  per_person_per_day: 'Per person, per day',
 };
 
 const CATEGORIES = [
@@ -39,8 +44,10 @@ const CATEGORY_LABEL: Record<Category, string> = {
   citizen_child: 'Citizen child',
 };
 
-const cellKey = (seasonId: string | null, category: Category) =>
-  `${seasonId ?? 'null'}|${category}`;
+type FeeType = 'entrance' | 'transit';
+
+const cellKey = (seasonId: string | null, category: Category, feeType: FeeType = 'entrance') =>
+  `${seasonId ?? 'null'}|${category}|${feeType}`;
 
 export function ParkFeesTab() {
   const utils = trpc.useUtils();
@@ -51,6 +58,7 @@ export function ParkFeesTab() {
   const { data: allRates = [] } = trpc.rateCards.parkFeeRates.listAll.useQuery();
   const [showAllCategories, setShowAllCategories] = useState(false);
   const [showSeasons, setShowSeasons] = useState(false);
+  const [showTransit, setShowTransit] = useState(false);
 
   // Caches id -> name for parks surfaced in search.
   const searchCacheRef = useRef<Map<string, string>>(new Map());
@@ -128,12 +136,17 @@ export function ParkFeesTab() {
     },
   });
 
+  const ANCILLARY_DEFAULT_NAME: Record<AncillaryBasis, string> = {
+    per_vehicle_per_day: 'Vehicle entry fee',
+    per_vehicle_once_per_visit: 'Crater descent fee',
+    per_person_per_day: 'Concession fee',
+  };
+
   const addAncillary = (basis: AncillaryBasis) => {
     if (!active) return;
     createAncillary.mutate({
       parkId: active.id,
-      name:
-        basis === 'per_vehicle_per_day' ? 'Vehicle entry fee' : 'Crater descent fee',
+      name: ANCILLARY_DEFAULT_NAME[basis],
       chargeBasis: basis,
       rate: 0,
     });
@@ -142,7 +155,7 @@ export function ParkFeesTab() {
   const rateMap = useMemo(() => {
     const m = new Map<string, { id: string; perPersonRate: number }>();
     for (const r of rates) {
-      m.set(cellKey(r.seasonId, r.category as Category), {
+      m.set(cellKey(r.seasonId, r.category as Category, (r.feeType as FeeType) ?? 'entrance'), {
         id: r.id,
         perPersonRate: Number(r.perPersonRate),
       });
@@ -173,9 +186,9 @@ export function ParkFeesTab() {
 
   const visibleCategories = showAllCategories ? CATEGORIES : COMMON;
 
-  const cellValue = (ids: (string | null)[], category: Category) => {
+  const cellValue = (ids: (string | null)[], category: Category, feeType: FeeType = 'entrance') => {
     for (const id of ids) {
-      const r = rateMap.get(cellKey(id, category));
+      const r = rateMap.get(cellKey(id, category, feeType));
       if (r) return r.perPersonRate;
     }
     return undefined;
@@ -186,20 +199,25 @@ export function ParkFeesTab() {
     setShowAddPark(false);
   };
 
-  const commitCell = (ids: (string | null)[], category: Category, raw: string) => {
+  const commitCell = (
+    ids: (string | null)[],
+    category: Category,
+    raw: string,
+    feeType: FeeType = 'entrance',
+  ) => {
     if (!active) return;
     const value = Number(raw);
     const isEmpty = raw.trim() === '' || !value || value <= 0;
     // Fan the value out to every band that shares this season name.
     for (const seasonId of ids) {
-      const existing = rateMap.get(cellKey(seasonId, category));
+      const existing = rateMap.get(cellKey(seasonId, category, feeType));
       if (isEmpty) {
         if (existing) remove.mutate({ id: existing.id });
       } else if (existing) {
         if (value !== existing.perPersonRate)
           update.mutate({ id: existing.id, perPersonRate: value });
       } else {
-        create.mutate({ parkId: active.id, seasonId, category, perPersonRate: value });
+        create.mutate({ parkId: active.id, seasonId, category, perPersonRate: value, feeType });
       }
     }
   };
@@ -337,12 +355,64 @@ export function ParkFeesTab() {
                   {showSeasons ? 'Hide seasonal columns' : 'Add seasonal pricing'}
                 </button>
               )}
+              <button
+                onClick={() => setShowTransit((v) => !v)}
+                className="text-stone-500 hover:text-stone-700 hover:underline"
+              >
+                {showTransit ? 'Hide transit rates' : 'Add a transit rate'}
+              </button>
             </div>
 
             <p className="text-xs text-stone-400">
               The engine applies your default traveler category (set in Seasons &amp; Defaults) to
               every traveler for now. Per-traveler overrides land in a later release.
             </p>
+
+            {showTransit && (
+              <div className="space-y-2 border-t border-stone-100 pt-4">
+                <div>
+                  <h3 className="text-sm font-semibold text-stone-800">Transit rate</h3>
+                  <p className="text-xs text-stone-500">
+                    A reduced rate for driving through this park without stopping to game-view.
+                    A day marked &quot;transit&quot; in the itinerary builder uses this instead of
+                    the full entrance fee above.
+                  </p>
+                </div>
+                <div className="overflow-x-auto rounded-md border border-stone-200">
+                  <table className="w-full border-collapse text-sm">
+                    <thead className="bg-stone-50 text-xs font-semibold uppercase tracking-wide text-stone-500">
+                      <tr>
+                        <th className="sticky left-0 z-10 bg-stone-50 px-3 py-2 text-left">
+                          Traveler
+                        </th>
+                        {columns.map((c) => (
+                          <th key={c.label} className="px-3 py-2 text-center">
+                            {c.label}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-stone-100">
+                      {visibleCategories.map((cat) => (
+                        <tr key={cat}>
+                          <td className="sticky left-0 z-10 bg-white px-3 py-1.5 whitespace-nowrap text-stone-700">
+                            {CATEGORY_LABEL[cat]}
+                          </td>
+                          {columns.map((c) => (
+                            <td key={c.label} className="px-1.5 py-1.5 text-center">
+                              <FeeCell
+                                value={cellValue(c.ids, cat, 'transit')}
+                                onCommit={(raw) => commitCell(c.ids, cat, raw, 'transit')}
+                              />
+                            </td>
+                          ))}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
 
             <div className="space-y-3 border-t border-stone-100 pt-5">
               <div>
@@ -360,7 +430,8 @@ export function ParkFeesTab() {
                     <thead className="bg-stone-50 text-xs font-semibold uppercase tracking-wide text-stone-500">
                       <tr>
                         <th className="px-3 py-2 text-left">Name</th>
-                        <th className="w-56 px-3 py-2 text-left">Charge basis</th>
+                        <th className="w-52 px-3 py-2 text-left">Charge basis</th>
+                        <th className="w-44 px-3 py-2 text-left">Category</th>
                         <th className="w-28 px-3 py-2 text-right">Rate</th>
                         <th className="w-10 px-3 py-2" />
                       </tr>
@@ -396,6 +467,29 @@ export function ParkFeesTab() {
                                 </option>
                               ))}
                             </select>
+                          </td>
+                          <td className="px-3 py-2">
+                            {fee.chargeBasis === 'per_person_per_day' ? (
+                              <select
+                                value={fee.category ?? ''}
+                                onChange={(e) =>
+                                  updateAncillary.mutate({
+                                    id: fee.id,
+                                    category: (e.target.value || null) as Category | null,
+                                  })
+                                }
+                                className="h-9 w-full rounded-md border border-stone-200 bg-white px-2 text-sm focus:border-emerald-400 focus:outline-none"
+                              >
+                                <option value="">Every traveler</option>
+                                {CATEGORIES.map((c) => (
+                                  <option key={c} value={c}>
+                                    {CATEGORY_LABEL[c]}
+                                  </option>
+                                ))}
+                              </select>
+                            ) : (
+                              <span className="text-xs text-stone-400">—</span>
+                            )}
                           </td>
                           <td className="px-3 py-2">
                             <div className="relative">
@@ -449,6 +543,14 @@ export function ParkFeesTab() {
                 >
                   <Plus className="h-3.5 w-3.5" />
                   One-time visit fee
+                </button>
+                <button
+                  onClick={() => addAncillary('per_person_per_day')}
+                  disabled={createAncillary.isPending}
+                  className="flex items-center gap-1 rounded-md border border-dashed border-stone-300 px-3 py-1.5 text-xs text-stone-600 hover:border-stone-400 hover:bg-stone-50"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  Per-person fee (e.g. concession)
                 </button>
               </div>
             </div>

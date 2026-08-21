@@ -97,8 +97,19 @@ export const TransferRateMode = pgEnum('transfer_rate_mode', ['per_vehicle', 'pe
 export const ParkAncillaryChargeBasis = pgEnum('park_ancillary_charge_basis', [
   'per_vehicle_per_day',
   'per_vehicle_once_per_visit',
+  // Scales with headcount rather than vehicle count (e.g. a concession fee
+  // charged per person per night) — see pricing-engine.ts.
+  'per_person_per_day',
 ]);
 export const ActivityChargeBasis = pgEnum('activity_charge_basis', ['per_person', 'per_group']);
+// 'transit' = a reduced pass-through rate for driving through a park without
+// stopping to game-view. A day flagged isTransit prefers this over 'entrance'.
+export const ParkFeeType = pgEnum('park_fee_type', ['entrance', 'transit']);
+// Drives which per-day vehicle/guide cost applies (see pricing-engine.ts):
+// 'touring' = a normal day out with the vehicle and guide (default). 'airport_transfer' =
+// a same-day pickup/dropoff leg only, priced at the lower guide/transfer rate instead of
+// the full vehicle day-rate. 'none' = no vehicle/guide cost at all (e.g. a Zanzibar beach day).
+export const DayKind = pgEnum('day_kind', ['touring', 'airport_transfer', 'none']);
 export const pages = pgTable('pages', {
   id: text().primaryKey().notNull(),
   title: text().notNull(),
@@ -1060,8 +1071,13 @@ export const proposals = pgTable('proposals', {
   vehicleId: uuid('vehicle_id').references((): any => vehicles.id, { onDelete: 'set null' }),
   // How many of that vehicle the trip uses (e.g. 2 Land Cruisers for a large
   // group) — multiplies the vehicle-per-day line and any per-vehicle park
-  // ancillary fees (crater fees, vehicle entry fees, etc.).
+  // ancillary fees (crater fees, vehicle entry fees, etc.). Treated as a
+  // floor by the pricing engine, not a fixed value — see
+  // computePricing's effectiveVehicleCount.
   vehicleCount: integer('vehicle_count').default(1).notNull(),
+  // Guide assigned to the trip, priced separately from the vehicle (see
+  // pricing-engine.ts's GuideRate). Null = no guide line.
+  guideId: uuid('guide_id').references((): any => guides.id, { onDelete: 'set null' }),
   markupPct: numeric('markup_pct', { precision: 6, scale: 2 }),
   pickupTransferRateId: uuid('pickup_transfer_rate_id').references((): any => transferRates.id, {
     onDelete: 'set null',
@@ -1143,6 +1159,17 @@ export const proposalDays = pgTable('proposal_days', {
   // each carries its own room mix, board basis, and (signed) price delta and is
   // only ever read/written as a whole alongside the day. See AlternativeAccommodation.
   alternatives: json('alternatives').$type<AlternativeAccommodation[]>(),
+  // Drives which per-day vehicle/guide rate applies — see pricing-engine.ts.
+  dayKind: DayKind('day_kind').notNull().default('touring'),
+  // True when this day passes through nationalParkId without a full visit
+  // (e.g. driving past Ngorongoro en route to the Serengeti) — the pricing
+  // engine prefers a 'transit' feeType park-fee row for this day.
+  isTransit: boolean('is_transit').default(false).notNull(),
+  // References mealCostRates.id when this day needs a boxed lunch (a
+  // relocation day with no lodge lunch available). Null = no meal cost.
+  mealCostId: uuid('meal_cost_id').references((): any => mealCostRates.id, {
+    onDelete: 'set null',
+  }),
   createdAt: timestamp('created_at', { precision: 3, mode: 'string' })
     .default(sql`CURRENT_TIMESTAMP`)
     .notNull(),
@@ -1264,6 +1291,12 @@ export const proposalTransportation = pgTable('proposal_transportation', {
   durationMinutes: integer('duration_minutes'),
   distanceKm: integer('distance_km'),
   notes: text('notes'),
+  // Only meaningful when mode is 'flight_domestic'/'flight_bush'. References
+  // flightRates.id for the leg's per-person rate; null = not yet priced (or
+  // not a flight leg).
+  flightRateId: uuid('flight_rate_id').references((): any => flightRates.id, {
+    onDelete: 'set null',
+  }),
   createdAt: timestamp('created_at', { precision: 3, mode: 'string' })
     .default(sql`CURRENT_TIMESTAMP`)
     .notNull(),
@@ -2119,6 +2152,7 @@ export const parkFeeRates = pgTable(
     category: ParkFeeCategory('category').notNull(),
     perPersonRate: numeric('per_person_rate', { precision: 12, scale: 2 }).notNull(),
     currency: text('currency').notNull().default('USD'),
+    feeType: ParkFeeType('fee_type').notNull().default('entrance'),
     createdAt: timestamp('created_at').defaultNow().notNull(),
     updatedAt: timestamp('updated_at').defaultNow().notNull(),
   },
@@ -2158,6 +2192,10 @@ export const parkAncillaryFees = pgTable(
     chargeBasis: ParkAncillaryChargeBasis('charge_basis').notNull(),
     rate: numeric('rate', { precision: 12, scale: 2 }).notNull(),
     currency: text('currency').notNull().default('USD'),
+    // Only meaningful for chargeBasis 'per_person_per_day' (e.g. a concession
+    // fee that differs by adult/child). Null = applies to every traveler at
+    // the same rate.
+    category: ParkFeeCategory('category'),
     createdAt: timestamp('created_at').defaultNow().notNull(),
     updatedAt: timestamp('updated_at').defaultNow().notNull(),
   },
@@ -2272,6 +2310,93 @@ export const transferRatesRelations = relations(transferRates, ({ one }) => ({
   }),
 }));
 
+// ---------- GUIDES ----------
+// Separate from the vehicle line: touringRate is the normal day-with-the-group
+// rate, airportTransferRate the lower same-day pickup/dropoff-only rate. Both
+// per guide per day; see pricing-engine.ts's GuideRate and dayKind.
+export const guides = pgTable(
+  'guides',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    organizationId: uuid('organization_id')
+      .notNull()
+      .references(() => organizations.id, { onDelete: 'cascade' }),
+    name: text('name').notNull(),
+    touringRate: numeric('touring_rate', { precision: 12, scale: 2 }).notNull(),
+    airportTransferRate: numeric('airport_transfer_rate', { precision: 12, scale: 2 }).notNull(),
+    currency: text('currency').notNull().default('USD'),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  },
+  (table) => [index('idx_guides_org').on(table.organizationId)],
+);
+
+export const guidesRelations = relations(guides, ({ one }) => ({
+  organization: one(organizations, {
+    fields: [guides.organizationId],
+    references: [organizations.id],
+  }),
+}));
+
+// ---------- MEAL COST RATES ----------
+// A flat per-person cost for a day with no lodge meal available (e.g. a
+// boxed lunch on a relocation day) — distinct from mealOptionLibrary, which
+// is proposal-facing descriptive text, not a supplier cost.
+export const mealCostRates = pgTable(
+  'meal_cost_rates',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    organizationId: uuid('organization_id')
+      .notNull()
+      .references(() => organizations.id, { onDelete: 'cascade' }),
+    name: text('name').notNull(),
+    perPersonRate: numeric('per_person_rate', { precision: 12, scale: 2 }).notNull(),
+    currency: text('currency').notNull().default('USD'),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  },
+  (table) => [index('idx_meal_cost_rates_org').on(table.organizationId)],
+);
+
+export const mealCostRatesRelations = relations(mealCostRates, ({ one }) => ({
+  organization: one(organizations, {
+    fields: [mealCostRates.organizationId],
+    references: [organizations.id],
+  }),
+}));
+
+// ---------- FLIGHT RATES ----------
+// A domestic/charter flight leg, priced per person. seasonId nullable, same
+// pattern as activityRates: multiple rows can share one route under
+// different seasons.
+export const flightRates = pgTable(
+  'flight_rates',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    organizationId: uuid('organization_id')
+      .notNull()
+      .references(() => organizations.id, { onDelete: 'cascade' }),
+    name: text('name').notNull(),
+    seasonId: uuid('season_id').references(() => seasons.id, { onDelete: 'cascade' }),
+    perPersonRate: numeric('per_person_rate', { precision: 12, scale: 2 }).notNull(),
+    currency: text('currency').notNull().default('USD'),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  },
+  (table) => [index('idx_flight_rates_org').on(table.organizationId)],
+);
+
+export const flightRatesRelations = relations(flightRates, ({ one }) => ({
+  organization: one(organizations, {
+    fields: [flightRates.organizationId],
+    references: [organizations.id],
+  }),
+  season: one(seasons, {
+    fields: [flightRates.seasonId],
+    references: [seasons.id],
+  }),
+}));
+
 // ---------- PRICING SETTINGS (per org) ----------
 export const pricingSettings = pgTable('pricing_settings', {
   organizationId: uuid('organization_id')
@@ -2284,6 +2409,9 @@ export const pricingSettings = pgTable('pricing_settings', {
   defaultTravelerCategory: ParkFeeCategory('default_traveler_category')
     .notNull()
     .default('non_resident_adult'),
+  // Optional group-size-tiered markup schedule (see pricing-engine.ts). Null/
+  // empty = always use defaultMarkupPct (or the proposal's own override).
+  markupTiers: jsonb('markup_tiers').$type<Array<{ minPax: number; markupPct: number }>>(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
@@ -2308,6 +2436,12 @@ export type Vehicle = typeof vehicles.$inferSelect;
 export type NewVehicle = typeof vehicles.$inferInsert;
 export type TransferRate = typeof transferRates.$inferSelect;
 export type NewTransferRate = typeof transferRates.$inferInsert;
+export type Guide = typeof guides.$inferSelect;
+export type NewGuide = typeof guides.$inferInsert;
+export type MealCostRate = typeof mealCostRates.$inferSelect;
+export type NewMealCostRate = typeof mealCostRates.$inferInsert;
+export type FlightRate = typeof flightRates.$inferSelect;
+export type NewFlightRate = typeof flightRates.$inferInsert;
 export type PricingSettings = typeof pricingSettings.$inferSelect;
 export type NewPricingSettings = typeof pricingSettings.$inferInsert;
 

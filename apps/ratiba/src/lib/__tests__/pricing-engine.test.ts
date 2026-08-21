@@ -6,6 +6,10 @@ import {
   resolveSeason,
   type AccommodationRate,
   type ActivityRate,
+  type FlightRate,
+  type GuideRate,
+  type ItineraryDayInput,
+  type MealRate,
   type ParkAncillaryFeeRate,
   type ParkFeeRate,
   type PricingInput,
@@ -1363,5 +1367,794 @@ describe('computePricing — totals, markup, and rounding', () => {
     // acc 200 + park 100 + activity 40 + vehicle 100 + transfer 20 + internal 15
     expect(result.costSubtotal).toBe(475);
     expect(result.sellTotal).toBe(475);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// computePricing — vehicle capacity auto-bump
+// ---------------------------------------------------------------------------
+
+describe('computePricing — vehicle capacity auto-bump', () => {
+  const vehicle: VehicleRate = { id: 'veh-1', perDayRate: 250, seatCapacity: 6 };
+
+  test('pax within capacity leaves vehicleCount untouched', () => {
+    const result = computePricing(
+      baseInput({ pax: 5, vehicleId: 'veh-1', vehicleCount: 1, vehicles: [vehicle] }),
+    );
+    expect(result.lineItems[0]?.quantity).toBe(0); // no days in baseInput, but no capacity warning either
+    expect(result.warnings.some((w) => w.kind === 'vehicle_capacity_exceeded')).toBe(false);
+  });
+
+  test('pax exceeding one vehicle auto-bumps the effective count and warns', () => {
+    const result = computePricing(
+      baseInput({
+        pax: 8,
+        vehicleId: 'veh-1',
+        vehicleCount: 1,
+        vehicles: [vehicle],
+        days: [{ dayNumber: 1, date: new Date(Date.UTC(2026, 6, 1)), accommodationId: null, mealPlan: null, rooms: [], parkId: null, dayKind: 'touring' }],
+      }),
+    );
+    // ceil(8/6) = 2 vehicles, even though the caller only asked for 1
+    expect(result.lineItems[0]).toMatchObject({ quantity: 2, totalCost: 500 });
+    expect(result.warnings).toMatchObject([{ kind: 'vehicle_capacity_exceeded' }]);
+  });
+
+  test("operator's vehicleCount acts as a floor — never reduced below what was explicitly set", () => {
+    const result = computePricing(
+      baseInput({
+        pax: 2,
+        vehicleId: 'veh-1',
+        vehicleCount: 3, // more vehicles than strictly needed, e.g. extra space requested
+        vehicles: [vehicle],
+        days: [{ dayNumber: 1, date: new Date(Date.UTC(2026, 6, 1)), accommodationId: null, mealPlan: null, rooms: [], parkId: null, dayKind: 'touring' }],
+      }),
+    );
+    expect(result.lineItems[0]).toMatchObject({ quantity: 3, totalCost: 750 });
+    expect(result.warnings.some((w) => w.kind === 'vehicle_capacity_exceeded')).toBe(false);
+  });
+
+  test('no seatCapacity configured means no auto-bump (today\'s behavior preserved)', () => {
+    const result = computePricing(
+      baseInput({
+        pax: 20,
+        vehicleId: 'veh-1',
+        vehicleCount: 1,
+        vehicles: [{ id: 'veh-1', perDayRate: 250 }], // no seatCapacity
+        days: [{ dayNumber: 1, date: new Date(Date.UTC(2026, 6, 1)), accommodationId: null, mealPlan: null, rooms: [], parkId: null, dayKind: 'touring' }],
+      }),
+    );
+    expect(result.lineItems[0]).toMatchObject({ quantity: 1, totalCost: 250 });
+    expect(result.warnings).toEqual([]);
+  });
+
+  test('the bumped vehicle count also multiplies per-vehicle ancillary fees, not just the vehicle line', () => {
+    const ancillary: ParkAncillaryFeeRate = {
+      parkId: 'park-1',
+      parkName: 'Ngorongoro Crater',
+      seasonId: null,
+      name: 'Crater descent fee',
+      chargeBasis: 'per_vehicle_once_per_visit',
+      rate: 200,
+    };
+    const result = computePricing(
+      baseInput({
+        pax: 10,
+        vehicleId: 'veh-1',
+        vehicleCount: 1,
+        vehicles: [vehicle],
+        parkAncillaryFees: [ancillary],
+        days: [{ dayNumber: 1, date: new Date(Date.UTC(2026, 6, 1)), accommodationId: null, mealPlan: null, rooms: [], parkId: 'park-1', dayKind: 'touring' }],
+      }),
+    );
+    // ceil(10/6) = 2 vehicles -> crater fee charged twice, once per vehicle
+    const crater = result.lineItems.find((l) => l.key.includes('Crater'));
+    expect(crater?.totalCost).toBe(400);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// computePricing — vehicle 'none' days (beach extensions etc.)
+// ---------------------------------------------------------------------------
+
+describe('computePricing — vehicle day-kind exclusions', () => {
+  const vehicle: VehicleRate = { id: 'veh-1', perDayRate: 250 };
+
+  test('touring days are charged, airport_transfer and none days are not', () => {
+    const days: ItineraryDayInput[] = [
+      { dayNumber: 1, date: new Date(Date.UTC(2026, 6, 1)), accommodationId: null, mealPlan: null, rooms: [], parkId: null, dayKind: 'airport_transfer' },
+      { dayNumber: 2, date: new Date(Date.UTC(2026, 6, 2)), accommodationId: null, mealPlan: null, rooms: [], parkId: null, dayKind: 'touring' },
+      { dayNumber: 3, date: new Date(Date.UTC(2026, 6, 3)), accommodationId: null, mealPlan: null, rooms: [], parkId: null, dayKind: 'touring' },
+      { dayNumber: 4, date: new Date(Date.UTC(2026, 6, 4)), accommodationId: null, mealPlan: null, rooms: [], parkId: null, dayKind: 'none' },
+      { dayNumber: 5, date: new Date(Date.UTC(2026, 6, 5)), accommodationId: null, mealPlan: null, rooms: [], parkId: null, dayKind: 'none' },
+    ];
+    const result = computePricing(baseInput({ vehicleId: 'veh-1', vehicles: [vehicle], days }));
+    // only the 2 touring days are charged, not the transfer day or the 2 beach days
+    expect(result.lineItems[0]).toMatchObject({ quantity: 2, totalCost: 500 });
+  });
+
+  test('unset dayKind defaults to touring (backward compatible with every prior test)', () => {
+    const days: ItineraryDayInput[] = [
+      { dayNumber: 1, date: new Date(Date.UTC(2026, 6, 1)), accommodationId: null, mealPlan: null, rooms: [], parkId: null },
+    ];
+    const result = computePricing(baseInput({ vehicleId: 'veh-1', vehicles: [vehicle], days }));
+    expect(result.lineItems[0]).toMatchObject({ quantity: 1, totalCost: 250 });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// computePricing — guide fee
+// ---------------------------------------------------------------------------
+
+describe('computePricing — guide fee', () => {
+  const guide: GuideRate = { id: 'guide-1', name: 'Standard guide', touringRate: 60, airportTransferRate: 10 };
+  const days: ItineraryDayInput[] = [
+    { dayNumber: 1, date: new Date(Date.UTC(2026, 6, 1)), accommodationId: null, mealPlan: null, rooms: [], parkId: null, dayKind: 'airport_transfer' },
+    { dayNumber: 2, date: new Date(Date.UTC(2026, 6, 2)), accommodationId: null, mealPlan: null, rooms: [], parkId: null, dayKind: 'touring' },
+    { dayNumber: 3, date: new Date(Date.UTC(2026, 6, 3)), accommodationId: null, mealPlan: null, rooms: [], parkId: null, dayKind: 'touring' },
+    { dayNumber: 4, date: new Date(Date.UTC(2026, 6, 4)), accommodationId: null, mealPlan: null, rooms: [], parkId: null, dayKind: 'none' },
+  ];
+
+  test('touring and airport-transfer days are priced at their own distinct rate', () => {
+    const result = computePricing(baseInput({ guideId: 'guide-1', guides: [guide], days }));
+    const touring = result.lineItems.find((l) => l.key === 'guide:touring');
+    const transfer = result.lineItems.find((l) => l.key === 'guide:airport_transfer');
+    expect(touring).toMatchObject({ quantity: 2, unitCost: 60, totalCost: 120 });
+    expect(transfer).toMatchObject({ quantity: 1, unitCost: 10, totalCost: 10 });
+  });
+
+  test('"none" days contribute no guide cost at all', () => {
+    const result = computePricing(baseInput({ guideId: 'guide-1', guides: [guide], days }));
+    expect(result.costSubtotal).toBe(130); // 120 touring + 10 transfer, nothing for the "none" day
+  });
+
+  test('no guideId selected means no guide line, but warns about the unpriced transfer day', () => {
+    const result = computePricing(baseInput({ days }));
+    expect(result.lineItems.some((l) => l.source === 'guide')).toBe(false);
+    expect(result.warnings).toMatchObject([{ kind: 'unpriced_transfer_day', dayNumber: 1 }]);
+  });
+
+  test('a first-day airport transfer covered by the pickup transfer rate does not warn', () => {
+    const result = computePricing(baseInput({ days, pickupTransferId: 'pickup-1' }));
+    expect(result.warnings.some((w) => w.kind === 'unpriced_transfer_day')).toBe(false);
+  });
+
+  test('a last-day airport transfer covered by the dropoff transfer rate does not warn', () => {
+    const lastDayTransfer: ItineraryDayInput[] = [
+      days[0]!,
+      days[1]!,
+      days[2]!,
+      { ...days[3]!, dayKind: 'airport_transfer' },
+    ];
+    const result = computePricing(
+      baseInput({ days: lastDayTransfer, pickupTransferId: 'pickup-1', dropoffTransferId: 'dropoff-1' }),
+    );
+    expect(result.warnings.some((w) => w.kind === 'unpriced_transfer_day')).toBe(false);
+  });
+
+  test('an airport transfer day already priced as a flight leg does not warn about vehicle/guide cost', () => {
+    const flightDay: ItineraryDayInput[] = [
+      { ...days[0]!, flightId: 'flight-1' },
+      days[1]!,
+      days[2]!,
+      days[3]!,
+    ];
+    const result = computePricing(baseInput({ days: flightDay }));
+    expect(result.warnings.some((w) => w.kind === 'unpriced_transfer_day')).toBe(false);
+  });
+
+  test('guideId set but not found in the rate list warns instead of throwing', () => {
+    const result = computePricing(baseInput({ guideId: 'missing-guide', guides: [], days }));
+    expect(result.lineItems.some((l) => l.source === 'guide')).toBe(false);
+    expect(result.warnings).toMatchObject([{ kind: 'missing_guide' }]);
+  });
+
+  test('guide cost multiplies by effectiveVehicleCount, one guide per vehicle', () => {
+    const result = computePricing(
+      baseInput({ guideId: 'guide-1', guides: [guide], vehicleCount: 2, days }),
+    );
+    const touring = result.lineItems.find((l) => l.key === 'guide:touring');
+    expect(touring?.totalCost).toBe(240); // 60 * 2 touring days * 2 vehicles
+  });
+});
+
+// ---------------------------------------------------------------------------
+// computePricing — per-person park ancillary fees (concession)
+// ---------------------------------------------------------------------------
+
+describe('computePricing — per-person park ancillary fees', () => {
+  const concession: ParkAncillaryFeeRate = {
+    parkId: 'park-1',
+    parkName: 'Serengeti National Park',
+    seasonId: null,
+    name: 'Concession fee',
+    chargeBasis: 'per_person_per_day',
+    rate: 59,
+  };
+  const twoDaysAtPark = [
+    { dayNumber: 1, date: new Date(Date.UTC(2026, 6, 1)), accommodationId: null, mealPlan: null, rooms: [], parkId: 'park-1' },
+    { dayNumber: 2, date: new Date(Date.UTC(2026, 6, 2)), accommodationId: null, mealPlan: null, rooms: [], parkId: 'park-1' },
+  ];
+
+  test('scales with headcount, not vehicle count, and needs no vehicle selected', () => {
+    const result = computePricing(
+      baseInput({ pax: 4, vehicleId: null, parkAncillaryFees: [concession], days: twoDaysAtPark }),
+    );
+    const line = result.lineItems.find((l) => l.key.includes('Concession'));
+    expect(line?.totalCost).toBe(472); // $59 * 2 nights * 4 pax
+    expect(result.warnings.some((w) => w.kind === 'missing_park_ancillary_no_vehicle')).toBe(false);
+  });
+
+  test('a category-specific row only charges the matching traveler segment', () => {
+    const childConcession: ParkAncillaryFeeRate = { ...concession, rate: 11.8, category: 'non_resident_child' };
+    const adultConcession: ParkAncillaryFeeRate = { ...concession, category: 'non_resident_adult' };
+    const result = computePricing(
+      baseInput({
+        pax: 4,
+        travelerBreakdown: [
+          { category: 'non_resident_adult', count: 2 },
+          { category: 'non_resident_child', count: 2 },
+        ],
+        parkAncillaryFees: [adultConcession, childConcession],
+        days: twoDaysAtPark,
+      }),
+    );
+    const adultLine = result.lineItems.find((l) => l.key.endsWith('non_resident_adult'));
+    const childLine = result.lineItems.find((l) => l.key.endsWith('non_resident_child'));
+    expect(adultLine?.totalCost).toBe(236); // 59 * 2 days * 2 adults
+    expect(childLine?.totalCost).toBe(47.2); // 11.8 * 2 days * 2 children
+  });
+
+  test('a vehicle-basis fee and a per-person-basis fee at the same park coexist independently', () => {
+    const crater: ParkAncillaryFeeRate = {
+      parkId: 'park-1',
+      parkName: 'Serengeti National Park',
+      seasonId: null,
+      name: 'Vehicle entry fee',
+      chargeBasis: 'per_vehicle_once_per_visit',
+      rate: 50,
+    };
+    const result = computePricing(
+      baseInput({
+        pax: 2,
+        vehicleId: 'veh-1',
+        vehicles: [{ id: 'veh-1', perDayRate: 100 }],
+        parkAncillaryFees: [concession, crater],
+        days: twoDaysAtPark,
+      }),
+    );
+    const concessionLine = result.lineItems.find((l) => l.key.includes('Concession'));
+    const craterLine = result.lineItems.find((l) => l.key.includes('Vehicle entry'));
+    expect(concessionLine?.totalCost).toBe(236); // 59 * 2 days * 2 pax, no vehicle needed
+    expect(craterLine?.totalCost).toBe(50); // unaffected by the per-person fee alongside it
+  });
+});
+
+// ---------------------------------------------------------------------------
+// computePricing — transit fee
+// ---------------------------------------------------------------------------
+
+describe('computePricing — transit fee', () => {
+  const entranceRate: ParkFeeRate = {
+    parkId: 'park-1',
+    parkName: 'Ngorongoro Conservation Area',
+    seasonId: null,
+    category: 'non_resident_adult',
+    perPersonRate: 70.8,
+  };
+  const transitRate: ParkFeeRate = { ...entranceRate, perPersonRate: 25, feeType: 'transit' };
+
+  test('a transit day prefers the transit-rate row over the full entrance fee', () => {
+    const result = computePricing(
+      baseInput({
+        pax: 2,
+        parkFeeRates: [entranceRate, transitRate],
+        days: [{ dayNumber: 1, date: new Date(Date.UTC(2026, 6, 1)), accommodationId: null, mealPlan: null, rooms: [], parkId: 'park-1', isTransit: true }],
+      }),
+    );
+    expect(result.lineItems[0]).toMatchObject({ unitCost: 25, totalCost: 50 });
+    expect(result.warnings).toEqual([]);
+  });
+
+  test('a non-transit day is unaffected by a transit rate existing on the same park', () => {
+    const result = computePricing(
+      baseInput({
+        pax: 2,
+        parkFeeRates: [entranceRate, transitRate],
+        days: [{ dayNumber: 1, date: new Date(Date.UTC(2026, 6, 1)), accommodationId: null, mealPlan: null, rooms: [], parkId: 'park-1' }],
+      }),
+    );
+    expect(result.lineItems[0]).toMatchObject({ unitCost: 70.8, totalCost: 141.6 });
+  });
+
+  test('a transit day with no transit rate configured falls back to the entrance fee and warns (never silently free)', () => {
+    const result = computePricing(
+      baseInput({
+        pax: 2,
+        parkFeeRates: [entranceRate], // no transit-type row at all
+        days: [{ dayNumber: 1, date: new Date(Date.UTC(2026, 6, 1)), accommodationId: null, mealPlan: null, rooms: [], parkId: 'park-1', isTransit: true }],
+      }),
+    );
+    expect(result.lineItems[0]).toMatchObject({ unitCost: 70.8, totalCost: 141.6 });
+    expect(result.warnings).toMatchObject([{ kind: 'missing_transit_fee', dayNumber: 1 }]);
+  });
+
+  test('rows with no feeType set behave exactly as entrance rows (legacy data unaffected)', () => {
+    const legacyRow: ParkFeeRate = { ...entranceRate }; // feeType left undefined
+    const result = computePricing(
+      baseInput({
+        pax: 1,
+        parkFeeRates: [legacyRow],
+        days: [{ dayNumber: 1, date: new Date(Date.UTC(2026, 6, 1)), accommodationId: null, mealPlan: null, rooms: [], parkId: 'park-1' }],
+      }),
+    );
+    expect(result.lineItems[0]?.unitCost).toBe(70.8);
+    expect(result.warnings).toEqual([]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// computePricing — meals (lunchbox)
+// ---------------------------------------------------------------------------
+
+describe('computePricing — meals', () => {
+  const lunchbox: MealRate = { id: 'meal-1', name: 'Lunchbox', perPersonRate: 15 };
+
+  test('a day with mealCostId set charges the meal rate per person', () => {
+    const result = computePricing(
+      baseInput({
+        pax: 3,
+        mealRates: [lunchbox],
+        days: [{ dayNumber: 1, date: new Date(Date.UTC(2026, 6, 1)), accommodationId: null, mealPlan: null, rooms: [], parkId: null, mealCostId: 'meal-1' }],
+      }),
+    );
+    expect(result.lineItems[0]).toMatchObject({ quantity: 3, unitCost: 15, totalCost: 45, source: 'meal' });
+  });
+
+  test('days without mealCostId incur no meal cost', () => {
+    const result = computePricing(
+      baseInput({
+        pax: 3,
+        mealRates: [lunchbox],
+        days: [{ dayNumber: 1, date: new Date(Date.UTC(2026, 6, 1)), accommodationId: null, mealPlan: null, rooms: [], parkId: null }],
+      }),
+    );
+    expect(result.lineItems).toEqual([]);
+  });
+
+  test('mealCostId set but not found warns and adds a $0 line rather than skipping silently', () => {
+    const result = computePricing(
+      baseInput({
+        pax: 2,
+        mealRates: [],
+        days: [{ dayNumber: 1, date: new Date(Date.UTC(2026, 6, 1)), accommodationId: null, mealPlan: null, rooms: [], parkId: null, mealCostId: 'missing-meal' }],
+      }),
+    );
+    expect(result.lineItems[0]).toMatchObject({ unitCost: 0, totalCost: 0, missing: 'rate not configured' });
+    expect(result.warnings).toMatchObject([{ kind: 'missing_meal_rate', dayNumber: 1 }]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// computePricing — flights
+// ---------------------------------------------------------------------------
+
+describe('computePricing — flights', () => {
+  const znzFlight: FlightRate = { id: 'flight-1', name: 'Arusha-Zanzibar', seasonId: null, perPersonRate: 240 };
+
+  test('a day with flightId set charges the flight rate per person', () => {
+    const result = computePricing(
+      baseInput({
+        pax: 2,
+        flightRates: [znzFlight],
+        days: [{ dayNumber: 1, date: new Date(Date.UTC(2026, 6, 1)), accommodationId: null, mealPlan: null, rooms: [], parkId: null, flightId: 'flight-1' }],
+      }),
+    );
+    expect(result.lineItems[0]).toMatchObject({ quantity: 2, unitCost: 240, totalCost: 480, source: 'flight' });
+  });
+
+  test('a season-specific flight rate is preferred over the season-less fallback', () => {
+    const seasonalFlight: FlightRate = { ...znzFlight, seasonId: 'season-1', perPersonRate: 280 };
+    const result = computePricing(
+      baseInput({
+        pax: 1,
+        seasons: [yearRoundSeason],
+        flightRates: [znzFlight, seasonalFlight],
+        days: [{ dayNumber: 1, date: new Date(Date.UTC(2026, 6, 1)), accommodationId: null, mealPlan: null, rooms: [], parkId: null, flightId: 'flight-1' }],
+      }),
+    );
+    expect(result.lineItems[0]?.unitCost).toBe(280);
+  });
+
+  test('flightId set but not found warns and adds a $0 line', () => {
+    const result = computePricing(
+      baseInput({
+        pax: 2,
+        flightRates: [],
+        days: [{ dayNumber: 1, date: new Date(Date.UTC(2026, 6, 1)), accommodationId: null, mealPlan: null, rooms: [], parkId: null, flightId: 'missing-flight' }],
+      }),
+    );
+    expect(result.lineItems[0]).toMatchObject({ unitCost: 0, totalCost: 0, missing: 'rate not configured' });
+    expect(result.warnings).toMatchObject([{ kind: 'missing_flight_rate' }]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// computePricing — tiered markup
+// ---------------------------------------------------------------------------
+
+describe('computePricing — tiered markup', () => {
+  test('with no tiers configured, flat markupPct applies exactly as before', () => {
+    const result = computePricing(
+      baseInput({ pax: 4, markupPct: 20, internalCostLines: [{ id: 'ic-1', label: 'Cost', amount: 1000 }] }),
+    );
+    expect(result.markupPct).toBe(20);
+    expect(result.sellTotal).toBe(1200);
+  });
+
+  test('a matching tier overrides the flat markupPct', () => {
+    const result = computePricing(
+      baseInput({
+        pax: 6,
+        markupPct: 30,
+        markupTiers: [
+          { minPax: 1, markupPct: 30 },
+          { minPax: 4, markupPct: 25 },
+          { minPax: 6, markupPct: 22 },
+        ],
+        internalCostLines: [{ id: 'ic-1', label: 'Cost', amount: 1000 }],
+      }),
+    );
+    expect(result.markupPct).toBe(22);
+    expect(result.sellTotal).toBe(1220);
+  });
+
+  test('pax below every tier\'s minPax falls back to the flat markupPct', () => {
+    const result = computePricing(
+      baseInput({
+        pax: 1,
+        markupPct: 35,
+        markupTiers: [{ minPax: 2, markupPct: 20 }],
+        internalCostLines: [{ id: 'ic-1', label: 'Cost', amount: 1000 }],
+      }),
+    );
+    expect(result.markupPct).toBe(35);
+  });
+
+  test('the highest qualifying tier wins, regardless of array order', () => {
+    const result = computePricing(
+      baseInput({
+        pax: 10,
+        markupPct: 30,
+        markupTiers: [
+          { minPax: 6, markupPct: 22 },
+          { minPax: 1, markupPct: 30 },
+          { minPax: 8, markupPct: 20 },
+        ],
+        internalCostLines: [{ id: 'ic-1', label: 'Cost', amount: 1000 }],
+      }),
+    );
+    expect(result.markupPct).toBe(20);
+  });
+
+  test('null/empty markupTiers behaves exactly like no tiers at all', () => {
+    const result = computePricing(
+      baseInput({ pax: 6, markupPct: 20, markupTiers: [], internalCostLines: [{ id: 'ic-1', label: 'Cost', amount: 1000 }] }),
+    );
+    expect(result.markupPct).toBe(20);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// computePricing — Bobby Tours reconciliation (real cost sheets)
+// ----------------------------------------------------------------
+// These three fixtures rebuild real Bobby Tours quotes (Chiraz, Akuom Junior,
+// Maireke — cost sheets downloaded 2026-08-20) entirely from rate-card-shaped
+// inputs, using the engine's new guide/transit/meal/flight/per-person-
+// ancillary support. Each one asserts computePricing() reproduces the sheet's
+// own grand total (at markupPct: 0, since these are cost sheets, not sell
+// prices) to the cent. Where the source sheet has a genuine gap the engine
+// still can't close on its own — a single day double-booked across two
+// parks, or a third transfer leg beyond pickup/dropoff — the fixture uses an
+// internalCostLine, exactly as an operator would today, and a comment says so.
+// ---------------------------------------------------------------------------
+
+describe('computePricing — Bobby Tours reconciliation (real cost sheets)', () => {
+  test('Chiraz (2 pax, 7 days, mainland only) matches the cost sheet total of $5,077.80', () => {
+    const seasons: SeasonBand[] = [
+      { id: 's1', name: 'Trip season', startMonth: 1, startDay: 1, endMonth: 12, endDay: 31, priority: 0 },
+    ];
+    const acc = (id: string, perPaxRate: number): AccommodationRate => ({
+      accommodationId: id,
+      seasonId: 's1',
+      roomType: 'double',
+      mealPlan: 'fb',
+      perPaxRate,
+      rateBasis: 'per_person',
+      maxOccupancy: 2,
+      additionalAdultPct: null,
+      additionalChildPct: null,
+    });
+    const accommodationRates = [
+      acc('venus', 42),
+      acc('marera', 105),
+      acc('enkirari', 185.5),
+      acc('mysigio', 230),
+    ];
+    const parkFeeRates: ParkFeeRate[] = [
+      { parkId: 'tarangire', parkName: 'Tarangire National Park', seasonId: null, category: 'non_resident_adult', perPersonRate: 79 },
+      { parkId: 'serengeti', parkName: 'Serengeti National Park', seasonId: null, category: 'non_resident_adult', perPersonRate: 102.6 },
+      { parkId: 'ngorongoro-nca', parkName: 'Ngorongoro Conservation Area', seasonId: null, category: 'non_resident_adult', perPersonRate: 90.8 },
+      // 'ngorongoro-crater' deliberately has NO entrance rate — it's a
+      // fee-only sub-feature (crater descent), same pattern the engine
+      // already documents for parksWithAnyFeeRate.
+    ];
+    const parkAncillaryFees: ParkAncillaryFeeRate[] = [
+      { parkId: 'serengeti', parkName: 'Serengeti National Park', seasonId: null, name: 'Concession fee', chargeBasis: 'per_person_per_day', rate: 90.8 },
+      { parkId: 'ngorongoro-nca', parkName: 'Ngorongoro Conservation Area', seasonId: null, name: 'Concession fee', chargeBasis: 'per_person_per_day', rate: 79 },
+      { parkId: 'ngorongoro-crater', parkName: 'Ngorongoro Crater', seasonId: null, name: 'Crater descent fee', chargeBasis: 'per_vehicle_once_per_visit', rate: 345 },
+    ];
+    const rooms = [{ roomType: 'double', pax: 2 }];
+    const days: ItineraryDayInput[] = [
+      { dayNumber: 1, date: new Date(Date.UTC(2026, 8, 6)), accommodationId: 'venus', accommodationName: 'Venus', mealPlan: 'fb', rooms, parkId: null, dayKind: 'airport_transfer' },
+      { dayNumber: 2, date: new Date(Date.UTC(2026, 8, 7)), accommodationId: 'marera', accommodationName: 'Marera Valley', mealPlan: 'fb', rooms, parkId: 'tarangire', dayKind: 'touring', mealCostId: 'lunchbox' },
+      { dayNumber: 3, date: new Date(Date.UTC(2026, 8, 8)), accommodationId: 'enkirari', accommodationName: 'Enkirari', mealPlan: 'fb', rooms, parkId: 'serengeti', dayKind: 'touring' },
+      { dayNumber: 4, date: new Date(Date.UTC(2026, 8, 9)), accommodationId: 'enkirari', accommodationName: 'Enkirari', mealPlan: 'fb', rooms, parkId: 'serengeti', dayKind: 'touring' },
+      { dayNumber: 5, date: new Date(Date.UTC(2026, 8, 10)), accommodationId: 'mysigio', accommodationName: 'Mysigio tented camp', mealPlan: 'fb', rooms, parkId: 'ngorongoro-nca', dayKind: 'touring' },
+      { dayNumber: 6, date: new Date(Date.UTC(2026, 8, 11)), accommodationId: 'venus', accommodationName: 'Venus', mealPlan: 'fb', rooms, parkId: 'ngorongoro-crater', dayKind: 'touring' },
+      { dayNumber: 7, date: new Date(Date.UTC(2026, 8, 12)), accommodationId: null, mealPlan: null, rooms: [], parkId: null, dayKind: 'airport_transfer' },
+    ];
+    const result = computePricing(
+      baseInput({
+        pax: 2,
+        markupPct: 0,
+        seasons,
+        accommodationRates,
+        parkFeeRates,
+        parkAncillaryFees,
+        vehicleId: 'veh-1',
+        vehicles: [{ id: 'veh-1', perDayRate: 250, seatCapacity: 6 }],
+        guideId: 'guide-1',
+        guides: [{ id: 'guide-1', name: 'Standard guide', touringRate: 60, airportTransferRate: 10 }],
+        mealRates: [{ id: 'lunchbox', name: 'Lunchbox', perPersonRate: 15 }],
+        pickupTransferId: 't-pickup',
+        dropoffTransferId: 't-dropoff',
+        transferRates: [
+          { id: 't-pickup', name: 'Airport pickup', mode: 'per_vehicle', rate: 50 },
+          { id: 't-dropoff', name: 'Airport dropoff', mode: 'per_vehicle', rate: 50 },
+        ],
+        // Day 3 (Sept 8) shows both a Serengeti entrance fee AND a separate
+        // $90.80/pax "Transit" charge the same day — almost certainly a
+        // second, smaller park (e.g. Ngorongoro) transited en route, which
+        // the engine can't represent since a day only resolves to one
+        // parkId. Handled as a manual line, same as an operator would today.
+        internalCostLines: [{ id: 'transit-day3', label: 'NCA transit fee (Day 3, second park same day)', amount: 90.8 * 2, quantity: 1 }],
+        days,
+      }),
+    );
+    expect(result.costSubtotal).toBe(5077.8);
+    expect(result.warnings.some((w) => w.kind === 'vehicle_capacity_exceeded')).toBe(false);
+  });
+
+  test('Akuom Junior (2 pax, 5 days, mainland only) matches the cost sheet total of $3,432.00', () => {
+    const acc = (id: string, perPaxRate: number): AccommodationRate => ({
+      accommodationId: id,
+      seasonId: 's1',
+      roomType: 'double',
+      mealPlan: 'fb',
+      perPaxRate,
+      rateBasis: 'per_person',
+      maxOccupancy: 2,
+      additionalAdultPct: null,
+      additionalChildPct: null,
+    });
+    const rooms = [{ roomType: 'double', pax: 2 }];
+    const days: ItineraryDayInput[] = [
+      { dayNumber: 1, date: new Date(Date.UTC(2026, 4, 16)), accommodationId: 'kankari', accommodationName: 'Kankari Lodge Karatu', mealPlan: 'fb', rooms, parkId: 'tarangire', dayKind: 'touring', mealCostId: 'lunchbox' },
+      { dayNumber: 2, date: new Date(Date.UTC(2026, 4, 17)), accommodationId: 'tukaone', accommodationName: 'Tukaone Weavers Serengeti Camp', mealPlan: 'fb', rooms, parkId: 'serengeti-arrival', dayKind: 'touring' },
+      { dayNumber: 3, date: new Date(Date.UTC(2026, 4, 18)), accommodationId: 'ngoro-tortilis', accommodationName: 'Ngoro Tortilis', mealPlan: 'fb', rooms, parkId: 'serengeti-central', dayKind: 'touring' },
+      { dayNumber: 4, date: new Date(Date.UTC(2026, 4, 19)), accommodationId: 'marera', accommodationName: 'Marera Valley', mealPlan: 'fb', rooms, parkId: 'ngorongoro-crater', dayKind: 'touring' },
+      { dayNumber: 5, date: new Date(Date.UTC(2026, 4, 20)), accommodationId: null, mealPlan: null, rooms: [], parkId: 'lake-manyara', dayKind: 'touring' },
+    ];
+    // 'serengeti-arrival' and 'serengeti-central' are the same physical park
+    // priced two different ways across two consecutive nights (a partial
+    // arrival-day rate, then the full day rate) — modeled as two catalog
+    // sub-entries under one park, the same parent/child pattern the codebase
+    // already uses for Ngorongoro NCA vs Ngorongoro Crater.
+    const parkFeeRates: ParkFeeRate[] = [
+      { parkId: 'tarangire', parkName: 'Tarangire National Park', seasonId: null, category: 'non_resident_adult', perPersonRate: 25 },
+      { parkId: 'serengeti-arrival', parkName: 'Serengeti National Park', seasonId: null, category: 'non_resident_adult', perPersonRate: 25 },
+      { parkId: 'serengeti-central', parkName: 'Serengeti National Park', seasonId: null, category: 'non_resident_adult', perPersonRate: 50 },
+      { parkId: 'ngorongoro-crater', parkName: 'Ngorongoro Crater', seasonId: null, category: 'non_resident_adult', perPersonRate: 25 },
+      { parkId: 'lake-manyara', parkName: 'Lake Manyara National Park', seasonId: null, category: 'non_resident_adult', perPersonRate: 25 },
+    ];
+    const parkAncillaryFees: ParkAncillaryFeeRate[] = [
+      { parkId: 'serengeti-arrival', parkName: 'Serengeti National Park', seasonId: null, name: 'Concession fee', chargeBasis: 'per_person_per_day', rate: 35 },
+      { parkId: 'serengeti-central', parkName: 'Serengeti National Park', seasonId: null, name: 'Concession fee', chargeBasis: 'per_person_per_day', rate: 35 },
+      { parkId: 'ngorongoro-crater', parkName: 'Ngorongoro Crater', seasonId: null, name: 'Crater descent fee', chargeBasis: 'per_vehicle_once_per_visit', rate: 345 },
+    ];
+    const result = computePricing(
+      baseInput({
+        pax: 2,
+        markupPct: 0,
+        seasons: [{ id: 's1', name: 'Trip season', startMonth: 1, startDay: 1, endMonth: 12, endDay: 31, priority: 0 }],
+        accommodationRates: [acc('kankari', 92.5), acc('tukaone', 121), acc('ngoro-tortilis', 252), acc('marera', 115.5)],
+        parkFeeRates,
+        parkAncillaryFees,
+        vehicleId: 'veh-1',
+        vehicles: [{ id: 'veh-1', perDayRate: 250, seatCapacity: 6 }],
+        guideId: 'guide-1',
+        guides: [{ id: 'guide-1', name: 'Standard guide', touringRate: 35, airportTransferRate: 10 }],
+        mealRates: [{ id: 'lunchbox', name: 'Lunchbox', perPersonRate: 15 }],
+        // Day 2's separate $15/pax "Transit" charge is a second park (e.g.
+        // Ngorongoro) transited en route to Serengeti the same day — same
+        // single-park-per-day gap as the Chiraz fixture above.
+        internalCostLines: [{ id: 'transit-day2', label: 'NCA transit fee (Day 2, second park same day)', amount: 15 * 2, quantity: 1 }],
+        days,
+      }),
+    );
+    expect(result.costSubtotal).toBe(3432);
+  });
+
+  test('Maireke (2 pax, 9 days, mainland + Zanzibar extension) matches the cost sheet total of $6,734.00', () => {
+    const acc = (id: string, perPaxRate: number): AccommodationRate => ({
+      accommodationId: id,
+      seasonId: 's1',
+      roomType: 'double',
+      mealPlan: 'fb',
+      perPaxRate,
+      rateBasis: 'per_person',
+      maxOccupancy: 2,
+      additionalAdultPct: null,
+      additionalChildPct: null,
+    });
+    const rooms = [{ roomType: 'double', pax: 2 }];
+    const days: ItineraryDayInput[] = [
+      { dayNumber: 1, date: new Date(Date.UTC(2026, 11, 24)), accommodationId: 'sanna', accommodationName: 'Sanna', mealPlan: 'fb', rooms, parkId: null, dayKind: 'airport_transfer' },
+      { dayNumber: 2, date: new Date(Date.UTC(2026, 11, 25)), accommodationId: 'marera-b', accommodationName: 'Marera', mealPlan: 'fb', rooms, parkId: 'tarangire', dayKind: 'touring', mealCostId: 'lunchbox' },
+      { dayNumber: 3, date: new Date(Date.UTC(2026, 11, 26)), accommodationId: 'ndutu-luxury', accommodationName: 'Lake Ndutu Luxury', mealPlan: 'fb', rooms, parkId: 'ndutu-nca', dayKind: 'touring' },
+      { dayNumber: 4, date: new Date(Date.UTC(2026, 11, 27)), accommodationId: 'ndutu-luxury', accommodationName: 'Lake Ndutu Luxury', mealPlan: 'fb', rooms, parkId: 'ndutu-nca', dayKind: 'touring' },
+      // Day 5 is a mega-day (Ndutu -> crater -> Arusha -> flight -> Zanzibar):
+      // the NCA/crater-transit entrance fee and the crater descent fee both
+      // belong to a park visited only in passing that morning, so — same
+      // single-park-per-day gap as the other two fixtures — they're manual
+      // lines below rather than attached to a parkId.
+      { dayNumber: 5, date: new Date(Date.UTC(2026, 11, 28)), accommodationId: 'zanzibar-magic', accommodationName: 'Zanzibar Magic', mealPlan: 'fb', rooms, parkId: 'zanzibar-marine', dayKind: 'touring', flightId: 'znz-flight' },
+      { dayNumber: 6, date: new Date(Date.UTC(2026, 11, 29)), accommodationId: 'zanzibar-magic', accommodationName: 'Zanzibar Magic', mealPlan: 'fb', rooms, parkId: 'zanzibar-marine', dayKind: 'none' },
+      { dayNumber: 7, date: new Date(Date.UTC(2026, 11, 30)), accommodationId: 'zanzibar-magic', accommodationName: 'Zanzibar Magic', mealPlan: 'fb', rooms, parkId: 'zanzibar-marine', dayKind: 'none' },
+      { dayNumber: 8, date: new Date(Date.UTC(2026, 11, 31)), accommodationId: 'zanzibar-magic', accommodationName: 'Zanzibar Magic', mealPlan: 'fb', rooms, parkId: 'zanzibar-marine', dayKind: 'none' },
+      { dayNumber: 9, date: new Date(Date.UTC(2027, 0, 1)), accommodationId: null, mealPlan: null, rooms: [], parkId: null, dayKind: 'none' },
+    ];
+    const parkFeeRates: ParkFeeRate[] = [
+      { parkId: 'tarangire', parkName: 'Tarangire National Park', seasonId: null, category: 'non_resident_adult', perPersonRate: 79 },
+      { parkId: 'ndutu-nca', parkName: 'Ngorongoro Conservation Area', seasonId: null, category: 'non_resident_adult', perPersonRate: 90.8 },
+      // 'zanzibar-marine' carries only the ancillary levy below, no entrance fee.
+    ];
+    const parkAncillaryFees: ParkAncillaryFeeRate[] = [
+      { parkId: 'ndutu-nca', parkName: 'Ngorongoro Conservation Area', seasonId: null, name: 'Concession fee', chargeBasis: 'per_person_per_day', rate: 79 },
+      { parkId: 'ndutu-nca', parkName: 'Ngorongoro Conservation Area', seasonId: null, name: 'Migratory area fee', chargeBasis: 'per_vehicle_per_day', rate: 50 },
+      { parkId: 'zanzibar-marine', parkName: 'Zanzibar', seasonId: null, name: 'Marine conservation levy', chargeBasis: 'per_person_per_day', rate: 10 },
+    ];
+    const result = computePricing(
+      baseInput({
+        pax: 2,
+        markupPct: 0,
+        seasons: [{ id: 's1', name: 'Trip season', startMonth: 1, startDay: 1, endMonth: 12, endDay: 31, priority: 0 }],
+        accommodationRates: [
+          acc('sanna', 85),
+          acc('marera-b', 105),
+          acc('ndutu-luxury', 324),
+          acc('zanzibar-magic', 185.5),
+        ],
+        parkFeeRates,
+        parkAncillaryFees,
+        vehicleId: 'veh-1',
+        vehicles: [{ id: 'veh-1', perDayRate: 250, seatCapacity: 6 }],
+        guideId: 'guide-1',
+        guides: [{ id: 'guide-1', name: 'Standard guide', touringRate: 35, airportTransferRate: 10 }],
+        mealRates: [{ id: 'lunchbox', name: 'Lunchbox', perPersonRate: 15 }],
+        flightRates: [{ id: 'znz-flight', name: 'Arusha-Zanzibar', seasonId: null, perPersonRate: 240 }],
+        pickupTransferId: 't-pickup',
+        dropoffTransferId: 't-dropoff',
+        transferRates: [
+          { id: 't-pickup', name: 'Airport pickup', mode: 'per_vehicle', rate: 50 },
+          { id: 't-dropoff', name: 'ZNZ departure transfer', mode: 'per_vehicle', rate: 60 },
+        ],
+        internalCostLines: [
+          // Day 5's crater-transit entrance fee ($90.90/pax, its own park
+          // visited only in passing — see the day-5 comment above).
+          { id: 'day5-nca-transit', label: 'Ngorongoro/crater transit fee (Day 5)', amount: 90.9 * 2, quantity: 1 },
+          { id: 'day5-crater', label: 'Crater descent fee (Day 5)', amount: 345, quantity: 1 },
+          // A third transfer leg (the local Arusha->airport run on flight
+          // day) beyond the engine's single pickup/dropoff pair.
+          { id: 'day5-extra-transfer', label: 'Local transfer to domestic flight (Day 5)', amount: 60, quantity: 1 },
+          // Zanzibar's nightly per-room levy — see the "no additive
+          // accommodation surcharge layer" finding in the audit; this is the
+          // documented workaround until that's built.
+          { id: 'znz-levy', label: 'Zanzibar nightly levy (4 nights)', amount: 200, quantity: 1 },
+        ],
+        days,
+      }),
+    );
+    expect(result.costSubtotal).toBe(6734);
+  });
+
+  test('Maireke at the sheet\'s stated 3 adults costs strictly more than the sheet\'s own (2-pax-divided) total', () => {
+    // The Maireke sheet is headed "3 adults" but every shared cost (vehicle,
+    // guide, crater, transfers, migratory fee, Zanzibar levy) is divided by
+    // 2, not 3 — see the pricing audit. Re-running the same rate card at the
+    // header's stated pax proves the engine doesn't reproduce that error: a
+    // real 3rd traveler adds their own accommodation/park/concession/lunch/
+    // flight share on top, landing well above the sheet's $6,734.00.
+    const acc = (id: string, perPaxRate: number): AccommodationRate => ({
+      accommodationId: id,
+      seasonId: 's1',
+      roomType: 'triple',
+      mealPlan: 'fb',
+      perPaxRate,
+      rateBasis: 'per_person',
+      maxOccupancy: 3,
+      additionalAdultPct: null,
+      additionalChildPct: null,
+    });
+    const rooms = [{ roomType: 'triple', pax: 3 }];
+    const days: ItineraryDayInput[] = [
+      { dayNumber: 1, date: new Date(Date.UTC(2026, 11, 24)), accommodationId: 'sanna', accommodationName: 'Sanna', mealPlan: 'fb', rooms, parkId: null, dayKind: 'airport_transfer' },
+      { dayNumber: 2, date: new Date(Date.UTC(2026, 11, 25)), accommodationId: 'marera-b', accommodationName: 'Marera', mealPlan: 'fb', rooms, parkId: 'tarangire', dayKind: 'touring', mealCostId: 'lunchbox' },
+      { dayNumber: 3, date: new Date(Date.UTC(2026, 11, 26)), accommodationId: 'ndutu-luxury', accommodationName: 'Lake Ndutu Luxury', mealPlan: 'fb', rooms, parkId: 'ndutu-nca', dayKind: 'touring' },
+      { dayNumber: 4, date: new Date(Date.UTC(2026, 11, 27)), accommodationId: 'ndutu-luxury', accommodationName: 'Lake Ndutu Luxury', mealPlan: 'fb', rooms, parkId: 'ndutu-nca', dayKind: 'touring' },
+      { dayNumber: 5, date: new Date(Date.UTC(2026, 11, 28)), accommodationId: 'zanzibar-magic', accommodationName: 'Zanzibar Magic', mealPlan: 'fb', rooms, parkId: 'zanzibar-marine', dayKind: 'touring', flightId: 'znz-flight' },
+      { dayNumber: 6, date: new Date(Date.UTC(2026, 11, 29)), accommodationId: 'zanzibar-magic', accommodationName: 'Zanzibar Magic', mealPlan: 'fb', rooms, parkId: 'zanzibar-marine', dayKind: 'none' },
+      { dayNumber: 7, date: new Date(Date.UTC(2026, 11, 30)), accommodationId: 'zanzibar-magic', accommodationName: 'Zanzibar Magic', mealPlan: 'fb', rooms, parkId: 'zanzibar-marine', dayKind: 'none' },
+      { dayNumber: 8, date: new Date(Date.UTC(2026, 11, 31)), accommodationId: 'zanzibar-magic', accommodationName: 'Zanzibar Magic', mealPlan: 'fb', rooms, parkId: 'zanzibar-marine', dayKind: 'none' },
+      { dayNumber: 9, date: new Date(Date.UTC(2027, 0, 1)), accommodationId: null, mealPlan: null, rooms: [], parkId: null, dayKind: 'none' },
+    ];
+    const parkFeeRates: ParkFeeRate[] = [
+      { parkId: 'tarangire', parkName: 'Tarangire National Park', seasonId: null, category: 'non_resident_adult', perPersonRate: 79 },
+      { parkId: 'ndutu-nca', parkName: 'Ngorongoro Conservation Area', seasonId: null, category: 'non_resident_adult', perPersonRate: 90.8 },
+    ];
+    const parkAncillaryFees: ParkAncillaryFeeRate[] = [
+      { parkId: 'ndutu-nca', parkName: 'Ngorongoro Conservation Area', seasonId: null, name: 'Concession fee', chargeBasis: 'per_person_per_day', rate: 79 },
+      { parkId: 'ndutu-nca', parkName: 'Ngorongoro Conservation Area', seasonId: null, name: 'Migratory area fee', chargeBasis: 'per_vehicle_per_day', rate: 50 },
+      { parkId: 'zanzibar-marine', parkName: 'Zanzibar', seasonId: null, name: 'Marine conservation levy', chargeBasis: 'per_person_per_day', rate: 10 },
+    ];
+    const result = computePricing(
+      baseInput({
+        pax: 3,
+        markupPct: 0,
+        seasons: [{ id: 's1', name: 'Trip season', startMonth: 1, startDay: 1, endMonth: 12, endDay: 31, priority: 0 }],
+        accommodationRates: [
+          acc('sanna', 85),
+          acc('marera-b', 105),
+          acc('ndutu-luxury', 324),
+          acc('zanzibar-magic', 185.5),
+        ],
+        parkFeeRates,
+        parkAncillaryFees,
+        vehicleId: 'veh-1',
+        vehicles: [{ id: 'veh-1', perDayRate: 250, seatCapacity: 6 }],
+        guideId: 'guide-1',
+        guides: [{ id: 'guide-1', name: 'Standard guide', touringRate: 35, airportTransferRate: 10 }],
+        mealRates: [{ id: 'lunchbox', name: 'Lunchbox', perPersonRate: 15 }],
+        flightRates: [{ id: 'znz-flight', name: 'Arusha-Zanzibar', seasonId: null, perPersonRate: 240 }],
+        pickupTransferId: 't-pickup',
+        dropoffTransferId: 't-dropoff',
+        transferRates: [
+          { id: 't-pickup', name: 'Airport pickup', mode: 'per_vehicle', rate: 50 },
+          { id: 't-dropoff', name: 'ZNZ departure transfer', mode: 'per_vehicle', rate: 60 },
+        ],
+        internalCostLines: [
+          { id: 'day5-nca-transit', label: 'Ngorongoro/crater transit fee (Day 5)', amount: 90.9 * 3, quantity: 1 },
+          { id: 'day5-crater', label: 'Crater descent fee (Day 5)', amount: 345, quantity: 1 },
+          { id: 'day5-extra-transfer', label: 'Local transfer to domestic flight (Day 5)', amount: 60, quantity: 1 },
+          { id: 'znz-levy', label: 'Zanzibar nightly levy (4 nights)', amount: 200, quantity: 1 },
+        ],
+        days,
+      }),
+    );
+    // I * 3 + S = 2384.50 * 3 + 1965.00 = 9118.50, strictly above the sheet's
+    // own (flawed) 2-pax-divided total of $6,734.00.
+    expect(result.costSubtotal).toBe(9118.5);
+    expect(result.costSubtotal).toBeGreaterThan(6734);
   });
 });

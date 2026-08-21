@@ -120,9 +120,18 @@ export interface ParkFeeRate {
   seasonId: string | null;
   category: ParkFeeCategory;
   perPersonRate: number;
+  // 'transit' = a reduced pass-through rate for driving through the park
+  // without stopping to game-view. Undefined/'entrance' = the normal full
+  // entrance fee. A day flagged `isTransit` prefers a 'transit' row for its
+  // category/season and falls back to the entrance rate (with a warning) if
+  // none is configured, so a missing transit rate never silently underprices.
+  feeType?: 'entrance' | 'transit';
 }
 
-export type ParkAncillaryChargeBasis = 'per_vehicle_per_day' | 'per_vehicle_once_per_visit';
+export type ParkAncillaryChargeBasis =
+  | 'per_vehicle_per_day'
+  | 'per_vehicle_once_per_visit'
+  | 'per_person_per_day';
 
 export interface ParkAncillaryFeeRate {
   parkId: string;
@@ -131,11 +140,20 @@ export interface ParkAncillaryFeeRate {
   name: string;
   chargeBasis: ParkAncillaryChargeBasis;
   rate: number;
+  // Only meaningful for chargeBasis 'per_person_per_day' (e.g. a concession
+  // fee that differs by adult/child, mirroring ParkFeeRate.category). Null/
+  // unset means the fee applies to every traveler at the same rate.
+  category?: ParkFeeCategory | null;
 }
 
 export interface VehicleRate {
   id: string;
   perDayRate: number;
+  // Max travelers this vehicle seats. When set, computePricing derives the
+  // minimum vehicle count a party actually needs and raises vehicleCount to
+  // match if the caller's value is too low — see effectiveVehicleCount.
+  // Null/unset = capacity unknown, no auto-bump (today's behavior).
+  seatCapacity?: number | null;
 }
 
 export interface TransferRate {
@@ -153,6 +171,35 @@ export interface ActivityRate {
   seasonId: string | null;
   chargeBasis: ActivityChargeBasis;
   rate: number;
+}
+
+// Per vehicle per day. A "touring" day is any day the guide is out with the
+// group (game drives, transfers between camps, crater descents); "airport
+// transfer" is a same-day pickup/dropoff leg with no touring — real cost
+// sheets price that far lower ($10/day vs $35-60/day for a touring day).
+export interface GuideRate {
+  id: string;
+  name: string;
+  touringRate: number;
+  airportTransferRate: number;
+}
+
+// A flat per-person meal cost (e.g. a boxed lunch on a relocation day with no
+// lodge lunch available). No season — these are simple, small, fixed rates.
+export interface MealRate {
+  id: string;
+  name: string;
+  perPersonRate: number;
+}
+
+// A domestic/charter flight leg, priced per person. Shares the seasonal-row
+// shape used by ActivityRate: multiple rows can share the same `id` (the
+// route) with different seasonId values.
+export interface FlightRate {
+  id: string;
+  name: string;
+  seasonId: string | null;
+  perPersonRate: number;
 }
 
 export interface DayActivityInput {
@@ -180,6 +227,21 @@ export interface ItineraryDayInput {
   parkId: string | null;
   destinationName?: string | null;
   activities?: DayActivityInput[];
+  // 'touring' (default when unset) = a normal day out with the vehicle and
+  // guide. 'airport_transfer' = a same-day pickup/dropoff leg only — drives
+  // the lower guide-fee rate (see GuideRate). 'none' = no vehicle/guide cost
+  // at all that day (e.g. a Zanzibar beach day on a mainland+beach trip).
+  dayKind?: 'touring' | 'airport_transfer' | 'none';
+  // True when this day passes through parkId without a full visit (e.g.
+  // driving past Ngorongoro en route to the Serengeti). Looks up the park's
+  // 'transit' feeType rate instead of the full entrance fee.
+  isTransit?: boolean;
+  // References MealRate.id when this day needs a boxed lunch. Null/unset =
+  // no meal cost that day.
+  mealCostId?: string | null;
+  // References FlightRate.id when this day includes a domestic/charter
+  // flight leg. Null/unset = no flight that day.
+  flightId?: string | null;
 }
 
 export interface PricingInput {
@@ -191,10 +253,24 @@ export interface PricingInput {
   // How many of that vehicle the trip uses (e.g. 2 Land Cruisers for a large
   // group). Multiplies the vehicle-per-day line and per-vehicle park
   // ancillary fees (crater fees, vehicle entry fees, etc.). Defaults to 1.
+  // Treated as a floor, not a fixed value — see effectiveVehicleCount.
   vehicleCount: number;
+  // Guide assigned to the trip (one guide travels with each vehicle). Null/
+  // unset = no guide line, matching today's behavior where guide cost was
+  // assumed to already be folded into the vehicle's per-day rate.
+  guideId?: string | null;
+  guides?: GuideRate[];
+  mealRates?: MealRate[];
+  flightRates?: FlightRate[];
   pickupTransferId: string | null;
   dropoffTransferId: string | null;
   markupPct: number; // e.g. 30 => +30%
+  // Optional group-size-tiered markup schedule. When set and non-empty, the
+  // tier with the highest minPax <= pax wins; markupPct above is the
+  // fallback for any pax count below every tier's minPax. Lets margin taper
+  // (or grow) with group size instead of one flat percentage for every
+  // booking.
+  markupTiers?: Array<{ minPax: number; markupPct: number }> | null;
   currency: string;
   // Operator-entered per-unit rate per line, keyed by LineItem.key (e.g. to
   // fill in a "rate not configured" row, or correct a computed rate) without
@@ -226,7 +302,16 @@ export interface LineItem {
   quantity: number;
   unitCost: number;
   totalCost: number;
-  source: 'accommodation' | 'park_fee' | 'activity' | 'vehicle' | 'transfer' | 'internal';
+  source:
+    | 'accommodation'
+    | 'park_fee'
+    | 'activity'
+    | 'vehicle'
+    | 'transfer'
+    | 'internal'
+    | 'guide'
+    | 'meal'
+    | 'flight';
   missing?: string; // human-readable note if a rate could not be found
   // Set on occupant-slot-priced accommodation lines (see occupantSlotCost) when
   // the total isn't a flat perPaxRate * pax — i.e. extra-adult and/or child %s
@@ -250,7 +335,13 @@ export type WarningKind =
   | 'missing_park_ancillary_no_vehicle'
   | 'missing_activity_rate'
   | 'missing_vehicle'
-  | 'missing_transfer';
+  | 'missing_transfer'
+  | 'vehicle_capacity_exceeded'
+  | 'missing_guide'
+  | 'unpriced_transfer_day'
+  | 'missing_transit_fee'
+  | 'missing_meal_rate'
+  | 'missing_flight_rate';
 
 export interface PricingWarning {
   kind: WarningKind;
@@ -345,6 +436,26 @@ export function computePricing(input: PricingInput): PricingBreakdown {
   const warnings: PricingWarning[] = [];
   const lineItems: LineItem[] = [];
   const tripDays = input.days.length;
+
+  // Auto-bump vehicle count to fit the party when the selected vehicle's seat
+  // capacity is known. vehicleCount from the caller is a floor, not a fixed
+  // value — a group that outgrows one vehicle gets priced for a second one
+  // automatically, instead of an operator having to remember to raise it (a
+  // silent underprice otherwise: a forgotten vehicle also drops its driver,
+  // guide, and per-vehicle park fees).
+  const selectedVehicle = input.vehicleId
+    ? input.vehicles.find((v) => v.id === input.vehicleId)
+    : undefined;
+  const effectiveVehicleCount =
+    selectedVehicle?.seatCapacity && selectedVehicle.seatCapacity > 0
+      ? Math.max(vehicleCount, Math.ceil(pax / selectedVehicle.seatCapacity))
+      : vehicleCount;
+  if (effectiveVehicleCount > vehicleCount) {
+    warnings.push({
+      kind: 'vehicle_capacity_exceeded',
+      message: `${pax} travelers exceed ${vehicleCount} vehicle${vehicleCount === 1 ? '' : 's'} at ${selectedVehicle!.seatCapacity}-seat capacity — priced as ${effectiveVehicleCount} vehicles`,
+    });
+  }
 
   // ---------- Accommodation lines (per day, one line per room type) ----------
   for (const day of input.days) {
@@ -497,17 +608,38 @@ export function computePricing(input: PricingInput): PricingBreakdown {
     const season = resolveSeason(day.date, ownedSeasons(input.seasons, parkSeasonIds));
     for (const segment of segments) {
       if (segment.count <= 0) continue;
-      // park fees: season-specific row preferred, fall back to season-less (year-round)
-      const rate =
-        input.parkFeeRates.find(
-          (r) =>
-            r.parkId === parkId &&
-            r.category === segment.category &&
-            r.seasonId === (season?.id ?? null),
-        ) ??
-        input.parkFeeRates.find(
-          (r) => r.parkId === parkId && r.category === segment.category && r.seasonId === null,
-        );
+      const matchesCategory = (r: ParkFeeRate) =>
+        r.parkId === parkId && r.category === segment.category;
+      const isTransitRate = (r: ParkFeeRate) => (r.feeType ?? 'entrance') === 'transit';
+      const isEntranceRate = (r: ParkFeeRate) => (r.feeType ?? 'entrance') === 'entrance';
+
+      // Transit days (driving through without a full game-viewing visit)
+      // prefer a 'transit' feeType row for this category/season; if none is
+      // configured, fall back to the full entrance rate rather than silently
+      // charging nothing, and warn so the gap in the rate card is visible.
+      let rate: ParkFeeRate | undefined;
+      let usedEntranceFallback = false;
+      if (day.isTransit) {
+        rate =
+          input.parkFeeRates.find(
+            (r) => matchesCategory(r) && isTransitRate(r) && r.seasonId === (season?.id ?? null),
+          ) ?? input.parkFeeRates.find((r) => matchesCategory(r) && isTransitRate(r) && r.seasonId === null);
+        if (!rate) {
+          rate =
+            input.parkFeeRates.find(
+              (r) => matchesCategory(r) && isEntranceRate(r) && r.seasonId === (season?.id ?? null),
+            ) ??
+            input.parkFeeRates.find((r) => matchesCategory(r) && isEntranceRate(r) && r.seasonId === null);
+          usedEntranceFallback = !!rate;
+        }
+      } else {
+        // park fees: season-specific row preferred, fall back to season-less (year-round)
+        rate =
+          input.parkFeeRates.find(
+            (r) => matchesCategory(r) && isEntranceRate(r) && r.seasonId === (season?.id ?? null),
+          ) ??
+          input.parkFeeRates.find((r) => matchesCategory(r) && isEntranceRate(r) && r.seasonId === null);
+      }
       if (!rate) {
         warnings.push({
           kind: 'missing_park_fee',
@@ -515,6 +647,13 @@ export function computePricing(input: PricingInput): PricingBreakdown {
           message: `Day ${day.dayNumber}: no park fee for category ${segment.category}`,
         });
         continue;
+      }
+      if (usedEntranceFallback) {
+        warnings.push({
+          kind: 'missing_transit_fee',
+          dayNumber: day.dayNumber,
+          message: `Day ${day.dayNumber}: no transit rate configured for this park/category, charged the full entrance fee instead`,
+        });
       }
       const parkLabel = rate.parkName?.trim() || day.destinationName?.trim() || 'Park fee';
       const label = showCategory
@@ -569,34 +708,62 @@ export function computePricing(input: PricingInput): PricingBreakdown {
       const fees = feesByPark.get(parkId);
       const firstFee = fees?.[0];
       if (!fees || !firstFee) continue;
-      if (!hasVehicle) {
+      const firstEntry = firstDayByPark.get(parkId);
+      if (!firstEntry) continue;
+
+      // Per-person fees (e.g. concession) scale with headcount and don't
+      // need a vehicle at all — only the per-vehicle bases require one.
+      const vehicleFees = fees.filter((f) => f.chargeBasis !== 'per_person_per_day');
+      const personFees = fees.filter((f) => f.chargeBasis === 'per_person_per_day');
+
+      if (vehicleFees.length > 0 && !hasVehicle) {
         warnings.push({
           kind: 'missing_park_ancillary_no_vehicle',
           message: `${firstFee.parkName || 'Park'}: vehicle-based fees skipped (no vehicle selected)`,
         });
-        continue;
       }
-      const firstEntry = firstDayByPark.get(parkId);
-      if (!firstEntry) continue;
-      for (const fee of fees) {
-        const occurrences =
-          fee.chargeBasis === 'per_vehicle_per_day' ? dayCount : (visitCountByPark.get(parkId) ?? 1);
-        const totalCost = num(fee.rate * occurrences * vehicleCount);
-        const occurrenceLabel =
-          fee.chargeBasis === 'per_vehicle_per_day'
-            ? `${occurrences} day${occurrences === 1 ? '' : 's'}`
-            : occurrences > 1
-              ? `${occurrences} visits`
-              : null;
-        const vehicleLabel = vehicleCount > 1 ? `${vehicleCount} vehicles` : null;
-        const suffix = [occurrenceLabel, vehicleLabel].filter(Boolean).join(' × ');
+
+      if (hasVehicle) {
+        for (const fee of vehicleFees) {
+          const occurrences =
+            fee.chargeBasis === 'per_vehicle_per_day' ? dayCount : (visitCountByPark.get(parkId) ?? 1);
+          const totalCost = num(fee.rate * occurrences * effectiveVehicleCount);
+          const occurrenceLabel =
+            fee.chargeBasis === 'per_vehicle_per_day'
+              ? `${occurrences} day${occurrences === 1 ? '' : 's'}`
+              : occurrences > 1
+                ? `${occurrences} visits`
+                : null;
+          const vehicleLabel = effectiveVehicleCount > 1 ? `${effectiveVehicleCount} vehicles` : null;
+          const suffix = [occurrenceLabel, vehicleLabel].filter(Boolean).join(' × ');
+          lineItems.push({
+            key: `park_ancillary:${parkId}:${fee.name}`,
+            label: suffix
+              ? `${fee.parkName || 'Park'} — ${fee.name} (${suffix})`
+              : `${fee.parkName || 'Park'} — ${fee.name}`,
+            dayNumber: firstEntry.day.dayNumber,
+            quantity: occurrences * effectiveVehicleCount,
+            unitCost: fee.rate,
+            totalCost,
+            source: 'park_fee',
+          });
+        }
+      }
+
+      for (const fee of personFees) {
+        const segmentPax = fee.category
+          ? (segments.find((s) => s.category === fee.category)?.count ?? 0)
+          : pax;
+        if (segmentPax <= 0) continue;
+        const totalCost = num(fee.rate * dayCount * segmentPax);
+        const categorySuffix = fee.category ? ` — ${parkCategoryLabel(fee.category)}` : '';
         lineItems.push({
-          key: `park_ancillary:${parkId}:${fee.name}`,
-          label: suffix
-            ? `${fee.parkName || 'Park'} — ${fee.name} (${suffix})`
-            : `${fee.parkName || 'Park'} — ${fee.name}`,
+          key: fee.category
+            ? `park_ancillary:${parkId}:${fee.name}:${fee.category}`
+            : `park_ancillary:${parkId}:${fee.name}`,
+          label: `${fee.parkName || 'Park'} — ${fee.name}${categorySuffix} (${dayCount} day${dayCount === 1 ? '' : 's'} × ${segmentPax})`,
           dayNumber: firstEntry.day.dayNumber,
-          quantity: occurrences * vehicleCount,
+          quantity: dayCount * segmentPax,
           unitCost: fee.rate,
           totalCost,
           source: 'park_fee',
@@ -681,7 +848,88 @@ export function computePricing(input: PricingInput): PricingBreakdown {
     }
   }
 
-  // ---------- Vehicle (one line, all days) ----------
+  // ---------- Meals (e.g. lunchbox on a relocation day, per day) ----------
+  for (const day of input.days) {
+    if (!day.mealCostId) continue;
+    const meal = (input.mealRates ?? []).find((m) => m.id === day.mealCostId);
+    const key = `meal:${day.mealCostId}:${day.dayNumber}`;
+    if (!meal) {
+      warnings.push({
+        kind: 'missing_meal_rate',
+        dayNumber: day.dayNumber,
+        message: `Day ${day.dayNumber}: no rate for the selected meal cost`,
+        key,
+      });
+      lineItems.push({
+        key,
+        label: `Meal (Day ${day.dayNumber})`,
+        dayNumber: day.dayNumber,
+        quantity: pax,
+        unitCost: 0,
+        totalCost: 0,
+        source: 'meal',
+        missing: 'rate not configured',
+      });
+      continue;
+    }
+    lineItems.push({
+      key,
+      label: `${meal.name} (Day ${day.dayNumber})`,
+      dayNumber: day.dayNumber,
+      quantity: pax,
+      unitCost: meal.perPersonRate,
+      totalCost: num(meal.perPersonRate * pax),
+      source: 'meal',
+    });
+  }
+
+  // ---------- Flights (domestic/charter legs, per day, per person) ----------
+  for (const day of input.days) {
+    if (!day.flightId) continue;
+    const flightSeasonIds = new Set(
+      (input.flightRates ?? [])
+        .filter(
+          (f): f is FlightRate & { seasonId: string } => f.id === day.flightId && f.seasonId !== null,
+        )
+        .map((f) => f.seasonId),
+    );
+    const season = resolveSeason(day.date, ownedSeasons(input.seasons, flightSeasonIds));
+    const flight =
+      (input.flightRates ?? []).find(
+        (f) => f.id === day.flightId && f.seasonId === (season?.id ?? null),
+      ) ?? (input.flightRates ?? []).find((f) => f.id === day.flightId && f.seasonId === null);
+    const key = `flight:${day.flightId}:${day.dayNumber}`;
+    if (!flight) {
+      warnings.push({
+        kind: 'missing_flight_rate',
+        dayNumber: day.dayNumber,
+        message: `Day ${day.dayNumber}: no rate for the selected flight`,
+        key,
+      });
+      lineItems.push({
+        key,
+        label: `Flight (Day ${day.dayNumber})`,
+        dayNumber: day.dayNumber,
+        quantity: pax,
+        unitCost: 0,
+        totalCost: 0,
+        source: 'flight',
+        missing: 'rate not configured',
+      });
+      continue;
+    }
+    lineItems.push({
+      key,
+      label: `${flight.name} (Day ${day.dayNumber})`,
+      dayNumber: day.dayNumber,
+      quantity: pax,
+      unitCost: flight.perPersonRate,
+      totalCost: num(flight.perPersonRate * pax),
+      source: 'flight',
+    });
+  }
+
+  // ---------- Vehicle (one line, all days the vehicle is actually used) ----------
   if (input.vehicleId) {
     const vehicle = input.vehicles.find((v) => v.id === input.vehicleId);
     if (!vehicle) {
@@ -690,18 +938,76 @@ export function computePricing(input: PricingInput): PricingBreakdown {
         message: 'Vehicle selected but rate not found',
       });
     } else {
-      const total = vehicle.perDayRate * tripDays * vehicleCount;
+      // Only 'touring' days use the main safari vehicle at its full per-day
+      // rate. 'airport_transfer' days use a separate transfer fee instead
+      // (pickup/dropoff), and 'none' days (e.g. a Zanzibar beach extension
+      // tacked onto a mainland safari) use no vehicle at all — charging
+      // every day of the whole trip regardless would overprice both.
+      const vehicleDays = input.days.filter((d) => (d.dayKind ?? 'touring') === 'touring').length;
+      const total = vehicle.perDayRate * vehicleDays * effectiveVehicleCount;
       lineItems.push({
         key: 'vehicle',
         label:
-          vehicleCount > 1
-            ? `Vehicle + driver + fuel (${tripDays} days × ${vehicleCount} vehicles)`
-            : `Vehicle + driver + fuel (${tripDays} days)`,
-        quantity: tripDays * vehicleCount,
+          effectiveVehicleCount > 1
+            ? `Vehicle + driver + fuel (${vehicleDays} days × ${effectiveVehicleCount} vehicles)`
+            : `Vehicle + driver + fuel (${vehicleDays} days)`,
+        quantity: vehicleDays * effectiveVehicleCount,
         unitCost: vehicle.perDayRate,
         totalCost: num(total),
         source: 'vehicle',
       });
+    }
+  }
+
+  // An 'airport_transfer' day carries no vehicle cost (see above). That's
+  // fine when the leg is already priced another way — the trip-level pickup/
+  // dropoff transfer rate (first/last day) or a per-day flight leg (e.g. the
+  // hop to Zanzibar) — but with none of guide, transfer, or flight covering
+  // it, the day would be priced at $0 with no trace of the gap. Warn per day
+  // instead of silently dropping the cost.
+  if (!input.guideId) {
+    input.days.forEach((day, index) => {
+      if (day.dayKind !== 'airport_transfer') return;
+      if (day.flightId) return;
+      const coveredByPickup = index === 0 && !!input.pickupTransferId;
+      const coveredByDropoff = index === input.days.length - 1 && !!input.dropoffTransferId;
+      if (coveredByPickup || coveredByDropoff) return;
+      warnings.push({
+        kind: 'unpriced_transfer_day',
+        dayNumber: day.dayNumber,
+        message: `Day ${day.dayNumber}: airport transfer day has no vehicle, guide, transfer, or flight cost — assign one to price it`,
+      });
+    });
+  }
+
+  // ---------- Guide (separate from the vehicle; rate varies by day kind) ----------
+  if (input.guideId) {
+    const guide = (input.guides ?? []).find((g) => g.id === input.guideId);
+    if (!guide) {
+      warnings.push({ kind: 'missing_guide', message: 'Guide selected but rate not found' });
+    } else {
+      const touringDays = input.days.filter((d) => (d.dayKind ?? 'touring') === 'touring').length;
+      const transferDays = input.days.filter((d) => d.dayKind === 'airport_transfer').length;
+      if (touringDays > 0) {
+        lineItems.push({
+          key: 'guide:touring',
+          label: `Guide (${touringDays} touring day${touringDays === 1 ? '' : 's'})`,
+          quantity: touringDays * effectiveVehicleCount,
+          unitCost: guide.touringRate,
+          totalCost: num(guide.touringRate * touringDays * effectiveVehicleCount),
+          source: 'guide',
+        });
+      }
+      if (transferDays > 0) {
+        lineItems.push({
+          key: 'guide:airport_transfer',
+          label: `Guide (${transferDays} airport transfer day${transferDays === 1 ? '' : 's'})`,
+          quantity: transferDays * effectiveVehicleCount,
+          unitCost: guide.airportTransferRate,
+          totalCost: num(guide.airportTransferRate * transferDays * effectiveVehicleCount),
+          source: 'guide',
+        });
+      }
     }
   }
 
@@ -777,8 +1083,14 @@ export function computePricing(input: PricingInput): PricingBreakdown {
       : warnings.filter((w) => !(w.key && overriddenKeys.has(w.key)));
 
   // ---------- Totals ----------
+  const effectiveMarkupPct = (() => {
+    const tiers = input.markupTiers;
+    if (!tiers || tiers.length === 0) return markupPct;
+    const eligible = tiers.filter((t) => pax >= t.minPax).sort((a, b) => b.minPax - a.minPax);
+    return eligible[0]?.markupPct ?? markupPct;
+  })();
   const costSubtotal = num(lineItems.reduce((sum, l) => sum + l.totalCost, 0));
-  const markupAmount = num((costSubtotal * markupPct) / 100);
+  const markupAmount = num((costSubtotal * effectiveMarkupPct) / 100);
   const sellTotal = num(costSubtotal + markupAmount);
   const costPerPax = pax > 0 ? num(costSubtotal / pax) : 0;
   const sellPerPax = pax > 0 ? num(sellTotal / pax) : 0;
@@ -787,7 +1099,7 @@ export function computePricing(input: PricingInput): PricingBreakdown {
     currency,
     lineItems,
     costSubtotal,
-    markupPct,
+    markupPct: effectiveMarkupPct,
     markupAmount,
     sellTotal,
     costPerPax,

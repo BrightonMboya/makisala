@@ -1007,6 +1007,9 @@ function TransferFields({
     onUpdate({ ...current, [field]: value });
   };
 
+  const isFlight = current.mode === 'flight_domestic' || current.mode === 'flight_bush';
+  const { data: flightRates = [] } = trpc.rateCards.flightRates.list.useQuery();
+
   // Parse duration into hours for display (supports decimals like 0.5, 1.5)
   const durationHours = current.durationMinutes ? current.durationMinutes / 60 : '';
 
@@ -1095,6 +1098,30 @@ function TransferFields({
           />
         </div>
       </div>
+
+      {isFlight && (
+        <div className="space-y-1">
+          <label className="text-[10px] font-medium text-stone-500 uppercase">
+            Flight rate (for pricing)
+          </label>
+          <Select
+            value={current.flightRateId ?? '__none__'}
+            onValueChange={(val) => update('flightRateId', val === '__none__' ? null : val)}
+          >
+            <SelectTrigger className="h-9 text-xs">
+              <SelectValue placeholder="Not priced yet" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__none__">Not priced (manual line)</SelectItem>
+              {flightRates.map((f) => (
+                <SelectItem key={f.id} value={f.id}>
+                  {f.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
 
       <div className="space-y-1">
         <label className="text-[10px] font-medium text-stone-500 uppercase">Notes</label>
