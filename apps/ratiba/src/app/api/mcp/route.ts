@@ -40,6 +40,216 @@ function proposalUrls(id: string) {
   };
 }
 
+// ---------------------------------------------------------------------------
+// MCP tool outputSchema definitions.
+//
+// These mirror each handler's actual return shape below — the SDK validates
+// every response's structuredContent against them and hard-fails the call on
+// any mismatch (see textResult above), so accuracy here isn't optional.
+//
+// The itinerary/pricing internals (day objects, pricingSummary.lineItems,
+// listForDashboard's proposal rows) are deliberately left as loose records
+// rather than fully modeled field-by-field: they're large, evolving, and
+// already loosely typed server-side (see ExistingProposalDay/BuilderData
+// above), so pinning them down exactly would be more likely to break a real
+// call than to help the calling model. Fields that matter for chaining
+// (ids, urls, warnings) are typed precisely; everything else is permissive.
+// ---------------------------------------------------------------------------
+
+const lineItemSchema = z.object({
+  key: z.string(),
+  label: z.string(),
+  dayNumber: z.number().optional(),
+  quantity: z.number(),
+  unitCost: z.number(),
+  totalCost: z.number(),
+  source: z.enum([
+    'accommodation',
+    'park_fee',
+    'activity',
+    'vehicle',
+    'transfer',
+    'internal',
+    'guide',
+    'meal',
+    'flight',
+  ]),
+  missing: z.string().optional(),
+  occupantBreakdown: z.string().optional(),
+  overridden: z.boolean().optional(),
+  originalUnitCost: z.number().optional(),
+  originalTotalCost: z.number().optional(),
+});
+
+const pricingWarningSchema = z.object({
+  kind: z.enum([
+    'missing_room_meal',
+    'room_pax_mismatch',
+    'missing_room_capacity',
+    'no_season',
+    'missing_hotel_rate',
+    'missing_park_fee',
+    'missing_park_ancillary_no_vehicle',
+    'missing_activity_rate',
+    'missing_vehicle',
+    'missing_transfer',
+    'vehicle_capacity_exceeded',
+    'missing_guide',
+    'unpriced_transfer_day',
+    'missing_transit_fee',
+    'missing_meal_rate',
+    'missing_flight_rate',
+    'no_start_date',
+  ]),
+  message: z.string(),
+  dayNumber: z.number().optional(),
+  key: z.string().optional(),
+});
+
+// The raw engine breakdown, as returned inline on create_proposal/update_proposal
+// (proposals.save returns it verbatim as `pricingBreakdown`) — distinct from the
+// smaller `pricingSummary` derived from it by summarizePricingBreakdown below.
+const pricingBreakdownSchema = z
+  .object({
+    currency: z.string(),
+    lineItems: z.array(lineItemSchema),
+    costSubtotal: z.number(),
+    markupPct: z.number(),
+    markupAmount: z.number(),
+    sellTotal: z.number(),
+    costPerPax: z.number(),
+    sellPerPax: z.number(),
+    pax: z.number(),
+    warnings: z.array(pricingWarningSchema),
+  })
+  .nullable();
+
+const pricingSummarySchema = z
+  .object({
+    currency: z.string(),
+    pax: z.number(),
+    costBySource: z.record(z.string(), z.number()),
+    costSubtotal: z.number(),
+    markupPct: z.number(),
+    markupAmount: z.number(),
+    sellTotal: z.number(),
+    sellPerPax: z.number(),
+    lineItems: z.array(
+      z.object({
+        label: z.string(),
+        quantity: z.number(),
+        unitCost: z.number(),
+        totalCost: z.number(),
+        source: z.string(),
+        missing: z.string().optional(),
+      }),
+    ),
+  })
+  .nullable();
+
+const proposalWarningsSchema = z.array(z.string());
+
+const clientRecordSchema = z
+  .object({
+    id: z.string(),
+    organizationId: z.string(),
+    name: z.string(),
+    email: z.string().nullable(),
+    phone: z.string().nullable(),
+    countryOfResidence: z.string().nullable(),
+    notes: z.string().nullable(),
+  })
+  .catchall(z.unknown());
+
+const roomTypeSchema = z.object({
+  name: z.string(),
+  description: z.string(),
+  capacity: z.string().optional(),
+});
+
+const accommodationSearchResultSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  country: z.string().nullable(),
+  latitude: z.union([z.string(), z.number()]).nullable(),
+  longitude: z.union([z.string(), z.number()]).nullable(),
+  overview: z.string().nullable(),
+  roomTypes: z.array(roomTypeSchema).nullable(),
+  locationHighlights: z.array(z.string()).nullable(),
+  images: z.array(z.string()),
+});
+
+const accommodationDetailSchema = z
+  .object({
+    id: z.string(),
+    name: z.string(),
+    slug: z.string().nullable(),
+    url: z.string().nullable(),
+    overview: z.string().nullable(),
+    description: z.string().nullable(),
+    latitude: z.union([z.string(), z.number()]).nullable(),
+    longitude: z.union([z.string(), z.number()]).nullable(),
+    enhancedDescription: z.string().nullable(),
+    amenities: z.array(z.object({ category: z.string(), items: z.array(z.string()) })).nullable(),
+    roomTypes: z.array(roomTypeSchema).nullable(),
+    locationHighlights: z.array(z.string()).nullable(),
+    pricingInfo: z.string().nullable(),
+    country: z.string().nullable(),
+    isInsidePark: z.boolean(),
+    organizationId: z.string().nullable(),
+    images: z.array(
+      z.object({ id: z.string(), bucket: z.string(), key: z.string(), url: z.string() }).catchall(z.unknown()),
+    ),
+  })
+  .catchall(z.unknown())
+  .nullable();
+
+const searchImagesResultSchema = z.object({
+  destinationImages: z.array(z.object({ destination: z.string(), images: z.array(z.string()) })),
+  accommodationImages: z.array(
+    z.object({ accommodation: z.string(), accommodationId: z.string(), images: z.array(z.string()) }),
+  ),
+  organizationImages: z.array(z.object({ name: z.string(), url: z.string() })),
+});
+
+const listProposalsOutputSchema = z.object({
+  items: z.array(z.record(z.string(), z.unknown())),
+  totalCount: z.number(),
+  page: z.number(),
+  pageSize: z.number(),
+  totalPages: z.number(),
+});
+
+// getForBuilder's return, plus the pricingSummary/warnings the get_proposal
+// handler adds on top of it.
+const getProposalOutputSchema = z
+  .object({
+    id: z.string(),
+    name: z.string(),
+    status: z.string().nullable().optional(),
+    days: z.array(z.record(z.string(), z.unknown())).optional(),
+    pricingSummary: pricingSummarySchema,
+    warnings: proposalWarningsSchema,
+  })
+  .catchall(z.unknown())
+  .nullable();
+
+// proposals.save's return (`{success, id, pricingBreakdown}`) plus the
+// shareUrl/editUrl/pricingSummary/warnings create_proposal/update_proposal add.
+const saveProposalOutputSchema = z
+  .object({
+    success: z.boolean(),
+    id: z.string(),
+    pricingBreakdown: pricingBreakdownSchema,
+    shareUrl: z.string(),
+    editUrl: z.string(),
+    pricingSummary: pricingSummarySchema,
+    warnings: proposalWarningsSchema,
+  })
+  .catchall(z.unknown());
+
+const successResultSchema = z.object({ success: z.boolean() });
+
 /**
  * Pre-flight checks run before create_proposal/update_proposal persist.
  * - Rejects any day.accommodation that isn't a real, org-visible accommodation
@@ -78,7 +288,15 @@ async function validateProposalDays(
 }
 
 function textResult(data: unknown) {
-  return { content: [{ type: 'text' as const, text: JSON.stringify(data) }] };
+  // Round-trip through JSON so structuredContent is exactly what the text
+  // content shows (no Date instances, etc.) and always defined — the SDK
+  // hard-fails any tool with an outputSchema if structuredContent is
+  // undefined, even when the value itself is legitimately null.
+  const structuredContent = data === undefined ? null : JSON.parse(JSON.stringify(data));
+  return {
+    content: [{ type: 'text' as const, text: JSON.stringify(data) }],
+    structuredContent,
+  };
 }
 
 /**
@@ -406,6 +624,8 @@ const mcpHandler = createMcpHandler(
           page: true,
           pageSize: true,
         }),
+        annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
+        outputSchema: listProposalsOutputSchema,
       },
       async (input, ctx) => {
         const { userId, orgId } = getAuth(ctx);
@@ -423,6 +643,8 @@ const mcpHandler = createMcpHandler(
           'auto-priced proposal (`useAutoPricing: true`), also includes a freshly-computed `pricingSummary` ' +
           '(cost by category, markup, sell total) and flags in `warnings` if it has 0% markup applied.',
         inputSchema: z.object({ id: z.string() }),
+        annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
+        outputSchema: getProposalOutputSchema,
       },
       async (input, ctx) => {
         const { userId, orgId } = getAuth(ctx);
@@ -470,6 +692,8 @@ const mcpHandler = createMcpHandler(
         description:
           'Search existing clients by name. Use this before create_client to avoid creating a duplicate — if the client already exists, reuse their id as `clientId` on create_proposal/update_proposal.',
         inputSchema: clientsListInput.pick({ query: true, limit: true }),
+        annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
+        outputSchema: z.array(clientRecordSchema),
       },
       async (input, ctx) => {
         const { userId, orgId } = getAuth(ctx);
@@ -486,6 +710,8 @@ const mcpHandler = createMcpHandler(
         description:
           'Create a new client record. Search first with search_clients to avoid duplicates. Returns the new client id — pass it as `clientId` when creating a proposal for them.',
         inputSchema: createClientInput,
+        annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
+        outputSchema: z.object({ id: z.string() }),
       },
       async (input, ctx) => {
         const { userId, orgId } = getAuth(ctx);
@@ -501,6 +727,8 @@ const mcpHandler = createMcpHandler(
         description:
           "Translate a proposal's client-facing content into another language and set it as the proposal's active language. Re-running with the same language regenerates and overwrites that translation (e.g. after the itinerary changes).",
         inputSchema: translateProposalInput,
+        annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false },
+        outputSchema: successResultSchema,
       },
       async (input, ctx) => {
         const { userId, orgId } = getAuth(ctx);
@@ -515,6 +743,8 @@ const mcpHandler = createMcpHandler(
         title: 'Reset proposal language',
         description: "Set a proposal's active language back to English, undoing translate_proposal.",
         inputSchema: z.object({ proposalId: z.string() }),
+        annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
+        outputSchema: successResultSchema,
       },
       async (input, ctx) => {
         const { userId, orgId } = getAuth(ctx);
@@ -536,6 +766,8 @@ const mcpHandler = createMcpHandler(
           country: z.string().optional().describe('Filter by country, e.g. "Tanzania"'),
           limit: z.number().int().positive().max(50).default(20),
         }),
+        annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
+        outputSchema: z.array(accommodationSearchResultSchema),
       },
       async (input, ctx) => {
         const { userId, orgId } = getAuth(ctx);
@@ -563,6 +795,8 @@ const mcpHandler = createMcpHandler(
         title: 'Get accommodation',
         description: 'Get full details (description, room types, amenities, images) for one accommodation by id.',
         inputSchema: z.object({ id: z.string() }),
+        annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
+        outputSchema: accommodationDetailSchema,
       },
       async (input, ctx) => {
         const { userId, orgId } = getAuth(ctx);
@@ -589,6 +823,8 @@ const mcpHandler = createMcpHandler(
                 'park\'s name, so a longer descriptive phrase will fail to match.',
             ),
         }),
+        annotations: { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
+        outputSchema: searchImagesResultSchema,
       },
       async (input, ctx) => {
         const { userId, orgId } = getAuth(ctx);
@@ -626,6 +862,8 @@ const mcpHandler = createMcpHandler(
         description:
           'Create a new client-facing proposal (a day-by-day itinerary with pricing) in Ratiba. `clientId` should reference a real client — search_clients (and create_client if they\'re new) before calling this, rather than leaving it unset for a named proposal. A complete proposal normally has: an accommodation on every overnight day (with room type and pax), meals, activities, transfers, pricing, and a hero image — search_accommodations/search_images first, then fill these in; do not create a bare-minimum proposal and wait to be asked. `accommodation` on a day must be a real accommodation id (from search_accommodations/get_accommodation) — a lodge name with no id will not be linked and should go in `description` instead. `theme` picks the client page\'s visual style (minimalistic/kudu/discovery) — defaults to minimalistic; kudu/discovery need a Pro/Business plan or the request is silently downgraded (surfaced as a warning). `useAutoPricing: true` computes pricing from the org\'s rate card (park fees, accommodation, and any org markup tiers) instead of flat `pricingRows`; the vehicle/guide/transfer selectors that feed that engine can\'t be set via MCP, so a brand-new auto-priced proposal excludes vehicle and guide costs — and prices any airport-transfer day with no transfer/flight leg at $0 — until someone assigns those in the builder (surfaced as a warning). Without a `startDate`, seasonal rates (accommodation/park fee/activity/flight) can\'t be resolved to a real date, so each is priced at its highest-season rate as a conservative estimate instead (also surfaced as a warning) — pass `startDate` when it\'s known for an accurate price. Leave it unset (or use `pricingRows`) unless the org relies on rate-card pricing. Returns `shareUrl`/`editUrl` — use those, never construct a URL yourself. After creating, call get_proposal to verify what was actually persisted before telling the user it is done; the response also includes non-blocking `warnings` for anything obviously missing. To send the proposal in another language, use translate_proposal afterward.',
         inputSchema: createProposalInput,
+        annotations: { readOnlyHint: false, destructiveHint: false, openWorldHint: false },
+        outputSchema: saveProposalOutputSchema,
       },
       async (input, ctx) => {
         const { userId, orgId } = getAuth(ctx);
@@ -672,6 +910,8 @@ const mcpHandler = createMcpHandler(
         description:
           'Update an existing proposal. Fields left out keep their current value — including `theme`, which stays as-is unless a new one is passed, and `useAutoPricing`, which is carried over from the existing proposal unless explicitly set. If `days` is provided it replaces the whole itinerary; if omitted, the existing itinerary (accommodations, meals, activities, transfers included) is kept as-is. Same completeness expectations as create_proposal: search_accommodations/search_images before referencing new ids, and verify with get_proposal afterward. Returns `shareUrl`/`editUrl` and non-blocking `warnings`.',
         inputSchema: updateProposalInput,
+        annotations: { readOnlyHint: false, destructiveHint: true, openWorldHint: false },
+        outputSchema: saveProposalOutputSchema,
       },
       async (input, ctx) => {
         const { userId, orgId } = getAuth(ctx);
