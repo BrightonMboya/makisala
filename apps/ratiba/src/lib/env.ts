@@ -59,6 +59,11 @@ export const env = createEnv({
     // Guards the dev-only /api/dev/proposal-pdf route in production. When unset,
     // the route is only reachable in non-production builds.
     PDF_BENCHMARK_KEY: z.string().min(1).optional(),
+
+    // OpenAI Apps SDK domain verification token, served as plain text at
+    // /.well-known/openai-apps-challenge (see that route). Rotates whenever
+    // OpenAI re-issues a challenge for the Ratiba plugin submission.
+    OPENAI_APPS_CHALLENGE_TOKEN: z.string().min(1).optional(),
   },
 
   client: {
@@ -99,6 +104,7 @@ export const env = createEnv({
     POLAR_SERVER_MODE: process.env.POLAR_SERVER_MODE,
     CRON_SECRET: process.env.CRON_SECRET,
     PDF_BENCHMARK_KEY: process.env.PDF_BENCHMARK_KEY,
+    OPENAI_APPS_CHALLENGE_TOKEN: process.env.OPENAI_APPS_CHALLENGE_TOKEN,
 
     // Client
     NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
